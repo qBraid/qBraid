@@ -39,9 +39,7 @@ from qbraid.runtime import (
 )
 from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
-from qbraid.runtime.azure.result_builder import (
-    AzureResultBuilder,
-)
+from qbraid.runtime.azure.result_builder import AzureResultBuilder
 from qbraid.runtime.postprocess import normalize_counts
 
 pytestmark = pytest.mark.filterwarnings("ignore:Unrecognized input data format:UserWarning")

@@ -121,11 +121,12 @@ def pyquil_program() -> pyquil_.Program:
 @pytest.mark.skipif(not pulser_found, reason="pulser not installed")
 def pulser_sequence() -> pulser_.Sequence:
     """Fixture for a Pulser sequence."""
-    import json
-
+    # pylint: disable=import-outside-toplevel
     import numpy as np
     import pulser
     from pulser.waveforms import BlackmanWaveform, RampWaveform
+
+    # pylint: enable=import-outside-toplevel
 
     input_data = {}
 
@@ -147,8 +148,7 @@ def pulser_sequence() -> pulser_.Sequence:
     pulse = pulser.Pulse(amp_wf, det_wf, 0)
     seq.add(pulse, "ch0")
 
-    input_data["sequence_builder"] = json.loads(seq.to_abstract_repr())
-    return input_data
+    return seq
 
 
 @pytest.fixture
@@ -191,7 +191,7 @@ def test_submit_quil_to_rigetti(
 @pytest.mark.remote
 @pytest.mark.skipif(not pulser_found, reason="pulser not installed")
 def test_submit_sequence_to_pasqal(
-    provider: AzureQuantumProvider, pulser_sequence: pulser_.Sequence, sequence_builder: str
+    provider: AzureQuantumProvider, pulser_sequence: pulser_.Sequence
 ):
     """Test submitting a Pulser sequence-builder to run on the Pulser emulator."""
     device = provider.get_device("pasqal.sim.emu-tn")
@@ -203,7 +203,7 @@ def test_submit_sequence_to_pasqal(
     shots = 100
     input_params = {}
 
-    job = device.submit(sequence_builder, shots=shots, input_params=input_params)
+    job = device.submit(pulser_sequence, shots=shots, input_params=input_params)
 
     job.wait_for_final_state()
     assert job.status() == JobStatus.COMPLETED

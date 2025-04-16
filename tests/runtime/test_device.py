@@ -36,33 +36,19 @@ from qbraid.programs import (
 )
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict, QuboCoefficientsDict
-from qbraid.runtime import (
-    DeviceStatus,
-    JobStatus,
-    Result,
-    TargetProfile,
-    ValidationLevel,
-)
+from qbraid.runtime import DeviceStatus, JobStatus, Result, TargetProfile, ValidationLevel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.provider import get_program_spec_lambdas
-from qbraid.runtime.native.result import (
-    NECVectorAnnealerResultData,
-    QbraidQirSimulatorResultData,
-)
+from qbraid.runtime.native.provider import _serialize_sequence, get_program_spec_lambdas
+from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
-from ._resources import (
-    DEVICE_DATA_QIR,
-    JOB_DATA_NEC,
-    JOB_DATA_QIR,
-    RESULTS_DATA_NEC,
-    MockDevice,
-)
+from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
+from .azure.test_azure_remote import pulser_sequence # pylint: disable=unused-import
 
 
 @pytest.fixture
@@ -773,17 +759,23 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
 def test_get_program_spec_lambdas_pulser():
     """Test that the validate lambda for pulser programs."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
-    # pylint: disable=import-outside-toplevel
-    from qbraid.runtime.native.provider import _serialize_sequence
-
-    # pylint: enable=import-outside-toplevel
     program_type_alias = "pulser"
     device_id = "pasqal.sim.emu-tn"
 
     lambdas = get_program_spec_lambdas(program_type_alias, device_id)
 
     assert lambdas["validate"] is None
-    assert lambdas["serialize"] is _serialize_sequence  # Ensure the serialize function is correct
+    assert lambdas["serialize"] is _serialize_sequence
+
+
+def test_sequence_serializer(pulser_sequence):
+    """Test the serialization of a Pasqal Pulser sequence."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+
+    serialized = _serialize_sequence(pulser_sequence)
+
+    assert "sequence_builder" in serialized
+    assert serialized["sequence_builder"] == pulser_sequence.to_abstract_repr()
 
 
 def test_provider_get_basis_gates_ionq():

@@ -20,9 +20,7 @@ from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.workspace import Workspace
 
 from qbraid._logging import logger
-from qbraid.runtime.azure.result_builder import (
-    AzureResultBuilder,
-)
+from qbraid.runtime.azure.result_builder import AzureResultBuilder
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
