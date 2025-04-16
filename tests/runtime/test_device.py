@@ -770,6 +770,22 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
 
 
+def test_get_program_spec_lambdas_pulser():
+    """Test that the validate lambda for pulser programs."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    # pylint: disable=import-outside-toplevel
+    from qbraid.runtime.native.provider import _serialize_sequence
+
+    # pylint: enable=import-outside-toplevel
+    program_type_alias = "pulser"
+    device_id = "pasqal.sim.emu-tn"
+
+    lambdas = get_program_spec_lambdas(program_type_alias, device_id)
+
+    assert lambdas["validate"] is None
+    assert lambdas["serialize"] is _serialize_sequence  # Ensure the serialize function is correct
+
+
 def test_provider_get_basis_gates_ionq():
     """Test getting basis gates for IonQ device."""
     device_data = {"provider": "IonQ", "objArg": "simulator"}
