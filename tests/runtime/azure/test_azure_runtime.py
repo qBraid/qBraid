@@ -145,7 +145,7 @@ def mock_ionq_job_data(mock_job_id) -> dict[str, str]:
 @pytest.fixture
 def mock_pasqal_job_data(mock_job_id) -> dict[str, str]:
     """Return dictionary data for a Rigetti job with Microsoft result format V1."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     return {
         "job_id": mock_job_id,
         "job_name": "pasqal-job",
@@ -269,7 +269,7 @@ def mock_azure_ahs_job(
     mock_pasqal_job_data: dict[str, str], mock_pasqal_result_data: dict[str, Any]
 ) -> Mock:
     """Return a mock azure.quantum.Job instance."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     return create_mock_azure_job(
         **mock_pasqal_job_data, status="Succeeded", result_data=mock_pasqal_result_data
     )
@@ -286,7 +286,7 @@ def mock_azure_ionq_job(mock_ionq_job_data: dict[str, str]) -> Mock:
 @pytest.fixture
 def mock_azure_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
     """Return a mock azure.quantum.Job instance."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     return create_mock_azure_job(
         **mock_pasqal_job_data, status="Succeeded", result_data={"001010": 50, "001011": 50}
     )
@@ -295,7 +295,7 @@ def mock_azure_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
 @pytest.fixture
 def mock_azure_failed_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
     """Return a mock azure.quantum.Job instance."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     return create_mock_azure_job(**mock_pasqal_job_data, status="Failed", result_data={})
 
 
@@ -308,7 +308,7 @@ def azure_result_builder(mock_azure_job):
 @pytest.fixture
 def azure_ahs_result_builder(mock_azure_ahs_job):
     """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     return AzureResultBuilder(mock_azure_ahs_job)
 
 
@@ -789,7 +789,7 @@ def mock_builder_ionq_results(mock_job_id) -> dict[str, Any]:
 
 def test_azure_job_result_pasqal(mock_azure_pasqal_job, mock_pasqal_result_data):
     """Test getting the result of an AzureQuantumJob with PASQAL output data format."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
 
     # Mock the PASQAL job
     mock_azure_pasqal_job.details.output_data_format = OutputDataFormat.PASQAL.value
@@ -811,7 +811,10 @@ def test_azure_job_result_pasqal(mock_azure_pasqal_job, mock_pasqal_result_data)
     assert result.job_id == mock_azure_pasqal_job.id
     assert result.success is True
     assert isinstance(result.data, AhsResultData)
-    assert result.data.measurement_counts == mock_pasqal_result_data
+    assert result.data.to_dict() == {
+        "measurement_counts": {"001010": 50, "001011": 50},
+        "measurements": None,
+    }
 
 
 def test_azure_quantum_result_counts(
@@ -916,7 +919,7 @@ def test_format_rigetti_results(azure_result_builder, mock_azure_job):
 
 def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
     """Test formatting Pasqal results."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_pasqal_job.get_results.return_value = {"001010": 50, "001011": 50}
 
     result = azure_ahs_result_builder._format_results()
@@ -929,7 +932,7 @@ def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
 
 def test_ahs_builder_shots_count(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the _shots_count method of AzureResultBuilder."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.details.input_params = {"count": 1000}
     assert azure_ahs_result_builder._shots_count() == 1000
 
@@ -942,7 +945,7 @@ def test_ahs_builder_shots_count(azure_ahs_result_builder, mock_azure_ahs_job):
 
 def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the _format_analog_results method of AzureResultBuilder."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
 
     result = azure_ahs_result_builder._format_analog_results()
@@ -953,38 +956,33 @@ def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_
 
 def test_ahs_builder_format_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the _format_results method when the job succeeds."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.details.status = "Succeeded"
     mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
-    mock_azure_ahs_job.details.metadata = '{"key": "value"}'
 
     result = azure_ahs_result_builder._format_results()
 
     assert result["success"] is True
     assert result["data"]["counts"] == {"001010": 50, "001011": 50}
     assert result["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
-    assert result["header"]["metadata"] == {"key": "value"}
     assert result["shots"] == 1000
 
 
 def test_ahs_builder_format_results_failure(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the _format_results method when the job fails."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.details.status = "Failed"
-    mock_azure_ahs_job.details.metadata = '{"key": "value"}'
-
     result = azure_ahs_result_builder._format_results()
 
     assert result["success"] is False
     assert result["data"] == {}
-    assert result["header"]["metadata"] == {"key": "value"}
     assert result["shots"] == 1000
 
 
 def test_ahs_builder_get_counts_single_result(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the get_counts method with a single result."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
-    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = [{"001010": 50, "001011": 50}]
 
     counts = azure_ahs_result_builder.get_counts()
 
@@ -993,7 +991,7 @@ def test_ahs_builder_get_counts_single_result(azure_ahs_result_builder, mock_azu
 
 def test_ahs_builder_get_counts_multiple_results(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the get_counts method with multiple results."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.get_results.return_value = [
         {"001010": 50, "001011": 50},
         {"001100": 30, "001101": 70},
@@ -1009,7 +1007,7 @@ def test_ahs_builder_get_counts_multiple_results(azure_ahs_result_builder, mock_
 
 def test_ahs_builder_get_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the get_results method when the job succeeds."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.details.status = "Succeeded"
     mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
 
@@ -1023,7 +1021,7 @@ def test_ahs_builder_get_results_success(azure_ahs_result_builder, mock_azure_ah
 
 def test_ahs_builder_get_results_failure(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the get_results method when the job fails."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_azure_ahs_job.details.status = "Failed"
 
     results = azure_ahs_result_builder.get_results()
@@ -1375,7 +1373,7 @@ def test_ahs_builder_format_unknown_results(azure_ahs_result_builder: AzureResul
     Args:
         azure_ahs_result_builder (AzureResultBuilder): The Azure AHS model result builder.
     """
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     results = azure_ahs_result_builder._format_results()
     assert results == {
         "data": {
