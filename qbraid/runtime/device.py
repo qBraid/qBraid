@@ -203,17 +203,17 @@ class QuantumDevice(ABC):
             for key, value in dict(self._options).items()
         }
 
-        program_spec = self.profile.program_spec
+        program_spec = self._target_spec
 
         if not program_spec:
-            target_ir = None
+            target_program_type = None
         elif isinstance(program_spec, list):
-            target_ir = [ps.alias for ps in program_spec]
+            target_program_type = [ps.alias for ps in program_spec]
         else:
-            target_ir = program_spec.alias
+            target_program_type = program_spec.alias
 
         runtime_config = {
-            "target_ir": target_ir,
+            "target_program_type": target_program_type,
             "conversion_scheme": self._scheme.to_dict(),
             "options": options,
         }
@@ -221,6 +221,63 @@ class QuantumDevice(ABC):
         metadata["runtime_config"] = runtime_config
 
         return metadata
+
+    def set_target_program_type(self, alias: str | list[str] | None) -> None:
+        """Set the program type to target during runtime transpile step.
+
+        Args:
+            alias: The alias(es) of the target program spec(s) to set.
+
+        Raises:
+            ValueError: If the given alias does not match any program spec in the target profile.
+        """
+        if alias is None:
+            self._target_spec = None
+            return
+
+        aliases = [alias] if isinstance(alias, str) else alias
+
+        if len(set(aliases)) != len(aliases):
+            raise ValueError("Duplicate aliases are not allowed.")
+
+        if isinstance(self.profile.program_spec, list):
+            spec_aliases = {spec.alias for spec in self.profile.program_spec}
+            if isinstance(alias, str):
+                if alias not in spec_aliases:
+                    raise ValueError(
+                        f"Invalid alias: '{alias}'. Available aliases: {', '.join(spec_aliases)}"
+                    )
+                self._target_spec = next(
+                    spec for spec in self.profile.program_spec if spec.alias == alias
+                )
+            else:
+                missing_aliases = [a for a in aliases if a not in spec_aliases]
+                if missing_aliases:
+                    raise ValueError(
+                        f"Invalid aliases: {', '.join(missing_aliases)}. "
+                        f"Available aliases: {', '.join(spec_aliases)}"
+                    )
+                self._target_spec = [
+                    spec for spec in self.profile.program_spec if spec.alias in aliases
+                ]
+
+        elif self.profile.program_spec is not None:
+            if len(aliases) != 1:
+                raise ValueError(
+                    "Alias list must contain exactly one alias when the target profile "
+                    "has a single program spec."
+                )
+            as_lst = isinstance(alias, list)
+            alias = aliases[0]
+            if alias != self.profile.program_spec.alias:
+                raise ValueError(
+                    f"Invalid alias: '{alias}'. "
+                    f"Available aliases: '{self.profile.program_spec.alias}'"
+                )
+            self._target_spec = [self.profile.program_spec] if as_lst else self.profile.program_spec
+
+        else:
+            raise ValueError("Target profile has no program spec defined.")
 
     def _get_target_spec(self, run_input: qbraid.programs.QPROGRAM) -> ProgramSpec:
         run_input_alias = get_program_type_alias(run_input, safe=True)
