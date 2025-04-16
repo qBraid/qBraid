@@ -98,7 +98,7 @@ class AzureQuantumJob(QuantumJob):
         result_data = data["data"]
         return MicrosoftEstimatorResult(result_data)
 
-    def result(self, wait_until_completed=False) -> Union[Result, MicrosoftEstimatorResult]:
+    def result(self) -> Union[Result, MicrosoftEstimatorResult]:
         """Return the result of the Azure job.
 
         Returns:
@@ -108,8 +108,8 @@ class AzureQuantumJob(QuantumJob):
             logger.info("Result will be available when job has reached final state.")
 
         job: azure.quantum.Job = self._job
-        if wait_until_completed:
-            job.wait_until_completed()
+
+        job.wait_until_completed()
 
         success = job.details.status == "Succeeded"
         details = job.details.as_dict()

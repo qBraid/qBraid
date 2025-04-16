@@ -201,8 +201,6 @@ def create_mock_azure_job(
     mock_job.details.name = job_name
     mock_job.details.metadata = {}
     mock_job.details.as_dict.return_value = {"id": job_id, "status": status}
-    mock_job.wait_until_completed = MagicMock()
-    mock_job.wait_until_completed.return_value = None
     mock_job.get_results = MagicMock()
     mock_job.get_results.return_value = result_data
 
@@ -649,7 +647,6 @@ def mock_job(
     job = Job(workspace=Mock(spec=Workspace), job_details=job_details)
 
     job.has_completed = Mock(return_value=True)
-    job.wait_until_completed = Mock()
 
     download_data = DowloadDataMock()
     download_data.decode = Mock(return_value=results_as_json_str)
@@ -815,28 +812,6 @@ def test_azure_job_result_pasqal(mock_azure_pasqal_job, mock_pasqal_result_data)
     assert result.success is True
     assert isinstance(result.data, AhsResultData)
     assert result.data.measurement_counts == mock_pasqal_result_data
-
-
-def test_azure_job_wait_until_completed(mock_azure_pasqal_job):
-    """Test the wait_until_completed method of AzureQuantumJob."""
-    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
-    # Mock the job's wait_until_completed method
-    mock_azure_pasqal_job.wait_until_completed = MagicMock()
-    mock_azure_pasqal_job.details.status = "Succeeded"
-
-    # Create the AzureQuantumJob instance
-    job = AzureQuantumJob(
-        job_id=mock_azure_pasqal_job.id, workspace=mock_azure_pasqal_job.workspace
-    )
-    job._job = mock_azure_pasqal_job
-
-    # Call the result method with wait_until_completed=True
-    result = job.result(wait_until_completed=True)
-
-    # Assertions
-    mock_azure_pasqal_job.wait_until_completed.assert_called_once()
-    assert result.success is True
-    assert job.status() == JobStatus.COMPLETED
 
 
 def test_azure_quantum_result_counts(
@@ -1264,8 +1239,6 @@ def test_format_microsoft_v2_results_no_success():
 def test_result_builder_failed_job(mock_job_id):
     """Test formatting Microsoft Quantum v2 results with failed job."""
     mock_job = Mock(spec=Job)
-    mock_job.wait_until_completed = MagicMock()
-    mock_job.wait_until_completed.return_value = None
     mock_job.details.status = "Failed"
     mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
     mock_job.details.error_data = None
