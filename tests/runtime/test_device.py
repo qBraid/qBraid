@@ -48,7 +48,7 @@ from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
 from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
-from .azure.test_azure_remote import pulser_sequence # pylint: disable=unused-import
+from .azure.test_azure_remote import pulser_sequence  # pylint: disable=unused-import
 
 
 @pytest.fixture
