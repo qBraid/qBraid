@@ -48,7 +48,14 @@ from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
 from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
-from .azure.test_azure_remote import pulser_sequence  # pylint: disable=unused-import
+
+# Skip pulser tests if not installed
+pulser_found = importlib.util.find_spec("pulser") is not None
+
+if pulser_found:
+    from .azure.test_azure_remote import (  # pylint: disable=unused-import # noqa: F401
+        pulser_sequence,
+    )
 
 
 @pytest.fixture
@@ -756,6 +763,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
 
 
+@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
 def test_get_program_spec_lambdas_pulser():
     """Test that the validate lambda for pulser programs."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")

@@ -32,7 +32,7 @@ from qbraid.runtime import (
     Result,
 )
 
-# Skip pyquil tests if not installed
+# Skip pyquil and/or pulser tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
 pulser_found = importlib.util.find_spec("pulser") is not None
 
@@ -127,8 +127,6 @@ def pulser_sequence() -> pulser_.Sequence:
     from pulser.waveforms import BlackmanWaveform, RampWaveform
 
     # pylint: enable=import-outside-toplevel
-
-    input_data = {}
 
     qubits = {
         "q0": (0, 0),
