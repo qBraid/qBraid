@@ -42,6 +42,7 @@ device.profile.program_spec
 ```
 
 ### Improved / Modified
+- Skip tests that require `qiskit-qir` if it is not installed ([#955](https://github.com/qBraid/qBraid/pull/955))
 
 ### Deprecated
 
