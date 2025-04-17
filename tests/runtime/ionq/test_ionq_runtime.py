@@ -786,7 +786,7 @@ def qiskit_circuit():
 
 @pytest.mark.skipif(
     importlib.util.find_spec("qiskit_ionq") is None or qiskit_ge_v2,
-    reason="qiskit-ionq not installed.",
+    reason="qiskit-ionq not available.",
 )
 @pytest.mark.parametrize("gateset", ["native", "qis"])
 def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
@@ -803,7 +803,7 @@ def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
 
 @pytest.mark.skipif(
     importlib.util.find_spec("qiskit_ionq") is None or qiskit_ge_v2,
-    reason="qiskit-ionq not installed.",
+    reason="qiskit-ionq not available.",
 )
 @pytest.mark.parametrize(
     "gateset,expected",
@@ -880,7 +880,7 @@ def test_ionq_device_run_warnings(monkeypatch):
 
 @pytest.mark.skipif(
     importlib.util.find_spec("qiskit_ionq") is None or qiskit_ge_v2,
-    reason="qiskit-ionq not installed.",
+    reason="qiskit-ionq not available.",
 )
 def test_ionq_device_run_batch_with_qiskit_ionq(qiskit_circuit):
     """Test calling IonQDevice.run with batch of qiskit circuits
