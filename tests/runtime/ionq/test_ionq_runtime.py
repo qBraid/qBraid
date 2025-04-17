@@ -22,6 +22,8 @@ from typing import Any, Optional
 from unittest.mock import ANY, Mock, call, patch
 
 import pytest
+import qiskit
+from packaging.version import parse
 from qiskit import QuantumCircuit
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
@@ -32,6 +34,8 @@ from qbraid.runtime import GateModelResultData, ResourceNotFoundError, Result, T
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
+
+qiskit_ge_v2 = parse(qiskit.__version__) >= parse("2.0.0")
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -781,7 +785,8 @@ def qiskit_circuit():
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+    importlib.util.find_spec("qiskit_ionq") is None or qiskit_ge_v2,
+    reason="qiskit-ionq not installed.",
 )
 @pytest.mark.parametrize("gateset", ["native", "qis"])
 def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
@@ -797,7 +802,8 @@ def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+    importlib.util.find_spec("qiskit_ionq") is None or qiskit_ge_v2,
+    reason="qiskit-ionq not installed.",
 )
 @pytest.mark.parametrize(
     "gateset,expected",
@@ -873,7 +879,8 @@ def test_ionq_device_run_warnings(monkeypatch):
 
 
 @pytest.mark.skipif(
-    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+    importlib.util.find_spec("qiskit_ionq") is None or qiskit_ge_v2,
+    reason="qiskit-ionq not installed.",
 )
 def test_ionq_device_run_batch_with_qiskit_ionq(qiskit_circuit):
     """Test calling IonQDevice.run with batch of qiskit circuits
