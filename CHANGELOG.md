@@ -42,6 +42,7 @@ device.profile.program_spec
 ```
 
 ### Improved / Modified
+- Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
 
 ### Deprecated
 

@@ -15,6 +15,7 @@ Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
 
 """
+import importlib.util
 from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
@@ -38,6 +39,8 @@ from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler.graph import ConversionGraph, _get_path_from_bound_methods
+
+qiskit_qir_installed = importlib.util.find_spec("qiskit_qir") is not None
 
 
 @pytest.fixture
@@ -136,6 +139,7 @@ def test_add_conversion():
     assert [str(bound_method) for bound_method in actual_shortest_path] == expected_shortest_path
 
 
+@pytest.mark.skipif(not qiskit_qir_installed, reason="qiskit_qir not installed")
 def test_initialize_new_conversion():
     """Test initializing the conversion graph with a new conversion"""
     conversions = [Conversion("qiskit", "pyqir", qiskit_to_pyqir)]
@@ -143,7 +147,9 @@ def test_initialize_new_conversion():
     assert graph.num_edges() == 1
 
 
-@pytest.mark.skipif(not pyqir_installed, reason="pyqir not installed")
+@pytest.mark.skipif(
+    not all([pyqir_installed, qiskit_qir_installed]), reason="pyqir or qiskit_qir not installed"
+)
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_overwrite_new_conversion(bell_circuit):
     """Test dynamically overwriting a new conversion in the conversion graph"""

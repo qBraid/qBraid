@@ -26,7 +26,6 @@ from qiskit import QuantumCircuit
 from qiskit.exceptions import QiskitError
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.providers.fake_provider import GenericBackendV2
-from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
@@ -37,6 +36,12 @@ from qbraid.runtime import DeviceStatus, GateModelResultData, JobStateError, Res
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.ibm import QiskitBackend, QiskitJob, QiskitRuntimeProvider
 from qbraid.runtime.ibm.result_builder import QiskitGateModelResultBuilder
+
+try:
+    from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
+
+except ModuleNotFoundError:
+    from qiskit_ibm_runtime.models.backend_configuration import QasmBackendConfiguration
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
