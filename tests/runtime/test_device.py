@@ -763,7 +763,6 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
 
 
-@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
 def test_get_program_spec_lambdas_pulser():
     """Test that the validate lambda for pulser programs."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
@@ -776,6 +775,7 @@ def test_get_program_spec_lambdas_pulser():
     assert lambdas["serialize"] is _serialize_sequence
 
 
+@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
 def test_sequence_serializer(pulser_sequence):
     """Test the serialization of a Pasqal Pulser sequence."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
