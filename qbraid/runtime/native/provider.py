@@ -51,7 +51,7 @@ def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes]:
 
 def _serialize_sequence(sequence: pulser.Sequence) -> dict[str, str]:
     """Serialize a pulser sequence to a dictionary."""
-    return {"sequence_builder": sequence.to_abstract_repr()}
+    return {"sequenceBuilder": sequence.to_abstract_repr()}
 
 
 def validate_qasm_no_measurements(

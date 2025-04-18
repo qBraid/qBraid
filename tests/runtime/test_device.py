@@ -782,8 +782,8 @@ def test_sequence_serializer(pulser_sequence):
 
     serialized = _serialize_sequence(pulser_sequence)
 
-    assert "sequence_builder" in serialized
-    assert serialized["sequence_builder"] == pulser_sequence.to_abstract_repr()
+    assert "sequenceBuilder" in serialized
+    assert serialized["sequenceBuilder"] == pulser_sequence.to_abstract_repr()
 
 
 def test_provider_get_basis_gates_ionq():
