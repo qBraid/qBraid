@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -36,6 +36,7 @@ from qbraid.transpiler import transpile
 from .device import QbraidDevice
 
 if TYPE_CHECKING:
+    import pulser
     import pyqir
 
 
@@ -46,6 +47,11 @@ def _serialize_program(program) -> dict[str, str]:
 
 def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes]:
     return {"bitcode": program.bitcode}
+
+
+def _serialize_sequence(sequence: pulser.Sequence) -> dict[str, str]:
+    """Serialize a pulser sequence to a dictionary."""
+    return {"sequenceBuilder": sequence.to_abstract_repr()}
 
 
 def validate_qasm_no_measurements(
@@ -77,6 +83,9 @@ def get_program_spec_lambdas(
     """Returns conversion and validation functions for the given program type and device."""
     if program_type_alias == "pyqir":
         return {"serialize": _serialize_pyqir, "validate": None}
+
+    if program_type_alias == "pulser":
+        return {"serialize": _serialize_sequence, "validate": None}
 
     if program_type_alias in {"qasm2", "qasm3"}:
         device_prefix = device_id.split("_")[0]
@@ -208,6 +217,10 @@ class QbraidProvider(QuantumProvider):
             or (
                 device["vendor"] == "AWS"
                 and device["provider"] in {"AWS", "QuEra", "OQC", "IQM", "Rigetti"}
+            )
+            or (
+                device["vendor"] == "Azure"
+                and device["provider"] in {"Azure", "IonQ", "Quantinuum", "Rigetti", "Pasqal"}
             )
         ]
 

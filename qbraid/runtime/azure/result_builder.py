@@ -1,5 +1,5 @@
-# Copyright (C) 2024 qBraid
-# Copyright (C) 2024 Microsoft Corporation
+# Copyright (C) 2025 qBraid
+# Copyright (C) 2025 Microsoft Corporation
 #
 # This file is part of the qBraid-SDK.
 #
@@ -36,7 +36,7 @@ from qbraid.runtime.postprocess import counts_to_probabilities, normalize_counts
 from .io_format import OutputDataFormat
 
 
-class AzureGateModelResultBuilder:
+class AzureResultBuilder:
     """Class to format Azure Quantum job results."""
 
     def __init__(self, azure_job: Job):
@@ -86,6 +86,8 @@ class AzureGateModelResultBuilder:
                 job_result["data"] = self._format_quantinuum_results()
             elif self.job.details.output_data_format == OutputDataFormat.RIGETTI.value:
                 job_result["data"] = self._format_rigetti_results()
+            elif self.job.details.output_data_format == OutputDataFormat.PASQAL.value:
+                job_result["data"] = self._format_analog_results()
             else:
                 job_result["data"] = self._format_unknown_results()
 
@@ -150,10 +152,7 @@ class AzureGateModelResultBuilder:
             # associated with a classical register. Azure and qBraid order the
             # registers in opposite directions, so reverse here to match.
             return " ".join(
-                [
-                    AzureGateModelResultBuilder._qir_to_qbraid_bitstring(term)
-                    for term in reversed(obj)
-                ]
+                [AzureResultBuilder._qir_to_qbraid_bitstring(term) for term in reversed(obj)]
             )
         if isinstance(obj, list):
             # a list is for an individual classical register
@@ -224,6 +223,17 @@ class AzureGateModelResultBuilder:
         total_counts = sum(counts.values())
         probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
         return {"counts": counts, "probabilities": probabilities}
+
+    def _format_analog_results(self) -> dict[str, Any]:
+        """
+        Translate Microsoft's AHS job results histogram into a format that
+        can be consumed by qBraid runtime.
+
+        """
+        histogram = self.job.get_results()
+        counts = normalize_counts(histogram)
+        probabilities = counts_to_probabilities(counts)
+        return {"counts": histogram, "probabilities": probabilities}
 
     def _format_unknown_results(self):
         """Format Job results data when the job output is in an unknown format."""

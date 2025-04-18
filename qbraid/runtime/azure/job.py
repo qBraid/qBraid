@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -20,12 +20,12 @@ from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.workspace import Workspace
 
 from qbraid._logging import logger
-from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
+from qbraid.runtime.azure.result_builder import AzureResultBuilder
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import GateModelResultData
+from qbraid.runtime.result_data import AhsResultData, GateModelResultData
 
 from .io_format import OutputDataFormat
 
@@ -46,7 +46,7 @@ class AzureQuantumJob(QuantumJob):
         """Return the Azure Quantum Workspace."""
         return self._workspace
 
-    def _details(self) -> dict[str, Any]:
+    def details(self) -> dict[str, Any]:
         """Return the details of the Azure job and
         update the metadata cache."""
         self._job.refresh()
@@ -60,7 +60,7 @@ class AzureQuantumJob(QuantumJob):
         Returns:
             JobStatus: The current status of the job.
         """
-        details: dict = self._details()
+        details: dict = self.details()
         status: str = details.get("status")
 
         status_map = {
@@ -106,6 +106,7 @@ class AzureQuantumJob(QuantumJob):
             logger.info("Result will be available when job has reached final state.")
 
         job: azure.quantum.Job = self._job
+
         job.wait_until_completed()
 
         success = job.details.status == "Succeeded"
@@ -124,9 +125,11 @@ class AzureQuantumJob(QuantumJob):
                     ),
                 }
             )
-
-        builder = AzureGateModelResultBuilder(job)
-        data = GateModelResultData(measurement_counts=builder.get_counts())
+        builder = AzureResultBuilder(job)
+        if job.details.output_data_format == OutputDataFormat.PASQAL.value:
+            data = AhsResultData(measurement_counts=builder.get_counts())
+        else:
+            data = GateModelResultData(measurement_counts=builder.get_counts())
         return Result(
             device_id=job.details.target, job_id=job.id, success=success, data=data, **details
         )

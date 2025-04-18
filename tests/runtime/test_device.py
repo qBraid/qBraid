@@ -35,33 +35,26 @@ from qbraid.programs import (
 )
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict, QuboCoefficientsDict
-from qbraid.runtime import (
-    DeviceStatus,
-    JobStatus,
-    Result,
-    TargetProfile,
-    ValidationLevel,
-)
+from qbraid.runtime import DeviceStatus, JobStatus, Result, TargetProfile, ValidationLevel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.provider import get_program_spec_lambdas
-from qbraid.runtime.native.result import (
-    NECVectorAnnealerResultData,
-    QbraidQirSimulatorResultData,
-)
+from qbraid.runtime.native.provider import _serialize_sequence, get_program_spec_lambdas
+from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
-from ._resources import (
-    DEVICE_DATA_QIR,
-    JOB_DATA_NEC,
-    JOB_DATA_QIR,
-    RESULTS_DATA_NEC,
-    MockDevice,
-)
+from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
+
+# Skip pulser tests if not installed
+pulser_found = importlib.util.find_spec("pulser") is not None
+
+if pulser_found:
+    from .azure.test_azure_remote import (  # pylint: disable=unused-import # noqa: F401
+        pulser_sequence,
+    )
 
 
 @pytest.fixture
@@ -767,6 +760,29 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
             validate(invalid_program)
 
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
+
+
+def test_get_program_spec_lambdas_pulser():
+    """Test that the validate lambda for pulser programs."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    program_type_alias = "pulser"
+    device_id = "pasqal.sim.emu-tn"
+
+    lambdas = get_program_spec_lambdas(program_type_alias, device_id)
+
+    assert lambdas["validate"] is None
+    assert lambdas["serialize"] is _serialize_sequence
+
+
+@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
+def test_sequence_serializer(pulser_sequence):
+    """Test the serialization of a Pasqal Pulser sequence."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+
+    serialized = _serialize_sequence(pulser_sequence)
+
+    assert "sequenceBuilder" in serialized
+    assert serialized["sequenceBuilder"] == pulser_sequence.to_abstract_repr()
 
 
 def test_provider_get_basis_gates_ionq():

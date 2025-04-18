@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -60,8 +60,20 @@ class AzureQuantumDevice(QuantumDevice):
             "Available": DeviceStatus.ONLINE,
             "Deprecated": DeviceStatus.UNAVAILABLE,
             "Unavailable": DeviceStatus.OFFLINE,
+            "Degraded": DeviceStatus.OFFLINE,
         }
         return status_map.get(status, DeviceStatus.UNAVAILABLE)
+
+    def is_available(self) -> bool:
+        """Check if the Azure device is available for use.
+
+        Returns:
+            bool: True if the device is available, False otherwise.
+        """
+        current_status = self.status()
+        if current_status == DeviceStatus.ONLINE:
+            return True
+        return False
 
     def submit(self, run_input: qbraid.programs.QPROGRAM, *args, **kwargs) -> AzureQuantumJob:
         """Submit a job to the Azure device.
