@@ -23,6 +23,7 @@ class InputDataFormat(Enum):
     IONQ = "ionq.circuit.v1"
     QUANTINUUM = "honeywell.openqasm.v1"
     RIGETTI = "rigetti.quil.v1"
+    PASQAL = "pasqal.pulser.v1"
 
 
 class OutputDataFormat(Enum):

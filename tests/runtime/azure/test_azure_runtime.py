@@ -58,8 +58,8 @@ def mock_target():
     target.name = "test.qpu"
     target.provider_id = "test_provider"
     target.capability = "test_capability"
-    target.input_data_format = "test_input"
-    target.output_data_format = "test_output"
+    target.input_data_format = InputDataFormat.MICROSOFT.value
+    target.output_data_format = OutputDataFormat.MICROSOFT_V1.value
     target.content_type = "application/qasm"
     target._current_availability = "Available"
     return target
@@ -361,6 +361,7 @@ def test_build_profile_invalid(azure_provider, mock_invalid_target):
 
     assert isinstance(profile, TargetProfile)
     assert profile.program_spec is None
+    assert profile.experiment_type is None
 
 
 @pytest.mark.parametrize(
