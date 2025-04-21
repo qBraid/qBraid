@@ -53,6 +53,7 @@ device.profile.program_spec
 - Fixed Amazon Braket remote test by changing catch `JobStateError` to `TimeoutError` ([#948](https://github.com/qBraid/qBraid/pull/948))
 - Fixed upper bound of html length check in pytket circuit drawer test ([#950](https://github.com/qBraid/qBraid/pull/950))
 - Fixed simulator check for Azure target profiles ([#956](https://github.com/qBraid/qBraid/pull/956))
+- Pinned `pyqasm` version to 0.3.0 to patch CI failure due to program validation bug: https://github.com/qBraid/pyqasm/issues/175 ([#957](https://github.com/qBraid/qBraid/pull/957))
 
 ### Dependencies
 - Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
