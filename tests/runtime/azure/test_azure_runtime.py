@@ -54,7 +54,7 @@ def mock_workspace():
 def mock_target():
     """Return a mock Azure Quantum target."""
     target = Mock(spec=Target)
-    target.name = "test.qpu"
+    target.name = "test.qpu.test"
     target.provider_id = "test_provider"
     target.capability = "test_capability"
     target.input_data_format = "test_input"
@@ -68,7 +68,7 @@ def mock_target():
 def mock_invalid_target():
     """Return a mock Azure Quantum target with invalid content type."""
     target = Mock(spec=Target)
-    target.name = "test.qpu"
+    target.name = "test.qpu.test"
     target.provider_id = "test_provider"
     target.capability = "test_capability"
     target.input_data_format = "test_input"
@@ -88,7 +88,7 @@ def azure_provider(mock_workspace):
 def azure_device(mock_workspace, mock_target):
     """Return an AzureQuantumDevice instance with a mock workspace and target."""
     profile = TargetProfile(
-        device_id="test.qpu",
+        device_id="test.qpu.test",
         simulator=False,
         provider_name="test_provider",
         capability="test_capability",
@@ -329,7 +329,7 @@ def test_build_profile_input_data_formats(
     provider = AzureQuantumProvider(mock_workspace)
 
     mock_target.input_data_format = input_data_format
-    mock_target.name = f"{provider_id}.qpu"
+    mock_target.name = f"{provider_id}.qpu.mock_device_id"
     mock_target.provider_id = provider_id
     mock_target.capability = "capability"
     mock_target.output_data_format = "output"
@@ -443,7 +443,7 @@ def test_get_devices_no_results_no_filters(mock_workspace):
 def test_azure_device_init(azure_device, mock_workspace):
     """Test initializing an AzureQuantumDevice."""
     assert azure_device.workspace == mock_workspace
-    mock_workspace.get_targets.assert_called_once_with(name="test.qpu")
+    mock_workspace.get_targets.assert_called_once_with(name="test.qpu.test")
 
 
 def test_azure_device_status(azure_device, mock_target):
@@ -485,7 +485,7 @@ def test_azure_device_submit_batch_job(azure_device):
 
 def test_azure_device_str_representation(azure_device):
     """Test the string representation of an AzureQuantumDevice."""
-    assert str(azure_device) == "AzureQuantumDevice('test.qpu')"
+    assert str(azure_device) == "AzureQuantumDevice('test.qpu.test')"
 
 
 def test_azure_job_init(mock_estimator_job, mock_job_id):
@@ -738,7 +738,7 @@ def test_from_simulator_true(azure_result_builder, mock_azure_job):
 
 def test_from_simulator_false(azure_result_builder, mock_azure_job):
     """Test the from_simulator property of an AzureGateModelResultBuilder."""
-    mock_azure_job.details.target = "mock.qpu"
+    mock_azure_job.details.target = "mock.qpu.mock_device_id"
     assert azure_result_builder.from_simulator is False
 
 

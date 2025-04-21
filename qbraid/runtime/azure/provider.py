@@ -92,7 +92,7 @@ class AzureQuantumProvider(QuantumProvider):
         """
         device_id = target.name
         provider_name = target.provider_id
-        simulator = device_id.split(".", 1)[1] != "qpu"
+        simulator = device_id.split(".", 2)[1] != "qpu"
         capability = target.capability
         input_data_format = target.input_data_format
         output_data_format = target.output_data_format
