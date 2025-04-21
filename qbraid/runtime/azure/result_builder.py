@@ -50,7 +50,7 @@ class AzureGateModelResultBuilder:
     @property
     def from_simulator(self) -> bool:
         """Return whether the job was executed on a simulator."""
-        return self._azure_job.details.target.split(".", 1)[1] != "qpu"
+        return self._azure_job.details.target.split(".", 2)[1] != "qpu"
 
     def _shots_count(self) -> Optional[int]:
         """Return the number of shots used in the job."""
