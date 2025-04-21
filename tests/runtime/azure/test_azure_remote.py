@@ -192,7 +192,11 @@ def test_submit_sequence_to_pasqal(
     provider: AzureQuantumProvider, pulser_sequence: pulser_.Sequence
 ):
     """Test submitting a Pulser sequence-builder to run on the Pulser emulator."""
-    device = provider.get_device("pasqal.sim.emu-tn")
+    try:
+        device = provider.get_device("pasqal.sim.emu-tn")
+    except ValueError:
+        pytest.skip("Pasqal device not available in the current workspace")
+
     status = device.status()
 
     if status != DeviceStatus.ONLINE:
