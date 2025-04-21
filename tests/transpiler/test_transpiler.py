@@ -23,7 +23,7 @@ from braket.circuits import Instruction as BraketInstruction
 from cirq import Circuit as CirqCircuit
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
-from qiskit.circuit.quantumregister import Qubit as QiskitQubit
+from qiskit.circuit import Qubit as QiskitQubit
 
 from qbraid.interface import assert_allclose_up_to_global_phase
 from qbraid.programs import QPROGRAM_ALIASES, load_program
