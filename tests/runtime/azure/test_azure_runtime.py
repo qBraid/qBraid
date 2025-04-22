@@ -1445,6 +1445,7 @@ def test_serialize_pulser_input():
 
 def test_build_profile_pasqal(mock_workspace):
     """Test building profile for Pasqal target."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     mock_target = Mock()
     mock_target.name = "pasqal.sim.emu-tn"
     mock_target.provider_id = "pasqal"
