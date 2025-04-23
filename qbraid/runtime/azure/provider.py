@@ -117,6 +117,49 @@ class AzureQuantumProvider(QuantumProvider):
         """Get the Azure Quantum workspace."""
         return self._workspace
 
+    @staticmethod
+    def _get_program_spec(input_data_format: InputDataFormat) -> Optional[ProgramSpec]:
+        """Get the program specification based on the input data format."""
+        try:
+            if input_data_format == InputDataFormat.MICROSOFT:
+                return ProgramSpec(
+                    pyqir.Module, alias="pyqir", serialize=lambda module: module.bitcode
+                )
+            if input_data_format == InputDataFormat.IONQ:
+                return ProgramSpec(IonQDict, alias="ionq", serialize=lambda ionq_dict: ionq_dict)
+            if input_data_format == InputDataFormat.QUANTINUUM:
+                return ProgramSpec(str, alias="qasm2", serialize=lambda qasm: qasm)
+            if input_data_format == InputDataFormat.RIGETTI:
+                return ProgramSpec(
+                    pyquil.Program, alias="pyquil", serialize=lambda program: program.out()
+                )
+            if input_data_format == InputDataFormat.PASQAL:
+                return ProgramSpec(
+                    pulser.sequence.Sequence, alias="pulser", serialize=serialize_pulser_input
+                )
+        except ModuleNotFoundError as err:
+            warnings.warn(
+                f"The default runtime configuration for device using input data format "
+                f"'{input_data_format.value}' requires package '{err.name}', "
+                "which is not installed.",
+                RuntimeWarning,
+            )
+
+        return None
+
+    @staticmethod
+    def _get_experiment_type(input_data_format: InputDataFormat) -> Optional[ExperimentType]:
+        if input_data_format in {
+            InputDataFormat.MICROSOFT,
+            InputDataFormat.IONQ,
+            InputDataFormat.QUANTINUUM,
+            InputDataFormat.RIGETTI,
+        }:
+            return ExperimentType.GATE_MODEL
+        if input_data_format == InputDataFormat.PASQAL:
+            return ExperimentType.AHS
+        return None
+
     def _build_profile(self, target: Target) -> TargetProfile:
         """Builds a profile for an Azure device.
 
@@ -136,33 +179,15 @@ class AzureQuantumProvider(QuantumProvider):
 
         num_qubits = DEVICE_NUM_QUBITS.get(device_id)
 
-        if input_data_format == InputDataFormat.MICROSOFT.value:
-            program_spec = ProgramSpec(
-                pyqir.Module, alias="pyqir", serialize=lambda module: module.bitcode
-            )
-            experiment_type = ExperimentType.GATE_MODEL
-        elif input_data_format == InputDataFormat.IONQ.value:
-            program_spec = ProgramSpec(
-                IonQDict, alias="ionq", serialize=lambda ionq_dict: ionq_dict
-            )
-            experiment_type = ExperimentType.GATE_MODEL
-        elif input_data_format == InputDataFormat.QUANTINUUM.value:
-            program_spec = ProgramSpec(str, alias="qasm2", serialize=lambda qasm: qasm)
-            experiment_type = ExperimentType.GATE_MODEL
-        elif input_data_format == InputDataFormat.RIGETTI.value:
-            program_spec = ProgramSpec(
-                pyquil.Program, alias="pyquil", serialize=lambda program: program.out()
-            )
-            experiment_type = ExperimentType.GATE_MODEL
-        elif input_data_format == InputDataFormat.PASQAL.value:
-            program_spec = ProgramSpec(
-                pulser.sequence.Sequence, alias="pulser", serialize=serialize_pulser_input
-            )
-            experiment_type = ExperimentType.AHS
-        else:
-            program_spec = None
-            experiment_type = None
+        try:
+            input_data_format_enum = InputDataFormat(input_data_format)
+        except ValueError:
             warnings.warn(f"Unrecognized input data format: {input_data_format}")
+            experiment_type = None
+            program_spec = None
+        else:
+            experiment_type = self._get_experiment_type(input_data_format_enum)
+            program_spec = self._get_program_spec(input_data_format_enum)
 
         return TargetProfile(
             device_id=device_id,

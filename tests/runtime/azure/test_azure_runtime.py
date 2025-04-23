@@ -1442,6 +1442,12 @@ def test_serialize_pulser_input():
 
     assert pulser_input == expected_input
 
+def test_get_pasqal_program_spec():
+    """Test getting the program spec for Pasqal."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    program_spec = AzureQuantumProvider._get_program_spec(InputDataFormat.PASQAL)
+    assert program_spec.alias == "pulser"
+
 
 def test_build_profile_pasqal(mock_workspace):
     """Test building profile for Pasqal target."""
