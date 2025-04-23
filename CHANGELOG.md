@@ -87,6 +87,10 @@ result = job.result()
 result.data.get_counts()  # {'100110': 1}
 ```
 
+- Added support for transpiling between [pyqpanda3](https://pyqpanda-toturial.readthedocs.io/) and QASM2 with `pyqpanda3` program type ([#963](https://github.com/qBraid/qBraid/pull/963))
+
+
+
 ### Improved / Modified
 - Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
 
