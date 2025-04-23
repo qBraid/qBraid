@@ -12,6 +12,7 @@
 Module containing OpenQASM 2 conversion extras.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -21,8 +22,10 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import requires_extras
 
 qibo = LazyLoader("qibo", globals(), "qibo")
+pyqpanda3 = LazyLoader("pyqpanda3", globals(), "pyqpanda3")
 
 if TYPE_CHECKING:
+    import pyqpanda3 as pyqpanda3_  # type: ignore
     import qibo as qibo_  # type: ignore
 
     from qbraid.programs.typer import Qasm2StringType
@@ -64,3 +67,29 @@ def qibo_to_qasm2(circuit: qibo_.Circuit) -> Qasm2StringType:
         OpenQASM 2 string equivalent to the input qibo.Circuit.
     """
     return circuit.to_qasm()
+
+
+@requires_extras("pyqpanda3")
+def qasm2_to_pyqpanda3(qasm: Qasm2StringType) -> pyqpanda3_.core.QProg:
+    """Returns a pyqpande3.core.QProg equivalent to the input OpenQASM 2 circuit.
+
+    Args:
+        qasm: OpenQASM 2 string to convert to a pyqpanda3.core.QProg
+
+    Returns:
+        pyqpanda3.core.QProg object equivalent to the input OpenQASM 2 string.
+    """
+    return pyqpanda3.intermediate_compiler.convert_qasm_string_to_qprog(qasm)
+
+
+@requires_extras("pyqpanda3")
+def pyqpanda3_to_qasm2(circuit: pyqpanda3_.core.QProg) -> Qasm2StringType:
+    """Returns an OpenQASM 2 string equivalent to the input pyqpanda3.core.QProg.
+
+    Args:
+        circuit: pyqpanda3.core.QProg object to convert to OpenQASM 2 string.
+
+    Returns:
+        OpenQASM 2 string equivalent to the input pyqpanda3.core.QProg.
+    """
+    return pyqpanda3.intermediate_compiler.convert_qprog_to_qasm(circuit)

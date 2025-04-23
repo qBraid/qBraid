@@ -64,6 +64,7 @@ autodoc_mock_imports = [
     "flair_visual",
     "bloqade",
     "pandas",
+    "pyqpanda3",
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True
