@@ -44,10 +44,9 @@ device.profile.program_spec
 - Added support for Pasqal devices through the `AzureQuantumProvider` with `pulser` program type ([#947](https://github.com/qBraid/qBraid/pull/947)). For example:
 
 ```python
+import numpy as np
 import pulser
-
 from azure.quantum import Workspace
-
 from qbraid.runtime import AzureQuantumProvider
 
 connection_string = "[Your connection string here]"
@@ -65,20 +64,19 @@ qubits = {
     "q4": (-10, -3),
     "q5": (-8, 5),
 }
-reg = pulser.Register(qubits)
+register = pulser.Register(qubits)
 
-seq = pulser.Sequence(reg, pulser.devices.DigitalAnalogDevice)
-seq.declare_channel("ch0", "rydberg_global")
-from pulser.waveforms import BlackmanWaveform, RampWaveform
+sequence = pulser.Sequence(register, pulser.DigitalAnalogDevice)
+sequence.declare_channel("ch0", "rydberg_global")
 
-amp_wf = BlackmanWaveform(1000, np.pi)
-det_wf = RampWaveform(1000, -5, 5)
+amp_wf = pulser.BlackmanWaveform(1000, np.pi)
+det_wf = pulser.RampWaveform(1000, -5, 5)
 pulse = pulser.Pulse(amp_wf, det_wf, 0)
-seq.add(pulse, "ch0")
+sequence.add(pulse, "ch0")
 
 device = provider.get_device("pasqal.sim.emu-tn")
 
-job = device.run(seq, shots=1)
+job = device.run(sequence, shots=1)
 
 job.wait_for_final_state()
 
