@@ -1442,6 +1442,7 @@ def test_serialize_pulser_input():
 
     assert pulser_input == expected_input
 
+
 def test_get_pasqal_program_spec():
     """Test getting the program spec for Pasqal."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")

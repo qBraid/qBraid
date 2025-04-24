@@ -143,7 +143,8 @@ class AzureQuantumProvider(QuantumProvider):
                 "which is not installed.",
                 RuntimeWarning,
             )
-            return None
+
+        return None  # pragma: no cover
 
     @staticmethod
     def _get_experiment_type(input_data_format: InputDataFormat) -> ExperimentType:
