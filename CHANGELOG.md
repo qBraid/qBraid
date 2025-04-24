@@ -41,6 +41,54 @@ device.profile.program_spec
 #  <ProgramSpec('builtins.str', 'qasm3')>]
 ```
 
+- Added support for Pasqal devices through the `AzureQuantumProvider` with `pulser` program type ([#947](https://github.com/qBraid/qBraid/pull/947)). For example:
+
+```python
+import pulser
+
+from azure.quantum import Workspace
+
+from qbraid.runtime import AzureQuantumProvider
+
+connection_string = "[Your connection string here]"
+workspace = Workspace.from_connection_string(connection_string)
+
+provider = AzureQuantumProvider(workspace=workspace)
+
+input_data = {}
+
+qubits = {
+    "q0": (0, 0),
+    "q1": (0, 10),
+    "q2": (8, 2),
+    "q3": (1, 15),
+    "q4": (-10, -3),
+    "q5": (-8, 5),
+}
+reg = pulser.Register(qubits)
+
+seq = pulser.Sequence(reg, pulser.devices.DigitalAnalogDevice)
+seq.declare_channel("ch0", "rydberg_global")
+from pulser.waveforms import BlackmanWaveform, RampWaveform
+
+amp_wf = BlackmanWaveform(1000, np.pi)
+det_wf = RampWaveform(1000, -5, 5)
+pulse = pulser.Pulse(amp_wf, det_wf, 0)
+seq.add(pulse, "ch0")
+
+device = provider.get_device("pasqal.sim.emu-tn")
+
+job = device.run(seq, shots=1)
+
+job.wait_for_final_state()
+
+job.status()  # <COMPLETED: 'job has successfully run'>
+
+result = job.result()
+
+result.data.get_counts()  # {'100110': 1}
+```
+
 ### Improved / Modified
 - Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
 
