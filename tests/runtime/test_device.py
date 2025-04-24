@@ -35,33 +35,18 @@ from qbraid.programs import (
 )
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict, QuboCoefficientsDict
-from qbraid.runtime import (
-    DeviceStatus,
-    JobStatus,
-    Result,
-    TargetProfile,
-    ValidationLevel,
-)
+from qbraid.runtime import DeviceStatus, JobStatus, Result, TargetProfile, ValidationLevel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.provider import get_program_spec_lambdas
-from qbraid.runtime.native.result import (
-    NECVectorAnnealerResultData,
-    QbraidQirSimulatorResultData,
-)
+from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
-from ._resources import (
-    DEVICE_DATA_QIR,
-    JOB_DATA_NEC,
-    JOB_DATA_QIR,
-    RESULTS_DATA_NEC,
-    MockDevice,
-)
+from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
 
 
 @pytest.fixture
