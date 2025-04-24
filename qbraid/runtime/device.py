@@ -296,7 +296,9 @@ class QuantumDevice(ABC):
         )
 
     def transpile(
-        self, run_input: qbraid.programs.QPROGRAM, run_input_spec: qbraid.programs.ProgramSpec
+        self,
+        run_input: qbraid.programs.QPROGRAM,
+        run_input_spec: qbraid.programs.ProgramSpec,
     ) -> qbraid.programs.QPROGRAM:
         """Convert circuit to package compatible with target device and pass through any
         provider transpile methods to match topology of device and/or optimize as applicable.

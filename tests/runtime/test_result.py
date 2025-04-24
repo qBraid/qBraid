@@ -422,6 +422,17 @@ def test_ahs_result_data_to_dict(ahs_result_data):
     assert ahs_result_data.to_dict() == expected_dict
 
 
+def test_ahs_result_data_repr():
+    """Test __repr__ method of AhsResultData."""
+    ahs_result_data = AhsResultData(
+        measurement_counts=[{"001010": 50, "001011": 50}], measurements=None
+    )
+    assert (
+        repr(ahs_result_data)
+        == "AhsResultData(measurement_counts=[{'001010': 50, '001011': 50}], measurements=None)"
+    )
+
+
 def test_ahs_result_data_no_measurement_counts():
     """Test to_dict and get_counts when there are no measurement counts."""
     result_data = AhsResultData(measurement_counts=None, measurements=None)

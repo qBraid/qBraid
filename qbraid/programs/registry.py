@@ -192,6 +192,7 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
         "stim": ExperimentType.GATE_MODEL,
         "qibo": ExperimentType.GATE_MODEL,
         "bloqade": ExperimentType.AHS,
+        "pulser": ExperimentType.AHS,
     }
 
     if native_alias in native_no_ep:

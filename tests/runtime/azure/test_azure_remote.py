@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -24,6 +24,7 @@ import pytest
 from azure.quantum import Workspace
 
 from qbraid.runtime import (
+    AhsResultData,
     AzureQuantumProvider,
     DeviceStatus,
     GateModelResultData,
@@ -31,10 +32,12 @@ from qbraid.runtime import (
     Result,
 )
 
-# Skip pyquil tests if not installed
+# Skip pyquil and/or pulser tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
+pulser_found = importlib.util.find_spec("pulser") is not None
 
 if TYPE_CHECKING:
+    import pulser as pulser_
     import pyquil as pyquil_
 
 
@@ -115,6 +118,38 @@ def pyquil_program() -> pyquil_.Program:
 
 
 @pytest.fixture
+@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
+def pulser_sequence() -> pulser_.Sequence:
+    """Fixture for a Pulser sequence."""
+    # pylint: disable=import-outside-toplevel
+    import numpy as np
+    import pulser
+    from pulser.waveforms import BlackmanWaveform, RampWaveform
+
+    # pylint: enable=import-outside-toplevel
+
+    qubits = {
+        "q0": (0, 0),
+        "q1": (0, 10),
+        "q2": (8, 2),
+        "q3": (1, 15),
+        "q4": (-10, -3),
+        "q5": (-8, 5),
+    }
+    reg = pulser.Register(qubits)
+
+    seq = pulser.Sequence(reg, pulser.devices.DigitalAnalogDevice)
+    # Declare a channel. In this example we will be using `rydberg_global`
+    seq.declare_channel("ch0", "rydberg_global")
+    amp_wf = BlackmanWaveform(1000, np.pi)
+    det_wf = RampWaveform(1000, -5, 5)
+    pulse = pulser.Pulse(amp_wf, det_wf, 0)
+    seq.add(pulse, "ch0")
+
+    return seq
+
+
+@pytest.fixture
 @pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def quil_string(pyquil_program: pyquil_.Program) -> str:
     """Fixture for a Quil string."""
@@ -148,6 +183,36 @@ def test_submit_quil_to_rigetti(
     result = job.result()
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
+    assert result.data.get_counts() == {"00": 60, "11": 40}
+
+
+@pytest.mark.remote
+@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
+def test_submit_sequence_to_pasqal(
+    provider: AzureQuantumProvider, pulser_sequence: pulser_.Sequence
+):
+    """Test submitting a Pulser sequence-builder to run on the Pulser emulator."""
+    try:
+        device = provider.get_device("pasqal.sim.emu-tn")
+    except ValueError:
+        pytest.skip("Pasqal device not available in the current workspace")
+
+    status = device.status()
+
+    if status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {status.value}")
+
+    shots = 100
+    input_params = {}
+
+    job = device.submit(pulser_sequence, shots=shots, input_params=input_params)
+
+    job.wait_for_final_state()
+    assert job.status() == JobStatus.COMPLETED
+
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, AhsResultData)
     assert result.data.get_counts() == {"00": 60, "11": 40}
 
 

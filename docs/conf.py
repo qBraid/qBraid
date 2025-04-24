@@ -63,7 +63,7 @@ autodoc_mock_imports = [
     "cudaq",
     "flair_visual",
     "bloqade",
-    "pandas"
+    "pandas",
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True

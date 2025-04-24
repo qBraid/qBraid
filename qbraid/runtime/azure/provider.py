@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -12,9 +12,12 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
+from __future__ import annotations
+
+import json
 import os
 import warnings
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
@@ -30,8 +33,40 @@ from qbraid.runtime.provider import QuantumProvider
 from .device import AzureQuantumDevice
 from .io_format import InputDataFormat
 
+if TYPE_CHECKING:
+    from pulser.sequence import Sequence
+
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
 pyqir = LazyLoader("pyqir", globals(), "pyqir")
+pulser = LazyLoader("pulser", globals(), "pulser")
+
+DEVICE_NUM_QUBITS = {
+    "ionq.simulator": 29,
+    "ionq.qpu.aria-1": 25,
+    "ionq.qpu.aria-2": 25,
+    "ionq.qpu.forte": 32,
+    "quantinuum.sim.h1-1sc": 20,
+    "quantinuum.sim.h2-1sc": 56,
+    "quantinuum.sim.h2-2sc": 56,
+    "quantinuum.sim.h1-1e": 20,
+    "quantinuum.sim.h2-1e": 32,
+    "quantinuum.sim.h2-2e": 32,
+    "quantinuum.qpu.h1-1": 20,
+    "quantinuum.qpu.h2-1": 56,
+    "quantinuum.qpu.h2-2": 56,
+    "rigetti.sim.qvm": None,
+    "rigetti.qpu.ankaa-3": 84,
+    "pasqal.sim.emu-tn": 100,
+    "pasqal.qpu.fresnel": 100,
+}
+
+
+def serialize_pulser_input(seq: Sequence) -> str:
+    """Convert a Pulser sequence to a JSON string."""
+    input_data = {}
+    input_data["sequence_builder"] = json.loads(seq.to_abstract_repr())
+    to_send = json.dumps(input_data)
+    return to_send
 
 
 class AzureQuantumProvider(QuantumProvider):
@@ -81,6 +116,43 @@ class AzureQuantumProvider(QuantumProvider):
         """Get the Azure Quantum workspace."""
         return self._workspace
 
+    @staticmethod
+    def _get_program_spec(input_data_format: InputDataFormat) -> Optional[ProgramSpec]:
+        """Get the program specification based on the input data format."""
+        try:
+            if input_data_format == InputDataFormat.MICROSOFT:
+                return ProgramSpec(
+                    pyqir.Module, alias="pyqir", serialize=lambda module: module.bitcode
+                )
+            if input_data_format == InputDataFormat.IONQ:
+                return ProgramSpec(IonQDict, alias="ionq", serialize=lambda ionq_dict: ionq_dict)
+            if input_data_format == InputDataFormat.QUANTINUUM:
+                return ProgramSpec(str, alias="qasm2", serialize=lambda qasm: qasm)
+            if input_data_format == InputDataFormat.RIGETTI:
+                return ProgramSpec(
+                    pyquil.Program, alias="pyquil", serialize=lambda program: program.out()
+                )
+            if input_data_format == InputDataFormat.PASQAL:
+                return ProgramSpec(
+                    pulser.sequence.Sequence, alias="pulser", serialize=serialize_pulser_input
+                )
+        except ModuleNotFoundError as err:  # pragma: no cover
+            warnings.warn(
+                f"The default runtime configuration for device using input data format "
+                f"'{input_data_format.value}' requires package '{err.name}', "
+                "which is not installed.",
+                RuntimeWarning,
+            )
+
+        return None  # pragma: no cover
+
+    @staticmethod
+    def _get_experiment_type(input_data_format: InputDataFormat) -> ExperimentType:
+        """Get the experiment type based on the input data format."""
+        if input_data_format == InputDataFormat.PASQAL:
+            return ExperimentType.AHS
+        return ExperimentType.GATE_MODEL
+
     def _build_profile(self, target: Target) -> TargetProfile:
         """Builds a profile for an Azure device.
 
@@ -98,33 +170,28 @@ class AzureQuantumProvider(QuantumProvider):
         output_data_format = target.output_data_format
         content_type = target.content_type
 
-        if input_data_format == InputDataFormat.MICROSOFT.value:
-            program_spec = ProgramSpec(
-                pyqir.Module, alias="pyqir", serialize=lambda module: module.bitcode
-            )
-        elif input_data_format == InputDataFormat.IONQ.value:
-            program_spec = ProgramSpec(
-                IonQDict, alias="ionq", serialize=lambda ionq_dict: ionq_dict
-            )
-        elif input_data_format == InputDataFormat.QUANTINUUM.value:
-            program_spec = ProgramSpec(str, alias="qasm2", serialize=lambda qasm: qasm)
-        elif input_data_format == InputDataFormat.RIGETTI.value:
-            program_spec = ProgramSpec(
-                pyquil.Program, alias="pyquil", serialize=lambda program: program.out()
-            )
-        else:
-            program_spec = None
+        num_qubits = DEVICE_NUM_QUBITS.get(device_id)
+
+        try:
+            input_data_format_enum = InputDataFormat(input_data_format)
+        except ValueError:
             warnings.warn(f"Unrecognized input data format: {input_data_format}")
+            experiment_type = None
+            program_spec = None
+        else:
+            experiment_type = self._get_experiment_type(input_data_format_enum)
+            program_spec = self._get_program_spec(input_data_format_enum)
 
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
             provider_name=provider_name,
+            num_qubits=num_qubits,
             capability=capability,
             input_data_format=input_data_format,
             output_data_format=output_data_format,
             content_type=content_type,
-            experiment_type=ExperimentType.GATE_MODEL,
+            experiment_type=experiment_type,
             program_spec=program_spec,
         )
 

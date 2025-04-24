@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -351,7 +351,6 @@ class QbraidDevice(QuantumDevice):
             kwargs["params"] = self._resolve_qubo_params(params)
 
         jobs: list[qbraid.runtime.QbraidJob] = []
-
         native_target = self._all_target_specs_native(self._target_spec)
         transpile_option = self._target_spec is not None and self._options.get("transpile") is True
 
@@ -376,7 +375,6 @@ class QbraidDevice(QuantumDevice):
                 runtime_payload = {**aux_payload, **run_input_json}
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
                 jobs.append(job)
-
         return jobs[0] if is_single_input else jobs
 
     def estimate_cost(

@@ -152,7 +152,6 @@ class GateModelResultData(ResultData):
 
         if self._cache[cache_key] is not None:
             return self._cache[cache_key]
-
         counts = normalize_counts(
             self._measurement_counts, include_zero_values=include_zero_values, decimal=decimal
         )
@@ -344,6 +343,10 @@ class AhsResultData(ResultData):
             return False
 
         return all(s1 == s2 for s1, s2 in zip(self._measurements, other._measurements))
+
+    def __repr__(self) -> str:
+        """Return a string representation of the AhsResultData instance."""
+        return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={self._measurements})"  # pylint: disable=line-too-long
 
 
 class AnnealingResultData(ResultData):

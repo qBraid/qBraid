@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -23,6 +23,7 @@ class InputDataFormat(Enum):
     IONQ = "ionq.circuit.v1"
     QUANTINUUM = "honeywell.openqasm.v1"
     RIGETTI = "rigetti.quil.v1"
+    PASQAL = "pasqal.pulser.v1"
 
 
 class OutputDataFormat(Enum):
@@ -34,3 +35,4 @@ class OutputDataFormat(Enum):
     QUANTINUUM = "honeywell.quantum-results.v1"
     RESOURCE_ESTIMATOR = "microsoft.resource-estimates.v1"
     RIGETTI = "rigetti.quil-results.v1"
+    PASQAL = "pasqal.pulser-results.v1"

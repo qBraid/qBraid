@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -28,6 +28,7 @@ from azure.quantum.target.target import Target
 
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
 from qbraid.runtime import (
+    AhsResultData,
     DeviceStatus,
     GateModelResultData,
     JobStateError,
@@ -36,9 +37,10 @@ from qbraid.runtime import (
     Result,
     TargetProfile,
 )
-from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
+from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
-from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
+from qbraid.runtime.azure.provider import AzureQuantumProvider, serialize_pulser_input
+from qbraid.runtime.azure.result_builder import AzureResultBuilder
 from qbraid.runtime.postprocess import normalize_counts
 
 pytestmark = pytest.mark.filterwarnings("ignore:Unrecognized input data format:UserWarning")
@@ -57,8 +59,8 @@ def mock_target():
     target.name = "test.qpu.test"
     target.provider_id = "test_provider"
     target.capability = "test_capability"
-    target.input_data_format = "test_input"
-    target.output_data_format = "test_output"
+    target.input_data_format = InputDataFormat.MICROSOFT.value
+    target.output_data_format = OutputDataFormat.MICROSOFT_V1.value
     target.content_type = "application/qasm"
     target._current_availability = "Available"
     return target
@@ -140,6 +142,24 @@ def mock_ionq_job_data(mock_job_id) -> dict[str, str]:
 
 
 @pytest.fixture
+def mock_pasqal_job_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Rigetti job with Microsoft result format V1."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    return {
+        "job_id": mock_job_id,
+        "job_name": "pasqal-job",
+        "target": "pasqal.sim.emu-tn",
+        "output_data_format": "pasqal.pulser-results.v1",
+    }
+
+
+@pytest.fixture
+def mock_pasqal_result_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Rigetti job with Microsoft result format V1."""
+    return {"001010": 50, "001011": 50}
+
+
+@pytest.fixture
 def estimator_result_data(mock_estimator_job_data: dict[str, str]) -> dict[str, Any]:
     """Return a dictionary with the data for a MicrosoftEstimatorResult."""
     return {
@@ -180,8 +200,6 @@ def create_mock_azure_job(
     mock_job.details.name = job_name
     mock_job.details.metadata = {}
     mock_job.details.as_dict.return_value = {"id": job_id, "status": status}
-    mock_job.wait_until_completed = MagicMock()
-    mock_job.wait_until_completed.return_value = None
     mock_job.get_results = MagicMock()
     mock_job.get_results.return_value = result_data
 
@@ -246,6 +264,17 @@ def mock_azure_job(
 
 
 @pytest.fixture
+def mock_azure_ahs_job(
+    mock_pasqal_job_data: dict[str, str], mock_pasqal_result_data: dict[str, Any]
+) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    return create_mock_azure_job(
+        **mock_pasqal_job_data, status="Succeeded", result_data=mock_pasqal_result_data
+    )
+
+
+@pytest.fixture
 def mock_azure_ionq_job(mock_ionq_job_data: dict[str, str]) -> Mock:
     """Return a mock azure.quantum.Job instance."""
     return create_mock_azure_job(
@@ -254,9 +283,32 @@ def mock_azure_ionq_job(mock_ionq_job_data: dict[str, str]) -> Mock:
 
 
 @pytest.fixture
+def mock_azure_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    return create_mock_azure_job(
+        **mock_pasqal_job_data, status="Succeeded", result_data={"001010": 50, "001011": 50}
+    )
+
+
+@pytest.fixture
+def mock_azure_failed_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    return create_mock_azure_job(**mock_pasqal_job_data, status="Failed", result_data={})
+
+
+@pytest.fixture
 def azure_result_builder(mock_azure_job):
-    """Return an AzureGateModelResultBuilder instance with a mock AzureQuantumJob."""
-    return AzureGateModelResultBuilder(mock_azure_job)
+    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
+    return AzureResultBuilder(mock_azure_job)
+
+
+@pytest.fixture
+def azure_ahs_result_builder(mock_azure_ahs_job):
+    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    return AzureResultBuilder(mock_azure_ahs_job)
 
 
 def test_azure_provider_init_with_credential():
@@ -310,6 +362,7 @@ def test_build_profile_invalid(azure_provider, mock_invalid_target):
 
     assert isinstance(profile, TargetProfile)
     assert profile.program_spec is None
+    assert profile.experiment_type is None
 
 
 @pytest.mark.parametrize(
@@ -460,6 +513,32 @@ def test_azure_device_status(azure_device, mock_target):
     assert azure_device.status() == DeviceStatus.UNAVAILABLE
 
 
+def test_azure_device_is_available(mock_workspace, mock_target):
+    """Test the is_available method of AzureQuantumDevice."""
+    # Mock the target's availability
+    mock_target._current_availability = "Available"
+    mock_workspace.get_targets.return_value = mock_target
+
+    # Create the AzureQuantumDevice instance
+    profile = TargetProfile(
+        device_id="test.qpu",
+        simulator=False,
+        provider_name="test_provider",
+        capability="test_capability",
+        input_data_format="test_input",
+        output_data_format="test_output",
+        experiment_type=ExperimentType.GATE_MODEL,
+    )
+    device = AzureQuantumDevice(profile, mock_workspace)
+
+    # Test when the device is online
+    assert device.is_available() is True
+
+    # Test when the device is offline
+    mock_target._current_availability = "Unavailable"
+    assert device.is_available() is False
+
+
 def test_azure_device_submit(azure_device, mock_target):
     """Test submitting a job to an AzureQuantumDevice."""
     mock_job = Mock()
@@ -537,10 +616,10 @@ def test_azure_job_cancel_terminal_state_raises():
 
 
 @pytest.fixture
-def mock_result_builder(mock_job_id) -> AzureGateModelResultBuilder:
+def mock_result_builder(mock_job_id) -> AzureResultBuilder:
     """Create a mock Azure result builder."""
     job = Mock(id=mock_job_id)
-    return AzureGateModelResultBuilder(job)
+    return AzureResultBuilder(job)
 
 
 class DowloadDataMock:
@@ -568,7 +647,6 @@ def mock_job(
     job = Job(workspace=Mock(spec=Workspace), job_details=job_details)
 
     job.has_completed = Mock(return_value=True)
-    job.wait_until_completed = Mock()
 
     download_data = DowloadDataMock()
     download_data.decode = Mock(return_value=results_as_json_str)
@@ -582,7 +660,7 @@ def test_job_for_microsoft_quantum_results_v1_success(mock_msft_v1_job_data):
     results_as_json_str = '{"Histogram": ["[0]", 0.50, "[1]", 0.50]}'
     job = mock_job(**mock_msft_v1_job_data, results_as_json_str=results_as_json_str)
 
-    builder = AzureGateModelResultBuilder(job)
+    builder = AzureResultBuilder(job)
     assert isinstance(builder.job, Job)
     assert builder.job == job
     assert builder.from_simulator is True
@@ -632,9 +710,7 @@ def test_make_estimator_result_successful(estimator_result_data):
     "probabilities",
     [{"00": 0.5, "11": 0.5}, {"00": 0.4999, "11": 0.5001}, {"00": 0.4000, "11": 0.6001}],
 )
-def test_draw_random_sample_probabilities(
-    mock_result_builder: AzureGateModelResultBuilder, probabilities
-):
+def test_draw_random_sample_probabilities(mock_result_builder: AzureResultBuilder, probabilities):
     """Test that the random sample handles both normalized and unnormalized probabilities."""
     shots = 1000
     sample = mock_result_builder._draw_random_sample(probabilities, shots)
@@ -644,7 +720,7 @@ def test_draw_random_sample_probabilities(
 
 @pytest.mark.parametrize("seed, should_match", [(42, True), (None, False)])
 def test_draw_random_sample_consistency(
-    mock_result_builder: AzureGateModelResultBuilder, seed, should_match
+    mock_result_builder: AzureResultBuilder, seed, should_match
 ):
     """Test drawing random samples with and without a specific seed."""
     shots = 10
@@ -661,7 +737,7 @@ def test_draw_random_sample_consistency(
 
 
 def test_draw_random_sample_with_invalid_probabilities(
-    mock_result_builder: AzureGateModelResultBuilder,
+    mock_result_builder: AzureResultBuilder,
 ):
     """Test the method raises an error when probabilities don't sum close to one."""
     probabilities = {"00": 0.3, "11": 0.4}
@@ -684,7 +760,7 @@ def test_draw_random_sample_with_invalid_probabilities(
 )
 def test_qir_to_qbraid_bitstring(input_data, expected_output):
     """Test various inputs for _qir_to_qbraid_bitstring method."""
-    assert AzureGateModelResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
+    assert AzureResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
 
 
 @pytest.fixture
@@ -711,12 +787,42 @@ def mock_builder_ionq_results(mock_job_id) -> dict[str, Any]:
     return data
 
 
+def test_azure_job_result_pasqal(mock_azure_pasqal_job, mock_pasqal_result_data):
+    """Test getting the result of an AzureQuantumJob with PASQAL output data format."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+
+    # Mock the PASQAL job
+    mock_azure_pasqal_job.details.output_data_format = OutputDataFormat.PASQAL.value
+    mock_azure_pasqal_job.details.target = "pasqal.sim.emu-tn"
+    mock_azure_pasqal_job.get_results.return_value = mock_pasqal_result_data
+
+    # Create the AzureQuantumJob instance
+    job = AzureQuantumJob(
+        job_id=mock_azure_pasqal_job.id, workspace=mock_azure_pasqal_job.workspace
+    )
+    job._job = mock_azure_pasqal_job
+
+    # Call the result method
+    result = job.result()
+
+    # Assertions
+    assert isinstance(result, Result)
+    assert result.device_id == "pasqal.sim.emu-tn"
+    assert result.job_id == mock_azure_pasqal_job.id
+    assert result.success is True
+    assert isinstance(result.data, AhsResultData)
+    assert result.data.to_dict() == {
+        "measurement_counts": {"001010": 50, "001011": 50},
+        "measurements": None,
+    }
+
+
 def test_azure_quantum_result_counts(
-    azure_result_builder: AzureGateModelResultBuilder, mock_builder_ionq_results: dict[str, Any]
+    azure_result_builder: AzureResultBuilder, mock_builder_ionq_results: dict[str, Any]
 ):
     """Test Azure Quantum Job builder get counts methods."""
     with patch.object(
-        AzureGateModelResultBuilder,
+        AzureResultBuilder,
         "get_results",
         return_value=mock_builder_ionq_results["results"],
     ):
@@ -726,24 +832,24 @@ def test_azure_quantum_result_counts(
 
 
 def test_job_property(azure_result_builder, mock_azure_job):
-    """Test the job property of an AzureGateModelResultBuilder."""
+    """Test the job property of an AzureResultBuilder."""
     assert azure_result_builder.job == mock_azure_job
 
 
 def test_from_simulator_true(azure_result_builder, mock_azure_job):
-    """Test the from_simulator property of an AzureGateModelResultBuilder."""
+    """Test the from_simulator property of an AzureResultBuilder."""
     mock_azure_job.details.target = "mock.simulator"
     assert azure_result_builder.from_simulator is True
 
 
 def test_from_simulator_false(azure_result_builder, mock_azure_job):
-    """Test the from_simulator property of an AzureGateModelResultBuilder."""
+    """Test the from_simulator property of an AzureResultBuilder."""
     mock_azure_job.details.target = "mock.qpu.mock_device_id"
     assert azure_result_builder.from_simulator is False
 
 
 def test_shots_count(azure_result_builder):
-    """Test the shots count method of an AzureGateModelResultBuilder."""
+    """Test the shots count method of an AzureResultBuilder."""
     assert azure_result_builder._shots_count() == 1000
 
 
@@ -766,7 +872,7 @@ def test_make_estimator_result_failure():
 def mock_qir_to_qbraid_bitstring():
     """Return a mock for the qir_to_qbraid_bitstring method."""
     with patch(
-        "qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring"
+        "qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring"
     ) as mock:
         yield mock
 
@@ -811,16 +917,122 @@ def test_format_rigetti_results(azure_result_builder, mock_azure_job):
     assert result["probabilities"] == {"01": 0.5, "10": 0.5}
 
 
-def test_format_unknown_results(azure_result_builder, mock_azure_job):
-    """Test formatting unknown results."""
-    mock_azure_job.get_results.return_value = {"mock_key": "mock_value"}
+def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
+    """Test formatting Pasqal results."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_pasqal_job.get_results.return_value = {"001010": 50, "001011": 50}
 
-    result = azure_result_builder._format_unknown_results()
+    result = azure_ahs_result_builder._format_results()
 
-    assert result == {"mock_key": "mock_value"}
+    assert "counts" in result["data"]
+    assert "probabilities" in result["data"]
+    assert result["data"]["counts"] == {"001010": 50, "001011": 50}
+    assert result["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
 
 
-@patch("qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring")
+def test_ahs_builder_shots_count(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _shots_count method of AzureResultBuilder."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.details.input_params = {"count": 1000}
+    assert azure_ahs_result_builder._shots_count() == 1000
+
+    mock_azure_ahs_job.details.input_params = {"shots": 500}
+    assert azure_ahs_result_builder._shots_count() == 500
+
+    mock_azure_ahs_job.details.input_params = {}
+    assert azure_ahs_result_builder._shots_count() is None
+
+
+def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _format_analog_results method of AzureResultBuilder."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+
+    result = azure_ahs_result_builder._format_analog_results()
+
+    assert result["counts"] == {"001010": 50, "001011": 50}
+    assert result["probabilities"] == {"001010": 0.5, "001011": 0.5}
+
+
+def test_ahs_builder_format_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _format_results method when the job succeeds."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.details.status = "Succeeded"
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+
+    result = azure_ahs_result_builder._format_results()
+
+    assert result["success"] is True
+    assert result["data"]["counts"] == {"001010": 50, "001011": 50}
+    assert result["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
+    assert result["shots"] == 1000
+
+
+def test_ahs_builder_format_results_failure(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _format_results method when the job fails."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.details.status = "Failed"
+    result = azure_ahs_result_builder._format_results()
+
+    assert result["success"] is False
+    assert result["data"] == {}
+    assert result["shots"] == 1000
+
+
+def test_ahs_builder_get_counts_single_result(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_counts method with a single result."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = [{"001010": 50, "001011": 50}]
+
+    counts = azure_ahs_result_builder.get_counts()
+
+    assert counts == [{"001010": 50, "001011": 50}]
+
+
+def test_ahs_builder_get_counts_multiple_results(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_counts method with multiple results."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = [
+        {"001010": 50, "001011": 50},
+        {"001100": 30, "001101": 70},
+    ]
+
+    counts = azure_ahs_result_builder.get_counts()
+
+    assert counts == [
+        {"001010": 50, "001011": 50},
+        {"001100": 30, "001101": 70},
+    ]
+
+
+def test_ahs_builder_get_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_results method when the job succeeds."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.details.status = "Succeeded"
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+
+    results = azure_ahs_result_builder.get_results()
+
+    assert len(results) == 1
+    assert results[0]["success"] is True
+    assert results[0]["data"]["counts"] == {"001010": 50, "001011": 50}
+    assert results[0]["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
+
+
+def test_ahs_builder_get_results_failure(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_results method when the job fails."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.details.status = "Failed"
+
+    results = azure_ahs_result_builder.get_results()
+
+    assert len(results) == 1
+    assert results[0]["success"] is False
+    assert results[0]["data"] == {}
+    assert results[0]["shots"] == 1000
+
+
+@patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")
 def test_format_quantinuum_results(
     mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
@@ -842,7 +1054,7 @@ def test_format_ionq_results():
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {"histogram": {"0": 0.5, "7": 0.5}}
 
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     expected_result = {
         "counts": {"000": 50, "111": 50},
         "probabilities": {"000": 0.5, "111": 0.5},
@@ -855,10 +1067,19 @@ def test_format_ionq_results_raises_for_no_histogram_data():
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {}
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(ValueError) as excinfo:
         builder._format_ionq_results()
     assert "Histogram missing from IonQ Job results" in str(excinfo.value)
+
+
+def test_format_unknown_results(azure_result_builder, mock_azure_job):
+    """Test formatting unknown results."""
+    mock_azure_job.get_results.return_value = {"mock_key": "mock_value"}
+
+    result = azure_result_builder._format_unknown_results()
+
+    assert result == {"mock_key": "mock_value"}
 
 
 @pytest.mark.parametrize(
@@ -878,7 +1099,7 @@ def test_get_entry_point_names(input_params, expected_result):
     """Test getting entry point names from input params."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = input_params
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     result = builder._get_entry_point_names()
     assert result == expected_result
 
@@ -887,7 +1108,7 @@ def test_get_entry_point_names_with_missing_entry_point():
     """Test getting entry point names from input params with missing 'entryPoint' field."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {"items": [{"noEntryPointField": "data"}]}
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(
         ValueError, match="Entry point input_param is missing an 'entryPoint' field"
     ):
@@ -898,7 +1119,7 @@ def test_get_entry_point_names_with_no_items_key():
     """Test getting entry point names from input params with missing 'items' key."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {}
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(KeyError):
         builder._get_entry_point_names()
 
@@ -956,7 +1177,7 @@ def test_translate_microsoft_v2_result_raises_value_error(results, err_msg):
     when job result does not contain the required field."""
     mock_job = Mock(spec=Job)
     mock_job.get_results.return_value = results
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(ValueError) as excinfo:
         builder._translate_microsoft_v2_results()
         assert err_msg in str(excinfo.value)
@@ -1007,7 +1228,7 @@ def test_format_microsoft_v2_results_no_success():
     mock_job = Mock(spec=Job)
     mock_job.details.status = "Failed"
     mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     assert builder._format_microsoft_v2_results() == [
         {"data": {}, "success": False, "header": {}, "shots": 0}
     ]
@@ -1016,15 +1237,13 @@ def test_format_microsoft_v2_results_no_success():
 def test_result_builder_failed_job(mock_job_id):
     """Test formatting Microsoft Quantum v2 results with failed job."""
     mock_job = Mock(spec=Job)
-    mock_job.wait_until_completed = MagicMock()
-    mock_job.wait_until_completed.return_value = None
     mock_job.details.status = "Failed"
     mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
     mock_job.details.error_data = None
     mock_job.details.target = "rigetti.sim.qvm"
     mock_job.details.name = "azure-quantum-job"
     mock_job.details.id = mock_job_id
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     results = builder.get_results()
     assert isinstance(results, list)
     assert all(isinstance(result, dict) for result in results)
@@ -1119,7 +1338,7 @@ def test_builder_get_counts_multiple_results_all_failure(mock_result_builder):
     assert counts == [{}, {}]
 
 
-def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResultBuilder):
+def test_builder_format_unknown_results(azure_result_builder: AzureResultBuilder):
     """Test using the result builder to format results of an unrecognized gate model format."""
     results = azure_result_builder._format_results()
     assert results == {
@@ -1141,6 +1360,25 @@ def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResu
             "job_name": "azure-quantum-job",
             "target": "microsoft.estimator",
             "output_data_format": "microsoft.resource-estimates.v1",
+        },
+        "success": True,
+        "header": {},
+        "shots": 1000,
+    }
+
+
+def test_ahs_builder_format_unknown_results(azure_ahs_result_builder: AzureResultBuilder):
+    """Test using the result builder to format results of an unrecognized AHS model format.
+
+    Args:
+        azure_ahs_result_builder (AzureResultBuilder): The Azure AHS model result builder.
+    """
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    results = azure_ahs_result_builder._format_results()
+    assert results == {
+        "data": {
+            "counts": {"001010": 50, "001011": 50},
+            "probabilities": {"001010": 0.5, "001011": 0.5},
         },
         "success": True,
         "header": {},
@@ -1186,3 +1424,47 @@ def test_get_gate_model_job_result(mock_job_id, mock_workspace, mock_azure_ionq_
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
     assert result.success is True
+
+
+def test_serialize_pulser_input():
+    """Test the serialization of a pulser input."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    import pulser  # pylint: disable=import-outside-toplevel
+
+    device = pulser.AnalogDevice
+    register = pulser.Register.from_coordinates([(0, 0)], prefix="q")
+
+    sequence = pulser.Sequence(register, device)
+
+    pulser_input = serialize_pulser_input(sequence)
+
+    expected_input = '{"sequence_builder": {"version": "1", "name": "pulser-exported", "register": [{"name": "q0", "x": 0.0, "y": 0.0}], "channels": {}, "variables": {}, "operations": [], "measurement": null, "device": {"name": "AnalogDevice", "dimensions": 2, "rydberg_level": 60, "min_atom_distance": 5, "max_atom_num": 80, "max_radial_distance": 38, "interaction_coeff_xy": null, "supports_slm_mask": false, "max_layout_filling": 0.5, "optimal_layout_filling": 0.45, "max_sequence_duration": 6000, "max_runs": 2000, "reusable_channels": false, "pre_calibrated_layouts": [{"coordinates": [[-20.0, 0.0], [-17.5, -4.330127], [-17.5, 4.330127], [-15.0, -8.660254], [-15.0, 0.0], [-15.0, 8.660254], [-12.5, -12.990381], [-12.5, -4.330127], [-12.5, 4.330127], [-12.5, 12.990381], [-10.0, -17.320508], [-10.0, -8.660254], [-10.0, 0.0], [-10.0, 8.660254], [-10.0, 17.320508], [-7.5, -12.990381], [-7.5, -4.330127], [-7.5, 4.330127], [-7.5, 12.990381], [-5.0, -17.320508], [-5.0, -8.660254], [-5.0, 0.0], [-5.0, 8.660254], [-5.0, 17.320508], [-2.5, -12.990381], [-2.5, -4.330127], [-2.5, 4.330127], [-2.5, 12.990381], [0.0, -17.320508], [0.0, -8.660254], [0.0, 0.0], [0.0, 8.660254], [0.0, 17.320508], [2.5, -12.990381], [2.5, -4.330127], [2.5, 4.330127], [2.5, 12.990381], [5.0, -17.320508], [5.0, -8.660254], [5.0, 0.0], [5.0, 8.660254], [5.0, 17.320508], [7.5, -12.990381], [7.5, -4.330127], [7.5, 4.330127], [7.5, 12.990381], [10.0, -17.320508], [10.0, -8.660254], [10.0, 0.0], [10.0, 8.660254], [10.0, 17.320508], [12.5, -12.990381], [12.5, -4.330127], [12.5, 4.330127], [12.5, 12.990381], [15.0, -8.660254], [15.0, 0.0], [15.0, 8.660254], [17.5, -4.330127], [17.5, 4.330127], [20.0, 0.0]], "slug": "TriangularLatticeLayout(61, 5.0\\u00b5m)"}], "version": "1", "pulser_version": "1.4.0", "channels": [{"id": "rydberg_global", "basis": "ground-rydberg", "addressing": "Global", "max_abs_detuning": 125.66370614359172, "max_amp": 12.566370614359172, "min_retarget_interval": null, "fixed_retarget_t": null, "max_targets": null, "clock_period": 4, "min_duration": 16, "max_duration": 100000000, "mod_bandwidth": 8, "eom_config": {"limiting_beam": "RED", "max_limiting_amp": 188.49555921538757, "intermediate_detuning": 2827.4333882308138, "controlled_beams": ["BLUE"], "mod_bandwidth": 40, "custom_buffer_time": 240}}], "is_virtual": false}}}'
+
+    assert pulser_input == expected_input
+
+
+def test_get_pasqal_program_spec():
+    """Test getting the program spec for Pasqal."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    program_spec = AzureQuantumProvider._get_program_spec(InputDataFormat.PASQAL)
+    assert program_spec.alias == "pulser"
+
+
+def test_build_profile_pasqal(mock_workspace):
+    """Test building profile for Pasqal target."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_target = Mock()
+    mock_target.name = "pasqal.sim.emu-tn"
+    mock_target.provider_id = "pasqal"
+    mock_target.capability = ""
+    mock_target.content_type = "application/json"
+    mock_target.input_data_format = InputDataFormat.PASQAL.value
+    mock_target.output_data_format = OutputDataFormat.PASQAL.value
+
+    provider = AzureQuantumProvider(mock_workspace)
+
+    profile = provider._build_profile(mock_target)
+
+    assert profile.program_spec.alias == "pulser"
+    assert profile.experiment_type == ExperimentType.AHS
+    assert profile.num_qubits == 100
