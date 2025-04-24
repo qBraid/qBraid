@@ -40,7 +40,6 @@ pyquil = LazyLoader("pyquil", globals(), "pyquil")
 pyqir = LazyLoader("pyqir", globals(), "pyqir")
 pulser = LazyLoader("pulser", globals(), "pulser")
 
-
 DEVICE_NUM_QUBITS = {
     "ionq.simulator": 29,
     "ionq.qpu.aria-1": 25,
@@ -137,28 +136,21 @@ class AzureQuantumProvider(QuantumProvider):
                 return ProgramSpec(
                     pulser.sequence.Sequence, alias="pulser", serialize=serialize_pulser_input
                 )
-        except ModuleNotFoundError as err:
+        except ModuleNotFoundError as err:  # pragma: no cover
             warnings.warn(
                 f"The default runtime configuration for device using input data format "
                 f"'{input_data_format.value}' requires package '{err.name}', "
                 "which is not installed.",
                 RuntimeWarning,
             )
-
-        return None
+            return None
 
     @staticmethod
-    def _get_experiment_type(input_data_format: InputDataFormat) -> Optional[ExperimentType]:
-        if input_data_format in {
-            InputDataFormat.MICROSOFT,
-            InputDataFormat.IONQ,
-            InputDataFormat.QUANTINUUM,
-            InputDataFormat.RIGETTI,
-        }:
-            return ExperimentType.GATE_MODEL
+    def _get_experiment_type(input_data_format: InputDataFormat) -> ExperimentType:
+        """Get the experiment type based on the input data format."""
         if input_data_format == InputDataFormat.PASQAL:
             return ExperimentType.AHS
-        return None
+        return ExperimentType.GATE_MODEL
 
     def _build_profile(self, target: Target) -> TargetProfile:
         """Builds a profile for an Azure device.
