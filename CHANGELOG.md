@@ -93,13 +93,12 @@ result.data.get_counts()  # {'100110': 1}
 ### Deprecated
 
 ### Removed
-- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `stric` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
+- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `strict` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
 
 ### Fixed
 - Fixed Amazon Braket remote test by changing catch `JobStateError` to `TimeoutError` ([#948](https://github.com/qBraid/qBraid/pull/948))
 - Fixed upper bound of html length check in pytket circuit drawer test ([#950](https://github.com/qBraid/qBraid/pull/950))
 - Fixed simulator check for Azure target profiles ([#956](https://github.com/qBraid/qBraid/pull/956))
-- Pinned `pyqasm` version to 0.3.0 to patch CI failure due to program validation bug: https://github.com/qBraid/pyqasm/issues/175 ([#957](https://github.com/qBraid/qBraid/pull/957))
 
 ### Dependencies
 - Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
