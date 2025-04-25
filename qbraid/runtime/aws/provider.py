@@ -52,7 +52,9 @@ class BraketProvider(QuantumProvider):
     REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
 
     def __init__(
-        self, aws_access_key_id: Optional[str] = None, aws_secret_access_key: Optional[str] = None
+        self, aws_access_key_id: Optional[str] = None, 
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None
     ):
         """
         Initializes the QbraidProvider object with optional AWS credentials.
@@ -63,6 +65,7 @@ class BraketProvider(QuantumProvider):
         """
         self.aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
+        self.aws_session_token = aws_session_token or os.getenv("AWS_SESSION_TOKEN")
 
     def save_config(
         self,
@@ -108,6 +111,7 @@ class BraketProvider(QuantumProvider):
             region_name=region_name,
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
+            aws_session_token=self.aws_session_token,
         )
         braket_client = boto_session.client("braket", region_name=region_name)
         return AwsSession(
