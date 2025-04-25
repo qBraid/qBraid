@@ -103,6 +103,7 @@ result.data.get_counts()  # {'100110': 1}
 
 ### Dependencies
 - Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
+- Updated `pyqasm` dependency to `>=0.3.2, <0.4.0` ([#964](https://github.com/qBraid/qBraid/pull/964))
 
 ## [0.9.5] - 2025-03-26
 
