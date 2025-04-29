@@ -214,6 +214,18 @@ def test_provider_get_aws_session():
         assert isinstance(aws_session, AwsSession)
 
 
+def test_provider_get_aws_session_with_session_token():
+    """Test getting an AWS session with session token."""
+    with patch("boto3.session.Session") as mock_boto_session:
+        mock_boto_session.aws_access_key_id.return_value = "aws_access_key_id"
+        mock_boto_session.aws_secret_access_key.return_value = "aws_secret_access_key"
+        mock_boto_session.get_credentials.return_value.token = "session_token"
+        aws_session = BraketProvider(aws_session_token="session_token")._get_aws_session()
+        assert aws_session.boto_session.region_name == "us-east-1"
+        assert isinstance(aws_session, AwsSession)
+        assert aws_session.boto_session.get_credentials().token == "session_token"
+
+
 def test_provider_get_devices_raises(braket_provider):
     """Test raising device wrapper error due to invalid device ID."""
     with pytest.raises(ValueError):
