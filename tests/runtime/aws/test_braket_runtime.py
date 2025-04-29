@@ -678,7 +678,9 @@ def test_get_tasks_by_tag_qbraid_error():
 def mock_braket_provider_with_credentials():
     """Return a BraketProvider instance with mock credentials."""
     aws_provider = BraketProvider(
-        aws_access_key_id="mock_access_key_id", aws_secret_access_key="mock_secret_access_key"
+        aws_access_key_id="mock_access_key_id",
+        aws_secret_access_key="mock_secret_access_key",
+        aws_session_token="mock_session_token",
     )
     return aws_provider
 
@@ -689,7 +691,9 @@ def test_hash_method_creates_and_returns_hash(mock_hash, mock_braket_provider_wi
     mock_hash.return_value = 5555
     provider_instance = mock_braket_provider_with_credentials
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
-    mock_hash.assert_called_once_with(("mock_access_key_id", "mock_secret_access_key"))
+    mock_hash.assert_called_once_with(
+        ("mock_access_key_id", "mock_secret_access_key", "mock_session_token")
+    )
     assert result == 5555
     assert provider_instance._hash == 5555
 
