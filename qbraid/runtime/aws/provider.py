@@ -47,12 +47,17 @@ class BraketProvider(QuantumProvider):
     Attributes:
         aws_access_key_id (str): AWS access key ID for authenticating with AWS services.
         aws_secret_access_key (str): AWS secret access key for authenticating with AWS services.
+        aws_session_token (str): AWS session token for authenticating with AWS services when using
+            temporary credentials.
     """
 
     REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
 
     def __init__(
-        self, aws_access_key_id: Optional[str] = None, aws_secret_access_key: Optional[str] = None
+        self,
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        aws_session_token: Optional[str] = None,
     ):
         """
         Initializes the QbraidProvider object with optional AWS credentials.
@@ -60,9 +65,11 @@ class BraketProvider(QuantumProvider):
         Args:
             aws_access_key_id (str, optional): AWS access key ID. Defaults to None.
             aws_secret_access_key (str, optional): AWS secret access token. Defaults to None.
+            aws_session_token (str, optional): AWS session token. Defaults to None.
         """
         self.aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
+        self.aws_session_token = aws_session_token
 
     def save_config(
         self,
@@ -108,6 +115,7 @@ class BraketProvider(QuantumProvider):
             region_name=region_name,
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
+            aws_session_token=self.aws_session_token,
         )
         braket_client = boto_session.client("braket", region_name=region_name)
         return AwsSession(
@@ -244,6 +252,8 @@ class BraketProvider(QuantumProvider):
     def __hash__(self):
         if not hasattr(self, "_hash"):
             object.__setattr__(
-                self, "_hash", hash((self.aws_access_key_id, self.aws_secret_access_key))
+                self,
+                "_hash",
+                hash((self.aws_access_key_id, self.aws_secret_access_key, self.aws_session_token)),
             )
         return self._hash  # pylint: disable=no-member

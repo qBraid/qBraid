@@ -12,6 +12,7 @@
 Module for transpiling quantum programs between different quantum programming languages
 
 """
+
 from __future__ import annotations
 
 import warnings
@@ -22,9 +23,16 @@ from qbraid_core._import import LazyLoader
 
 from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_ALIASES
-from qbraid.programs.alias_manager import _get_program_type_alias, get_program_type_alias
+from qbraid.programs.alias_manager import (
+    _get_program_type_alias,
+    get_program_type_alias,
+)
 
-from .exceptions import ConversionPathNotFoundError, NodeNotFoundError, ProgramConversionError
+from .exceptions import (
+    ConversionPathNotFoundError,
+    NodeNotFoundError,
+    ProgramConversionError,
+)
 from .graph import ConversionGraph, _get_path_from_bound_methods
 
 if TYPE_CHECKING:
@@ -112,7 +120,7 @@ def transpile(
         path_details = _get_path_from_bound_methods(path)
         try:
             temp_program = deepcopy(program)
-        except RecursionError as err:
+        except (RecursionError, TypeError) as err:
             logger.warning(
                 "Deepcopy failed due to a %s, likely caused by the internal structure of "
                 "the %s object. Continuing execution, but any subsequent errors during "

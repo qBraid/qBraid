@@ -87,19 +87,38 @@ result = job.result()
 result.data.get_counts()  # {'100110': 1}
 ```
 
+- Added support for transpiling between [pyqpanda3](https://pyqpanda-toturial.readthedocs.io/) and QASM2 with `pyqpanda3` program type ([#963](https://github.com/qBraid/qBraid/pull/963))
+
+
+
 ### Improved / Modified
 - Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
+- Updated the `qbraid.runtime.aws.BraketProvider` to include an `aws_session_token` during initialization. Users can now choose to supply their temporary AWS credentials instead of permanent account secrets to access AWS - ([#968](https://github.com/qBraid/qBraid/pull/968))
+
+```python
+from qbraid.runtime.aws import BraketProvider
+
+aws_access_key = "YOUR_TEMP_ACCESS_KEY"
+aws_secret_key = "YOUR_TEMP_SECRET_KEY"
+aws_session_token = "YOUR_CURRENT_SESSION_TOKEN"
+
+provider = BraketProvider(aws_access_key, aws_secret_key, aws_session_token)
+print(provider.get_devices())
+
+# [<qbraid.runtime.aws.device.BraketDevice('arn:aws:braket:us-west-1::device/qpu/rigetti/Ankaa-3')>,
+#  <qbraid.runtime.aws.device.BraketDevice('arn:aws:braket:us-east-1::device/qpu/quera/Aquila')>,
+#  ...]
+```
 
 ### Deprecated
 
 ### Removed
-- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `stric` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
+- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `strict` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
 
 ### Fixed
 - Fixed Amazon Braket remote test by changing catch `JobStateError` to `TimeoutError` ([#948](https://github.com/qBraid/qBraid/pull/948))
 - Fixed upper bound of html length check in pytket circuit drawer test ([#950](https://github.com/qBraid/qBraid/pull/950))
 - Fixed simulator check for Azure target profiles ([#956](https://github.com/qBraid/qBraid/pull/956))
-- Pinned `pyqasm` version to 0.3.0 to patch CI failure due to program validation bug: https://github.com/qBraid/pyqasm/issues/175 ([#957](https://github.com/qBraid/qBraid/pull/957))
 
 ### Dependencies
 - Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))

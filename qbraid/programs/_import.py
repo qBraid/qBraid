@@ -110,6 +110,8 @@ def _get_class(module: str):
         return stim.Circuit  # type: ignore # noqa: F821
     if module == "pulser":
         return pulser.sequence.sequence.Sequence  # type: ignore # noqa: F821
+    if module == "pyqpanda3":  # pragma: no cover
+        return pyqpanda3.core.QProg  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -131,7 +133,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
-    ["bloqade.analog.builder.assign", "qibo", "stim", "pyqir", "pulser"]
+    ["bloqade.analog.builder.assign", "qibo", "stim", "pyqir", "pulser", "pyqpanda3"]
 )
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
