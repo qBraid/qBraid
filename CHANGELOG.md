@@ -93,6 +93,22 @@ result.data.get_counts()  # {'100110': 1}
 
 ### Improved / Modified
 - Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
+- Updated the `qbraid.runtime.aws.BraketProvider` to include an `aws_session_token` during initialization. Users can now choose to supply their temporary AWS credentials instead of permanent account secrets to access AWS - ([#968](https://github.com/qBraid/qBraid/pull/968))
+
+```python
+from qbraid.runtime.aws import BraketProvider
+
+aws_access_key = "YOUR_TEMP_ACCESS_KEY"
+aws_secret_key = "YOUR_TEMP_SECRET_KEY"
+aws_session_token = "YOUR_CURRENT_SESSION_TOKEN"
+
+provider = BraketProvider(aws_access_key, aws_secret_key, aws_session_token)
+print(provider.get_devices())
+
+# [<qbraid.runtime.aws.device.BraketDevice('arn:aws:braket:us-west-1::device/qpu/rigetti/Ankaa-3')>,
+#  <qbraid.runtime.aws.device.BraketDevice('arn:aws:braket:us-east-1::device/qpu/quera/Aquila')>,
+#  ...]
+```
 
 ### Deprecated
 

@@ -214,6 +214,18 @@ def test_provider_get_aws_session():
         assert isinstance(aws_session, AwsSession)
 
 
+def test_provider_get_aws_session_with_session_token():
+    """Test getting an AWS session with session token."""
+    with patch("boto3.session.Session") as mock_boto_session:
+        mock_boto_session.aws_access_key_id.return_value = "aws_access_key_id"
+        mock_boto_session.aws_secret_access_key.return_value = "aws_secret_access_key"
+        mock_boto_session.get_credentials.return_value.token = "session_token"
+        aws_session = BraketProvider(aws_session_token="session_token")._get_aws_session()
+        assert aws_session.boto_session.region_name == "us-east-1"
+        assert isinstance(aws_session, AwsSession)
+        assert aws_session.boto_session.get_credentials().token == "session_token"
+
+
 def test_provider_get_devices_raises(braket_provider):
     """Test raising device wrapper error due to invalid device ID."""
     with pytest.raises(ValueError):
@@ -666,7 +678,9 @@ def test_get_tasks_by_tag_qbraid_error():
 def mock_braket_provider_with_credentials():
     """Return a BraketProvider instance with mock credentials."""
     aws_provider = BraketProvider(
-        aws_access_key_id="mock_access_key_id", aws_secret_access_key="mock_secret_access_key"
+        aws_access_key_id="mock_access_key_id",
+        aws_secret_access_key="mock_secret_access_key",
+        aws_session_token="mock_session_token",
     )
     return aws_provider
 
@@ -677,7 +691,9 @@ def test_hash_method_creates_and_returns_hash(mock_hash, mock_braket_provider_wi
     mock_hash.return_value = 5555
     provider_instance = mock_braket_provider_with_credentials
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
-    mock_hash.assert_called_once_with(("mock_access_key_id", "mock_secret_access_key"))
+    mock_hash.assert_called_once_with(
+        ("mock_access_key_id", "mock_secret_access_key", "mock_session_token")
+    )
     assert result == 5555
     assert provider_instance._hash == 5555
 
