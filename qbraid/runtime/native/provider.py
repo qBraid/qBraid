@@ -14,6 +14,7 @@ Module defining QbraidProvider class.
 """
 from __future__ import annotations
 
+import base64
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
@@ -45,8 +46,11 @@ def _serialize_program(program) -> dict[str, str]:
     return qbraid_program.serialize()
 
 
-def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes]:
-    return {"bitcode": program.bitcode}
+def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes | str]:
+    return {
+        "bitcode": program.bitcode,
+        "qir": base64.b64encode(str(program).encode("utf-8")).decode("utf-8"),
+    }
 
 
 def _serialize_sequence(sequence: pulser.Sequence) -> dict[str, str]:
