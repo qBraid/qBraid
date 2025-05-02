@@ -65,6 +65,7 @@ autodoc_mock_imports = [
     "bloqade",
     "pandas",
     "pyqpanda3",
+    "pulser"
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True
