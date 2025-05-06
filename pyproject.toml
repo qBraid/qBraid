@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -9,7 +9,8 @@ description = "Platform-agnostic quantum runtime framework."
 authors = [{name = "qBraid Development Team"}, {email = "contact@qbraid.com"}]
 readme = "README.md"
 keywords = ["qbraid", "quantum", "openqasm", "runtime"]
-license = {text = "GNU General Public License v3.0"}
+license = "GPL-3.0-only"
+license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
