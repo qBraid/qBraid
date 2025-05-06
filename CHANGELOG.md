@@ -16,6 +16,22 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `CudaQKernel.serialize` method that converts cudaq program to QIR string for `run_input` compatible format for `QbraidDevice.submit`. ([#972](https://github.com/qBraid/qBraid/pull/972))
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Fixed lazy importing bug in `plot_histogram` method ([#972](https://github.com/qBraid/qBraid/pull/972))
+
+### Dependencies
+
+## [0.9.6] - 2025-05-02
+
+### Added
 - Added `QbraidJob.async_result()` to support async result retrieval using `await`. ([#945](https://github.com/qBraid/qBraid/pull/945))
 - Added `QbraidDevice.set_target_program_type`, allowing you to set a specific `ProgramSpec` (from `TargetProfile`) alias as the default ([#952](https://github.com/qBraid/qBraid/pull/952)). For example, if a device supports both "qasm2" and "qasm3", you can now restrict transpilation to one format:
 
@@ -89,8 +105,6 @@ result.data.get_counts()  # {'100110': 1}
 
 - Added support for transpiling between [pyqpanda3](https://pyqpanda-toturial.readthedocs.io/) and QASM2 with `pyqpanda3` program type ([#963](https://github.com/qBraid/qBraid/pull/963))
 
-
-
 ### Improved / Modified
 - Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
 - Updated the `qbraid.runtime.aws.BraketProvider` to include an `aws_session_token` during initialization. Users can now choose to supply their temporary AWS credentials instead of permanent account secrets to access AWS - ([#968](https://github.com/qBraid/qBraid/pull/968))
@@ -109,8 +123,6 @@ print(provider.get_devices())
 #  <qbraid.runtime.aws.device.BraketDevice('arn:aws:braket:us-east-1::device/qpu/quera/Aquila')>,
 #  ...]
 ```
-
-### Deprecated
 
 ### Removed
 - Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `strict` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
