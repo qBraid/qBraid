@@ -10,7 +10,6 @@ authors = [{name = "qBraid Development Team"}, {email = "contact@qbraid.com"}]
 readme = "README.md"
 keywords = ["qbraid", "quantum", "openqasm", "runtime"]
 license = "GPL-3.0-only"
-license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
