@@ -13,6 +13,9 @@ Tests for the CUDAQ program type.
 
 """
 
+import base64
+import pathlib
+
 import pytest
 
 try:
@@ -59,3 +62,28 @@ def test_cudaq_program_num_qubits():
     assert program.qubits == [0, 1]
     assert program.num_qubits == 2
     assert program.num_clbits == 0
+
+
+def test_cudaq_program_serialize():
+    """Tests that the serialization of a CUDAQ program is correct."""
+    import cudaq  # pylint: disable=import-outside-toplevel
+
+    kernel = cudaq.make_kernel()
+    qubits = kernel.qalloc(2)
+    kernel.h(qubits[0])
+    kernel.cx(qubits[0], qubits[1])
+    kernel.mz(qubits)
+
+    program = load_program(kernel)
+
+    run_input = program.serialize()
+    encoded_qir = run_input["qir"]
+    decoded_qir = base64.b64decode(encoded_qir.encode("utf-8")).decode("utf-8")
+
+    test_dir = pathlib.Path(__file__).parent
+    fixture_path = test_dir.parent / "fixtures" / "qir" / "bell.ll"
+
+    with open(fixture_path, "r", encoding="utf-8") as file:
+        expected_qir = file.read()
+
+    assert expected_qir == decoded_qir

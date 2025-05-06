@@ -18,7 +18,6 @@ from typing import Callable, Optional, Union
 from qbraid_core._import import LazyLoader
 
 plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
-matplotlib = LazyLoader("matplotlib", globals(), "matplotlib")
 
 # pylint: disable=too-many-arguments,unnecessary-lambda
 
@@ -87,7 +86,7 @@ def _plot_data(
     x_positions = range(len(all_states))
 
     if colors is None:
-        cmap = matplotlib.pyplot.get_cmap("tab10")
+        cmap = plt.get_cmap("tab10")
         colors = [cmap(i / 10) for i in range(num_dicts)]
 
     if len(colors) != len(counts):
