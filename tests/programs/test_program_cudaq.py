@@ -15,6 +15,7 @@ Tests for the CUDAQ program type.
 
 import base64
 import pathlib
+import re
 
 import pytest
 
@@ -86,4 +87,10 @@ def test_cudaq_program_serialize():
     with open(fixture_path, "r", encoding="utf-8") as file:
         expected_qir = file.read()
 
-    assert expected_qir == decoded_qir
+    def _normalize_qir(qir: str) -> str:
+        return re.sub(r"derKernel_[A-Z0-9]+\(\)", "derKernel_PLACEHOLDER()", qir)
+
+    normalized_expected_qir = _normalize_qir(expected_qir)
+    normalized_decoded_qir = _normalize_qir(decoded_qir)
+
+    assert normalized_expected_qir == normalized_decoded_qir
