@@ -29,6 +29,7 @@ Types of changes:
 
 ### Dependencies
 - Migrated to `setuptools>=77` due to TOML-table based `project.license` deprecation in favor of SPDX expression in compliance with [PEP 639](https://peps.python.org/pep-0639) ([#973](https://github.com/qBraid/qBraid/pull/973))
+- Bumped `qbraid-core` dependency to v0.1.39 ([#975](https://github.com/qBraid/qBraid/pull/975))
 
 ## [0.9.6] - 2025-05-02
 
