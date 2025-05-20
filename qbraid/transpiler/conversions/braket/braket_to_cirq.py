@@ -37,7 +37,6 @@ try:
 except ImportError:  # pragma: no cover
     cirq_ionq_ops = None
 
-from qbraid.programs.gate_model.cirq import CirqCircuit as QbraidCircuit
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
@@ -85,6 +84,9 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     Returns:
         Cirq circuit equivalent to the input Braket circuit.
     """
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid.programs.gate_model.cirq import CirqCircuit as QbraidCircuit
+
     bk_qubits = [int(q) for q in circuit.qubits]
     cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]
     qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
