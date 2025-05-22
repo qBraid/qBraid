@@ -143,6 +143,28 @@ def test_timestamps():
         )  # Invalid executionDuration
 
 
+def test_execution_duration_auto_calculation():
+    """Test execution duration auto-calculation."""
+    created = datetime(2025, 5, 22, 15, 8, 57)
+    ended = datetime(2025, 5, 22, 15, 8, 58)
+    ts = TimeStamps(createdAt=created, endedAt=ended)
+    assert ts.executionDuration == 1000  # 1 second in milliseconds
+
+
+def test_execution_duration_none_if_endedAt_missing():
+    """Test execution duration is None if endedAt is missing."""
+    created = datetime(2025, 5, 22, 15, 8, 57)
+    ts = TimeStamps(createdAt=created)
+    assert ts.executionDuration is None  # Not enough data to compute
+
+
+def test_execution_duration_zero_if_same_time():
+    """Test execution duration is zero if createdAt and endedAt are the same."""
+    t = datetime(2025, 5, 22, 15, 8, 57)
+    ts = TimeStamps(createdAt=t, endedAt=t)
+    assert ts.executionDuration == 0
+
+
 def test_runtime_job_model(mock_job_data):
     """Test RuntimeJobModel class."""
 

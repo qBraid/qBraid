@@ -17,7 +17,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, ClassVar, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
@@ -59,9 +59,17 @@ class TimeStamps(BaseModel):
         Returns:
             datetime: Parsed datetime object or None if value is not provided.
         """
-        if value:
+        if value and isinstance(value, str):
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
         return value
+
+    @model_validator(mode="after")
+    def set_execution_duration(self):
+        """Calculates the execution duration if not provided."""
+        if self.executionDuration is None and self.createdAt and self.endedAt:
+            duration = (self.endedAt - self.createdAt).total_seconds() * 1000
+            self.executionDuration = int(duration)
+        return self
 
 
 class RuntimeJobModel(QbraidSchemaBase):

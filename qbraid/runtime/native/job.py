@@ -150,7 +150,9 @@ class QbraidJob(QuantumJob):
             else {"measurement_counts", "measurements"}
         )
         metadata_dump = model.metadata.model_dump(by_alias=True, exclude=exclude)
-        model_dump = model.model_dump(by_alias=True, exclude={"job_id", "device_id", "metadata"})
+        model_dump = model.model_dump(
+            by_alias=True, exclude={"job_id", "device_id", "metadata", "queue_position"}
+        )
         experiment_type: ExperimentType = model_dump["experimentType"]
         status_text = (
             model.status_text or model.status.status_message or model.status.default_message
