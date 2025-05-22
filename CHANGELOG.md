@@ -19,14 +19,18 @@ Types of changes:
 - Added `CudaQKernel.serialize` method that converts cudaq program to QIR string for `run_input` compatible format for `QbraidDevice.submit`. ([#972](https://github.com/qBraid/qBraid/pull/972))
 
 ### Improved / Modified
+- Updated `TimeStamps` schema to auto-compute `executionDuration` from `createdAt` and `endedAt` if not explicitly provided. ([#983](https://github.com/qBraid/qBraid/pull/983))
+- Enhanced `TimeStamps` to accept both `datetime.datetime` objects for `createdAt` and `endedAt` (previously only accepted ISO-formatted strings). ([#983](https://github.com/qBraid/qBraid/pull/983))
 
 ### Deprecated
 
 ### Removed
+- Removed `queue_position` from result details, as it is always `None` and not applicable. ([#983](https://github.com/qBraid/qBraid/pull/983))
 
 ### Fixed
 - Fixed lazy importing bug in `plot_histogram` method ([#972](https://github.com/qBraid/qBraid/pull/972))
 - Fixed bug which caused all `braket` conversions to be unavailable if `cirq` was not installed due to an eager top-level import in `braket_to_cirq.py` which should have been done lazily ([#982](https://github.com/qBraid/qBraid/pull/982))
+- Made Pulser unit test version-agnostic to support any installed Pulser version. ([#983](https://github.com/qBraid/qBraid/pull/983))
 
 ### Dependencies
 - Migrated to `setuptools>=77` due to TOML-table based `project.license` deprecation in favor of SPDX expression in compliance with [PEP 639](https://peps.python.org/pep-0639) ([#973](https://github.com/qBraid/qBraid/pull/973))
