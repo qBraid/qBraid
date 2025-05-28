@@ -32,6 +32,7 @@ Types of changes:
 - Fixed lazy importing bug in `plot_histogram` method ([#972](https://github.com/qBraid/qBraid/pull/972))
 - Fixed bug which caused all `braket` conversions to be unavailable if `cirq` was not installed due to an eager top-level import in `braket_to_cirq.py` which should have been done lazily ([#982](https://github.com/qBraid/qBraid/pull/982))
 - Made Pulser unit test version-agnostic to support any installed Pulser version. ([#983](https://github.com/qBraid/qBraid/pull/983))
+- Fixed the bug that included unregistered program type in `ConversionGraph`. ([#986](SaashaJoshi:unregister))
 
 ### Dependencies
 - Migrated to `setuptools>=77` due to TOML-table based `project.license` deprecation in favor of SPDX expression in compliance with [PEP 639](https://peps.python.org/pep-0639) ([#973](https://github.com/qBraid/qBraid/pull/973))
