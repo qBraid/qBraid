@@ -557,10 +557,29 @@ def test_azure_device_submit(azure_device, mock_target):
     mock_target.submit.assert_called_once_with(run_input)
 
 
-def test_azure_device_submit_batch_job(azure_device):
+def test_azure_device_submit_batch_job(azure_device, mock_target):
     """Test submitting a batch job to an AzureQuantumDevice."""
-    with pytest.raises(ValueError):
-        azure_device.submit(["job1", "job2"], name="batch_job")
+    mock_job1 = Mock()
+    mock_job1.id = "mock_job_1"
+
+    mock_job2 = Mock()
+    mock_job2.id = "mock_job_2"
+
+    mock_target.submit.side_effect = [mock_job1, mock_job2]
+    run_input = ["job1", "job2"]
+    jobs = azure_device.submit(run_input)
+    assert len(jobs) == len(run_input)
+
+    for index, job in enumerate(jobs):
+        assert isinstance(job, AzureQuantumJob)
+        assert job.id == f"mock_job_{index+1}"
+        assert job.workspace == azure_device.workspace
+        assert job.device == azure_device
+
+    for _, qprogram in enumerate(run_input):
+        mock_target.submit.assert_any_call(qprogram)
+
+    assert mock_target.submit.call_count == len(run_input)
 
 
 def test_azure_device_str_representation(azure_device):
