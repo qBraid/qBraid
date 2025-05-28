@@ -57,6 +57,7 @@ class QbraidBatchJob(BatchQuantumJob):
                 }
                 return status_mapping[status]
             else:
+                # TODO: handle mixed statuses
                 return BatchJobStatus.PARTIAL
 
     def result(self) -> list[qbraid.runtime.Result[ResultDataType]]:

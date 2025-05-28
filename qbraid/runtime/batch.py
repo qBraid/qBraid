@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Optional
 from qbraid._logging import logger
 
 from .enums import BatchJobStatus, ExecutionMode
-from .exceptions import ResourceNotFoundError
+from .exceptions import BatchJobError
 from .job import QuantumJob
 
 if TYPE_CHECKING:
@@ -84,20 +84,14 @@ class BatchQuantumJob(ABC):
 
     def begin(self):
         """Begin the batch job context."""
-        # move to device
-        if not self.device.batch_execution_supported():
-            raise ResourceNotFoundError(
-                f"Device {self.device.profile.device_id} is not available for batch jobs."
-            )
         try:
             self.device.create_batch()
-
             # only after successfully creating the batch, we can set the batch id
             self._active = True
         except Exception as e:
             logger.error(f"Failed to create batch on device {self.device.profile.device_id}: {e}")
             self._active = False
-            raise ResourceNotFoundError(
+            raise BatchJobError(
                 f"Failed to create batch on device {self.device.profile.device_id}."
             ) from e
 
@@ -117,7 +111,7 @@ class BatchQuantumJob(ABC):
             logger.error(
                 f"Failed to close batch {self.id} on device {self.device.profile.device_id}: {e}"
             )
-            raise ResourceNotFoundError(
+            raise BatchJobError(
                 f"Failed to close batch {self.id} on device {self.device.profile.device_id}."
             ) from e
 

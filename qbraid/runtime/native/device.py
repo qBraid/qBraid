@@ -27,7 +27,7 @@ from qbraid._logging import logger
 from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.exceptions import BatchJobError
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
@@ -165,7 +165,11 @@ class QbraidDevice(QuantumDevice):
                 Defaults to 3600 seconds (1 hour).
             **kwargs: Additional metadata to include in the batch job.
         """
-        pass
+        if not self.device.batch_execution_supported():
+            raise BatchJobError(
+                f"Device {self.device.profile.device_id} is not available for batch jobs."
+            )
+        pass 
 
     def close_batch(self):
         return super().close_batch()
