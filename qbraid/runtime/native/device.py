@@ -158,6 +158,18 @@ class QbraidDevice(QuantumDevice):
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
 
+    def create_batch(self, max_timeout=3600, **kwargs):
+        """Create a batch job for this device.
+        Args:
+            max_timeout (int, optional): Maximum time in seconds to wait for the batch job.
+                Defaults to 3600 seconds (1 hour).
+            **kwargs: Additional metadata to include in the batch job.
+        """
+        pass
+
+    def close_batch(self):
+        return super().close_batch()
+
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,
         logging an error if it fails."""

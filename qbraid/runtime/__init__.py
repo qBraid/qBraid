@@ -76,6 +76,7 @@ import importlib
 from typing import TYPE_CHECKING
 
 from ._display import display_jobs_from_data
+from .batch import BatchQuantumJob
 from .device import QuantumDevice
 from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
@@ -119,6 +120,7 @@ __all__ = [
     "ProviderLoaderError",
     "TargetProfile",
     "QuantumJob",
+    "BatchQuantumJob",
     "QuantumProvider",
     "RuntimeOptions",
     "NoiseModel",
@@ -163,6 +165,7 @@ _lazy = {
         "QbraidProvider",
         "QbraidDevice",
         "QbraidJob",
+        "QbraidBatchJob",
         "QirRunner",
     ],
     "schemas": [],

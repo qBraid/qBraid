@@ -26,6 +26,7 @@ Classes
     QbraidProvider
     QbraidDevice
     QbraidJob
+    QbraidBatchJob
     QirRunner
 
 ResultData Subclasses
@@ -42,6 +43,7 @@ ResultData Subclasses
 from qbraid_core import QbraidClient, QbraidSession, Session
 from qbraid_core.services.quantum.runner import QirRunner
 
+from .batch import QbraidBatchJob
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
@@ -58,6 +60,7 @@ __all__ = [
     "QbraidProvider",
     "QbraidDevice",
     "QbraidJob",
+    "QbraidBatchJob",
     "QirRunner",
     "QuEraQasmSimulatorResultData",
     "QbraidQirSimulatorResultData",
