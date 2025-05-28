@@ -138,10 +138,16 @@ class ConversionGraph(rx.PyDiGraph):
         """
         transpiler = import_module("qbraid.transpiler.conversions")
         conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
+        conversion_functions = [conversion.split("_to_") for conversion in conversion_functions]
+        conversion_functions = [
+            [source, target]
+            for source, target in conversion_functions
+            if source in QPROGRAM_ALIASES and target in QPROGRAM_ALIASES
+        ]
 
         def construct_conversion(name: str) -> Conversion:
-            source, target = name.split("_to_")
-            conversion_func = getattr(transpiler, name)
+            source, target = name
+            conversion_func = getattr(transpiler, f"{source}_to_{target}")
             return Conversion(source, target, conversion_func, bias=bias)
 
         return [construct_conversion(conversion) for conversion in conversion_functions]
