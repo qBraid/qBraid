@@ -16,6 +16,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+from qbraid_core.services.quantum import QuantumClient
+
 from qbraid._logging import logger
 from qbraid.runtime.batch import BatchQuantumJob
 from qbraid.runtime.enums import BatchJobStatus, JobStatus
@@ -30,9 +32,27 @@ class QbraidBatchJob(BatchQuantumJob):
     """Qbraid batch job class."""
 
     def __init__(
-        self, device: qbraid.runtime.QuantumDevice, max_timeout: Optional[int] = None, **kwargs
+        self, 
+        device: qbraid.runtime.QuantumDevice, max_timeout: Optional[int] = None,
+        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
+        **kwargs
     ):
         super().__init__(device, max_timeout, **kwargs)
+        self._client = client 
+
+    @property
+    def client(self) -> qbraid_core.services.quantum.QuantumClient:
+        """
+        Lazily initializes and returns the client object associated with the batch.
+        If the batch has an associated device with a client, that client is used.
+        Otherwise, a new instance of QuantumClient is created and used.
+
+        Returns:
+            QuantumClient: The client object associated with the batch.
+        """
+        if self._client is None:
+            self._client = self._device.client if self._device else QuantumClient()
+        return self._client
 
     def status(self) -> BatchJobStatus:
         """Return the status of the batch, among the values of ``BatchJobStatus``."""
@@ -41,24 +61,22 @@ class QbraidBatchJob(BatchQuantumJob):
             raise ResourceNotFoundError(
                 "Batch is not active. Please activate batch before status can be retrieved."
             )
-        # TODO: cache this status value for the batch
-        statuses = set([job.status() for job in self.jobs])
-        if self.is_active():
-            # we have a unified status for the batch jobs
-            if len(statuses) == 1:
-                status = statuses.pop()  # Get the single status from the set
-                status_mapping = {
-                    JobStatus.RUNNING: BatchJobStatus.RUNNING,
-                    JobStatus.COMPLETED: BatchJobStatus.COMPLETED,
-                    JobStatus.QUEUED: BatchJobStatus.QUEUED,
-                    JobStatus.CANCELLED: BatchJobStatus.CANCELLED,
-                    JobStatus.FAILED: BatchJobStatus.FAILED,
-                    JobStatus.INITIALIZING: BatchJobStatus.INITIALIZING,
-                }
-                return status_mapping[status]
-            else:
-                # TODO: handle mixed statuses
-                return BatchJobStatus.PARTIAL
+        
+        if self.is_terminal_state() and self._cache_metadata.get("status"):
+            # if the batch is terminal, we can return the cached status
+            return self._cache_metadata["status"]
+        
+        # get back the status from the API
+
+        # TODO: implement refresh_batch in the client
+        self._cache_metadata["status"] = self.client.refresh_batch(self.id)
+        # TODO: implement refresh_batch in the client
+
+        if self.is_active() and self._cache_metadata["status"] in JobStatus.terminal_states():
+            # if the batch is active but the status is terminal, we update the status
+            self._active = False
+        
+        return self._cache_metadata["status"]
 
     def result(self) -> list[qbraid.runtime.Result[ResultDataType]]:
         """Return the results of the batch."""
@@ -82,9 +100,14 @@ class QbraidBatchJob(BatchQuantumJob):
             raise ResourceNotFoundError(
                 "No jobs found in the batch. Please add jobs before cancelling."
             )
-        for job in self.jobs:
-            try:
-                job.cancel()
-            except Exception as e:
-                logger.error(f"Failed to cancel job {job.id}: {e}")
+        logger.info(f"Cancelling batch {self.id} with {len(self.jobs)} jobs.")
+
+        # will implicitly cancel all jobs in the batch IN the API 
+
+        # TODO: implement cancel_batch in the client
+        self.client.cancel_batch(self.id)
+        # TODO: implement cancel_batch in the client
+
+
+        # DO WE TOUCH THE STATUS HERE? 
         logger.info("Batch cancelled successfully.")

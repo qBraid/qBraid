@@ -85,8 +85,8 @@ class BatchQuantumJob(ABC):
     def begin(self):
         """Begin the batch job context."""
         try:
-            self.device.create_batch()
             # only after successfully creating the batch, we can set the batch id
+            self._batch_id = self.device.create_batch(self.max_timeout, self._cache_metadata)
             self._active = True
         except Exception as e:
             logger.error(f"Failed to create batch on device {self.device.profile.device_id}: {e}")
@@ -106,7 +106,7 @@ class BatchQuantumJob(ABC):
         self.active = False
 
         try:
-            self.device.close_batch()
+            self.device.close_batch(self.id)
         except Exception as e:
             logger.error(
                 f"Failed to close batch {self.id} on device {self.device.profile.device_id}: {e}"

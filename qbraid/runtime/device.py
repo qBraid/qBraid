@@ -539,4 +539,9 @@ class QuantumDevice(ABC):
             "batch" if not is_single_input else "",
             self.id,
         )
+        # TODO: update the payload if we are executing in the batch context 
+        # needs update in the API 
         return self.submit(run_input_compat, *args, **kwargs)
+    
+        # TODO: add logic to update the batch with this job ,
+        # no updates in the job object ONLY in the batch -> basically append the IDs
