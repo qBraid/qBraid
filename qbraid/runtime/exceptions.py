@@ -31,6 +31,10 @@ class JobStateError(QbraidError):
     """Class for errors raised due to the state of a quantum job"""
 
 
+class BatchJobError(QbraidError):
+    """Class for errors raised due to a batch job"""
+
+
 class DeviceProgramTypeMismatchError(ProgramValidationError):
     """
     Exception raised when the program type does not match the Experiment type.

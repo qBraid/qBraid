@@ -104,6 +104,88 @@ class JobStatus(Enum):
     HOLD = "HOLD"
 
 
+class BatchJobStatus(Enum):
+    """Enum for the status of batch processes resulting from a batch of quantum jobs.
+
+    Similar to JobStatus but applies to a collection of jobs executed as a batch.
+    """
+
+    def __new__(cls, value: str):
+        """Enumeration representing the status of a batch of quantum jobs."""
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.default_message = cls._get_default_message(value)
+        obj.status_message = None
+        return obj
+
+    @classmethod
+    def _get_default_message(cls, status: str) -> str:
+        """Get the default message for a given status value."""
+        default_messages = {
+            "INITIALIZING": "batch is being initialized",
+            "QUEUED": "batch is queued",
+            "VALIDATING": "batch is being validated",
+            "RUNNING": "batch is actively running",
+            "CANCELLING": "batch is being cancelled",
+            "CANCELLED": "batch has been cancelled",
+            "COMPLETED": "batch has successfully run",
+            "PARTIAL": "batch completed with some failed jobs",
+            "FAILED": "batch failed / incurred error",
+            "UNKNOWN": "batch status is unknown/undetermined",
+            "HOLD": "batch terminal but results withheld due to account status",
+        }
+        message = default_messages.get(status)
+
+        if message is None:
+            raise ValueError(f"Invalid status value: {status}")
+
+        return message
+
+    def set_status_message(self, message: str) -> None:
+        """Set a custom message for the enum instance."""
+        self.status_message = message
+
+    def __repr__(self):
+        """Custom repr to show custom message or default."""
+        message = self.status_message if self.status_message else self.default_message
+        return f"<{self.name}: '{message}'>"
+
+    def __call__(self) -> BatchJobStatus:
+        """Create a new instance of the enum member, allowing unique attributes."""
+        obj = self.__class__(self._value_)
+        obj.default_message = self.default_message
+        return obj
+
+    @classmethod
+    def terminal_states(cls) -> set[BatchJobStatus]:
+        """Returns the final batch job statuses."""
+        return {cls.COMPLETED, cls.PARTIAL, cls.CANCELLED, cls.FAILED}
+
+    INITIALIZING = "INITIALIZING"
+    QUEUED = "QUEUED"
+    VALIDATING = "VALIDATING"
+    RUNNING = "RUNNING"
+    CANCELLING = "CANCELLING"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+    PARTIAL = "PARTIAL"  # New status for batches where some jobs completed and some failed
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+    HOLD = "HOLD"
+
+
+class ExecutionMode(Enum):
+    """Enumeration for execution modes of quantum programs in qBraid runtime.
+
+    Attributes:
+        DEFAULT (str): Default execution mode, typically for single jobs.
+        BATCH (str): Execution mode for batch processing of multiple jobs.
+    """
+
+    DEFAULT = "default"
+    BATCH = "batch"
+
+
 class ValidationLevel(IntEnum):
     """Enumeration for program validation levels in qBraid runtime.
 

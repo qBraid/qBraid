@@ -36,7 +36,8 @@ from qbraid.transpiler import (
     transpile,
 )
 
-from .enums import DeviceStatus, ValidationLevel
+from .batch import BatchQuantumJob
+from .enums import DeviceStatus, ExecutionMode, ValidationLevel
 from .exceptions import ProgramValidationError, ResourceNotFoundError
 from .options import RuntimeOptions
 
@@ -70,6 +71,7 @@ class QuantumDevice(ABC):
         self._target_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
         self._options = self._default_options()
+        self._execution_mode: ExecutionMode = ExecutionMode.DEFAULT
         if options:
             self._options.merge(options, override_validators=False)
 
@@ -99,6 +101,24 @@ class QuantumDevice(ABC):
         if not self._scheme.conversion_graph:
             self._scheme.update_values(conversion_graph=ConversionGraph(include_isolated=True))
         return self._scheme
+
+    @property
+    def execution_mode(self) -> ExecutionMode:
+        """Return the execution mode of the device."""
+        return self._execution_mode
+
+    @execution_mode.setter
+    def execution_mode(self, mode: ExecutionMode):
+        """Set the execution mode of the device."""
+        if not isinstance(mode, ExecutionMode):
+            raise ValueError(
+                f"Invalid execution mode: {mode}. Must be an instance of ExecutionMode."
+            )
+        self._execution_mode = mode
+
+    def batch_execution_supported(self) -> bool:
+        """Check if the device supports batch execution."""
+        return self.profile.batch_execution
 
     def __repr__(self):
         """Return a string representation of the device."""
@@ -483,6 +503,18 @@ class QuantumDevice(ABC):
     ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
         """Vendor run method. Should return dictionary with the following keys."""
 
+    @abstractmethod
+    def create_batch(
+        self,
+        max_timeout: Optional[int] = None,
+        **kwargs: Any,
+    ) -> None:
+        """Create a batch job context for the device."""
+
+    @abstractmethod
+    def close_batch(self) -> None:
+        """Close the current batch job context and update the execution mode to DEFAULT."""
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -507,4 +539,9 @@ class QuantumDevice(ABC):
             "batch" if not is_single_input else "",
             self.id,
         )
+        # TODO: update the payload if we are executing in the batch context 
+        # needs update in the API 
         return self.submit(run_input_compat, *args, **kwargs)
+    
+        # TODO: add logic to update the batch with this job ,
+        # no updates in the job object ONLY in the batch -> basically append the IDs

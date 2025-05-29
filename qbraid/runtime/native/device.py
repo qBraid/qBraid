@@ -26,8 +26,8 @@ from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
 from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.enums import DeviceStatus, ExecutionMode
+from qbraid.runtime.exceptions import BatchJobError, QbraidRuntimeError
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
@@ -157,6 +157,42 @@ class QbraidDevice(QuantumDevice):
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
+
+    def create_batch(self, max_timeout=3600, **kwargs):
+        """Create a batch job for this device.
+        Args:
+            max_timeout (int, optional): Maximum time in seconds to wait for the batch job.
+                Defaults to 3600 seconds (1 hour).
+            **kwargs: Additional metadata to include in the batch job.
+        """
+        if not self.device.batch_execution_supported():
+            raise BatchJobError(
+                f"Device {self.device.profile.device_id} is not available for batch jobs."
+            )
+        self.execution_mode = ExecutionMode.BATCH
+
+        # TODO: implement create_batch in the client
+        return self.client.create_batch(
+            device_id=self.id,
+            max_timeout=max_timeout,
+            metadata=kwargs,
+        )
+        # TODO: implement create_batch in the client
+    
+
+    def close_batch(self, batch_id: str):
+        """Close the batch job context for this device."""
+        if not self.device.batch_execution_supported():
+            raise BatchJobError(
+                f"Device {self.device.profile.device_id} is not available for batch jobs."
+            )
+        
+        self.execution_mode = ExecutionMode.DEFAULT
+
+        # TODO: implement close_batch in the client
+        self.client.close_batch(batch_id)
+        # TODO: implement close_batch in the client
+
 
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,
@@ -373,7 +409,13 @@ class QbraidDevice(QuantumDevice):
                 run_input_json = self.prepare(program)
                 self._validate_run_input_payload(run_input_json, self._target_spec)
                 runtime_payload = {**aux_payload, **run_input_json}
+
+                # TODO: update the payload if we are executing in the batch context 
+                # needs update in the API 
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
+
+                # TODO: add logic to update the batch with this job ,
+                # no updates in the job object ONLY in the batch -> basically append the IDs
                 jobs.append(job)
         return jobs[0] if is_single_input else jobs
 
