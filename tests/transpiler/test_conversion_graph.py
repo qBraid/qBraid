@@ -198,7 +198,9 @@ def test_copy_conversion_graph():
 @pytest.mark.parametrize("program_type", ["qasm2", "qasm3", "pyquil", "braket", "cirq"])
 def test_unregistered_node_in_conversion_graph(program_type):
     """Test the unregistered nodes in ConversionGraph"""
-    assert program_type in QPROGRAM_ALIASES
+    if program_type not in QPROGRAM_ALIASES:
+        pytest.skip(f"{program_type} not installed")
+
     graph = ConversionGraph()
     assert graph.has_node(program_type) is True
 
