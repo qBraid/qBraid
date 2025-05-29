@@ -28,11 +28,11 @@ try:
 except ImportError:
     pyqir_installed = False
 
-from qbraid.programs import ExperimentType, register_program_type
+from qbraid.programs import ExperimentType, register_program_type, unregister_program_type
 from qbraid.programs.ahs import submodules as ahs_submodules
 from qbraid.programs.annealing import submodules as annealing_submodules
 from qbraid.programs.gate_model import submodules as gate_model_submodules
-from qbraid.programs.registry import QPROGRAM_ALIASES
+from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
@@ -193,6 +193,30 @@ def test_copy_conversion_graph():
     assert conversions_init == copy.conversions()
     assert require_native_init == copy.require_native
     assert node_alias_id_map_init == copy._node_alias_id_map
+
+
+@pytest.mark.parametrize("program_type", ["qasm2", "qasm3", "pyquil", "braket", "cirq"])
+def test_unregistered_node_in_conversion_graph(program_type):
+    """Test the unregistered nodes in ConversionGraph"""
+    if program_type not in QPROGRAM_ALIASES:
+        pytest.skip(f"{program_type} not installed")
+
+    graph = ConversionGraph()
+    assert graph.has_node(program_type) is True
+
+    # Backup QPROGRAM registry
+    aliases_backup = QPROGRAM_ALIASES.copy()
+    registry_backup = QPROGRAM_REGISTRY.copy()
+    unregister_program_type(program_type)
+
+    new_graph = ConversionGraph()
+    assert new_graph.has_node(program_type) is False
+
+    # Revert changes.
+    QPROGRAM_ALIASES.clear()
+    QPROGRAM_ALIASES.update(aliases_backup)
+    QPROGRAM_REGISTRY.clear()
+    QPROGRAM_REGISTRY.update(registry_backup)
 
 
 def test_get_path_from_bound_method():
