@@ -138,7 +138,9 @@ class ConversionGraph(rx.PyDiGraph):
         """
         transpiler = import_module("qbraid.transpiler.conversions")
         conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
-        conversion_pairs: list[list[str, str]] = [conversion.split("_to_") for conversion in conversion_functions]
+        conversion_pairs: list[list[str, str]] = [
+            conversion.split("_to_") for conversion in conversion_functions
+        ]
         registered_conversion_pairs: list[list[str, str]] = [
             [source, target]
             for source, target in conversion_pairs

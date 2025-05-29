@@ -194,6 +194,7 @@ def test_copy_conversion_graph():
     assert require_native_init == copy.require_native
     assert node_alias_id_map_init == copy._node_alias_id_map
 
+
 @pytest.mark.parametrize("program_type", ["qasm2", "qasm3", "pyquil", "braket", "cirq"])
 def test_unregistered_node_in_conversion_graph(program_type):
     """Test the unregistered nodes in ConversionGraph"""
@@ -214,6 +215,7 @@ def test_unregistered_node_in_conversion_graph(program_type):
     QPROGRAM_ALIASES.update(aliases_backup)
     QPROGRAM_REGISTRY.clear()
     QPROGRAM_REGISTRY.update(registry_backup)
+
 
 def test_get_path_from_bound_method():
     """Test formatted conversion path logging helper function."""
