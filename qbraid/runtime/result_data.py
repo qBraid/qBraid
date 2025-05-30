@@ -85,11 +85,13 @@ class GateModelResultData(ResultData):
         self,
         measurement_counts: Optional[Union[MeasCount, list[MeasCount]]] = None,
         measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
+        measurement_probabilities: Union[MeasProb, list[MeasProb]] = None,
         **kwargs,
     ):
         """Create a new GateModelResult instance."""
         self._measurement_counts = measurement_counts
         self._measurements = measurements
+        self._measurement_probabilities = measurement_probabilities
         self._unscoped_data = kwargs
         self._cache = {
             "bin_nz": None,
@@ -113,11 +115,17 @@ class GateModelResultData(ResultData):
         """Creates a new GateModelResult instance from a dictionary."""
         measurement_counts = data.pop("measurement_counts", data.pop("measurementCounts", None))
         measurements = data.pop("measurements", None)
+        measurement_probabilities = data.pop("measurement_probabilities", None)
 
         if isinstance(measurements, list):
             measurements = np.array(measurements, dtype=object)
 
-        return cls(measurement_counts=measurement_counts, measurements=measurements, **data)
+        return cls(
+            measurement_counts=measurement_counts,
+            measurements=measurements,
+            measurement_probabilities=measurement_probabilities,
+            **data,
+        )
 
     @property
     def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
@@ -128,6 +136,10 @@ class GateModelResultData(ResultData):
     def measurement_counts(self) -> Optional[Union[MeasCount, list[MeasCount]]]:
         """Returns the histogram data of the run as passed in the constructor."""
         return self._measurement_counts
+
+    def measurement_probabilities(self) -> Union[MeasProb, list[MeasProb]]:
+        """Returns the precomputed measurement probabilities as passed in the constructor."""
+        return self._measurement_probabilities
 
     def get_counts(
         self, include_zero_values: bool = False, decimal: bool = False
@@ -179,10 +191,14 @@ class GateModelResultData(ResultData):
         cache_key = f"prob_{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
 
         if self._cache[cache_key] is not None:
+            # TODO: Fix decimal for measurement_probabilities
             return self._cache[cache_key]
 
-        counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
-        probabilities = counts_to_probabilities(counts)
+        if self._measurement_probabilities:
+            probabilities = self._measurement_probabilities
+        else:
+            counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
+            probabilities = counts_to_probabilities(counts)
 
         self._cache[cache_key] = probabilities
 
@@ -224,10 +240,13 @@ class GateModelResultData(ResultData):
         else:
             measurements_info = self._measurements
 
+        # TODO: Add tests for measurement_probabilities.
+
         return (
             f"{self.__class__.__name__}("
             f"measurement_counts={self._measurement_counts}, "
-            f"measurements={measurements_info}"
+            f"measurements={measurements_info}, "
+            f"measurement_probabilities={self._measurement_probabilities}"
             f")"
         )
 

@@ -657,7 +657,11 @@ def test_repr(result_instance):
         "  device_id=test_device,\n"
         "  job_id=test_job,\n"
         "  success=True,\n"
-        "  data=GateModelResultData(measurement_counts=None, measurements=None)"
+        "  data=GateModelResultData("
+        "measurement_counts=None, "
+        "measurements=None, "
+        "measurement_probabilities=None"
+        ")"
     )
     assert repr(result_instance).startswith(expected_repr)
 
