@@ -84,11 +84,13 @@ class GateModelResultData(ResultData):
     def __init__(
         self,
         measurement_counts: Optional[Union[MeasCount, list[MeasCount]]] = None,
+        computed_prob: Optional[Union[MeasProb, list[MeasProb]]] = None,
         measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
         **kwargs,
     ):
         """Create a new GateModelResult instance."""
         self._measurement_counts = measurement_counts
+        self._computed_prob = computed_prob
         self._measurements = measurements
         self._unscoped_data = kwargs
         self._cache = {
@@ -164,8 +166,9 @@ class GateModelResultData(ResultData):
         self, include_zero_values: bool = False, decimal: bool = False
     ) -> Union[MeasProb, list[MeasProb]]:
         """
-        Returns the probabilities of the measurement outcomes based on counts.
-
+        Returns the probabilities of the measurement outcomes based on counts,
+        or an ideal probability distribution if available for a simulator.
+        
         Args:
             include_zero_values (bool): Whether to include states with zero probabilities.
             decimal (bool): Whether to return probabilities with decimal keys (instead of binary).
@@ -180,23 +183,27 @@ class GateModelResultData(ResultData):
 
         if self._cache[cache_key] is not None:
             return self._cache[cache_key]
-
-        counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
-        probabilities = counts_to_probabilities(counts)
-
-        self._cache[cache_key] = probabilities
-
+        if self._computed_prob is not None:
+            probabilities = self._computed_prob
+            self._cache[cache_key] = probabilities
+        else:
+            counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
+            probabilities = counts_to_probabilities(counts)
+            self._cache[cache_key] = probabilities
         return probabilities
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the GateModelResulData instance to a dictionary."""
         if self._cache["to_dict"] is not None:
             return self._cache["to_dict"]
-
-        counts = self.get_counts()
+        counts = None
+        shots = None
+        num_measured_qubits = None
+        if self._computed_prob is None:
+            counts = self.get_counts()
+            shots = sum(counts.values())
+            num_measured_qubits = len(next(iter(counts)))
         probabilities = self.get_probabilities()
-        shots = sum(counts.values())
-        num_measured_qubits = len(next(iter(counts)))
         data = {
             "shots": shots,
             "num_measured_qubits": num_measured_qubits,
