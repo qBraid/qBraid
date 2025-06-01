@@ -76,13 +76,21 @@ def nec_vector_annealer_result_data() -> NECVectorAnnealerResultData:
     )
 
 
-@pytest.fixture
-def gate_model_result_data():
+@pytest.fixture(params=[True, False])
+def gate_model_result_data(request) -> GateModelResultData:
     """Fixture to create a GateModelResultData object with some test data."""
-    measurement_counts = {"00": 100, "01": 50, "10": 25}
-    measurements = np.array([[0, 0], [0, 1], [1, 0]])
-    return GateModelResultData(measurement_counts=measurement_counts, measurements=measurements)
-
+    is_ideal_distribution = request.param
+    measurement_counts = None
+    computed_prob = None
+    measurements = None
+    if is_ideal_distribution:
+        computed_prob = {"00": .5, "01": .3, "10": .2}
+    else:
+        measurement_counts = {"00": 100, "01": 50, "10": 25}
+        measurements = np.array([[0, 0], [0, 1], [1, 0]])
+    return GateModelResultData(measurement_counts=
+                               measurement_counts,
+                               computed_prob=computed_prob, measurements=measurements)
 
 @pytest.fixture
 def shot_result() -> AhsShotResult:
@@ -301,13 +309,13 @@ def test_result_data_experiment_type():
 def test_to_dict_basic(gate_model_result_data):
     """Test the basic functionality of the to_dict method."""
     result_dict = gate_model_result_data.to_dict()
-
     assert isinstance(result_dict, dict)
-    assert result_dict["shots"] == 175
-    assert result_dict["num_measured_qubits"] == 2
-    assert result_dict["measurement_counts"] == {"00": 100, "01": 50, "10": 25}
-    assert "measurement_probabilities" in result_dict
-    assert np.array_equal(result_dict["measurements"], np.array([[0, 0], [0, 1], [1, 0]]))
+    if gate_model_result_data._computed_prob is None:
+        assert result_dict["shots"] == 175
+        assert result_dict["num_measured_qubits"] == 2
+        assert result_dict["measurement_counts"] == {"00": 100, "01": 50, "10": 25}
+        assert "measurement_probabilities" in result_dict
+        assert np.array_equal(result_dict["measurements"], np.array([[0, 0], [0, 1], [1, 0]]))
 
 
 def test_to_dict_cache(gate_model_result_data):
