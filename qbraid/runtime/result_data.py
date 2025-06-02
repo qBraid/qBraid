@@ -22,7 +22,7 @@ import numpy as np
 
 from qbraid.programs import ExperimentType
 
-from .postprocess import counts_to_probabilities, normalize_counts
+from .postprocess import counts_to_probabilities, normalize_counts, format_counts
 from .schemas.experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
@@ -85,7 +85,7 @@ class GateModelResultData(ResultData):
         self,
         measurement_counts: Optional[Union[MeasCount, list[MeasCount]]] = None,
         measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
-        measurement_probabilities: Union[MeasProb, list[MeasProb]] = None,
+        measurement_probabilities: Optional[Union[MeasProb, list[MeasProb]]] = None,
         **kwargs,
     ):
         """Create a new GateModelResult instance."""
@@ -137,10 +137,6 @@ class GateModelResultData(ResultData):
         """Returns the histogram data of the run as passed in the constructor."""
         return self._measurement_counts
 
-    def measurement_probabilities(self) -> Union[MeasProb, list[MeasProb]]:
-        """Returns the precomputed measurement probabilities as passed in the constructor."""
-        return self._measurement_probabilities
-
     def get_counts(
         self, include_zero_values: bool = False, decimal: bool = False
     ) -> Union[MeasCount, list[MeasCount]]:
@@ -186,16 +182,22 @@ class GateModelResultData(ResultData):
             Union[MeasProb, list[MeasProb]: Probabilities of measurement outcomes.
 
         Raises:
-            ValueError: If probabilities data is not available.
+            ValueError: If probabilities data is not available or if measurement_probabilities is not a dictionary.
         """
         cache_key = f"prob_{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
 
         if self._cache[cache_key] is not None:
-            # TODO: Fix decimal for measurement_probabilities
             return self._cache[cache_key]
 
-        if self._measurement_probabilities:
-            probabilities = self._measurement_probabilities
+        if self._measurement_probabilities is not None:
+            if not isinstance(self._measurement_probabilities, dict):
+                raise ValueError("'measurement_probabilities' must be a dictionary.")
+
+            probabilities = format_counts(
+                self._measurement_probabilities,
+                include_zero_values=include_zero_values,
+                decimal=decimal
+            )
         else:
             counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
             probabilities = counts_to_probabilities(counts)
@@ -239,8 +241,6 @@ class GateModelResultData(ResultData):
             )
         else:
             measurements_info = self._measurements
-
-        # TODO: Add tests for measurement_probabilities.
 
         return (
             f"{self.__class__.__name__}("
