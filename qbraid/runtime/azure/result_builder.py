@@ -31,7 +31,7 @@ import numpy as np
 from azure.quantum import Job
 
 from qbraid.runtime.ionq.job import IonQJob
-from qbraid.runtime.postprocess import counts_to_probabilities, normalize_counts
+from qbraid.runtime.postprocess import counts_to_probabilities, normalize_data
 
 from .io_format import OutputDataFormat
 
@@ -136,7 +136,7 @@ class AzureResultBuilder:
         }
 
         raw_counts = IonQJob._get_counts(data)
-        counts = normalize_counts(raw_counts)
+        counts = normalize_data(raw_counts)
         probabilities = counts_to_probabilities(counts)
 
         return {"counts": counts, "probabilities": probabilities}
@@ -231,7 +231,7 @@ class AzureResultBuilder:
 
         """
         histogram = self.job.get_results()
-        counts = normalize_counts(histogram)
+        counts = normalize_data(histogram)
         probabilities = counts_to_probabilities(counts)
         return {"counts": histogram, "probabilities": probabilities}
 

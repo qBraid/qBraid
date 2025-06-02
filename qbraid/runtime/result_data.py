@@ -22,7 +22,7 @@ import numpy as np
 
 from qbraid.programs import ExperimentType
 
-from .postprocess import counts_to_probabilities, normalize_counts
+from .postprocess import counts_to_probabilities, normalize_data
 from .schemas.experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
@@ -85,11 +85,13 @@ class GateModelResultData(ResultData):
         self,
         measurement_counts: Optional[Union[MeasCount, list[MeasCount]]] = None,
         measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
+        measurement_probabilities: Optional[Union[MeasProb, list[MeasProb]]] = None,
         **kwargs,
     ):
         """Create a new GateModelResult instance."""
         self._measurement_counts = measurement_counts
         self._measurements = measurements
+        self._measurement_probabilities = measurement_probabilities
         self._unscoped_data = kwargs
         self._cache = {
             "bin_nz": None,
@@ -113,11 +115,17 @@ class GateModelResultData(ResultData):
         """Creates a new GateModelResult instance from a dictionary."""
         measurement_counts = data.pop("measurement_counts", data.pop("measurementCounts", None))
         measurements = data.pop("measurements", None)
+        measurement_probabilities = data.pop("measurement_probabilities", None)
 
         if isinstance(measurements, list):
             measurements = np.array(measurements, dtype=object)
 
-        return cls(measurement_counts=measurement_counts, measurements=measurements, **data)
+        return cls(
+            measurement_counts=measurement_counts,
+            measurements=measurements,
+            measurement_probabilities=measurement_probabilities,
+            **data,
+        )
 
     @property
     def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
@@ -152,7 +160,7 @@ class GateModelResultData(ResultData):
 
         if self._cache[cache_key] is not None:
             return self._cache[cache_key]
-        counts = normalize_counts(
+        counts = normalize_data(
             self._measurement_counts, include_zero_values=include_zero_values, decimal=decimal
         )
 
@@ -174,15 +182,26 @@ class GateModelResultData(ResultData):
             Union[MeasProb, list[MeasProb]: Probabilities of measurement outcomes.
 
         Raises:
-            ValueError: If probabilities data is not available.
+            ValueError: If probabilities data is not available or
+                        if measurement_probabilities is not a dictionary.
         """
         cache_key = f"prob_{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
 
         if self._cache[cache_key] is not None:
             return self._cache[cache_key]
 
-        counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
-        probabilities = counts_to_probabilities(counts)
+        if self._measurement_probabilities is not None:
+            if not isinstance(self._measurement_probabilities, dict):
+                raise ValueError("'measurement_probabilities' must be a dictionary.")
+
+            probabilities = normalize_data(
+                self._measurement_probabilities,
+                include_zero_values=include_zero_values,
+                decimal=decimal,
+            )
+        else:
+            counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
+            probabilities = counts_to_probabilities(counts)
 
         self._cache[cache_key] = probabilities
 
@@ -227,7 +246,8 @@ class GateModelResultData(ResultData):
         return (
             f"{self.__class__.__name__}("
             f"measurement_counts={self._measurement_counts}, "
-            f"measurements={measurements_info}"
+            f"measurements={measurements_info}, "
+            f"measurement_probabilities={self._measurement_probabilities}"
             f")"
         )
 

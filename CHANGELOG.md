@@ -22,6 +22,7 @@ Types of changes:
 ### Improved / Modified
 - Updated `TimeStamps` schema to auto-compute `executionDuration` from `createdAt` and `endedAt` if not explicitly provided. ([#983](https://github.com/qBraid/qBraid/pull/983))
 - Enhanced `TimeStamps` to accept both `datetime.datetime` objects for `createdAt` and `endedAt` (previously only accepted ISO-formatted strings). ([#983](https://github.com/qBraid/qBraid/pull/983))
+- Added a `measurement_probabilties` argument to the `GateModelResultData` class. ([#785](https://github.com/qBraid/qBraid/issues/785))
 
 ### Deprecated
 

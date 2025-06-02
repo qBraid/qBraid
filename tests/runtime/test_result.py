@@ -24,10 +24,10 @@ from qbraid.programs import ExperimentType
 from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.postprocess import (
     distribute_counts,
-    format_counts,
+    format_data,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
-    normalize_counts,
+    normalize_data,
 )
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import (
@@ -199,7 +199,7 @@ def result_instance():
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
     """Test formatting of raw measurement counts."""
-    counts_out = format_counts(counts_raw, include_zero_values=include_zero_values)
+    counts_out = format_data(counts_raw, include_zero_values=include_zero_values)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 
@@ -208,7 +208,7 @@ def test_format_counts_empty_input():
     """Test formatting of empty input."""
     counts = {}
     expected = {}
-    assert format_counts(counts) == expected
+    assert format_data(counts) == expected
 
 
 def test_normalize_different_key_lengths():
@@ -276,7 +276,7 @@ def test_batch_normalized_counts():
     """Test batch measurement counts."""
     result = MockBatchResult()
     raw_counts = result.get_counts()
-    counts = normalize_counts(raw_counts, include_zero_values=False)
+    counts = normalize_data(raw_counts, include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
 
@@ -353,6 +353,24 @@ def test_get_probabilities_from_cache(gate_model_result_data):
     gate_model_result_data._cache["prob_dec_nz"] = mock_cached_probs
     retrieved_probs = gate_model_result_data.get_probabilities(decimal=True)
     assert retrieved_probs == mock_cached_probs
+
+
+@pytest.mark.parametrize(
+    "precomputed_probs", ({"00": 0.4, "01": 0.6}, {"00": 0.25, "01": 0.25, "10": 0.25, "11": 0.25})
+)
+def test_precomputed_measurement_probs(precomputed_probs):
+    """Tests that precomputed probabilities are returned from GateModelResultData"""
+    measurement_probs = GateModelResultData(
+        measurement_probabilities=precomputed_probs
+    ).get_probabilities()
+    assert precomputed_probs == measurement_probs
+
+
+@pytest.mark.parametrize("precomputed_probs", ([0.1, 0.7, 0.2], True, False, 0.2, "probabilities"))
+def test_precomputed_measurement_probs_not_dict(precomputed_probs):
+    """Tests that ValueError is raised if 'measurement_probabilities' is not a dictionary."""
+    with pytest.raises(ValueError, match="'measurement_probabilities' must be a dictionary."):
+        GateModelResultData(measurement_probabilities=precomputed_probs).get_probabilities()
 
 
 def test_to_dict_no_counts():
@@ -585,7 +603,7 @@ def test_normalize_batch_decimal_counts():
     """Test normalization of batch measurement counts with decimal=True."""
     counts = [{"00": 10, "01": 15}, {"10": 20, "11": 25}]
     expected = [{0: 10, 1: 15}, {2: 20, 3: 25}]
-    result = normalize_counts(counts, decimal=True)
+    result = normalize_data(counts, decimal=True)
     assert result == expected
 
 
@@ -595,7 +613,7 @@ def test_normalize_batch_decimal_counts():
 def test_format_counts_include_zero_values_decimal(counts):
     """Test format counts include_zero_values option in decimal form."""
     expected = {0: 10, 1: 15, 2: 0, 3: 25}
-    result = format_counts(counts, include_zero_values=True, decimal=True)
+    result = format_data(counts, include_zero_values=True, decimal=True)
     assert result == expected
 
 
@@ -657,7 +675,11 @@ def test_repr(result_instance):
         "  device_id=test_device,\n"
         "  job_id=test_job,\n"
         "  success=True,\n"
-        "  data=GateModelResultData(measurement_counts=None, measurements=None)"
+        "  data=GateModelResultData("
+        "measurement_counts=None, "
+        "measurements=None, "
+        "measurement_probabilities=None"
+        ")"
     )
     assert repr(result_instance).startswith(expected_repr)
 
