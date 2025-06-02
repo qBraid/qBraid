@@ -158,6 +158,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         kwargs["edgecolors"] = edgecolors
 
     plt.ioff()  # Disable interactive mode
+    plt.figure(layout="constrained", figsize=(8, 6))
 
     mpl_draw(
         graph,
