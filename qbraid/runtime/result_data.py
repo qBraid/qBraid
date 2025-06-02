@@ -22,7 +22,7 @@ import numpy as np
 
 from qbraid.programs import ExperimentType
 
-from .postprocess import counts_to_probabilities, format_counts, normalize_counts
+from .postprocess import counts_to_probabilities, normalize_data
 from .schemas.experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
@@ -160,7 +160,7 @@ class GateModelResultData(ResultData):
 
         if self._cache[cache_key] is not None:
             return self._cache[cache_key]
-        counts = normalize_counts(
+        counts = normalize_data(
             self._measurement_counts, include_zero_values=include_zero_values, decimal=decimal
         )
 
@@ -194,7 +194,7 @@ class GateModelResultData(ResultData):
             if not isinstance(self._measurement_probabilities, dict):
                 raise ValueError("'measurement_probabilities' must be a dictionary.")
 
-            probabilities = format_counts(
+            probabilities = normalize_data(
                 self._measurement_probabilities,
                 include_zero_values=include_zero_values,
                 decimal=decimal,

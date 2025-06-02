@@ -24,10 +24,10 @@ from qbraid.programs import ExperimentType
 from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.postprocess import (
     distribute_counts,
-    format_counts,
+    format_data,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
-    normalize_counts,
+    normalize_data,
 )
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import (
@@ -199,7 +199,7 @@ def result_instance():
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
     """Test formatting of raw measurement counts."""
-    counts_out = format_counts(counts_raw, include_zero_values=include_zero_values)
+    counts_out = format_data(counts_raw, include_zero_values=include_zero_values)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 
@@ -208,7 +208,7 @@ def test_format_counts_empty_input():
     """Test formatting of empty input."""
     counts = {}
     expected = {}
-    assert format_counts(counts) == expected
+    assert format_data(counts) == expected
 
 
 def test_normalize_different_key_lengths():
@@ -276,7 +276,7 @@ def test_batch_normalized_counts():
     """Test batch measurement counts."""
     result = MockBatchResult()
     raw_counts = result.get_counts()
-    counts = normalize_counts(raw_counts, include_zero_values=False)
+    counts = normalize_data(raw_counts, include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
 
@@ -603,7 +603,7 @@ def test_normalize_batch_decimal_counts():
     """Test normalization of batch measurement counts with decimal=True."""
     counts = [{"00": 10, "01": 15}, {"10": 20, "11": 25}]
     expected = [{0: 10, 1: 15}, {2: 20, 3: 25}]
-    result = normalize_counts(counts, decimal=True)
+    result = normalize_data(counts, decimal=True)
     assert result == expected
 
 
@@ -613,7 +613,7 @@ def test_normalize_batch_decimal_counts():
 def test_format_counts_include_zero_values_decimal(counts):
     """Test format counts include_zero_values option in decimal form."""
     expected = {0: 10, 1: 15, 2: 0, 3: 25}
-    result = format_counts(counts, include_zero_values=True, decimal=True)
+    result = format_data(counts, include_zero_values=True, decimal=True)
     assert result == expected
 
 
