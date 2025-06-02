@@ -22,7 +22,7 @@ import numpy as np
 
 from qbraid.programs import ExperimentType
 
-from .postprocess import counts_to_probabilities, normalize_counts, format_counts
+from .postprocess import counts_to_probabilities, format_counts, normalize_counts
 from .schemas.experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
@@ -182,7 +182,8 @@ class GateModelResultData(ResultData):
             Union[MeasProb, list[MeasProb]: Probabilities of measurement outcomes.
 
         Raises:
-            ValueError: If probabilities data is not available or if measurement_probabilities is not a dictionary.
+            ValueError: If probabilities data is not available or
+                        if measurement_probabilities is not a dictionary.
         """
         cache_key = f"prob_{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
 
@@ -196,7 +197,7 @@ class GateModelResultData(ResultData):
             probabilities = format_counts(
                 self._measurement_probabilities,
                 include_zero_values=include_zero_values,
-                decimal=decimal
+                decimal=decimal,
             )
         else:
             counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)

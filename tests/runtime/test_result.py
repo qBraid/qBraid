@@ -354,17 +354,24 @@ def test_get_probabilities_from_cache(gate_model_result_data):
     retrieved_probs = gate_model_result_data.get_probabilities(decimal=True)
     assert retrieved_probs == mock_cached_probs
 
-@pytest.mark.parametrize("precomputed_probs", ({"00": 0.4, "01": 0.6}, {"00": 0.25, "01": 0.25, "10": 0.25, "11": 0.25}))
+
+@pytest.mark.parametrize(
+    "precomputed_probs", ({"00": 0.4, "01": 0.6}, {"00": 0.25, "01": 0.25, "10": 0.25, "11": 0.25})
+)
 def test_precomputed_measurement_probs(precomputed_probs):
     """Tests that precomputed probabilities are returned from GateModelResultData"""
-    measurement_probs = GateModelResultData(measurement_probabilities=precomputed_probs).get_probabilities()
+    measurement_probs = GateModelResultData(
+        measurement_probabilities=precomputed_probs
+    ).get_probabilities()
     assert precomputed_probs == measurement_probs
+
 
 @pytest.mark.parametrize("precomputed_probs", ([0.1, 0.7, 0.2], True, False, 0.2, "probabilities"))
 def test_precomputed_measurement_probs_not_dict(precomputed_probs):
     """Tests that ValueError is raised if 'measurement_probabilities' is not a dictionary."""
     with pytest.raises(ValueError, match="'measurement_probabilities' must be a dictionary."):
         GateModelResultData(measurement_probabilities=precomputed_probs).get_probabilities()
+
 
 def test_to_dict_no_counts():
     """Test the to_dict method when measurement counts are not available."""
