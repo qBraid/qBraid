@@ -15,14 +15,6 @@ from qcs_api_client.operations.sync import (
 from .device import RigettiDevice
 
 
-def _build_profile(provider_name: str, device_id: str, num_qubits: int) -> TargetProfile:
-    return TargetProfile(
-        provider_name=provider_name,
-        device_id=device_id,
-        simulator=False,
-        num_qubits=num_qubits,
-    )
-
 
 class RigettiProvider(QuantumProvider):
     """
@@ -33,7 +25,19 @@ class RigettiProvider(QuantumProvider):
         self,
         access_token: str,
     ):
-        self._client = httpx.Client(base_url="https://api.qcs.rigetti.com")
+        self.access_token = access_token or os.getenv("RIGETTI_ACCESS_TOKEN")
+        if not self.access_token:
+            raise ValueError(
+                "A Rigetti access token is required. Set it via RIGETTI_ACCESS_TOKEN or pass directly."
+            )
+
+        self._client = httpx.Client(
+            base_url="https://api.qcs.rigetti.com",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.access_token}",
+            },
+        )
 
     def _get_qubit_count(self, quantum_processor_id: str) -> Optional[int]:
         """
@@ -50,6 +54,16 @@ class RigettiProvider(QuantumProvider):
             pass
         return None
 
+    
+    def _build_profile(self,provider_name: str, device_id: str, num_qubits: int) -> TargetProfile:
+        return TargetProfile(
+            provider_name=provider_name,
+            device_id=device_id,
+            simulator=False,
+            num_qubits=num_qubits,
+        )
+
+
     def get_devices(self, **kwargs) -> List[QuantumDevice]:
         devices: List[QuantumDevice] = []
         response = list_quantum_processors(client=self._client)
@@ -60,7 +74,7 @@ class RigettiProvider(QuantumProvider):
             if qubit_count is None:
                 continue
 
-            profile = _build_profile("rigetti", qpu_id, qubit_count)
+            profile = self._build_profile("rigetti", qpu_id, qubit_count)
             devices.append(RigettiDevice(profile=profile, provider_client=self._client))
 
         return devices
@@ -70,5 +84,5 @@ class RigettiProvider(QuantumProvider):
         if qubit_count is None:
             raise Exception(f"Device {device_id} is not available.")
 
-        profile = _build_profile("rigetti", device_id, qubit_count)
+        profile = self._build_profile("rigetti", device_id, qubit_count)
         return RigettiDevice(profile=profile, provider_client=self._client)
