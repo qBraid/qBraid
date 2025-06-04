@@ -1,13 +1,13 @@
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
+
 
 from qbraid.runtime import (
     QuantumDevice,
-    QuantumJob,
     TargetProfile,
     RuntimeOptions,
 )
-from pyquil import get_qc
-from pyquil.api import QuantumComputer
+import pyquil
+import pyquil.api
 
 from qbraid.runtime.enums import DeviceStatus
 
@@ -19,7 +19,7 @@ class RigettiDevice(QuantumDevice):
     def __init__(
         self,
         profile: TargetProfile,
-        qc: QuantumComputer,
+        qc: pyquil.api.QuantumComputer,
     ):
         """
         profile: A TargetProfile object (constructed by RigettiProvider).
@@ -27,7 +27,6 @@ class RigettiDevice(QuantumDevice):
         # Call base class initializer, passing the TargetProfile
         super().__init__(profile=profile, scheme=None, options=RuntimeOptions())
         self._qc = qc
-        
 
     @property
     def id(self) -> str:
@@ -57,5 +56,6 @@ class RigettiDevice(QuantumDevice):
             return DeviceStatus.ONLINE
         return DeviceStatus.OFFLINE
 
-    def submit(self, run_input, *args, **kwargs):
-        pass
+    def submit(self, run_input: pyquil.Program, *args, **kwargs):
+        compiled_program = self._qc.compile(run_input)
+        return self._qc.qam.execute(compiled_program, *args, **kwargs)

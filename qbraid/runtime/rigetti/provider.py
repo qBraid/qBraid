@@ -1,9 +1,8 @@
 import os
-from typing import Any, Dict, List, Optional
+from typing import List
 
 import httpx
 from pyquil import get_qc
-
 from qbraid.runtime import (
     QuantumProvider,
     QuantumDevice,
@@ -13,6 +12,8 @@ from qcs_api_client.operations.sync import (
     list_quantum_processors,
     get_instruction_set_architecture,
 )
+import pyquil
+import pyquil.api
 
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from .device import RigettiDevice
@@ -47,21 +48,25 @@ class RigettiProvider(QuantumProvider):
         """
         try:
             data = get_instruction_set_architecture(
-                quantum_processor_id=quantum_processor_id,
-                client=self._client
+                quantum_processor_id=quantum_processor_id, client=self._client
             )
             if data and data.parsed and data.parsed.architecture is not None:
                 return True
         except Exception:
             return False
 
-    def _build_profile(self, provider_name: str, device_id: str) -> TargetProfile:
+    def _build_profile(self, provider_name: str, device_id: str, simulator: bool) -> TargetProfile:
         return TargetProfile(
             provider_name=provider_name,
             device_id=device_id,
-            simulator=False,
+            simulator=simulator,
         )
 
+    def _is_simulator(self, qc: pyquil.api.QuantumComputer) -> bool:
+        """
+        Check if the given QuantumComputer instance is a simulator.
+        """
+        return not isinstance(qc.qam, pyquil.api.QPU)
 
     def get_devices(self, **kwargs) -> List[QuantumDevice]:
         devices: List[QuantumDevice] = []
@@ -72,8 +77,9 @@ class RigettiProvider(QuantumProvider):
             if not self._is_qpu_available(qpu_id):
                 continue
 
-            profile = self._build_profile("rigetti", qpu_id)
-            devices.append(RigettiDevice(profile=profile, qc=get_qc(name=qpu_id, as_qvm=False)))
+            qc = get_qc(name=qpu_id)
+            profile = self._build_profile("rigetti", qpu_id, simulator=self._is_simulator(qc))
+            devices.append(RigettiDevice(profile=profile, qc=qc))
 
         return devices
 
@@ -81,5 +87,6 @@ class RigettiProvider(QuantumProvider):
         if not self._is_qpu_available(device_id):
             raise ResourceNotFoundError(f"Device {device_id} is not available.")
 
-        profile = self._build_profile("rigetti", device_id)
-        return RigettiDevice(profile=profile, qc=get_qc(name=device_id, as_qvm=False))
+        qc = get_qc(name=device_id)
+        profile = self._build_profile("rigetti", device_id, simulator=self._is_simulator(qc))
+        return RigettiDevice(profile=profile, qc=qc)
