@@ -1,19 +1,21 @@
+import os
 from typing import Any, Dict, List, Optional
 
 import httpx
+from pyquil import get_qc
 
 from qbraid.runtime import (
     QuantumProvider,
     QuantumDevice,
     TargetProfile,
 )
-from qcs_api_client.client.client import _build_client_kwargs, QCSClientConfiguration
 from qcs_api_client.operations.sync import (
     list_quantum_processors,
     get_instruction_set_architecture,
 )
-from .device import RigettiDevice
 
+from qbraid.runtime.exceptions import ResourceNotFoundError
+from .device import RigettiDevice
 
 
 class RigettiProvider(QuantumProvider):
@@ -39,7 +41,7 @@ class RigettiProvider(QuantumProvider):
             },
         )
 
-    def _get_qubit_count(self, quantum_processor_id: str) -> Optional[int]:
+    def _is_qpu_available(self, quantum_processor_id: str) -> bool:
         """
         Return the number of qubits for a given QPU if available, else None.
         """
@@ -48,19 +50,16 @@ class RigettiProvider(QuantumProvider):
                 quantum_processor_id=quantum_processor_id,
                 client=self._client
             )
-            if data and data.parsed and data.parsed.architecture:
-                return len(data.parsed.architecture.nodes)
+            if data and data.parsed and data.parsed.architecture is not None:
+                return True
         except Exception:
-            pass
-        return None
+            return False
 
-    
-    def _build_profile(self,provider_name: str, device_id: str, num_qubits: int) -> TargetProfile:
+    def _build_profile(self, provider_name: str, device_id: str) -> TargetProfile:
         return TargetProfile(
             provider_name=provider_name,
             device_id=device_id,
             simulator=False,
-            num_qubits=num_qubits,
         )
 
 
@@ -70,19 +69,17 @@ class RigettiProvider(QuantumProvider):
         qpu_ids = [qp.id for qp in response.parsed.quantum_processors]
 
         for qpu_id in qpu_ids:
-            qubit_count = self._get_qubit_count(qpu_id)
-            if qubit_count is None:
+            if not self._is_qpu_available(qpu_id):
                 continue
 
-            profile = self._build_profile("rigetti", qpu_id, qubit_count)
-            devices.append(RigettiDevice(profile=profile, provider_client=self._client))
+            profile = self._build_profile("rigetti", qpu_id)
+            devices.append(RigettiDevice(profile=profile, qc=get_qc(name=qpu_id, as_qvm=False)))
 
         return devices
 
     def get_device(self, device_id: str) -> QuantumDevice:
-        qubit_count = self._get_qubit_count(device_id)
-        if qubit_count is None:
-            raise Exception(f"Device {device_id} is not available.")
+        if not self._is_qpu_available(device_id):
+            raise ResourceNotFoundError(f"Device {device_id} is not available.")
 
-        profile = self._build_profile("rigetti", device_id, qubit_count)
-        return RigettiDevice(profile=profile, provider_client=self._client)
+        profile = self._build_profile("rigetti", device_id)
+        return RigettiDevice(profile=profile, qc=get_qc(name=device_id, as_qvm=False))
