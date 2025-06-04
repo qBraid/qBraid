@@ -19,10 +19,12 @@ from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
+from qbraid_core.services.quantum import QuantumClient
+
 from qbraid._logging import logger
 
 from .enums import BatchJobStatus, ExecutionMode
-from .exceptions import BatchJobError
+from .exceptions import BatchJobError, ResourceNotFoundError
 from .job import QuantumJob
 
 if TYPE_CHECKING:
@@ -37,9 +39,14 @@ class BatchQuantumJob(ABC):
     MAX_TIMEOUT_LIMIT = 24 * 60 * 60  # 24 hours
 
     def __init__(
-        self, device: qbraid.runtime.QuantumDevice, max_timeout: Optional[int] = None, **kwargs
+        self,
+        device: qbraid.runtime.QuantumDevice,
+        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
+        max_timeout: Optional[int] = None,
+        **kwargs,
     ):
         self._device = device
+        self._client = client
         self._jobs: list[QuantumJob] = []
         self.max_timeout = max_timeout if max_timeout is not None else self.MAX_TIMEOUT_DEFAULT
         self._cache_metadata = {**kwargs}
@@ -55,6 +62,20 @@ class BatchQuantumJob(ABC):
     def device(self) -> qbraid.runtime.QuantumDevice:
         """Returns the qbraid QuantumDevice object associated with this batch."""
         return self._device
+
+    @property
+    def client(self) -> qbraid_core.services.quantum.QuantumClient:
+        """
+        Lazily initializes and returns the client object associated with the batch.
+        If the batch has an associated device with a client, that client is used.
+        Otherwise, a new instance of QuantumClient is created and used.
+
+        Returns:
+            QuantumClient: The client object associated with the batch.
+        """
+        if self._client is None:
+            self._client = self._device.client if self._device else QuantumClient()
+        return self._client
 
     @property
     def jobs(self) -> list[QuantumJob]:
@@ -226,17 +247,49 @@ class BatchQuantumJob(ABC):
         await self._wait_for_final_state(timeout, poll_interval)
         return self.result()
 
+    def result(self) -> list[qbraid.runtime.Result[ResultDataType]]:
+        """Return the results of the batch. This is blocking method that waits for the results
+        of all jobs in the batch to be available."""
+
+        if not self.is_active():
+            raise ResourceNotFoundError(
+                "Batch is not active. Please create batch before results can be retrieved."
+            )
+        if not self.jobs:
+            raise ResourceNotFoundError(
+                "No jobs found in the batch. Please add jobs before retrieving results."
+            )
+        return [job.result() for job in self.jobs]
+
+    def cancel(self) -> None:
+        """Attempt to cancel the current jobs in the batch."""
+        if not self.is_active():
+            raise ResourceNotFoundError(
+                "Batch is not active. Please create batch before it can be cancelled."
+            )
+        if not self.jobs:
+            raise ResourceNotFoundError(
+                "No jobs found in the batch. Please add jobs before cancelling."
+            )
+        logger.info(f"Cancelling batch {self.id} with {len(self.jobs)} jobs.")
+
+        # will implicitly cancel all jobs in the batch IN the API
+
+        # TODO: implement cancel_batch in the client
+        self.client.cancel_batch(self.id)
+        # TODO: implement cancel_batch in the client
+
+        # We do not touch the status here
+        logger.info("Batch cancelled successfully.")
+
     @abstractmethod
     def status(self) -> BatchJobStatus:
         """Return the status of the batch, among the values of ``BatchJobStatus``."""
 
     @abstractmethod
-    def result(self) -> list[qbraid.runtime.Result[ResultDataType]]:
-        """Return the results of the batch."""
-
-    @abstractmethod
-    def cancel(self) -> None:
-        """Attempt to cancel the batch."""
+    def aggregate(self) -> qbraid.runtime.BatchResult:
+        """Aggregate the results of the batch into a single object. Depends on the provider
+        and the type of the batch jobs."""
 
     def __repr__(self) -> str:
         """String representation of a BatchQuantumJob object."""

@@ -178,7 +178,6 @@ class QbraidDevice(QuantumDevice):
             metadata=kwargs,
         )
         # TODO: implement create_batch in the client
-    
 
     def close_batch(self, batch_id: str):
         """Close the batch job context for this device."""
@@ -186,13 +185,12 @@ class QbraidDevice(QuantumDevice):
             raise BatchJobError(
                 f"Device {self.device.profile.device_id} is not available for batch jobs."
             )
-        
+
         self.execution_mode = ExecutionMode.DEFAULT
 
         # TODO: implement close_batch in the client
         self.client.close_batch(batch_id)
         # TODO: implement close_batch in the client
-
 
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,
@@ -410,8 +408,8 @@ class QbraidDevice(QuantumDevice):
                 self._validate_run_input_payload(run_input_json, self._target_spec)
                 runtime_payload = {**aux_payload, **run_input_json}
 
-                # TODO: update the payload if we are executing in the batch context 
-                # needs update in the API 
+                # TODO: update the payload if we are executing in the batch context
+                # needs update in the API
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
 
                 # TODO: add logic to update the batch with this job ,

@@ -25,6 +25,28 @@ from qbraid_core.system.generic import _datetime_to_str
 from .result_data import ResultDataType
 
 
+class BatchResult:
+    """Represents the aggregated results of a batch job. This is initialized
+    by a BatchQuantumJob class."""
+
+    def __init__(
+        self,
+        device_id: str,
+        batch_id: str | int,
+        success: bool,
+        data: list[ResultDataType],
+        **kwargs: Any,
+    ):
+        """Create a new BatchResult object."""
+        self.device_id = device_id
+        self.batch_id = batch_id
+        self.success = success
+        self._data = data
+        self._details = kwargs or {}
+
+    # TODO: other things
+
+
 class Result(Generic[ResultDataType]):
     """Represents the results of a quantum job. This class is intended
     to be initialized by a QuantumJob class.
