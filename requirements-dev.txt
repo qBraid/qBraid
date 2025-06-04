@@ -30,6 +30,7 @@ pyqubo>=1.4.0
 pulser-core>=1.4.0; python_version < "3.13"
 pulser-simulation>=1.4.0; python_version < "3.13"
 qcs-api-client>=0.26.5
+pyquil>=4.16.2
 
 # visualization
 ipython
