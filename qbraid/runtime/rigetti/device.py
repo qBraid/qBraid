@@ -1,15 +1,26 @@
-from typing import Any, Dict
+# Copyright (C) 2024 qBraid
+#
+# This file is part of the qBraid-SDK
+#
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+"""
+Module defining Rigettu device class
 
-from qbraid.runtime import (
-    QuantumDevice,
-    TargetProfile,
-    RuntimeOptions,
-)
+"""
+
 import pyquil
 import pyquil.api
 
+from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus
+
+from .job import RigettiJob
+
 
 class RigettiDevice(QuantumDevice):
     """
@@ -25,26 +36,8 @@ class RigettiDevice(QuantumDevice):
         profile: A TargetProfile object (constructed by RigettiProvider).
         """
         # Call base class initializer, passing the TargetProfile
-        super().__init__(profile=profile, scheme=None, options=RuntimeOptions())
+        super().__init__(profile=profile)
         self._qc = qc
-
-    @property
-    def id(self) -> str:
-        return self.profile.device_id
-
-    @property
-    def num_qubits(self) -> int:
-        return len(self._qc.qubits())
-
-    def metadata(self) -> Dict[str, Any]:
-        """
-        Return a dictionary of metadata for this device (e.g., num_qubits, status, etc.).
-        """
-        return {
-            "device_id": self.id,
-            "num_qubits": self.num_qubits,
-            "status": self.status(),
-        }
 
     def status(self) -> DeviceStatus:
         """
@@ -58,4 +51,14 @@ class RigettiDevice(QuantumDevice):
 
     def submit(self, run_input: pyquil.Program, *args, **kwargs):
         compiled_program = self._qc.compile(run_input)
-        return self._qc.qam.execute(compiled_program, *args, **kwargs)
+        execute_response = self._qc.qam.execute(compiled_program, *args, **kwargs)
+        if isinstance(execute_response, pyquil.api.QPUExecuteResponse):
+            job_id = execute_response.job_id
+        else:
+            job_id = "simulator-job"
+        return RigettiJob(
+            job_id=job_id,
+            qam=self._qc.qam,
+            execute_response=execute_response,
+            device_id=self.id,
+        )
