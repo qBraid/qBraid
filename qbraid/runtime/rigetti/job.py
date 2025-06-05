@@ -75,13 +75,31 @@ class RigettiJob(QuantumJob):
                 self._status = JobStatus.CANCELLED
         warnings.warn(UserWarning("QVM jobs cannot be cancelled."))
 
+    def get_result(self) -> dict[str, Any]:
+        """
+        Translate Rigetti's readout data into a format that
+        can be consumed by qBraid runtime.
+
+        """
+        qam_execution_result = self._qam.get_result(self._execute_response)
+        readout = qam_execution_result.get_register_map().get("ro")
+        measurements = ["".join(map(str, row)) for row in readout]
+        counts = {row: measurements.count(row) for row in set(measurements)}
+        total_counts = sum(counts.values())
+        probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
+        return {"counts": counts, "probabilities": probabilities}
+
     def result(self) -> Result:
         """Return the result of the Rigetti job."""
-        self._qam.get_result(self._execute_response)
+        result = self.get_result()
         self._status = JobStatus.COMPLETED
+
         return Result(
             device_id=self._device_id,
             job_id=self._job_id,
             success=True,
-            data=GateModelResultData(),
+            data=GateModelResultData(
+                measurement_counts=result["counts"],
+                measurement_probabilities=result["probabilities"],
+            ),
         )
