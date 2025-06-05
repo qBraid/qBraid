@@ -87,7 +87,7 @@ class RigettiProvider(QuantumProvider):
         """
         return get_qc(name, as_qvm=self._as_qvm)
 
-    def get_devices(self) -> list[QuantumDevice]:
+    def get_devices(self) -> list[RigettiDevice]:
         devices: list[QuantumDevice] = []
         response = list_quantum_processors(client=self._client)
         qpu_ids = [qp.id for qp in response.parsed.quantum_processors]
@@ -99,7 +99,7 @@ class RigettiProvider(QuantumProvider):
 
         return devices
 
-    def get_device(self, device_id: str) -> QuantumDevice:
+    def get_device(self, device_id: str) -> RigettiDevice:
         if not self._is_qpu_available(device_id):
             raise ResourceNotFoundError(f"Device {device_id} is not available.")
 

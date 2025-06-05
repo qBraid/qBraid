@@ -62,3 +62,10 @@ class RigettiDevice(QuantumDevice):
             execute_response=execute_response,
             device_id=self.id,
         )
+
+    @property
+    def live_qubits(self):
+        """
+        Returns a list of live qubits for the device.
+        """
+        return [q.id for q in self._qc.to_compiler_isa().qubits.values() if not q.dead]
