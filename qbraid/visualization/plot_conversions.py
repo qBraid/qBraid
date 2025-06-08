@@ -159,9 +159,13 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     plt.ioff()  # Disable interactive mode
 
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
     mpl_draw(
         graph,
         pos,
+        ax=ax,
         node_color=ncolors,
         edge_color=ecolors,
         node_size=node_size,
@@ -170,6 +174,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         min_target_margin=min_target_margin,
         **kwargs,
     )
+
+    ax.margins(0.15, 0.15)
 
     if title:
         plt.title(title)
@@ -240,6 +246,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             ha="left",
             va="bottom",
         )
+
+    fig.tight_layout()
 
     if save_path:
         plt.savefig(save_path, bbox_inches="tight", dpi=300)
