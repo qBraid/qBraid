@@ -15,8 +15,8 @@ Module defining Rigettu device class
 
 import pyquil.api
 from pyquil.api import get_qc
-from qcs_sdk.qpu.isa import get_instruction_set_architecture, GetISAError
 from qcs_sdk.qpu.api import SubmissionError
+from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 
 from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus

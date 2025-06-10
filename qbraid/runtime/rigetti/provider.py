@@ -15,14 +15,15 @@ Module defining Rigettu provider class
 
 import os
 
+from pyquil.api import QCSClient, get_qc
 from qcs_sdk.client import AuthServer, OAuthSession, RefreshToken
 from qcs_sdk.qpu import list_quantum_processors
 from qcs_sdk.qpu.isa import get_instruction_set_architecture
-from pyquil.api import QCSClient, get_qc
 
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime import QuantumDevice, QuantumProvider, TargetProfile
+
 from .device import RigettiDevice
 
 

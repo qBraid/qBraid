@@ -14,7 +14,7 @@ Module defining Rigetti job class
 """
 
 import warnings
-from typing import Any, TypeVar, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import pyquil.api
 from qcs_sdk.qpu.api import QpuApiError
