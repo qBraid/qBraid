@@ -14,15 +14,19 @@ Module defining Rigetti job class
 """
 
 import warnings
-from typing import Any, TypeVar
+from typing import Any, TypeVar, TYPE_CHECKING
 
 import pyquil.api
+from qcs_sdk.qpu.api import QpuApiError
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
+
+if TYPE_CHECKING:
+    from .device import RigettiDevice
 
 T = TypeVar("T")
 """A generic parameter describing the opaque job handle returned from QAM#execute and subclasses."""
@@ -38,9 +42,9 @@ class RigettiJob(QuantumJob):
     def __init__(
         self,
         job_id: str | int,
+        device: "RigettiDevice",
         qam: pyquil.api.QAM,
         execute_response: T,
-        device_id: str,
         **kwargs: Any,
     ):
         """
@@ -49,7 +53,7 @@ class RigettiJob(QuantumJob):
         super().__init__(job_id=job_id, **kwargs)
         self._qam = qam
         self._execute_response = execute_response
-        self._device_id = device_id
+        self._device = device
         self._status = JobStatus.RUNNING
 
     def status(self) -> JobStatus:
@@ -91,11 +95,20 @@ class RigettiJob(QuantumJob):
 
     def result(self) -> Result:
         """Return the result of the Rigetti job."""
-        result = self.get_result()
+        try:
+            result = self.get_result()  # blocks until the job is complete
+        except QpuApiError:
+            self._status = JobStatus.FAILED
+            return Result(
+                device_id=self._device.profile.device_id,
+                job_id=self._job_id,
+                success=False,
+                data=None,
+            )
         self._status = JobStatus.COMPLETED
 
         return Result(
-            device_id=self._device_id,
+            device_id=self._device.profile.device_id,
             job_id=self._job_id,
             success=True,
             data=GateModelResultData(

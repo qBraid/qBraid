@@ -13,13 +13,15 @@ Module defining Rigettu device class
 
 """
 
-import pyquil
 import pyquil.api
+from pyquil.api import get_qc
+from qcs_sdk.qpu.isa import get_instruction_set_architecture, GetISAError
+from qcs_sdk.qpu.api import SubmissionError
 
 from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus
 
-from .job import RigettiJob
+from .job import RigettiJob, RigettiJobError
 
 
 class RigettiDevice(QuantumDevice):
@@ -30,14 +32,17 @@ class RigettiDevice(QuantumDevice):
     def __init__(
         self,
         profile: TargetProfile,
-        qc: pyquil.api.QuantumComputer,
+        qcs_client: pyquil.api.QCSClient,
     ):
         """
         profile: A TargetProfile object (constructed by RigettiProvider).
         """
         # Call base class initializer, passing the TargetProfile
         super().__init__(profile=profile)
-        self._qc = qc
+        self._qcs_client = qcs_client
+        self._qc = get_qc(
+            name=profile.device_id, as_qvm=profile.simulator, client_configuration=qcs_client
+        )
 
     def status(self) -> DeviceStatus:
         """
@@ -45,13 +50,24 @@ class RigettiDevice(QuantumDevice):
         This is a placeholder; actual implementation may vary based on QCS API.
         """
         # For now, we assume the device is always available
-        if self._qc.qubits():
+        if self.profile.simulator:
+            # If it's a simulator, we consider it always online
             return DeviceStatus.ONLINE
-        return DeviceStatus.OFFLINE
+        try:
+            get_instruction_set_architecture(
+                quantum_processor_id=self.profile.device_id,
+                client=self._qcs_client,
+            )
+        except GetISAError:
+            return DeviceStatus.OFFLINE
+        return DeviceStatus.ONLINE
 
     def submit(self, run_input: pyquil.Program, *args, **kwargs):
         compiled_program = self._qc.compile(run_input)
-        execute_response = self._qc.qam.execute(compiled_program, *args, **kwargs)
+        try:
+            execute_response = self._qc.qam.execute(compiled_program, *args, **kwargs)
+        except SubmissionError as e:
+            raise RigettiJobError("Failed to submit job to Rigetti QCS.") from e
         if isinstance(execute_response, pyquil.api.QPUExecuteResponse):
             job_id = execute_response.job_id
         else:
@@ -60,10 +76,9 @@ class RigettiDevice(QuantumDevice):
             job_id=job_id,
             qam=self._qc.qam,
             execute_response=execute_response,
-            device_id=self.id,
+            device=self,
         )
 
-    @property
     def live_qubits(self):
         """
         Returns a list of live qubits for the device.
