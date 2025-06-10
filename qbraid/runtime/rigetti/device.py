@@ -92,12 +92,9 @@ class RigettiDevice(QuantumDevice):
         Submit one or more jobs to the Rigetti device.
         """
         if isinstance(run_input, list):
-            quantum_jobs = []
             with ThreadPool(5) as pool:
-                quantum_jobs = pool.map(
-                    lambda job: self._submit(job, *args, **kwargs), quantum_jobs
-                )
-            return quantum_jobs
+                quantum_jobs = pool.map(lambda job: self._submit(job, *args, **kwargs), run_input)
+                return quantum_jobs
 
         return self._submit(run_input, *args, **kwargs)
 
