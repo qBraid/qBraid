@@ -143,7 +143,6 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "To avoid this issue, please upgrade to rustworkx>=0.16.0.",
             UserWarning,
         )
-    plot_margin = kwargs.pop("plot_margin", 0.1)
     seed = seed or random.randint(1, 999)
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
     pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)
