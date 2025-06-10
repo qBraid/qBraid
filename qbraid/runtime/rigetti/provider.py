@@ -15,6 +15,7 @@ Module defining Rigettu provider class
 
 import os
 
+import pyquil
 from pyquil.api import QCSClient, get_qc
 from qcs_sdk.client import AuthServer, OAuthSession, RefreshToken
 from qcs_sdk.qpu import list_quantum_processors
@@ -88,7 +89,7 @@ class RigettiProvider(QuantumProvider):
             device_id=device_id,
             simulator=self._as_qvm,
             experiment_type=ExperimentType.GATE_MODEL,
-            program_spec=ProgramSpec(str, alias="qasm3"),
+            program_spec=ProgramSpec(pyquil.Program),
             num_qubits=num_qubits,
             provider_name="rigetti",
         )
