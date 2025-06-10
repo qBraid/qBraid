@@ -76,6 +76,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     edge_labels: bool = False,
     experiment_type: Optional[ExperimentType | Iterable[ExperimentType]] = None,
     target_nodes: Optional[Iterable[str]] = None,
+    margin: float = 0.1,
     **kwargs,
 ) -> None:
     """
@@ -99,6 +100,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         experiment_type (ExperimentType | Iterable[ExperimentType] | None): Filter the
             graph by experiment type. Defaults to None, meaning all experiment types are included.
         target_nodes (Iterable[str] | None): Nodes to be outlined in the plot. Defaults to None.
+        margin (float): Set margins around the data for autoscaling axis limits. Autoscaling determines the axis limits by adding margin times the data interval as padding around the data. Defaults to 0.1.
 
     Returns:
         None
@@ -175,7 +177,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         **kwargs,
     )
 
-    ax.margins(plot_margin, plot_margin)
+    ax.margins(margin, margin)
 
     if title:
         plt.title(title)
