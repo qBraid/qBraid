@@ -13,6 +13,9 @@ Module defining Rigettu device class
 
 """
 
+from multiprocessing.pool import ThreadPool
+from typing import Union
+
 import pyquil.api
 from pyquil.api import get_qc
 from qcs_sdk.qpu.api import SubmissionError
@@ -62,7 +65,10 @@ class RigettiDevice(QuantumDevice):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
-    def submit(self, run_input: pyquil.Program, *args, **kwargs):
+    def _submit(self, run_input: pyquil.Program, *args, **kwargs) -> RigettiJob:
+        """
+        Submit a job to the Rigetti device.
+        """
         compiled_program = self._qc.compile(run_input)
         try:
             execute_response = self._qc.qam.execute(compiled_program, *args, **kwargs)
@@ -79,7 +85,23 @@ class RigettiDevice(QuantumDevice):
             device=self,
         )
 
-    def live_qubits(self):
+    def submit(
+        self, run_input: Union[pyquil.Program, list[pyquil.Program]], *args, **kwargs
+    ) -> Union[RigettiJob, list[RigettiJob]]:
+        """
+        Submit one or more jobs to the Rigetti device.
+        """
+        if isinstance(run_input, list):
+            quantum_jobs = []
+            with ThreadPool(5) as pool:
+                quantum_jobs = pool.map(
+                    lambda job: self._submit(job, *args, **kwargs), quantum_jobs
+                )
+            return quantum_jobs
+
+        return self._submit(run_input, *args, **kwargs)
+
+    def live_qubits(self) -> list[int]:
         """
         Returns a list of live qubits for the device.
         """
