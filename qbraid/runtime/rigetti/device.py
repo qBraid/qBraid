@@ -80,7 +80,6 @@ class RigettiDevice(QuantumDevice):
             job_id = "simulator-job"
         return RigettiJob(
             job_id=job_id,
-            qam=self._qc.qam,
             execute_response=execute_response,
             device=self,
         )

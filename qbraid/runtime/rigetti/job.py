@@ -43,7 +43,6 @@ class RigettiJob(QuantumJob):
         self,
         job_id: str | int,
         device: "RigettiDevice",
-        qam: pyquil.api.QAM,
         execute_response: T,
         **kwargs: Any,
     ):
@@ -51,7 +50,7 @@ class RigettiJob(QuantumJob):
         Initialize the Rigetti job with a job ID and an optional device.
         """
         super().__init__(job_id=job_id, **kwargs)
-        self._qam = qam
+        self._qam = device._qc.qam
         self._execute_response = execute_response
         self._device = device
         self._status = JobStatus.RUNNING

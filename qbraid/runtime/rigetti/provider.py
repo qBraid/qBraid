@@ -39,7 +39,7 @@ class RigettiProvider(QuantumProvider):
         as_qvm: bool = True,
     ):
         self._qcs_client = qcs_client
-        if self._qcs_client is not None:
+        if self._qcs_client is None:
             self.refresh_token = os.getenv("RIGETTI_REFRESH_TOKEN")
             if not self.refresh_token:
                 raise ValueError(

@@ -98,13 +98,17 @@ def client_configuration() -> QCSClient:
     return QCSClient.load()
 
 
-def test_build_profile_qvm():
-    provider = RigettiProvider(qcs_client=None, as_qvm=True)
+@pytest.fixture(scope="session")
+def rigetti_provider(client_configuration):
+    return RigettiProvider(qcs_client=client_configuration, as_qvm=True)
+
+
+def test_build_profile_qvm(rigetti_provider):
     with patch("qbraid.runtime.rigetti.provider.get_qc") as mock_get_qc:
         qc = Mock()
         qc.qubits.return_value = [0, 1, 2]
         mock_get_qc.return_value = qc
-        profile = provider._build_profile(DEVICE_ID)
+        profile = rigetti_provider._build_profile(DEVICE_ID)
         assert profile.device_id == DEVICE_ID
         assert profile.simulator is True
         assert profile.num_qubits == 3
@@ -125,8 +129,7 @@ def test_build_profile_qpu(client_configuration):
         assert profile.num_qubits == 4
 
 
-def test_get_devices(target_profile):
-    provider = RigettiProvider(qcs_client=None, as_qvm=True)
+def test_get_devices(target_profile, rigetti_provider):
     with (
         patch("qbraid.runtime.rigetti.provider.list_quantum_processors", return_value=[DEVICE_ID]),
         patch(
@@ -135,20 +138,19 @@ def test_get_devices(target_profile):
         patch("qbraid.runtime.rigetti.device.get_qc", return_value=Mock()),
     ):
         mock_build_profile.return_value = target_profile
-        devices = provider.get_devices()
+        devices = rigetti_provider.get_devices()
         assert isinstance(devices, list)
         assert isinstance(devices[0], RigettiDevice)
 
 
-def test_get_device(client_configuration):
-    provider = RigettiProvider(qcs_client=client_configuration, as_qvm=True)
+def test_get_device(rigetti_provider):
     with (
         patch("qbraid.runtime.rigetti.device.get_qc") as mock_get_qc,
         patch("qbraid.runtime.rigetti.provider.get_qc") as mock_get_qc_1,
     ):
         mock_get_qc.return_value.qubits.return_value = [0, 1, 2]
         mock_get_qc_1.return_value.qubits.return_value = [0, 1, 2]
-        device = provider.get_device(DEVICE_ID)
+        device = rigetti_provider.get_device(DEVICE_ID)
         assert isinstance(device, RigettiDevice)
 
 
