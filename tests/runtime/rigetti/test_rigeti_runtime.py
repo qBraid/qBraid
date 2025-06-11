@@ -93,29 +93,33 @@ def test_rigetti_provider_init(monkeypatch):
         provider = RigettiProvider(qcs_client=None, as_qvm=False)
         assert isinstance(provider, RigettiProvider)
 
+
 def test_missing_refresh_token(monkeypatch):
     monkeypatch.delenv("RIGETTI_REFRESH_TOKEN", raising=False)
     monkeypatch.setenv("RIGETTI_CLIENT_ID", "dummy_client_id")
     monkeypatch.setenv("RIGETTI_ISSUER", "dummy_issuer")
-    
+
     with pytest.raises(ValueError):
         RigettiProvider(qcs_client=None)
+
 
 def test_missing_client_id(monkeypatch):
     monkeypatch.setenv("RIGETTI_REFRESH_TOKEN", "dummy_token")
     monkeypatch.delenv("RIGETTI_CLIENT_ID", raising=False)
     monkeypatch.setenv("RIGETTI_ISSUER", "dummy_issuer")
-    
+
     with pytest.raises(ValueError):
         RigettiProvider(qcs_client=None)
+
 
 def test_missing_issuer(monkeypatch):
     monkeypatch.setenv("RIGETTI_REFRESH_TOKEN", "dummy_token")
     monkeypatch.setenv("RIGETTI_CLIENT_ID", "dummy_client_id")
     monkeypatch.delenv("RIGETTI_ISSUER", raising=False)
-    
+
     with pytest.raises(ValueError):
         RigettiProvider(qcs_client=None)
+
 
 @pytest.fixture(scope="session")
 def client_configuration() -> QCSClient:
@@ -252,6 +256,7 @@ def test_rigetti_job_status_and_cancel_error(rigetti_device):
         job.cancel()
         assert job.status() == JobStatus.RUNNING
 
+
 def test_rigetti_job_get_result_counts(rigetti_device):
     qam = Mock()
     execute_response = Mock()
@@ -297,6 +302,7 @@ def test_rigetti_job_error_in_submit(rigetti_device):
 
     with pytest.raises(RigettiJobError):
         rigetti_device.submit(Program("X 0"))
+
 
 def test_rigetti_job_in_qpu_submit(rigetti_device):
     mock_qc = Mock()
