@@ -70,13 +70,13 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     seed: Optional[int] = None,
     node_size: int = 1200,
     min_target_margin: int = 18,
+    ax_margins: float = 0.1,
     show: bool = True,
     save_path: Optional[str | Path] = None,
     colors: Optional[dict[str, str]] = None,
     edge_labels: bool = False,
     experiment_type: Optional[ExperimentType | Iterable[ExperimentType]] = None,
     target_nodes: Optional[Iterable[str]] = None,
-    margin: float = 0.1,
     **kwargs,
 ) -> None:
     """
@@ -92,6 +92,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
+        ax_margins (float): Padding added (as a fraction of data range) to auto-scaled
+            axis limits. Defaults to 0.1.
         show (bool): If True, display the figure. Defaults to True.
         save_path (str | Path | None): Path to save the figure. If None, figure is not saved.
         colors (dict[str, str] | None): Node and edge colors with keys 'target_node_outline',
@@ -100,7 +102,6 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         experiment_type (ExperimentType | Iterable[ExperimentType] | None): Filter the
             graph by experiment type. Defaults to None, meaning all experiment types are included.
         target_nodes (Iterable[str] | None): Nodes to be outlined in the plot. Defaults to None.
-        margin (float): Set margins around the data for autoscaling axis limits. Autoscaling determines the axis limits by adding margin times the data interval as padding around the data. Defaults to 0.1.
 
     Returns:
         None
@@ -176,7 +177,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         **kwargs,
     )
 
-    ax.margins(margin, margin)
+    ax.margins(ax_margins, ax_margins)
 
     if title:
         plt.title(title)
