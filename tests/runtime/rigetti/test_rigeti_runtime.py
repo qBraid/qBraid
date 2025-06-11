@@ -16,6 +16,7 @@ Unit tests for Rigetti runtime
 from unittest.mock import Mock, patch
 
 import pyquil
+import pyquil.api
 import pytest
 from pyquil import Program
 from qcs_sdk import QCSClient
@@ -92,6 +93,29 @@ def test_rigetti_provider_init(monkeypatch):
         provider = RigettiProvider(qcs_client=None, as_qvm=False)
         assert isinstance(provider, RigettiProvider)
 
+def test_missing_refresh_token(monkeypatch):
+    monkeypatch.delenv("RIGETTI_REFRESH_TOKEN", raising=False)
+    monkeypatch.setenv("RIGETTI_CLIENT_ID", "dummy_client_id")
+    monkeypatch.setenv("RIGETTI_ISSUER", "dummy_issuer")
+    
+    with pytest.raises(ValueError):
+        RigettiProvider(qcs_client=None)
+
+def test_missing_client_id(monkeypatch):
+    monkeypatch.setenv("RIGETTI_REFRESH_TOKEN", "dummy_token")
+    monkeypatch.delenv("RIGETTI_CLIENT_ID", raising=False)
+    monkeypatch.setenv("RIGETTI_ISSUER", "dummy_issuer")
+    
+    with pytest.raises(ValueError):
+        RigettiProvider(qcs_client=None)
+
+def test_missing_issuer(monkeypatch):
+    monkeypatch.setenv("RIGETTI_REFRESH_TOKEN", "dummy_token")
+    monkeypatch.setenv("RIGETTI_CLIENT_ID", "dummy_client_id")
+    monkeypatch.delenv("RIGETTI_ISSUER", raising=False)
+    
+    with pytest.raises(ValueError):
+        RigettiProvider(qcs_client=None)
 
 @pytest.fixture(scope="session")
 def client_configuration() -> QCSClient:
@@ -215,6 +239,19 @@ def test_rigetti_job_cancel_simulator(rigetti_device):
     job.cancel()  # Should warn, but not fail
 
 
+def test_rigetti_job_status_and_cancel_error(rigetti_device):
+    qam = Mock()
+    qam.cancel.side_effect = QpuApiError()
+    execute_response = Mock()
+    rigetti_device._qc.qam = qam
+    job = RigettiJob(job_id="job-1", device=rigetti_device, execute_response=execute_response)
+    assert job.status() == JobStatus.RUNNING
+    # Cancel QPU
+    with patch.object(qam, "__class__", pyquil.api.QPU):
+        qam.cancel.return_value = None
+        job.cancel()
+        assert job.status() == JobStatus.RUNNING
+
 def test_rigetti_job_get_result_counts(rigetti_device):
     qam = Mock()
     execute_response = Mock()
@@ -259,6 +296,17 @@ def test_rigetti_job_error_in_submit(rigetti_device):
     rigetti_device._qc = mock_qc
 
     with pytest.raises(RigettiJobError):
+        rigetti_device.submit(Program("X 0"))
+
+def test_rigetti_job_in_qpu_submit(rigetti_device):
+    mock_qc = Mock()
+    mock_qc.compile.return_value = "compiled"
+    qam = Mock()
+    mock_qc.qam = qam
+    qam.execute.return_value = Mock(job_id="job-123")
+    rigetti_device._qc = mock_qc
+
+    with patch.object(qam.execute.return_value, "__class__", pyquil.api.QPUExecuteResponse):
         rigetti_device.submit(Program("X 0"))
 
 
