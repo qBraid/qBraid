@@ -18,7 +18,7 @@ Types of changes:
 ### Added
 - Added `CudaQKernel.serialize` method that converts cudaq program to QIR string for `run_input` compatible format for `QbraidDevice.submit`. ([#972](https://github.com/qBraid/qBraid/pull/972))
 - Added support for batch jobs for devices from Azure provider. The `AzureQuantumDevice.submit` method now accepts single and batched `qbraid.programs.QPROGRAM` inputs. ([#953](https://github.com/qBraid/qBraid/issues/953))
-- Added the "margin" argument to plot_conversion_graph to prevent possible clipping. ([#993](https://github.com/qBraid/qBraid/pull/993))
+- Added the 'margin' argument to 'plot_conversion_graph' to prevent possible clipping. ([#993](https://github.com/qBraid/qBraid/pull/993))
 
 ### Improved / Modified
 - Updated `TimeStamps` schema to auto-compute `executionDuration` from `createdAt` and `endedAt` if not explicitly provided. ([#983](https://github.com/qBraid/qBraid/pull/983))
