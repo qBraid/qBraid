@@ -65,7 +65,7 @@ class RigettiJob(QuantumJob):
             try:
                 self._status = JobStatus.CANCELLING
                 self._qam.cancel(self._execute_response)
-            except Exception:  # pylint: disable=W0718
+            except QpuApiError:  # pylint: disable=W0718
                 warnings.warn(
                     UserWarning(
                         "Failed to cancel the QPU job. "
