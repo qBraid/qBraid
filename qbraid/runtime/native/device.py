@@ -158,40 +158,6 @@ class QbraidDevice(QuantumDevice):
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
 
-    def create_batch(self, max_timeout=3600, **kwargs):
-        """Create a batch job for this device.
-        Args:
-            max_timeout (int, optional): Maximum time in seconds to wait for the batch job.
-                Defaults to 3600 seconds (1 hour).
-            **kwargs: Additional metadata to include in the batch job.
-        """
-        if not self.device.batch_execution_supported():
-            raise BatchJobError(
-                f"Device {self.device.profile.device_id} is not available for batch jobs."
-            )
-        self.execution_mode = ExecutionMode.BATCH
-
-        # TODO: implement create_batch in the client
-        return self.client.create_batch(
-            device_id=self.id,
-            max_timeout=max_timeout,
-            metadata=kwargs,
-        )
-        # TODO: implement create_batch in the client
-
-    def close_batch(self, batch_id: str):
-        """Close the batch job context for this device."""
-        if not self.device.batch_execution_supported():
-            raise BatchJobError(
-                f"Device {self.device.profile.device_id} is not available for batch jobs."
-            )
-
-        self.execution_mode = ExecutionMode.DEFAULT
-
-        # TODO: implement close_batch in the client
-        self.client.close_batch(batch_id)
-        # TODO: implement close_batch in the client
-
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,
         logging an error if it fails."""

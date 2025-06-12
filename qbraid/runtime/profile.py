@@ -39,7 +39,6 @@ class TargetProfile(BaseModel):
 
     device_id: str
     simulator: bool
-    batch_execution: bool = False
     experiment_type: Optional[ExperimentType] = None
     num_qubits: Optional[int] = None
     program_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = None

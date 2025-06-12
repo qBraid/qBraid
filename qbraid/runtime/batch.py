@@ -51,7 +51,7 @@ class BatchQuantumJob(ABC):
         self.max_timeout = max_timeout if max_timeout is not None else self.MAX_TIMEOUT_DEFAULT
         self._cache_metadata = {**kwargs}
         self._active = False
-        self._batch_id = None
+        self._batch_id = device.create_batch(self.max_timeout)
 
     @property
     def id(self) -> str | int:  # pylint: disable=invalid-name
@@ -80,6 +80,16 @@ class BatchQuantumJob(ABC):
     @property
     def jobs(self) -> list[QuantumJob]:
         """Return the list of jobs in the batch."""
+        # This is a lazy property that fetches the jobs from the device.
+        # NOTE: batch is a derived concept BUT device is an atomic concept
+        # Device can exist without a batch, but not vice versa.
+
+        # So, to get the jobs of a batch, we need to query the device.
+        # We can think of caching at a later stage, but for now, we will just fetch the jobs
+        self._jobs = self.device.get_batch_jobs(self.id)
+
+        # now, from the api we will get a list of json repr, which we will convert
+        # to the QuantumJob objects
         return self._jobs
 
     @property
@@ -105,15 +115,17 @@ class BatchQuantumJob(ABC):
 
     def begin(self):
         """Begin the batch job context."""
+        if self.is_active():
+            logger.warning(f"Batch {self.id} is already active. No action taken on begin.")
+            return
         try:
-            # only after successfully creating the batch, we can set the batch id
-            self._batch_id = self.device.create_batch(self.max_timeout, self._cache_metadata)
+            # activate the batch on the device
+            self.device.activate_batch(self.id)
             self._active = True
         except Exception as e:
-            logger.error(f"Failed to create batch on device {self.device.profile.device_id}: {e}")
             self._active = False
             raise BatchJobError(
-                f"Failed to create batch on device {self.device.profile.device_id}."
+                f"Failed to activate batch on device {self.device.profile.device_id}."
             ) from e
 
     def close(self):
@@ -121,17 +133,11 @@ class BatchQuantumJob(ABC):
         if not self.is_active():
             logger.warning(f"Batch {self.id} is not active. No action taken on close.")
             return
-
-        # closing the batch job context and updating execution mode
-        # regardless of the success of the close operation
-        self.active = False
-
         try:
+            # deactivate the batch on the device
             self.device.close_batch(self.id)
+            self.active = False
         except Exception as e:
-            logger.error(
-                f"Failed to close batch {self.id} on device {self.device.profile.device_id}: {e}"
-            )
             raise BatchJobError(
                 f"Failed to close batch {self.id} on device {self.device.profile.device_id}."
             ) from e
@@ -148,19 +154,6 @@ class BatchQuantumJob(ABC):
 
         self.close()
         return False
-
-    def add_job(self, job: QuantumJob) -> None:
-        """Add a job to the batch.
-
-        Args:
-            job: The QuantumJob to add to the batch.
-
-        Raises:
-            ValueError: If the job is already in the batch.
-        """
-        if job in self._jobs:
-            raise ValueError(f"Job '{job.id}' is already in the batch '{self.id}'.")
-        self._jobs.append(job)
 
     def is_active(self) -> bool:
         """Returns True if the batch is active. False otherwise."""
@@ -274,10 +267,7 @@ class BatchQuantumJob(ABC):
         logger.info(f"Cancelling batch {self.id} with {len(self.jobs)} jobs.")
 
         # will implicitly cancel all jobs in the batch IN the API
-
-        # TODO: implement cancel_batch in the client
         self.client.cancel_batch(self.id)
-        # TODO: implement cancel_batch in the client
 
         # We do not touch the status here
         logger.info("Batch cancelled successfully.")

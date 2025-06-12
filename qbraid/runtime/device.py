@@ -36,9 +36,9 @@ from qbraid.transpiler import (
     transpile,
 )
 
-from .batch import BatchQuantumJob
 from .enums import DeviceStatus, ExecutionMode, ValidationLevel
-from .exceptions import ProgramValidationError, ResourceNotFoundError
+from .exceptions import BatchJobError, ProgramValidationError, ResourceNotFoundError
+from .job import QuantumJob
 from .options import RuntimeOptions
 
 if TYPE_CHECKING:
@@ -72,6 +72,9 @@ class QuantumDevice(ABC):
         self._scheme = scheme or ConversionScheme()
         self._options = self._default_options()
         self._execution_mode: ExecutionMode = ExecutionMode.DEFAULT
+
+        # TODO: find a better way to handle batch job context in the run method
+        self._current_batch_id: Optional[str] = None
         if options:
             self._options.merge(options, override_validators=False)
 
@@ -116,9 +119,17 @@ class QuantumDevice(ABC):
             )
         self._execution_mode = mode
 
-    def batch_execution_supported(self) -> bool:
-        """Check if the device supports batch execution."""
-        return self.profile.batch_execution
+    @property
+    def current_batch_id(self) -> Optional[str]:
+        """Return the current batch ID."""
+        return self._current_batch_id
+
+    @current_batch_id.setter
+    def current_batch_id(self, batch_id: str):
+        """Set the current batch ID."""
+        if not isinstance(batch_id, str):
+            raise ValueError("Batch ID must be a string.")
+        self._current_batch_id = batch_id
 
     def __repr__(self):
         """Return a string representation of the device."""
@@ -503,17 +514,70 @@ class QuantumDevice(ABC):
     ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
         """Vendor run method. Should return dictionary with the following keys."""
 
-    @abstractmethod
     def create_batch(
         self,
         max_timeout: Optional[int] = None,
-        **kwargs: Any,
-    ) -> None:
+    ) -> str:
         """Create a batch job context for the device."""
+        if not isinstance(max_timeout, int) or max_timeout <= 0:
+            raise ValueError("max_timeout must be a positive integer.")
 
-    @abstractmethod
-    def close_batch(self) -> None:
+        if self.execution_mode == ExecutionMode.BATCH:
+            raise BatchJobError(
+                "Cannot create a new batch job context when already in batch execution mode. "
+                "Please close the current batch context first."
+            )
+
+        logger.debug(
+            "Creating batch job context for device '%s' with max timeout %d seconds",
+            self.id,
+            max_timeout,
+        )
+
+        batch_data = {
+            "qbraidDeviceId": self.id,
+            "maxTimeout": max_timeout,
+        }
+        try:
+            batch_response = self.client.create_batch(data=batch_data)
+            self.current_batch_id = batch_response.get("qbraidBatchId")
+        except Exception as e:
+            logger.error("Failed to create batch job context: %s", e)
+            raise BatchJobError("Failed to create batch job context.") from e
+
+        return self.current_batch_id
+
+    def activate_batch(self, batch_id: str) -> None:
+        """Activate a batch job context for the device and update the execution mode to BATCH."""
+        if self.execution_mode == ExecutionMode.BATCH:
+            raise BatchJobError(
+                "Already in batch execution mode. Please close the current batch context first."
+            )
+        self.client.activate_batch(batch_id)
+        self.execution_mode = ExecutionMode.BATCH
+
+        logger.debug("Activated batch job context with ID: %s", batch_id)
+
+    def close_batch(self, batch_id: str) -> None:
         """Close the current batch job context and update the execution mode to DEFAULT."""
+        if self.execution_mode != ExecutionMode.BATCH:
+            raise BatchJobError("Cannot close batch job context when not in batch execution mode.")
+        self.client.close_batch(batch_id)
+        self.execution_mode = ExecutionMode.DEFAULT
+
+        logger.debug("Closed batch job context with ID: %s", batch_id)
+
+    def get_batch_jobs(self, batch_id: str) -> list[qbraid.runtime.QuantumJob]:
+        """Retrieve all jobs associated with a specific batch ID."""
+        batch_job = self.client.get_batch_job(batch_id)
+        jobs = batch_job.get("jobs", [])
+        if not jobs:
+            raise ResourceNotFoundError(f"No jobs found for batch ID: {batch_id}")
+        logger.debug("Retrieved %d jobs for batch ID: %s", len(jobs), batch_id)
+
+        return [
+            QuantumJob(job_id=job["qbraidJobId"], device=self, client=self.client) for job in jobs
+        ]
 
     def run(
         self,
@@ -539,9 +603,11 @@ class QuantumDevice(ABC):
             "batch" if not is_single_input else "",
             self.id,
         )
-        # TODO: update the payload if we are executing in the batch context
-        # needs update in the API
-        return self.submit(run_input_compat, *args, **kwargs)
 
-        # TODO: add logic to update the batch with this job ,
-        # no updates in the job object ONLY in the batch -> basically append the IDs
+        jobs = self.submit(run_input_compat, *args, **kwargs)
+        if not isinstance(jobs, list):
+            jobs = [jobs]
+
+        if self.execution_mode == ExecutionMode.BATCH:
+            # post to client
+            self.client.add_jobs_to_batch(self.current_batch_id, [job.id for job in jobs])

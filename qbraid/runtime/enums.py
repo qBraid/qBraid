@@ -122,17 +122,11 @@ class BatchJobStatus(Enum):
     def _get_default_message(cls, status: str) -> str:
         """Get the default message for a given status value."""
         default_messages = {
-            "INITIALIZING": "batch is being initialized",
-            "QUEUED": "batch is queued",
-            "VALIDATING": "batch is being validated",
-            "RUNNING": "batch is actively running",
-            "CANCELLING": "batch is being cancelled",
-            "CANCELLED": "batch has been cancelled",
-            "COMPLETED": "batch has successfully run",
-            "PARTIAL": "batch completed with some failed jobs",
-            "FAILED": "batch failed / incurred error",
-            "UNKNOWN": "batch status is unknown/undetermined",
-            "HOLD": "batch terminal but results withheld due to account status",
+            "PENDING": "inactive, waiting to be started",
+            "ACTIVE_RUNNING": "active, accepting new jobs",
+            "INACTIVE_RUNNING": "in progress, not accepting new jobs",
+            "CLOSED": "completed, not accepting new jobs",
+            "UNKNOWN": "unknown batch status",
         }
         message = default_messages.get(status)
 
@@ -159,19 +153,13 @@ class BatchJobStatus(Enum):
     @classmethod
     def terminal_states(cls) -> set[BatchJobStatus]:
         """Returns the final batch job statuses."""
-        return {cls.COMPLETED, cls.PARTIAL, cls.CANCELLED, cls.FAILED}
+        return {cls.CLOSED, cls.UNKNOWN}
 
-    INITIALIZING = "INITIALIZING"
-    QUEUED = "QUEUED"
-    VALIDATING = "VALIDATING"
-    RUNNING = "RUNNING"
-    CANCELLING = "CANCELLING"
-    CANCELLED = "CANCELLED"
-    COMPLETED = "COMPLETED"
-    PARTIAL = "PARTIAL"  # New status for batches where some jobs completed and some failed
-    FAILED = "FAILED"
+    PENDING = "PENDING"
+    ACTIVE_RUNNING = "ACTIVE_RUNNING"
+    INACTIVE_RUNNING = "INACTIVE_RUNNING"
+    CLOSED = "CLOSED"
     UNKNOWN = "UNKNOWN"
-    HOLD = "HOLD"
 
 
 class ExecutionMode(Enum):
