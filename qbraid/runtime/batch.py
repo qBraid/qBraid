@@ -100,7 +100,7 @@ class BatchQuantumJob(ABC):
         batch_job = self.client.get_batch_job(self.id)
         jobs = batch_job.get("jobs", [])
         if not jobs:
-            raise ResourceNotFoundError(f"No jobs found for batch ID: {self.id}")
+            logger.warning("No jobs found for batch ID: %s", self.id)
 
         logger.debug("Retrieved %d jobs for batch ID: %s", len(jobs), self.id)
 
@@ -132,7 +132,7 @@ class BatchQuantumJob(ABC):
     def begin(self):
         """Begin the batch job context."""
         if self.is_active():
-            logger.warning(f"Batch {self.id} is already active. No action taken on begin.")
+            logger.warning(f"Batch '{self.id}' is already active. No action taken on begin.")
             return
         try:
             # activate the batch on the device
@@ -141,13 +141,13 @@ class BatchQuantumJob(ABC):
         except Exception as e:
             self._active = False
             raise BatchJobError(
-                f"Failed to activate batch on device {self.device.profile.device_id}."
+                f"Failed to activate batch on device '{self.device.profile.device_id}'."
             ) from e
 
     def close(self):
         """Close the batch job context."""
         if not self.is_active():
-            logger.warning(f"Batch {self.id} is not active. No action taken on close.")
+            logger.warning(f"Batch '{self.id}' is not active. No action taken on close.")
             return
         try:
             # deactivate the batch on the device
@@ -158,7 +158,7 @@ class BatchQuantumJob(ABC):
             self.fetch_jobs()
         except Exception as e:
             raise BatchJobError(
-                f"Failed to close batch {self.id} on device {self.device.profile.device_id}."
+                f"Failed to close batch '{self.id}' on device '{self.device.profile.device_id}'."
             ) from e
 
     def __enter__(self) -> BatchQuantumJob:
@@ -169,7 +169,7 @@ class BatchQuantumJob(ABC):
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the runtime context of the batch job."""
         if exc_type is not None:
-            logger.error(f"An error occurred while processing batch {self.id}: {exc_value}")
+            logger.error(f"An error occurred while processing batch '{self.id}': {exc_value}")
 
         self.close()
         return False
@@ -294,7 +294,7 @@ class BatchQuantumJob(ABC):
     def status(self) -> BatchJobStatus:
         """Return the status of the batch, among the values of ``BatchJobStatus``."""
         try:
-            batch_status = self.client.get_batch_job(self.id).get("status")
+            batch_status = self.client.get_batch_job(self.id).get("qbraidStatus")
             self._cache_metadata["status"] = BatchJobStatus(batch_status)
             return self._cache_metadata["status"]
         except Exception as e:

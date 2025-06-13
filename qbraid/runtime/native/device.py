@@ -381,6 +381,10 @@ class QbraidDevice(QuantumDevice):
                 # TODO: add logic to update the batch with this job ,
                 # no updates in the job object ONLY in the batch -> basically append the IDs
                 jobs.append(job)
+
+        if self.execution_mode == ExecutionMode.BATCH:
+            self.client.add_jobs_to_batch(self.current_batch_id, [job.id for job in jobs])
+
         return jobs[0] if is_single_input else jobs
 
     def estimate_cost(

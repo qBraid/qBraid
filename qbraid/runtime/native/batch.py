@@ -40,30 +40,6 @@ class QbraidBatchJob(BatchQuantumJob):
     ):
         super().__init__(device, client, max_timeout, **kwargs)
 
-    def status(self) -> BatchJobStatus:
-        """Return the status of the batch, among the values of ``BatchJobStatus``."""
-
-        if not self.id or not self.is_active():
-            raise ResourceNotFoundError(
-                "Batch is not active. Please activate batch before status can be retrieved."
-            )
-        if self.is_terminal_state() and self._cache_metadata.get("status"):
-            # if the batch is terminal, we can return the cached status
-            return self._cache_metadata["status"]
-
-        # Get back the status from the API
-        # offloading the processing to the server so that we don't have to
-        # make multiple requests to get the status of each job in the batch
-
-        # TODO: implement refresh_batch in the client
-        self._cache_metadata["status"] = self.client.refresh_batch(self.id)
-        # TODO: implement refresh_batch in the client
-
-        if self.is_active() and self._cache_metadata["status"] in JobStatus.terminal_states():
-            # if the batch is active but the status is terminal, we update the status
-            self._active = False
-        return self._cache_metadata["status"]
-
     def aggregate(self):
         """Aggregate the results of the qBraid batch job."""
         return super().aggregate()
