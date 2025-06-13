@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Optional
 
 import qbraid_core
 
-from qbraid._logging import logger
 from qbraid.runtime.batch import BatchQuantumJob
 
 from .job import QbraidJob

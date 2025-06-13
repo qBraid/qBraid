@@ -88,7 +88,7 @@ class BatchQuantumJob(ABC):
         """Set the list of jobs in the batch."""
         if not all(isinstance(job, QuantumJob) for job in jobs):
             raise TypeError("All jobs in the batch must be QuantumJob instances.")
-    
+
     def _fetch_jobs_from_backend(self) -> list[dict]:
         """
         Fetches job information from the backend for the current batch.
@@ -113,10 +113,9 @@ class BatchQuantumJob(ABC):
         logger.debug("Retrieved %d jobs for batch ID: %s", len(jobs), self.id)
         return jobs
 
-    
     @abstractmethod
     def fetch_jobs(self) -> list[QuantumJob]:
-        """Fetch the jobs associated with the batch from the backend and populate the 
+        """Fetch the jobs associated with the batch from the backend and populate the
         `._jobs` attribute with instances of provider specific QuantumJob classes."""
 
     @property

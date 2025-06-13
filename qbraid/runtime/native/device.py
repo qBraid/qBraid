@@ -27,7 +27,7 @@ from qbraid._logging import logger
 from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, ExecutionMode
-from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.exceptions import BatchJobError, QbraidRuntimeError
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
@@ -290,6 +290,59 @@ class QbraidDevice(QuantumDevice):
         entrypoints = get_entrypoints("programs")
         specs = [program_spec] if isinstance(program_spec, ProgramSpec) else program_spec or []
         return all(spec.native and spec.alias in entrypoints for spec in specs)
+
+    def create_batch(
+        self,
+        max_timeout: Optional[int] = None,
+    ) -> str:
+        """Create a batch job context for the device."""
+        if not isinstance(max_timeout, int) or max_timeout <= 0:
+            raise ValueError("max_timeout must be a positive integer.")
+
+        if self.execution_mode == ExecutionMode.BATCH:
+            raise BatchJobError(
+                "Cannot create a new batch job context when already in batch execution mode. "
+                "Please close the current batch context first."
+            )
+
+        logger.debug(
+            "Creating batch job context for device '%s' with max timeout %d seconds",
+            self.id,
+            max_timeout,
+        )
+
+        batch_data = {
+            "qbraidDeviceId": self.id,
+            "maxTimeout": max_timeout,
+        }
+        try:
+            batch_response = self.client.create_batch(data=batch_data)
+            self.current_batch_id = batch_response.get("qbraidBatchId")
+        except Exception as e:
+            logger.error("Failed to create batch job context: %s", e)
+            raise BatchJobError("Failed to create batch job context.") from e
+
+        return self.current_batch_id
+
+    def activate_batch(self, batch_id: str) -> None:
+        """Activate a batch job context for the device and update the execution mode to BATCH."""
+        if self.execution_mode == ExecutionMode.BATCH:
+            raise BatchJobError(
+                "Already in batch execution mode. Please close the current batch context first."
+            )
+        self.client.activate_batch(batch_id)
+        self.execution_mode = ExecutionMode.BATCH
+
+        logger.debug("Activated batch job context with ID: %s", batch_id)
+
+    def close_batch(self, batch_id: str) -> None:
+        """Close the current batch job context and update the execution mode to DEFAULT."""
+        if self.execution_mode != ExecutionMode.BATCH:
+            raise BatchJobError("Cannot close batch job context when not in batch execution mode.")
+        self.client.close_batch(batch_id)
+        self.execution_mode = ExecutionMode.DEFAULT
+
+        logger.debug("Closed batch job context with ID: %s", batch_id)
 
     def run(
         self,
