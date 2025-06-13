@@ -36,7 +36,7 @@ from qbraid.transpiler import (
     transpile,
 )
 
-from .enums import DeviceStatus, ExecutionMode, ValidationLevel
+from .enums import BatchJobStatus, DeviceStatus, ExecutionMode, ValidationLevel
 from .exceptions import BatchJobError, ProgramValidationError, ResourceNotFoundError
 from .job import QuantumJob
 from .options import RuntimeOptions
@@ -567,18 +567,6 @@ class QuantumDevice(ABC):
 
         logger.debug("Closed batch job context with ID: %s", batch_id)
 
-    def get_batch_jobs(self, batch_id: str) -> list[qbraid.runtime.QuantumJob]:
-        """Retrieve all jobs associated with a specific batch ID."""
-        batch_job = self.client.get_batch_job(batch_id)
-        jobs = batch_job.get("jobs", [])
-        if not jobs:
-            raise ResourceNotFoundError(f"No jobs found for batch ID: {batch_id}")
-        logger.debug("Retrieved %d jobs for batch ID: %s", len(jobs), batch_id)
-
-        return [
-            QuantumJob(job_id=job["qbraidJobId"], device=self, client=self.client) for job in jobs
-        ]
-
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -606,8 +594,10 @@ class QuantumDevice(ABC):
 
         jobs = self.submit(run_input_compat, *args, **kwargs)
         if not isinstance(jobs, list):
-            jobs = [jobs]
+            jobs_list = [jobs]
 
         if self.execution_mode == ExecutionMode.BATCH:
             # post to client
-            self.client.add_jobs_to_batch(self.current_batch_id, [job.id for job in jobs])
+            self.client.add_jobs_to_batch(self.current_batch_id, [job.id for job in jobs_list])
+
+        return jobs

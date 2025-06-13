@@ -79,18 +79,34 @@ class BatchQuantumJob(ABC):
 
     @property
     def jobs(self) -> list[QuantumJob]:
-        """Return the list of jobs in the batch."""
-        # This is a lazy property that fetches the jobs from the device.
-        # NOTE: batch is a derived concept BUT device is an atomic concept
-        # Device can exist without a batch, but not vice versa.
-
-        # So, to get the jobs of a batch, we need to query the device.
-        # We can think of caching at a later stage, but for now, we will just fetch the jobs
-        self._jobs = self.device.get_batch_jobs(self.id)
-
-        # now, from the api we will get a list of json repr, which we will convert
-        # to the QuantumJob objects
+        """Return the locally cached list of jobs in the batch.
+        To refresh this list from the backend, call `fetch_jobs()`."""
         return self._jobs
+
+    @jobs.setter
+    def jobs(self, jobs: list[QuantumJob]) -> None:
+        """Set the list of jobs in the batch."""
+        if not all(isinstance(job, QuantumJob) for job in jobs):
+            raise TypeError("All jobs in the batch must be QuantumJob instances.")
+
+        self._jobs = jobs
+
+    def fetch_jobs(self) -> list[QuantumJob]:
+        """Fetch the jobs associated with the batch from the backend.
+        Also updates the cache with the fetched jobs."""
+        if self.is_terminal_state():
+            return self._jobs
+
+        batch_job = self.client.get_batch_job(self.id)
+        jobs = batch_job.get("jobs", [])
+        if not jobs:
+            raise ResourceNotFoundError(f"No jobs found for batch ID: {self.id}")
+
+        logger.debug("Retrieved %d jobs for batch ID: %s", len(jobs), self.id)
+
+        self._jobs = [
+            QuantumJob(job_id=job["qbraidJobId"], device=self, client=self.client) for job in jobs
+        ]
 
     @property
     def max_timeout(self) -> int:
@@ -136,7 +152,10 @@ class BatchQuantumJob(ABC):
         try:
             # deactivate the batch on the device
             self.device.close_batch(self.id)
-            self.active = False
+            self._active = False
+
+            # update the jobs cache
+            self.fetch_jobs()
         except Exception as e:
             raise BatchJobError(
                 f"Failed to close batch {self.id} on device {self.device.profile.device_id}."
@@ -272,9 +291,15 @@ class BatchQuantumJob(ABC):
         # We do not touch the status here
         logger.info("Batch cancelled successfully.")
 
-    @abstractmethod
     def status(self) -> BatchJobStatus:
         """Return the status of the batch, among the values of ``BatchJobStatus``."""
+        try:
+            batch_status = self.client.get_batch_job(self.id).get("status")
+            self._cache_metadata["status"] = BatchJobStatus(batch_status)
+            return self._cache_metadata["status"]
+        except Exception as e:
+            logger.error(f"Failed to get status of batch {self.id}: {e}")
+            raise BatchJobError(f"Failed to get status of batch {self.id}.") from e
 
     @abstractmethod
     def aggregate(self) -> qbraid.runtime.BatchResult:
