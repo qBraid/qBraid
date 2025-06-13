@@ -16,16 +16,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-from qbraid_core.services.quantum import QuantumClient
+import qbraid_core
 
 from qbraid._logging import logger
 from qbraid.runtime.batch import BatchQuantumJob
-from qbraid.runtime.enums import BatchJobStatus, JobStatus
-from qbraid.runtime.exceptions import ResourceNotFoundError
+
+from .job import QbraidJob
 
 if TYPE_CHECKING:
     import qbraid.runtime
-    from qbraid.runtime.result_data import ResultDataType
 
 
 class QbraidBatchJob(BatchQuantumJob):
@@ -40,6 +39,18 @@ class QbraidBatchJob(BatchQuantumJob):
     ):
         super().__init__(device, client, max_timeout, **kwargs)
 
+    def fetch_jobs(self) -> None:
+        """Fetch the jobs associated with this batch."""
+        if self.is_terminal_state():
+            return
+
+        jobs = self._fetch_jobs_from_backend()
+        self._jobs = [
+            # TODO: Is this okay or we need original job objects?
+            # most likely we need original job objects here.
+            QbraidJob(job_id=job["qbraidJobId"], device=self, client=self.client)
+            for job in jobs
+        ]
+
     def aggregate(self):
         """Aggregate the results of the qBraid batch job."""
-        return super().aggregate()

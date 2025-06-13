@@ -27,7 +27,7 @@ from qbraid._logging import logger
 from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, ExecutionMode
-from qbraid.runtime.exceptions import BatchJobError, QbraidRuntimeError
+from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel

@@ -23,7 +23,7 @@ from qbraid_core.services.quantum import QuantumClient
 
 from qbraid._logging import logger
 
-from .enums import BatchJobStatus, ExecutionMode
+from .enums import BatchJobStatus
 from .exceptions import BatchJobError, ResourceNotFoundError
 from .job import QuantumJob
 
@@ -41,7 +41,7 @@ class BatchQuantumJob(ABC):
     def __init__(
         self,
         device: qbraid.runtime.QuantumDevice,
-        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
+        client: Optional[QuantumClient] = None,
         max_timeout: Optional[int] = None,
         **kwargs,
     ):
@@ -64,7 +64,7 @@ class BatchQuantumJob(ABC):
         return self._device
 
     @property
-    def client(self) -> qbraid_core.services.quantum.QuantumClient:
+    def client(self) -> QuantumClient:
         """
         Lazily initializes and returns the client object associated with the batch.
         If the batch has an associated device with a client, that client is used.
@@ -88,25 +88,36 @@ class BatchQuantumJob(ABC):
         """Set the list of jobs in the batch."""
         if not all(isinstance(job, QuantumJob) for job in jobs):
             raise TypeError("All jobs in the batch must be QuantumJob instances.")
+    
+    def _fetch_jobs_from_backend(self) -> list[dict]:
+        """
+        Fetches job information from the backend for the current batch.
 
-        self._jobs = jobs
+        This method retrieves the batch job information from the client,
+        extracts the list of jobs associated with the batch, and performs
+        some basic logging.
 
-    def fetch_jobs(self) -> list[QuantumJob]:
-        """Fetch the jobs associated with the batch from the backend.
-        Also updates the cache with the fetched jobs."""
-        if self.is_terminal_state():
-            return self._jobs
+        Returns:
+            list[dict]: A list of dictionaries, where each dictionary contains
+                        information about a job in the batch. If no jobs are found,
+                        an empty list is returned.
 
+        Note:
+            This method logs a warning if no jobs are found for the batch,
+            and logs debug information about the number of jobs retrieved.
+        """
         batch_job = self.client.get_batch_job(self.id)
         jobs = batch_job.get("jobs", [])
         if not jobs:
             logger.warning("No jobs found for batch ID: %s", self.id)
-
         logger.debug("Retrieved %d jobs for batch ID: %s", len(jobs), self.id)
+        return jobs
 
-        self._jobs = [
-            QuantumJob(job_id=job["qbraidJobId"], device=self, client=self.client) for job in jobs
-        ]
+    
+    @abstractmethod
+    def fetch_jobs(self) -> list[QuantumJob]:
+        """Fetch the jobs associated with the batch from the backend and populate the 
+        `._jobs` attribute with instances of provider specific QuantumJob classes."""
 
     @property
     def max_timeout(self) -> int:
@@ -132,7 +143,7 @@ class BatchQuantumJob(ABC):
     def begin(self):
         """Begin the batch job context."""
         if self.is_active():
-            logger.warning(f"Batch '{self.id}' is already active. No action taken on begin.")
+            logger.warning("Batch '%s' is already active. No action taken on begin.", self.id)
             return
         try:
             # activate the batch on the device
@@ -147,7 +158,7 @@ class BatchQuantumJob(ABC):
     def close(self):
         """Close the batch job context."""
         if not self.is_active():
-            logger.warning(f"Batch '{self.id}' is not active. No action taken on close.")
+            logger.warning("Batch '%s' is not active. No action taken on close.", self.id)
             return
         try:
             # deactivate the batch on the device
@@ -169,7 +180,7 @@ class BatchQuantumJob(ABC):
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the runtime context of the batch job."""
         if exc_type is not None:
-            logger.error(f"An error occurred while processing batch '{self.id}': {exc_value}")
+            logger.error("An error occurred while processing batch '%s': %s", self.id, exc_value)
 
         self.close()
         return False
@@ -283,7 +294,7 @@ class BatchQuantumJob(ABC):
             raise ResourceNotFoundError(
                 "No jobs found in the batch. Please add jobs before cancelling."
             )
-        logger.info(f"Cancelling batch {self.id} with {len(self.jobs)} jobs.")
+        logger.info("Cancelling batch '%s' with %d jobs.", self.id, len(self.jobs))
 
         # will implicitly cancel all jobs in the batch IN the API
         self.client.cancel_batch(self.id)
@@ -298,7 +309,7 @@ class BatchQuantumJob(ABC):
             self._cache_metadata["status"] = BatchJobStatus(batch_status)
             return self._cache_metadata["status"]
         except Exception as e:
-            logger.error(f"Failed to get status of batch {self.id}: {e}")
+            logger.error("Failed to get status of batch '%s': %s", self.id, e)
             raise BatchJobError(f"Failed to get status of batch {self.id}.") from e
 
     @abstractmethod
