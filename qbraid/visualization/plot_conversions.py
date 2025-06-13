@@ -70,6 +70,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     seed: Optional[int] = None,
     node_size: int = 1200,
     min_target_margin: int = 18,
+    ax_margins: float = 0.1,
     show: bool = True,
     save_path: Optional[str | Path] = None,
     colors: Optional[dict[str, str]] = None,
@@ -91,6 +92,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
+        ax_margins (float): Padding added (as a fraction of data range) to auto-scaled
+            axis limits. Defaults to 0.1.
         show (bool): If True, display the figure. Defaults to True.
         save_path (str | Path | None): Path to save the figure. If None, figure is not saved.
         colors (dict[str, str] | None): Node and edge colors with keys 'target_node_outline',
@@ -141,7 +144,6 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "To avoid this issue, please upgrade to rustworkx>=0.16.0.",
             UserWarning,
         )
-
     seed = seed or random.randint(1, 999)
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
     pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)
@@ -159,9 +161,13 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     plt.ioff()  # Disable interactive mode
 
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+
     mpl_draw(
         graph,
         pos,
+        ax=ax,
         node_color=ncolors,
         edge_color=ecolors,
         node_size=node_size,
@@ -171,9 +177,11 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         **kwargs,
     )
 
+    ax.margins(ax_margins, ax_margins)
+
     if title:
         plt.title(title)
-    plt.axis("off")
+    plt.axis("on")
 
     if legend:
         legend_info = [
@@ -240,6 +248,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             ha="left",
             va="bottom",
         )
+
+    fig.tight_layout()
 
     if save_path:
         plt.savefig(save_path, bbox_inches="tight", dpi=300)

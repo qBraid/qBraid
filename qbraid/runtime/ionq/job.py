@@ -23,7 +23,7 @@ from qbraid_core._import import LazyLoader
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.postprocess import distribute_counts, normalize_counts
+from qbraid.runtime.postprocess import distribute_counts, normalize_data
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData, MeasCount, MeasProb
 
@@ -96,7 +96,7 @@ class IonQJob(QuantumJob):
         def convert_to_counts(meas_prob: dict[str, float]) -> dict[str, int]:
             """Helper function to normalize probabilities and convert to counts."""
             probs_dec = {int(key): value for key, value in meas_prob.items()}
-            probs_normal = normalize_counts(probs_dec)
+            probs_normal = normalize_data(probs_dec)
             return distribute_counts(probs_normal, shots)
 
         if all(isinstance(value, dict) for value in probabilities.values()):

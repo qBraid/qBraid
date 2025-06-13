@@ -76,8 +76,8 @@ def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
     return normalized_list[0] if normalized_list else measurement
 
 
-def format_counts(
-    counts: dict[Any, Union[int, float]],
+def format_data(
+    data: dict[Any, Union[int, float]],
     include_zero_values: bool = False,
     decimal: bool = False,
 ) -> dict[Any, Union[int, float]]:
@@ -85,7 +85,7 @@ def format_counts(
     Formats and sorts a counts dictionary with binary or integer keys.
 
     Args:
-        counts (dict[Any, Union[int, float]]): Dictionary with keys as binary strings
+        data (dict[Any, Union[int, float]]): Dictionary with keys as binary strings
             (e.g., '0 1') or integers (e.g., 3), and values as counts.
         include_zero_values (bool, optional): Include missing states with zero counts.
             Defaults to False.
@@ -99,83 +99,83 @@ def format_counts(
 
     Examples:
         Basic formatting with binary keys:
-        >>> counts = {'1 1': 13, '0 0': 46, '1 0': 79}
-        >>> format_counts(counts)
+        >>> data = {'1 1': 13, '0 0': 46, '1 0': 79}
+        >>> format_data(data)
         {'00': 46, '10': 79, '11': 13}
 
         Include zero values:
-        >>> format_counts(counts, include_zero_values=True)
+        >>> format_data(data,include_zero_values=True)
         {'00': 46, '01': 0, '10': 79, '11': 13}
 
         Convert binary keys to decimal:
-        >>> format_counts(counts, decimal=True)
+        >>> format_data(data,decimal=True)
         {0: 46, 1: 0, 2: 79, 3: 13}
     """
-    if not counts:
-        return counts
+    if not data:
+        return data
 
     input_is_dec = False
     input_is_bin = False
 
-    if all(isinstance(key, str) for key in counts.keys()):
+    if all(isinstance(key, str) for key in data.keys()):
         if all(
             (key.startswith("0b") and set(key[2:]).issubset({"0", "1", " "}))
             or set(key).issubset({"0", "1", " "})
-            for key in counts.keys()
+            for key in data.keys()
         ):
-            key_str_counts = {
+            key_str_data = {
                 (key.replace(" ", "")[2:] if key.startswith("0b") else key.replace(" ", "")): value
-                for key, value in counts.items()
+                for key, value in data.items()
             }
-            normalized_counts = normalize_bit_lengths(key_str_counts)
-            num_bits = max(len(key) for key in normalized_counts)
+            normalized_data = normalize_bit_lengths(key_str_data)
+            num_bits = max(len(key) for key in normalized_data)
             all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
-            counts = {key: normalized_counts.get(key, 0) for key in all_keys}
+            data = {key: normalized_data.get(key, 0) for key in all_keys}
             input_is_bin = True
-        elif all(key.isdigit() for key in counts.keys()):
-            counts = {int(key): value for key, value in counts.items()}
+        elif all(key.isdigit() for key in data.keys()):
+            data = {int(key): value for key, value in data.items()}
             input_is_dec = True
 
     if decimal:
         if input_is_bin:
-            counts = {int(key, 2): value for key, value in counts.items()}
+            data = {int(key, 2): value for key, value in data.items()}
         elif input_is_dec:
-            counts = {int(key): value for key, value in counts.items()}
+            data = {int(key): value for key, value in data.items()}
 
         if include_zero_values:
-            max_key = max(counts)
+            max_key = max(data)
             for i in range(max_key + 1):
-                if i not in counts:
-                    counts[i] = 0
+                if i not in data:
+                    data[i] = 0
 
-    elif input_is_dec or all(isinstance(key, int) for key in counts.keys()):
-        counts = {bin(key): value for key, value in counts.items()}
-        return format_counts(counts, include_zero_values=include_zero_values, decimal=False)
+    elif input_is_dec or all(isinstance(key, int) for key in data.keys()):
+        data = {bin(key): value for key, value in data.items()}
+        return format_data(data, include_zero_values=include_zero_values, decimal=False)
 
     if not include_zero_values:
-        counts = {key: value for key, value in counts.items() if value != 0}
+        data = {key: value for key, value in data.items() if value != 0}
 
-    return dict(sorted(counts.items()))
+    return dict(sorted(data.items()))
 
 
-def normalize_counts(
-    counts: Union[dict[str, int], list[dict[str, int]]],
+def normalize_data(
+    data: Union[dict[str, int], list[dict[str, int]]],
     include_zero_values: bool = False,
     decimal: bool = False,
 ) -> Union[dict[str, int], list[dict[str, int]]]:
     """Returns the sorted histogram data of the run"""
-    if isinstance(counts, dict):
-        return format_counts(counts, include_zero_values=include_zero_values, decimal=decimal)
+    if isinstance(data, dict):
+        return format_data(data, include_zero_values=include_zero_values, decimal=decimal)
 
-    batch_counts = [
-        format_counts(counts, include_zero_values=include_zero_values, decimal=decimal)
-        for counts in counts
+    batch_data = [
+        format_data(datum, include_zero_values=include_zero_values, decimal=decimal)
+        for datum in data
     ]
 
     if decimal:
-        return batch_counts
+        return batch_data
 
-    return normalize_batch_bit_lengths(batch_counts)
+    return normalize_batch_bit_lengths(batch_data)
 
 
 def _counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:

@@ -138,13 +138,21 @@ class ConversionGraph(rx.PyDiGraph):
         """
         transpiler = import_module("qbraid.transpiler.conversions")
         conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
+        conversion_pairs: list[list[str, str]] = [
+            conversion.split("_to_") for conversion in conversion_functions
+        ]
+        registered_conversion_pairs: list[list[str, str]] = [
+            [source, target]
+            for source, target in conversion_pairs
+            if source in QPROGRAM_ALIASES and target in QPROGRAM_ALIASES
+        ]
 
-        def construct_conversion(name: str) -> Conversion:
-            source, target = name.split("_to_")
-            conversion_func = getattr(transpiler, name)
+        def construct_conversion(name: list[str, str]) -> Conversion:
+            source, target = name
+            conversion_func = getattr(transpiler, f"{source}_to_{target}")
             return Conversion(source, target, conversion_func, bias=bias)
 
-        return [construct_conversion(conversion) for conversion in conversion_functions]
+        return [construct_conversion(conversion) for conversion in registered_conversion_pairs]
 
     def create_conversion_graph(self) -> None:
         """Create a directed graph from a list of conversion functions."""

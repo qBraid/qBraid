@@ -75,7 +75,9 @@ class AzureQuantumDevice(QuantumDevice):
             return True
         return False
 
-    def submit(self, run_input: qbraid.programs.QPROGRAM, *args, **kwargs) -> AzureQuantumJob:
+    def submit(
+        self, run_input: qbraid.programs.QPROGRAM | list(qbraid.programs.QPROGRAM), *args, **kwargs
+    ) -> AzureQuantumJob | list(AzureQuantumJob):
         """Submit a job to the Azure device.
 
         Args:
@@ -85,10 +87,13 @@ class AzureQuantumDevice(QuantumDevice):
             AzureQuantumJob: The submitted job.
         """
         if isinstance(run_input, list):
-            raise ValueError(
-                "Batch jobs (list of inputs) are not supported for this device. "
-                "Please provide a single job input."
-            )
+            quantum_jobs = []
+            for _, qprogram in enumerate(run_input):
+                job = self._device.submit(qprogram, *args, **kwargs)
+                quantum_jobs.append(
+                    AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)
+                )
+            return quantum_jobs
 
         job = self._device.submit(run_input, *args, **kwargs)
         return AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)

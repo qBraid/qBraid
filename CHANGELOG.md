@@ -17,10 +17,13 @@ Types of changes:
 
 ### Added
 - Added `CudaQKernel.serialize` method that converts cudaq program to QIR string for `run_input` compatible format for `QbraidDevice.submit`. ([#972](https://github.com/qBraid/qBraid/pull/972))
+- Added support for batch jobs for devices from Azure provider. The `AzureQuantumDevice.submit` method now accepts single and batched `qbraid.programs.QPROGRAM` inputs. ([#953](https://github.com/qBraid/qBraid/issues/953))
+- Added `ax_margins` argument to `plot_conversion_graph` to prevent possible clipping. ([#993](https://github.com/qBraid/qBraid/pull/993))
 
 ### Improved / Modified
 - Updated `TimeStamps` schema to auto-compute `executionDuration` from `createdAt` and `endedAt` if not explicitly provided. ([#983](https://github.com/qBraid/qBraid/pull/983))
 - Enhanced `TimeStamps` to accept both `datetime.datetime` objects for `createdAt` and `endedAt` (previously only accepted ISO-formatted strings). ([#983](https://github.com/qBraid/qBraid/pull/983))
+- Added a `measurement_probabilties` argument to the `GateModelResultData` class. ([#785](https://github.com/qBraid/qBraid/issues/785))
 
 ### Deprecated
 
@@ -31,6 +34,7 @@ Types of changes:
 - Fixed lazy importing bug in `plot_histogram` method ([#972](https://github.com/qBraid/qBraid/pull/972))
 - Fixed bug which caused all `braket` conversions to be unavailable if `cirq` was not installed due to an eager top-level import in `braket_to_cirq.py` which should have been done lazily ([#982](https://github.com/qBraid/qBraid/pull/982))
 - Made Pulser unit test version-agnostic to support any installed Pulser version. ([#983](https://github.com/qBraid/qBraid/pull/983))
+- Fixed the bug that included unregistered program type in `ConversionGraph`. ([#986](https://github.com/qBraid/qBraid/pull/986))
 
 ### Dependencies
 - Migrated to `setuptools>=77` due to TOML-table based `project.license` deprecation in favor of SPDX expression in compliance with [PEP 639](https://peps.python.org/pep-0639) ([#973](https://github.com/qBraid/qBraid/pull/973))
