@@ -36,16 +36,16 @@ from qbraid.transpiler import (
     transpile,
 )
 
-from .enums import DeviceStatus, ValidationLevel
+from .enums import DeviceStatus, ExecutionMode, ValidationLevel
 from .exceptions import ProgramValidationError, ResourceNotFoundError
 from .options import RuntimeOptions
 
 if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
-    import qbraid.transpiler
 
 
+# pylint:disable-next=too-many-public-methods
 class QuantumDevice(ABC):
     """Abstract interface for quantum devices."""
 
@@ -70,6 +70,10 @@ class QuantumDevice(ABC):
         self._target_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
         self._options = self._default_options()
+        self._execution_mode: ExecutionMode = ExecutionMode.DEFAULT
+
+        # TODO: find a better way to handle batch job context in the run method
+        self._current_batch_id: Optional[str] = None
         if options:
             self._options.merge(options, override_validators=False)
 
@@ -99,6 +103,32 @@ class QuantumDevice(ABC):
         if not self._scheme.conversion_graph:
             self._scheme.update_values(conversion_graph=ConversionGraph(include_isolated=True))
         return self._scheme
+
+    @property
+    def execution_mode(self) -> ExecutionMode:
+        """Return the execution mode of the device."""
+        return self._execution_mode
+
+    @execution_mode.setter
+    def execution_mode(self, mode: ExecutionMode):
+        """Set the execution mode of the device."""
+        if not isinstance(mode, ExecutionMode):
+            raise ValueError(
+                f"Invalid execution mode: {mode}. Must be an instance of ExecutionMode."
+            )
+        self._execution_mode = mode
+
+    @property
+    def current_batch_id(self) -> Optional[str]:
+        """Return the current batch ID."""
+        return self._current_batch_id
+
+    @current_batch_id.setter
+    def current_batch_id(self, batch_id: str):
+        """Set the current batch ID."""
+        if not isinstance(batch_id, str):
+            raise ValueError("Batch ID must be a string.")
+        self._current_batch_id = batch_id
 
     def __repr__(self):
         """Return a string representation of the device."""
@@ -507,4 +537,6 @@ class QuantumDevice(ABC):
             "batch" if not is_single_input else "",
             self.id,
         )
-        return self.submit(run_input_compat, *args, **kwargs)
+
+        jobs = self.submit(run_input_compat, *args, **kwargs)
+        return jobs
