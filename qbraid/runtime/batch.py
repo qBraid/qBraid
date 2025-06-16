@@ -304,7 +304,7 @@ class BatchQuantumJob(ABC):
     def status(self) -> BatchJobStatus:
         """Return the status of the batch, among the values of ``BatchJobStatus``."""
         try:
-            batch_status = self.client.get_batch_job(self.id).get("qbraidStatus")
+            batch_status = self.client.get_batch_job(self.id).get("status")
             self._cache_metadata["status"] = BatchJobStatus(batch_status)
             return self._cache_metadata["status"]
         except Exception as e:

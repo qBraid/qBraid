@@ -426,13 +426,7 @@ class QbraidDevice(QuantumDevice):
                 run_input_json = self.prepare(program)
                 self._validate_run_input_payload(run_input_json, self._target_spec)
                 runtime_payload = {**aux_payload, **run_input_json}
-
-                # TODO: update the payload if we are executing in the batch context
-                # needs update in the API
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
-
-                # TODO: add logic to update the batch with this job ,
-                # no updates in the job object ONLY in the batch -> basically append the IDs
                 jobs.append(job)
 
         if self.execution_mode == ExecutionMode.BATCH:
