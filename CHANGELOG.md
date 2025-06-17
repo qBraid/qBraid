@@ -27,6 +27,8 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+- Updated `qiskit-ibm-runtime` requirement from <0.39,>=0.25.0 to >=0.25.0,<0.41 ([#991](https://github.com/qBraid/qBraid/pull/991))
+- Updated `pydantic` requirement from >2.0.0 to >2.0.0,<=2.11.1 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Remove `qiskit-qir` (deprecated) from `qbraid[qir]` dependency extras ([#1001](https://github.com/qBraid/qBraid/pull/1001))
 
 ## [0.9.7] - 2025-06-13
