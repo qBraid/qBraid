@@ -26,6 +26,7 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+- Remove `qiskit-qir` (deprecated) from `qbraid[qir]` dependency extras ([#1001](https://github.com/qBraid/qBraid/pull/1001))
 
 ## [0.9.7] - 2025-06-13
 
