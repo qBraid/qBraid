@@ -13,13 +13,7 @@ Module used for loading entry points and other dynamic imports.
 
 """
 import importlib.metadata
-import sys
 from typing import Optional, Type
-
-try:
-    import pkg_resources
-except ImportError:  # pragma: no cover
-    pkg_resources = None
 
 from .exceptions import QbraidError
 
@@ -36,10 +30,7 @@ def get_entrypoints(module: str) -> dict[str, object]:
     """
     group = f"qbraid.{module}"
 
-    if sys.version_info >= (3, 10):
-        entry_points = importlib.metadata.entry_points().select(group=group)
-    else:
-        entry_points = pkg_resources.iter_entry_points(group=group)
+    entry_points = importlib.metadata.entry_points().select(group=group)
 
     return {ep.name: ep for ep in entry_points}
 
