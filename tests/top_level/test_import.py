@@ -12,10 +12,7 @@
 Unit tests for lazy loading of modules, objects and entry points
 
 """
-import sys
-from unittest.mock import MagicMock
-from unittest.mock import Mock as MockEntryPoint
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -42,18 +39,15 @@ def test_load_entrypoint_raise_value_error():
     assert f"Entrypoint '{name}' not found in module '{module}'." in str(excinfo.value)
 
 
-@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
-def test_load_entrypoint_raise_qbraid_error():
-    """Test that a QbraidError is raised when loading an entrypoint fails."""
-    module = "programs"
-    name = "qasm3"
-
-    with patch(
-        "importlib.metadata.entry_points", return_value={"qbraid.programs": [MockEntryPoint()]}
-    ):
-        with pytest.raises(QbraidError) as excinfo:
-            load_entrypoint(module, name)
-        assert f"Failed to load entrypoint '{name}' from module '{module}'." in str(excinfo.value)
+def test_load_entrypoint_raises_qbraiderror_on_general_exception():
+    """Test that a QbraidError is raised when loading the entrypoint fails."""
+    mock_entry_point = MagicMock()
+    mock_entry_point.load.side_effect = Exception("Some error")
+    with patch("qbraid._entrypoints.get_entrypoints", return_value={"test": mock_entry_point}):
+        with pytest.raises(
+            QbraidError, match="Failed to load entrypoint 'test' from module 'programs'"
+        ):
+            load_entrypoint("programs", "test")
 
 
 def mock_get_class(name):
@@ -78,35 +72,8 @@ def test_dynamic_importer_exception():
 
 
 @patch("qbraid._entrypoints.importlib.metadata.entry_points")
-@patch("qbraid._entrypoints.pkg_resources.iter_entry_points")
-@patch("qbraid._entrypoints.sys.version_info")
-def test_get_entrypoints_with_old_python_version(
-    mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
-):
-    """Test that entry points are retrieved correctly with an old Python version."""
-    mock_version_info.__ge__.return_value = False
-
-    mock_entry_point = MagicMock()
-    mock_entry_point.name = "qasm2"
-    mock_pkg_resources_eps.return_value = [mock_entry_point]
-
-    result = get_entrypoints("programs")
-
-    assert result == {"qasm2": mock_entry_point}
-
-    mock_pkg_resources_eps.assert_called_once_with(group="qbraid.programs")
-    mock_importlib_eps.assert_not_called()
-
-
-@patch("qbraid._entrypoints.importlib.metadata.entry_points")
-@patch("qbraid._entrypoints.pkg_resources.iter_entry_points")
-@patch("qbraid._entrypoints.sys.version_info")
-def test_get_entrypoints_with_new_python_version(
-    mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
-):
+def test_get_entrypoints_with_new_python_version(mock_importlib_eps):
     """Test that entry points are retrieved correctly with Python 3.10+."""
-    mock_version_info.__ge__.return_value = True
-
     mock_entry_point = MagicMock()
     mock_entry_point.name = "qasm2"
     mock_importlib_eps.return_value.select.return_value = [mock_entry_point]
@@ -116,7 +83,6 @@ def test_get_entrypoints_with_new_python_version(
     assert result == {"qasm2": mock_entry_point}
 
     mock_importlib_eps.return_value.select.assert_called_once_with(group="qbraid.programs")
-    mock_pkg_resources_eps.assert_not_called()
 
 
 @pytest.mark.parametrize("module_name", list(qbraid._lazy.keys()))
