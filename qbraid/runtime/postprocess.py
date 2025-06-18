@@ -14,9 +14,9 @@ Module for post-processing of raw results data.
 """
 from __future__ import annotations
 
+import warnings
 from math import isclose
 from typing import Any, Union
-import warnings
 
 
 def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
