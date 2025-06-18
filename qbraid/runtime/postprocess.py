@@ -256,7 +256,7 @@ def distribute_counts(probs: dict[Any, float], shots: int) -> dict[Any, int]:
         {0: 9, 1: 1}
     """
     if not isclose(sum(probs.values()), 1.0, rel_tol=1e-7):
-        warnings.warn("Probabilities must sum to 1.")
+        warnings.warn("Probabilities do not sum to 1.")
 
     if not all(0 <= prob <= 1 for prob in probs.values()):
         raise ValueError("Probabilities must be between 0 and 1.")
