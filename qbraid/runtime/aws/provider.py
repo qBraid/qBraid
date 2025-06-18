@@ -133,6 +133,7 @@ class BraketProvider(QuantumProvider):
         paradigm: dict = capabilities.get("paradigm", {})
         action: dict = capabilities.get("action", {})
         num_qubits = paradigm.get("qubitCount")
+        basis_gates = paradigm.get("nativeGateSet", {})
         if action.get("braket.ir.openqasm.program") is not None:
             experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
@@ -154,6 +155,7 @@ class BraketProvider(QuantumProvider):
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,
+            basis_gates=basis_gates,
             **kwargs,
         )
 

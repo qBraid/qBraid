@@ -84,8 +84,11 @@ class TestAwsSession:
         capabilities = {
             "action": {
                 "braket.ir.openqasm.program": "literally anything",
-                "paradigm": {"qubitCount": 2},
-            }
+            },
+            "paradigm": {
+                "qubitCount": 2,
+                "nativeGateSet": ["gate1", "gate2"],
+            },
         }
         cap_json = json.dumps(capabilities)
         metadata = {
@@ -240,6 +243,7 @@ def test_provider_build_runtime_profile(mock_sv1):
     assert profile.get("provider_name") == "Amazon Braket"
     assert profile.get("device_id") == SV1_ARN
     assert profile.get("extra") == "data"
+    assert profile.get("basis_gates") == {"gate1", "gate2"}
 
 
 @pytest.mark.parametrize(
