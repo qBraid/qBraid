@@ -19,14 +19,12 @@ from collections import Counter
 
 import numpy as np
 import pytest
-import warnings
 
 from qbraid.programs import ExperimentType
 from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.postprocess import (
     distribute_counts,
     format_data,
-    normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_data,
 )
