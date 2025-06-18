@@ -816,7 +816,7 @@ def test_distribute_counts_probabilities_not_sum_to_1():
     """Test distribute_counts with probabilities that do not sum to 1."""
     probs = {0: 0.9, 1: 0.2}
     shots = 10
-    with pytest.raises(ValueError, match="Probabilities must sum to 1."):
+    with pytest.warns(UserWarning, match="Probabilities do not sum to 1."):
         distribute_counts(probs, shots)
 
 
