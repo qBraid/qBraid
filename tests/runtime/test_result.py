@@ -25,6 +25,7 @@ from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirS
 from qbraid.runtime.postprocess import (
     distribute_counts,
     format_data,
+    normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_data,
 )
@@ -815,7 +816,7 @@ def test_distribute_counts_probabilities_not_sum_to_1():
     """Test distribute_counts with probabilities that do not sum to 1."""
     probs = {0: 0.9, 1: 0.2}
     shots = 10
-    with pytest.warns(UserWarning, match="Probabilities do not sum to 1."):
+    with pytest.warns(UserWarning, match="Probabilities must sum to 1."):
         distribute_counts(probs, shots)
 
 
