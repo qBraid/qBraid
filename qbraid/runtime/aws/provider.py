@@ -145,8 +145,8 @@ class BraketProvider(QuantumProvider):
         else:
             raise QbraidError(
                 f"TargetProfile cannot be created for device '{device.arn}' as it does not "
-                f"support 'braket.ir.openqasm.program' program types. Please verify device "
-                f"capabilities or select a different, compatible device."
+                "support 'braket.ir.openqasm.program' or 'braket.ir.ahs.program' types. "
+                "Please verify device capabilities or select a different, compatible device."
             )
         return TargetProfile(
             simulator=simulator,

@@ -39,7 +39,7 @@ By addressing the full scope of client-side software requirements necessary for 
 ## Resources
 
 - [User Guide](https://docs.qbraid.com/sdk/user-guide/)
-- [API Reference](https://sdk.qbraid.com/en/stable/api/qbraid.html)
+- [API Reference](https://sdk.qbraid.com/qBraid/api/qbraid.html)
 - [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
 
 ## Installation & Setup
@@ -103,11 +103,15 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'cpp_pyqubo': cpp_pyqubo.Model,
  'qasm2': str,
  'qasm3': str,
+ 'qasm2_kirin': str,
  'ionq': qbraid.programs.typer.IonQDict,
  'qubo': qbraid.programs.typer.QuboCoefficientsDict,
  'bloqade': bloqade.analog.builder.assign.BatchAssign,
  'cudaq': cudaq.kernel.kernel_builder.PyKernel,
- 'qibo': qibo.models.circuit.Circuit}
+ 'qibo': qibo.models.circuit.Circuit,
+ 'stim': stim._stim_sse2.Circuit,
+ 'pulser': pulser.sequence.sequence.Sequence,
+ 'pyqpanda3': pyqpanda3.core.QProg}
 ```
 
 Pass any registered quantum program along with a target package from
@@ -133,15 +137,15 @@ Behind the scenes, the qBraid-SDK uses [rustworkx](https://www.rustworkx.org/) t
 directional graph that maps all possible conversions between supported program types:
 
 ```python
-from qbraid import ConversionGraph, ExperimentType
+from qbraid import ConversionGraph
 
 # Loads native conversions from QPROGRAM_REGISTRY
 graph = ConversionGraph()
 
-graph.plot(experiment_type=ExperimentType.GATE_MODEL,legend=True)
+graph.plot(legend=True)
 ```
 
-<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.3.png" style="width: 65%;">
+<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.7.png" style="width: 65%;">
 
 You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
 

@@ -26,7 +26,7 @@ tox -e docs
 Alternatively:
 
 ```bash
-pip install -e '.[docs]'
+pip install -r docs/requirements.txt
 cd docs
 make html
 ```
