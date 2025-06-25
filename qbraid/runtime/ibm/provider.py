@@ -63,7 +63,7 @@ class QiskitRuntimeProvider(QuantumProvider):
         """
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
         self.instance = instance or os.getenv("QISKIT_IBM_INSTANCE")
-        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_cloud")
         self._runtime_service = QiskitRuntimeService(
             channel=self.channel, token=self.token, instance=self.instance, **kwargs
         )
