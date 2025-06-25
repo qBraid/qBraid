@@ -66,6 +66,8 @@ autodoc_mock_imports = [
     "pandas",
     "pyqpanda3",
     "pulser",
+    "pyqubo",
+    "azure"
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True
