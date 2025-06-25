@@ -22,6 +22,10 @@ Types of changes:
 - Populated basis gates property in profile of AWS Braket provider device ([#1003](https://github.com/qBraid/qBraid/pull/1003))
 - Throw a `UserWarning` instead of a `ValueError` when checking for the sum of result probabilities from job to be equal
 to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
+- House keeping updates ([#1012](https://github.com/qBraid/qBraid/pull/1012))
+  - Removed deprecated modules (`qbraid.programs.circuits`, `qbraid.runtime.qiskit`, and `qbraid.runtime.braket`)
+  - Updated readme, contributing, citation, and various project config files.
+- Updated `QiskitRuntimeProvider` default channel from `ibm_quantum` to `ibm_cloud` in preparation for the sunsetting of the IBM Quantum platform in favor of IBM Cloud ([#1012](https://github.com/qBraid/qBraid/pull/1012))
 
 ### Deprecated
 
