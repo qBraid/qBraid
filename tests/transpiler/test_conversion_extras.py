@@ -25,10 +25,20 @@ try:
 except ImportError:
     pyqir_installed = False
 
+try:
+    import autoqasm
+
+    autoqasm_installed = True
+except ImportError:
+    autoqasm_installed = False
+
+from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
+
+from ..fixtures.autoqasm.circuits import autoqasm_bell, autoqasm_shared15
 
 
 def has_extra(conversion_func: Callable) -> bool:
@@ -66,3 +76,39 @@ def test_qiskit_to_pyqir_extra(bell_circuit):
     graph = ConversionGraph(conversions)
     program = transpile(qiskit_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, pyqir.Module)
+
+
+@pytest.fixture
+def autoqasm_bell_circuit():
+    """Fixture for autoqasm bell circuit."""
+    circuit = autoqasm_bell()
+    return circuit, "autoqasm"
+
+
+@pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
+@pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
+def test_autoqasm_to_qasm3_extra(autoqasm_bell_circuit):
+    """Test autoqasm-qasm3 conversion extra."""
+    autoqasm_circuit, _ = autoqasm_bell_circuit
+    conversions = [Conversion("autoqasm", "qasm3", autoqasm_to_qasm3)]
+    graph = ConversionGraph(conversions)
+    program = transpile(autoqasm_circuit, "qasm3", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, str)
+
+
+@pytest.fixture
+def autoqasm_shared15_circuit():
+    """Fixture for autoqasm shared15 circuit."""
+    circuit = autoqasm_shared15()
+    return circuit, "autoqasm"
+
+
+@pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
+@pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
+def test_autoqasm_shared15_to_qasm3_extra(autoqasm_shared15_circuit):
+    """Test autoqasm-qasm3 conversion extra."""
+    autoqasm_circuit, _ = autoqasm_shared15_circuit
+    conversions = [Conversion("autoqasm", "qasm3", autoqasm_to_qasm3)]
+    graph = ConversionGraph(conversions)
+    program = transpile(autoqasm_circuit, "qasm3", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, str)
