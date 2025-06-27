@@ -25,13 +25,14 @@ to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
 - House keeping updates ([#1012](https://github.com/qBraid/qBraid/pull/1012))
   - Removed deprecated modules (`qbraid.programs.circuits`, `qbraid.runtime.qiskit`, and `qbraid.runtime.braket`)
   - Updated readme, contributing, citation, and various project config files.
-- Updated `QiskitRuntimeProvider` default channel from `ibm_quantum` to `ibm_cloud` in preparation for the sunsetting of the IBM Quantum platform in favor of IBM Cloud ([#1012](https://github.com/qBraid/qBraid/pull/1012))
+- Updated `QiskitRuntimeProvider` default channel to `ibm_quantum_platform` in preparation for the sunsetting of the IBM Quantum channel in favor of IBM Cloud. See `qiskit-ibm-runtime` updated instructions for [account setup](https://github.com/Qiskit/qiskit-ibm-runtime/blob/0.40.1/README.md#account-setup). ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 
 ### Dependencies
 - Updated `qiskit-ibm-runtime` requirement from <0.39,>=0.25.0 to >=0.25.0,<0.41 ([#991](https://github.com/qBraid/qBraid/pull/991))
