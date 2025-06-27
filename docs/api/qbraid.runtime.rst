@@ -19,3 +19,4 @@ Submodules
    oqc
    native
    schemas
+   rigetti
