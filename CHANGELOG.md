@@ -18,7 +18,6 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
-
 - Removed legacy `pkg_resources` logic for loading entry points (`qbraid._entrypoints`), as support for Python 3.9 has been dropped and the project now requires Python 3.10 or higher. ([#1002](https://github.com/qBraid/qBraid/issues/1002))
 - Populated basis gates property in profile of AWS Braket provider device ([#1003](https://github.com/qBraid/qBraid/pull/1003))
 - Throw a `UserWarning` instead of a `ValueError` when checking for the sum of result probabilities from job to be equal
