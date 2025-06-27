@@ -16,12 +16,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import autoqasm
 from qbraid_core._import import LazyLoader
 
+from qbraid.passes.qasm.compat import add_stdgates_include, insert_gate_def, replace_gate_names
 from qbraid.transpiler.annotations import requires_extras
 
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
+autoqasm = LazyLoader("autoqasm", globals(), "autoqasm")
 
 if TYPE_CHECKING:
     import pyqir
@@ -54,4 +55,19 @@ def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringT
     Returns:
         str: OpenQASM 3 program equivalent to input AutoQASM program.
     """
-    return program.to_ir()
+    qasm = program.to_ir()
+    # Braket Gate Definitions -> OpenQASM 3 Gate Definitions
+    qasm = replace_gate_names(qasm, {"cnot": "cx"})
+    qasm = replace_gate_names(qasm, {"si": "sdg"})
+    qasm = replace_gate_names(qasm, {"ti": "tdg"})
+    qasm = replace_gate_names(qasm, {"phaseshift": "p"})
+    qasm = replace_gate_names(qasm, {"cphaseshift": "cp"})
+    qasm = replace_gate_names(qasm, {"v": "sx"})
+    qasm = replace_gate_names(qasm, {"vi": "sxdg"})
+
+    # Add missing gate defs - iswap & sxdg
+    qasm = insert_gate_def(qasm, "iswap")
+    qasm = insert_gate_def(qasm, "sxdg")
+    # AutoQASM does not include stdgates.inc
+    qasm = add_stdgates_include(qasm)
+    return qasm

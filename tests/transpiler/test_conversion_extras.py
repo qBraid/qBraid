@@ -13,10 +13,12 @@ Tests for qBraid transpiler conversion extras.
 
 """
 import importlib.util
+import re
 from typing import Callable
 
 import braket.circuits
 import pytest
+import sympy
 
 try:
     import pyqir
@@ -78,37 +80,99 @@ def test_qiskit_to_pyqir_extra(bell_circuit):
     assert isinstance(program, pyqir.Module)
 
 
-@pytest.fixture
 def autoqasm_bell_circuit():
-    """Fixture for autoqasm bell circuit."""
-    circuit = autoqasm_bell()
-    return circuit, "autoqasm"
+    """Function that returns autoqasm bell circuit."""
+    return autoqasm_bell()
+
+
+def qasm3_bell_reference():
+    """Reference QASM3 string for Bell circuit"""
+    return """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] __qubits__;
+h __qubits__[0];
+cx __qubits__[0], __qubits__[1];"""
 
 
 @pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
 @pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
-def test_autoqasm_to_qasm3_extra(autoqasm_bell_circuit):
+def test_autoqasm_bell_to_qasm3_extra():
     """Test autoqasm-qasm3 conversion extra."""
-    autoqasm_circuit, _ = autoqasm_bell_circuit
+    autoqasm_circuit = autoqasm_bell_circuit()
     conversions = [Conversion("autoqasm", "qasm3", autoqasm_to_qasm3)]
     graph = ConversionGraph(conversions)
     program = transpile(autoqasm_circuit, "qasm3", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, str)
+    assert program == qasm3_bell_reference()
 
 
-@pytest.fixture
 def autoqasm_shared15_circuit():
-    """Fixture for autoqasm shared15 circuit."""
-    circuit = autoqasm_shared15()
-    return circuit, "autoqasm"
+    """Function that returns autoqasm shared15 circuit."""
+    return autoqasm_shared15()
+
+
+def qasm3_shared15_reference():
+    """Reference QASM3 string for shared15 circuit"""
+    return """OPENQASM 3.0;
+include "stdgates.inc";
+gate sxdg _gate_q_0 {
+  s _gate_q_0;
+  h _gate_q_0;
+  s _gate_q_0;
+}
+gate iswap _gate_q_0, _gate_q_1 {
+  s _gate_q_0;
+  s _gate_q_1;
+  h _gate_q_0;
+  cx _gate_q_0, _gate_q_1;
+  cx _gate_q_1, _gate_q_0;
+  h _gate_q_1;
+}
+qubit[4] __qubits__;
+h __qubits__[0];
+h __qubits__[1];
+h __qubits__[2];
+h __qubits__[3];
+x __qubits__[0];
+x __qubits__[1];
+y __qubits__[2];
+z __qubits__[3];
+s __qubits__[0];
+sdg __qubits__[1];
+t __qubits__[2];
+tdg __qubits__[3];
+rx(pi/4) __qubits__[0];
+ry(pi/2) __qubits__[1];
+rz(3*pi/4) __qubits__[2];
+p(pi/8) __qubits__[3];
+sx __qubits__[0];
+sxdg __qubits__[1];
+iswap __qubits__[2], __qubits__[3];
+swap __qubits__[0], __qubits__[2];
+swap __qubits__[1], __qubits__[3];
+cx __qubits__[0], __qubits__[1];
+cp(pi/4) __qubits__[2], __qubits__[3];"""
+
+
+def convert_angles(code_str):
+    """Convert symoblic angle expressions to decimal in QASM string."""
+
+    def repl(match):
+        expr = match.group(0)
+        value = float(sympy.sympify(expr))
+        return f"{value}"
+
+    # RegEx swaps angles w/ pi to decimal values
+    return re.sub(r"[\d\.]*\*?pi(?:/[0-9\.]+)?", repl, code_str)
 
 
 @pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
 @pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
-def test_autoqasm_shared15_to_qasm3_extra(autoqasm_shared15_circuit):
+def test_autoqasm_shared15_to_qasm3_extra():
     """Test autoqasm-qasm3 conversion extra."""
-    autoqasm_circuit, _ = autoqasm_shared15_circuit
+    autoqasm_circuit = autoqasm_shared15_circuit()
     conversions = [Conversion("autoqasm", "qasm3", autoqasm_to_qasm3)]
     graph = ConversionGraph(conversions)
     program = transpile(autoqasm_circuit, "qasm3", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, str)
+    assert program == convert_angles(qasm3_shared15_reference())
