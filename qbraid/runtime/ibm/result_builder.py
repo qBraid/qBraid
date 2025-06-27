@@ -45,8 +45,7 @@ class QiskitGateModelResultBuilder:
     def measurements(self) -> Optional[np.ndarray | list[np.ndarray]]:
         """Return measurements a 2D numpy array"""
         if isinstance(self._result, PrimitiveResult):
-            attr = "c" if hasattr(self._result[0].data, "c") else "meas"
-            meas = [getattr(pub_result.data, attr).array for pub_result in self._result]
+            meas = [pub_result.join_data().array for pub_result in self._result]
             return meas[0] if len(meas) == 1 else meas
 
         num_circuits = len(self._result.results)
@@ -69,7 +68,6 @@ class QiskitGateModelResultBuilder:
     def get_counts(self) -> dict[str, int] | list[dict[str, int]]:
         """Returns the histogram data of the run"""
         if isinstance(self._result, PrimitiveResult):
-            attr = "c" if hasattr(self._result[0].data, "c") else "meas"
-            counts = [getattr(pub_result.data, attr).get_counts() for pub_result in self._result]
+            counts = [pub_result.join_data().get_counts() for pub_result in self._result]
             return counts[0] if len(counts) == 1 else counts
         return self._result.get_counts()

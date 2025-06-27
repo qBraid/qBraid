@@ -34,6 +34,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 
 - Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 
