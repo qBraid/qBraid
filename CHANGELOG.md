@@ -26,9 +26,8 @@ Types of changes:
 - House keeping updates ([#1012](https://github.com/qBraid/qBraid/pull/1012))
   - Removed deprecated modules (`qbraid.programs.circuits`, `qbraid.runtime.qiskit`, and `qbraid.runtime.braket`)
   - Updated readme, contributing, citation, and various project config files.
-- Updated `QiskitRuntimeProvider` default channel from `ibm_quantum` to `ibm_cloud` in preparation for the sunsetting of the IBM Quantum platform in favor of IBM Cloud ([#1012](https://github.com/qBraid/qBraid/pull/1012))
-- Implemented `autoqasm_to_qasm3` conversion extra in transpiler for
-  support of AutoQASM to QASM3 conversion. Added `"autoqasm"` program type to program registry. ([#1013](https://github.com/qBraid/qBraid/pull/1013))
+- Updated `QiskitRuntimeProvider` default channel to `ibm_quantum_platform` in preparation for the sunsetting of the IBM Quantum channel in favor of IBM Cloud. See `qiskit-ibm-runtime` updated instructions for [account setup](https://github.com/Qiskit/qiskit-ibm-runtime/blob/0.40.1/README.md#account-setup). ([#1011](https://github.com/qBraid/qBraid/pull/1011))
+- Implemented `autoqasm_to_qasm3` conversion extra in transpiler for support of AutoQASM to QASM3 conversion. Added `"autoqasm"` program type to program registry. ([#1013](https://github.com/qBraid/qBraid/pull/1013))
 
 ### Deprecated
 
@@ -36,12 +35,13 @@ Types of changes:
 
 ### Fixed
 
+- Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
+
 ### Dependencies
 
 - Updated `qiskit-ibm-runtime` requirement from <0.39,>=0.25.0 to >=0.25.0,<0.41 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Updated `pydantic` requirement from >2.0.0 to >2.0.0,<=2.11.1 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Remove `qiskit-qir` (deprecated) from `qbraid[qir]` dependency extras ([#1001](https://github.com/qBraid/qBraid/pull/1001))
-- Added `autoqasm` requirement to "transpiler extras" in requirements-dev. ([#1013](https://github.com/qBraid/qBraid/pull/1013))
 
 ## [0.9.7] - 2025-06-13
 
