@@ -74,5 +74,5 @@ def autoqasm_shared15_circuit():
 
 
 def autoqasm_shared15() -> AutoQASMType:
-    """Returns braket `Circuit` for qBraid `TestSharedGates`."""
+    """Returns AutoQASM `Circuit` for qBraid `TestSharedGates`."""
     return autoqasm_shared15_circuit.build()
