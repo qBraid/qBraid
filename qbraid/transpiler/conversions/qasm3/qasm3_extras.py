@@ -24,6 +24,19 @@ from qbraid.transpiler.annotations import requires_extras
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
 autoqasm = LazyLoader("autoqasm", globals(), "autoqasm")
 
+aq_to_qasm3_stdgates = {
+    "ccnot": "ccx",
+    "cnot": "cx",
+    "cphaseshift": "cp",
+    "i": "id",
+    "phaseshift": "p",
+    "si": "sdg",
+    "ti": "tdg",
+    "v": "sx",
+    "vi": "sxdg",
+}
+
+
 if TYPE_CHECKING:
     import pyqir
 
@@ -45,8 +58,9 @@ def qasm3_to_pyqir(program: Qasm3StringType) -> pyqir.Module:
 
 @requires_extras("autoqasm")
 def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringType:
-    """Converts an AutoQASM program to an OpenQASM 3 program. The program must
-    be build prior to conversion using the .build() method.
+    """Converts an AutoQASM program to an OpenQASM 3 program of gates from the
+    Standard Gate Library. The program must be built prior to conversion using 
+    the .build() method.
 
     Args:
         program (autoqasm.program.program.Program): AutoQASM program to convert
@@ -56,18 +70,16 @@ def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringT
         str: OpenQASM 3 program equivalent to input AutoQASM program.
     """
     qasm = program.to_ir()
-    # Braket Gate Definitions -> OpenQASM 3 Gate Definitions
-    qasm = replace_gate_names(qasm, {"cnot": "cx"})
-    qasm = replace_gate_names(qasm, {"si": "sdg"})
-    qasm = replace_gate_names(qasm, {"ti": "tdg"})
-    qasm = replace_gate_names(qasm, {"phaseshift": "p"})
-    qasm = replace_gate_names(qasm, {"cphaseshift": "cp"})
-    qasm = replace_gate_names(qasm, {"v": "sx"})
-    qasm = replace_gate_names(qasm, {"vi": "sxdg"})
+    # Convert to Standard Library qasm3 gates
+    for aq_gate, qasm3_gate in aq_to_qasm3_stdgates.items():
+        qasm = replace_gate_names(qasm, {aq_gate: qasm3_gate})
 
-    # Add missing gate defs - iswap & sxdg
+    # Insert custom gate conversions
     qasm = insert_gate_def(qasm, "iswap")
     qasm = insert_gate_def(qasm, "sxdg")
+    qasm = insert_gate_def(qasm, "cv")
     # AutoQASM does not include stdgates.inc
     qasm = add_stdgates_include(qasm)
     return qasm
+
+

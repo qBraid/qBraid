@@ -39,6 +39,10 @@ gate sxdg _gate_q_0 {
   h _gate_q_0;
   s _gate_q_0;
 }""",
+    "cv": """
+gate cv _gate_q_0, _gate_q_1 {
+  ctrl @ sx _gate_q_0, _gate_q_1;
+}""",
 }
 
 
