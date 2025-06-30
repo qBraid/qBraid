@@ -34,6 +34,7 @@ try:
 except ImportError:
     autoqasm_installed = False
 
+from qbraid.passes.qasm.compat import normalize_qasm_gate_params
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
@@ -153,19 +154,6 @@ swap __qubits__[1], __qubits__[3];
 cx __qubits__[0], __qubits__[1];
 cp(pi/4) __qubits__[2], __qubits__[3];"""
 
-
-def convert_angles(code_str):
-    """Convert symoblic angle expressions to decimal in QASM string."""
-
-    def repl(match):
-        expr = match.group(0)
-        value = float(sympy.sympify(expr))
-        return f"{value}"
-
-    # RegEx swaps angles w/ pi to decimal values
-    return re.sub(r"[\d\.]*\*?pi(?:/[0-9\.]+)?", repl, code_str)
-
-
 @pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
 @pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
 def test_autoqasm_shared15_to_qasm3_extra():
@@ -174,5 +162,6 @@ def test_autoqasm_shared15_to_qasm3_extra():
     conversions = [Conversion("autoqasm", "qasm3", autoqasm_to_qasm3)]
     graph = ConversionGraph(conversions)
     program = transpile(autoqasm_circuit, "qasm3", conversion_graph=graph, max_path_depth=1)
+    
     assert isinstance(program, str)
-    assert program == convert_angles(qasm3_shared15_reference())
+    assert program == normalize_qasm_gate_params(qasm3_shared15_reference())

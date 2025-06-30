@@ -71,9 +71,7 @@ def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringT
     """
     qasm = program.to_ir()
     # Convert to Standard Library qasm3 gates
-    for aq_gate, qasm3_gate in aq_to_qasm3_stdgates.items():
-        qasm = replace_gate_names(qasm, {aq_gate: qasm3_gate})
-
+    qasm = replace_gate_names(qasm, aq_to_qasm3_stdgates)
     # Insert custom gate conversions
     qasm = insert_gate_def(qasm, "iswap")
     qasm = insert_gate_def(qasm, "sxdg")
