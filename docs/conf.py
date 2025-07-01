@@ -46,6 +46,7 @@ extensions = [
 autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = [
+    "autoqasm",
     "boto3",
     "braket",
     "cirq",
