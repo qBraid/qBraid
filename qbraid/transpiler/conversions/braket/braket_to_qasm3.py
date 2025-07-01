@@ -22,8 +22,7 @@ from qbraid.transpiler.annotations import weight
 
 @weight(1)
 def braket_to_qasm3(circuit: Circuit) -> str:
-    """Converts a ``braket.circuits.Circuit`` to an OpenQASM 3.0 string 
-    that utilizes OpenQASM 3.0 Standard Gate Library.
+    """Converts a ``braket.circuits.Circuit`` to an OpenQASM 3.0 string.
 
     Args:
         circuit: Amazon Braket quantum circuit

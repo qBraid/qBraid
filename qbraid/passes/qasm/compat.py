@@ -46,31 +46,8 @@ gate cv _gate_q_0, _gate_q_1 {
 }
 
 
-def insert_gate_def(qasm3_str: str, gate_name: str, force_insert: bool = False) -> str:
-    """Add gate definitions to an Open0QASM 3 string.
-
-    Args:
-        qasm3_str (str): QASM 3.0 string.
-        gate_name (str): Name of the gate to insert.
-        force_insert (bool): If True, the gate definition will be added
-            even if the gate is never referenced. Defaults to False.
-
-    Returns:
-        str: QASM 3.0 string with gate definition.
-
-    Raises:
-        ValueError: If the gate definition is not found.
-    """
-    defn = GATE_DEFINITIONS.get(gate_name)
-
-    if defn is None:
-        raise ValueError(
-            f"Gate {gate_name} definition not found. "
-            f"Available gate definitions include: {set(GATE_DEFINITIONS.keys())}"
-        )
-
-    if not force_insert and gate_name not in qasm3_str:
-        return qasm3_str
+def _insert_gate_def(qasm3_str: str, defn: list[str]) -> str:
+    """Add single gate definition to an Open0QASM 3 string."""
 
     lines = qasm3_str.splitlines()
 
@@ -83,6 +60,55 @@ def insert_gate_def(qasm3_str: str, gate_name: str, force_insert: bool = False) 
     lines.insert(insert_index, defn.strip())
 
     return "\n".join(lines)
+
+
+def insert_gate_def(qasm3_str: str, gate_name: str | list[str], force_insert: bool = False) -> str:
+    """Add gate definitions to an Open0QASM 3 string.
+
+    Args:
+        qasm3_str (str): QASM 3.0 string.
+        gate_name (str | list[str]): Name(s) of the gate(s) to insert.
+        force_insert (bool): If True, the gate definition will be added
+            even if the gate is never referenced. Defaults to False.
+
+    Returns:
+        str: QASM 3.0 string with gate definition.
+
+    Raises:
+        ValueError: If the gate definition is not found.
+    """
+    # Normalize gate_name to a list
+    gate_names = [gate_name] if isinstance(gate_name, str) else gate_name
+
+    # Check for missing definitions
+    missing = [name for name in gate_names if name not in GATE_DEFINITIONS]
+    if missing:
+        raise ValueError(
+            f"Gate definitions not found for: {missing}. "
+            f"Available gate definitions include: {set(GATE_DEFINITIONS.keys())}"
+        )
+
+    # Determine which gates to actually add
+    gates_to_add = []
+    if force_insert:
+        gates_to_add = gate_names
+    else:
+        # Only add if gate name appears in QASM string
+        for name in gate_names:
+            if name in qasm3_str:
+                gates_to_add.append(name)
+
+        # If no gates referenced and force_insert is False, return original
+        if not gates_to_add:
+            return qasm3_str
+
+    # Insert definitions
+    for name in gates_to_add:
+        defn = GATE_DEFINITIONS[name]
+        qasm3_str = _insert_gate_def(qasm3_str, defn)
+
+    return qasm3_str
+
 
 
 def _normalize_case_insensitive_map(gate_mappings: dict[str, str]) -> dict[str, str]:

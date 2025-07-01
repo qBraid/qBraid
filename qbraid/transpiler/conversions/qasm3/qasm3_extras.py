@@ -73,9 +73,7 @@ def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringT
     # Convert to Standard Library qasm3 gates
     qasm = replace_gate_names(qasm, aq_to_qasm3_stdgates)
     # Insert custom gate conversions
-    qasm = insert_gate_def(qasm, "iswap")
-    qasm = insert_gate_def(qasm, "sxdg")
-    qasm = insert_gate_def(qasm, "cv")
+    qasm = insert_gate_def(qasm, ["iswap", "sxdg", "cv"])
     # AutoQASM does not include stdgates.inc
     qasm = add_stdgates_include(qasm)
     return qasm
