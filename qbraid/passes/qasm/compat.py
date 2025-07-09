@@ -110,7 +110,6 @@ def insert_gate_def(qasm3_str: str, gate_name: str | list[str], force_insert: bo
     return qasm3_str
 
 
-
 def _normalize_case_insensitive_map(gate_mappings: dict[str, str]) -> dict[str, str]:
     """Normalize gate_mappings keys to lowercase and check for duplicates."""
     lowercased_map = {}

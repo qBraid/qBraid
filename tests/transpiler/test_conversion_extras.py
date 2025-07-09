@@ -13,12 +13,10 @@ Tests for qBraid transpiler conversion extras.
 
 """
 import importlib.util
-import re
 from typing import Callable
 
 import braket.circuits
 import pytest
-import sympy
 
 try:
     import pyqir
@@ -27,21 +25,12 @@ try:
 except ImportError:
     pyqir_installed = False
 
-try:
-    import autoqasm
-
-    autoqasm_installed = True
-except ImportError:
-    autoqasm_installed = False
-
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
-
-from ..fixtures.autoqasm.circuits import autoqasm_bell, autoqasm_shared15
 
 
 def has_extra(conversion_func: Callable) -> bool:
@@ -83,6 +72,9 @@ def test_qiskit_to_pyqir_extra(bell_circuit):
 
 def autoqasm_bell_circuit():
     """Function that returns autoqasm bell circuit."""
+    # pylint: disable-next=import-outside-toplevel
+    from ..fixtures.autoqasm.circuits import autoqasm_bell
+
     return autoqasm_bell()
 
 
@@ -96,7 +88,6 @@ cx __qubits__[0], __qubits__[1];"""
 
 
 @pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
-@pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
 def test_autoqasm_bell_to_qasm3_extra():
     """Test autoqasm-qasm3 conversion extra."""
     autoqasm_circuit = autoqasm_bell_circuit()
@@ -109,6 +100,9 @@ def test_autoqasm_bell_to_qasm3_extra():
 
 def autoqasm_shared15_circuit():
     """Function that returns autoqasm shared15 circuit."""
+    # pylint: disable-next=import-outside-toplevel
+    from ..fixtures.autoqasm.circuits import autoqasm_shared15
+
     return autoqasm_shared15()
 
 
@@ -154,14 +148,14 @@ swap __qubits__[1], __qubits__[3];
 cx __qubits__[0], __qubits__[1];
 cp(pi/4) __qubits__[2], __qubits__[3];"""
 
+
 @pytest.mark.skipif(not has_extra(autoqasm_to_qasm3), reason="Extra not installed")
-@pytest.mark.skipif(not autoqasm_installed, reason="autoqasm not installed")
 def test_autoqasm_shared15_to_qasm3_extra():
     """Test autoqasm-qasm3 conversion extra."""
     autoqasm_circuit = autoqasm_shared15_circuit()
     conversions = [Conversion("autoqasm", "qasm3", autoqasm_to_qasm3)]
     graph = ConversionGraph(conversions)
     program = transpile(autoqasm_circuit, "qasm3", conversion_graph=graph, max_path_depth=1)
-    
+
     assert isinstance(program, str)
     assert program == normalize_qasm_gate_params(qasm3_shared15_reference())

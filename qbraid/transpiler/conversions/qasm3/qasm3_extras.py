@@ -24,6 +24,9 @@ from qbraid.transpiler.annotations import requires_extras
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
 autoqasm = LazyLoader("autoqasm", globals(), "autoqasm")
 
+if TYPE_CHECKING:
+    import autoqasm as aq
+
 aq_to_qasm3_stdgates = {
     "ccnot": "ccx",
     "cnot": "cx",
@@ -57,14 +60,14 @@ def qasm3_to_pyqir(program: Qasm3StringType) -> pyqir.Module:
 
 
 @requires_extras("autoqasm")
-def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringType:
+def autoqasm_to_qasm3(program: aq.program.program.Program) -> Qasm3StringType:
     """Converts an AutoQASM program to an OpenQASM 3 program of gates from the
-    Standard Gate Library. The program must be built prior to conversion using 
+    Standard Gate Library. The program must be built prior to conversion using
     the .build() method.
 
     Args:
         program (autoqasm.program.program.Program): AutoQASM program to convert
-        to OpenQASM 3.
+            to OpenQASM 3.
 
     Returns:
         str: OpenQASM 3 program equivalent to input AutoQASM program.
@@ -77,5 +80,3 @@ def autoqasm_to_qasm3(program: autoqasm.program.program.Program) -> Qasm3StringT
     # AutoQASM does not include stdgates.inc
     qasm = add_stdgates_include(qasm)
     return qasm
-
-
