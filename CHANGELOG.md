@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+
 - Removed legacy `pkg_resources` logic for loading entry points (`qbraid._entrypoints`), as support for Python 3.9 has been dropped and the project now requires Python 3.10 or higher. ([#1002](https://github.com/qBraid/qBraid/issues/1002))
 - Populated basis gates property in profile of AWS Braket provider device ([#1003](https://github.com/qBraid/qBraid/pull/1003))
 - Throw a `UserWarning` instead of a `ValueError` when checking for the sum of result probabilities from job to be equal
@@ -33,7 +34,6 @@ to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
 ### Removed
 
 ### Fixed
-- Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 
 - Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 
