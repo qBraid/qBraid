@@ -306,6 +306,7 @@ def test_convert_qasm_pi_to_decimal_omits_gpi_gate():
 
 
 def test_forced_gate_def_insertion():
+    """Test inserting gate definition with force_insert=True."""
     qasm = """
 OPENQASM 3.0;
 include "stdgates.inc";
