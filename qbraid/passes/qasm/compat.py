@@ -46,18 +46,20 @@ gate cv _gate_q_0, _gate_q_1 {
 }
 
 
-def _insert_gate_def(qasm3_str: str, defn: list[str]) -> str:
+def _insert_gate_def(qasm3_str: str, defn: str) -> str:
     """Add single gate definition to an Open0QASM 3 string."""
 
     lines = qasm3_str.splitlines()
 
-    insert_index = 0
+    include_idx = -1
+    openqasm_idx = -1
     for i, line in enumerate(lines):
-        if "include" in line or "OPENQASM" in line:
-            insert_index = i + 1
-            break
+        if "include" in line:
+            include_idx = i
+        elif "OPENQASM" in line and openqasm_idx == -1:
+            openqasm_idx = i
 
-    lines.insert(insert_index, defn.strip())
+    lines.insert(max(include_idx, openqasm_idx) + 1, defn.strip())
 
     return "\n".join(lines)
 

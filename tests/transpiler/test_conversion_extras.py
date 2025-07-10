@@ -18,12 +18,20 @@ from typing import Callable
 import braket.circuits
 import pytest
 
+# pylint: disable=unused-import
 try:
     import pyqir
 
     pyqir_installed = True
 except ImportError:
     pyqir_installed = False
+
+try:
+    import autoqasm  # noqa: F401
+
+    autoqasm_installed = True
+except ImportError:
+    autoqasm_installed = False
 
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
