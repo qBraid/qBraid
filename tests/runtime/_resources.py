@@ -13,7 +13,6 @@ Module defining mock data and classes for testing the runtime module.
 
 """
 from typing import Any, Optional
-from unittest.mock import MagicMock
 
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
@@ -41,7 +40,7 @@ DEVICE_DATA_QUERA_QASM = {
     "numberQubits": 30,
     "pendingJobs": 0,
     "qbraid_id": "quera_qasm_simulator",
-    "name": "Noisey QASM simulator",
+    "name": "Noisy QASM simulator",
     "provider": "QuEra",
     "paradigm": "gate-based",
     "type": "SIMULATOR",
@@ -285,8 +284,19 @@ RESULTS_DATA_AQUILA = {
 }
 
 
+class MockSession:
+    """Mock session for testing."""
+
+    def __init__(self):
+        self.api_key = "abc123"
+        self.workspace = "qbraid"
+
+
 class MockClient:
     """Mock client for testing."""
+
+    def __init__(self, session: Optional[MockSession] = None):
+        self._session = session or MockSession()
 
     DEVICE_MAP = {
         "qbraid_qir_simulator": DEVICE_DATA_QIR,
@@ -312,9 +322,14 @@ class MockClient:
     @property
     def session(self):
         """Mock session property."""
-        session = MagicMock()
-        session.api_key = "abc123"
-        return session
+        return self._session
+
+    @session.setter
+    def session(self, value: MockSession):
+        """Setter for the mock session."""
+        if not isinstance(value, MockSession):
+            raise TypeError("Session must be an instance of MockSession")
+        self._session = value
 
     @property
     def _user_metadata(self):

@@ -223,6 +223,9 @@ class QbraidProvider(QuantumProvider):
                 and device["provider"] in {"Azure", "IonQ", "Quantinuum", "Rigetti", "Pasqal"}
             )
         ]
+        # filter the devices based on the workspace for aws byot
+        if self.client.session.workspace == "aws":
+            filtered_devices = [device for device in filtered_devices if device["vendor"] == "AWS"]
 
         if not filtered_devices:
             raise ResourceNotFoundError("No devices found matching given criteria.")
@@ -244,6 +247,10 @@ class QbraidProvider(QuantumProvider):
             device_data = self.client.get_device(qbraid_id=device_id)
         except (ValueError, QuantumServiceRequestError) as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+        if self.client.session.workspace == "aws" and device_data["vendor"] != "AWS":
+            raise ResourceNotFoundError(
+                f"Device '{device_id}' is not available in the current AWS workspace."
+            )
 
         profile = self._build_runtime_profile(device_data)
         return QbraidDevice(profile, client=self.client)
