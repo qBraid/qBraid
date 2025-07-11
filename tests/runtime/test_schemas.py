@@ -309,7 +309,7 @@ def test_device_data_quera(device_data_quera):
     device = DeviceData(**device_data_quera)
 
     assert device.provider == "QuEra"
-    assert device.name == "Noisey QASM simulator"
+    assert device.name == "Noisy QASM simulator"
     assert device.paradigm == "gate-based"
     assert device.device_type == "SIMULATOR"
     assert device.num_qubits == 30

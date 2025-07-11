@@ -224,7 +224,7 @@ def test_device_update_scheme(mock_qbraid_device):
     assert graph == mock_qbraid_device.scheme.conversion_graph
 
 
-def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
+def test_device_noisy_run_raises_for_unsupported(mock_qbraid_device):
     """Test raising exception when noise model is not supported."""
     with pytest.raises(ValueError):
         mock_qbraid_device.run(Mock(), noise_model=NoiseModel("amplitude_damping"))
@@ -293,6 +293,48 @@ def test_provider_get_devices_raises_for_no_results(mock_client):
     provider = QbraidProvider(client=client)
     with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria."):
         provider.get_devices(provider="IBM")
+
+
+def test_provider_get_devices_workspace_filtering(mock_client):
+    """Test that get_devices filters devices based on workspace context."""
+    provider = QbraidProvider(client=mock_client)
+
+    with cache_disabled(provider):
+        # Default workspace: should return all vendors
+        devices = provider.get_devices()
+        qbraid_device_list = ["qbraid_qir_simulator", "quera_aquila", "quera_qasm_simulator"]
+        assert len(devices) == len(qbraid_device_list)
+        assert all(device.profile.device_id in qbraid_device_list for device in devices)
+
+        # Set workspace to 'aws': should only return AWS vendor devices now
+        provider.client.session.workspace = "aws"
+        aws_devices = provider.get_devices()
+
+        # only Aquila device should be returned in AWS workspace
+        aws_device_list = ["quera_aquila"]
+        assert len(aws_devices) == len(aws_device_list)
+        assert all(device.profile.device_id in aws_device_list for device in aws_devices)
+
+
+def test_provider_get_device_workspace_filtering(mock_client):
+    """Test that get_device raises error for non-AWS device in AWS workspace."""
+    provider = QbraidProvider(client=mock_client)
+    device_id = "qbraid_qir_simulator"
+
+    # Default workspace: should succeed
+    device = provider.get_device(device_id)
+    assert device.profile.device_id == device_id
+
+    # Set workspace to 'aws': should raise ResourceNotFoundError for non-AWS device
+    provider.client.session.workspace = "aws"
+
+    print(f"Current workspace: {provider.client.session.workspace}")
+    with pytest.raises(
+        ResourceNotFoundError,
+        match=f"Device '{device_id}' is not available in the current AWS workspace.",
+    ):
+        with cache_disabled(provider):
+            provider.get_device(device_id)
 
 
 def test_provider_get_device_workspace_allows_aws(mock_client):

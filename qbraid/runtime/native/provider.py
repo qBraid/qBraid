@@ -247,7 +247,6 @@ class QbraidProvider(QuantumProvider):
             device_data = self.client.get_device(qbraid_id=device_id)
         except (ValueError, QuantumServiceRequestError) as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
-
         if self.client.session.workspace == "aws" and device_data["vendor"] != "AWS":
             raise ResourceNotFoundError(
                 f"Device '{device_id}' is not available in the current AWS workspace."

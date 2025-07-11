@@ -110,7 +110,7 @@ class QbraidDevice(QuantumDevice):
             entrypoint (str, optional): Name of the entrypoint function to execute.
                 Only applicable if run_input is a QIR module. Defaults to None.
             noise_model (str, optional): The noise model to apply to the job.
-                Only applicable if device supports noisey simulation. Defaults to None.
+                Only applicable if device supports noisy simulation. Defaults to None.
             seed (int, optional): The seed to use for the random number generator.
                 Only applicable for certain devices. Defaults to None.
             timeout (int, optional): The maximum time in seconds to wait for the job

@@ -125,8 +125,8 @@ def test_raise_error_to_pyquil_bit_flip():
         cirq_to_pyquil(circuit)
 
 
-def test_raise_error_from_pyquil_noisey():
-    """Test raising an error when converting a noisey pyQuil program to Cirq."""
+def test_raise_error_from_pyquil_noisy():
+    """Test raising an error when converting a noisy pyQuil program to Cirq."""
 
     with pytest.raises(ProgramConversionError):
         p = Program()
