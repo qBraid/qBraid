@@ -26,6 +26,7 @@ to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
   - Removed deprecated modules (`qbraid.programs.circuits`, `qbraid.runtime.qiskit`, and `qbraid.runtime.braket`)
   - Updated readme, contributing, citation, and various project config files.
 - Updated `QiskitRuntimeProvider` default channel to `ibm_quantum_platform` in preparation for the sunsetting of the IBM Quantum channel in favor of IBM Cloud. See `qiskit-ibm-runtime` updated instructions for [account setup](https://github.com/Qiskit/qiskit-ibm-runtime/blob/0.40.1/README.md#account-setup). ([#1011](https://github.com/qBraid/qBraid/pull/1011))
+- Updated the `QbraidProvider.get_device` and `QbraidProvider.get_devices` methods to filter devices based on the current active `workspace`. This ensures that only devices associated with the active workspace are returned. ([#1652](https://github.com/qBraid/qBraid/pull/1652))
 
 ### Deprecated
 

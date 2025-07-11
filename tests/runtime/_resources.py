@@ -13,7 +13,6 @@ Module defining mock data and classes for testing the runtime module.
 
 """
 from typing import Any, Optional
-from unittest.mock import MagicMock
 
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
@@ -286,6 +285,8 @@ RESULTS_DATA_AQUILA = {
 
 
 class MockSession:
+    """Mock session for testing."""
+
     def __init__(self):
         self.api_key = "abc123"
         self.workspace = "qbraid"

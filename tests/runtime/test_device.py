@@ -328,7 +328,6 @@ def test_provider_get_device_workspace_filtering(mock_client):
     # Set workspace to 'aws': should raise ResourceNotFoundError for non-AWS device
     provider.client.session.workspace = "aws"
 
-    print(f"Current workspace: {provider.client.session.workspace}")
     with pytest.raises(
         ResourceNotFoundError,
         match=f"Device '{device_id}' is not available in the current AWS workspace.",
