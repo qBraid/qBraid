@@ -314,6 +314,7 @@ class MockClient:
         """Mock session property."""
         session = MagicMock()
         session.api_key = "abc123"
+        session.workspace = "qbraid"
         return session
 
     @property

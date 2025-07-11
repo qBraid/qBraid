@@ -295,6 +295,18 @@ def test_provider_get_devices_raises_for_no_results(mock_client):
         provider.get_devices(provider="IBM")
 
 
+def test_provider_get_device_workspace_allows_aws(mock_client):
+    """Test that get_device works for AWS device in AWS workspace."""
+    provider = QbraidProvider(client=mock_client)
+    aws_device_id = "quera_aquila"
+
+    # Set workspace to 'aws'
+    provider.client.session.workspace = "aws"
+    device = provider.get_device(aws_device_id)
+    assert device.profile.device_id == aws_device_id
+    assert device.profile.provider_name
+
+
 def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
     """Test getting devices from the cache."""
     monkeypatch.setenv("DISABLE_CACHE", "0")
