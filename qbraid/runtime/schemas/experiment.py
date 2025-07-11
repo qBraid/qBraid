@@ -119,11 +119,10 @@ class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
 
     Attributes:
         backend (str, optional): The name of the backend used for the simulation.
-        flair_visual_version (str, optional): The version of the Flair Visual
-            tool used to generate the atom animation state data.
-        atom_animation_state (dict, optional): JSON data representing the state
-            of the QPU atoms used in the simulation.
-        logs (list, optional): list of log messages generated during the simulation.
+        quera_simulation_result (dict[str, Any], optional): The result of the simulation
+            in a dictionary format. This includes data describing the state of the
+            QPU atoms used in the simulation and logs generated during the simulation,
+            among other things.
 
     """
 
