@@ -102,7 +102,7 @@ class GateModelExperimentMetadata(BaseModel):
 
 
 class QbraidQirSimulationMetadata(GateModelExperimentMetadata):
-    """Result data specific to jobs submitted to the qBraid QIR simulator.
+    """Metadata specific to jobs submitted to the qBraid QIR simulator.
 
     Attributes:
         backend_version (str, optional): The version of the simulator backend.
@@ -115,20 +115,39 @@ class QbraidQirSimulationMetadata(GateModelExperimentMetadata):
 
 
 class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
-    """Result data specific to jobs submitted to the QuEra QASM simulator.
+    """Metadata specific to jobs submitted to the QuEra QASM simulator.
 
     Attributes:
         backend (str, optional): The name of the backend used for the simulation.
-        flair_visual_version (str, optional): The version of the Flair Visual
-            tool used to generate the atom animation state data.
-        atom_animation_state (dict, optional): JSON data representing the state
-            of the QPU atoms used in the simulation.
-        logs (list, optional): list of log messages generated during the simulation.
+        quera_simulation_result (dict[str, Any], optional): The result of the simulation
+            in a dictionary format. This includes data describing the state of the
+            QPU atoms used in the simulation and logs generated during the simulation,
+            among other things.
 
     """
 
     backend: Optional[str] = None
     quera_simulation_result: Optional[dict[str, Any]] = None
+
+
+class Equal1SimulationMetadata(GateModelExperimentMetadata):
+    """Metadata specific to jobs submitted to the Equal1 simulator.
+
+    Attributes:
+        compiled_output (str, optional): The compiled output of the job.
+        execution_mode (str, optional): The execution mode of the job.
+        device_name (str, optional): The name of the device used for the job.
+        simulation_platform (str, optional): The platform used for the simulation.
+        simulation_mode (str, optional): The mode used for the simulation.
+        execution_options (dict[str, Any], optional): The execution options used for the job.
+    """
+
+    compiled_output: Optional[str] = Field(None, alias="compiledOutput")
+    execution_mode: Optional[str] = Field(None, alias="executionMode")
+    device_name: Optional[str] = Field(None, alias="deviceName")
+    simulation_platform: Optional[str] = Field(None, alias="simulationPlatform")
+    simulation_mode: Optional[str] = Field(None, alias="simulationMode")
+    execution_options: Optional[dict[str, Any]] = Field(None, alias="executionOptions")
 
 
 class AhsExperimentMetadata(BaseModel):

@@ -121,7 +121,7 @@ def transpile(
         try:
             temp_program = deepcopy(program)
         except (RecursionError, TypeError) as err:
-            logger.warning(
+            logger.info(
                 "Deepcopy failed due to a %s, likely caused by the internal structure of "
                 "the %s object. Continuing execution, but any subsequent errors during "
                 "transpilation may be unclear or misleading due to potential side effects.",
