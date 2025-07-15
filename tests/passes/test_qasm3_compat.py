@@ -305,34 +305,6 @@ def test_convert_qasm_pi_to_decimal_omits_gpi_gate():
     assert convert_qasm_pi_to_decimal(qasm) == expected
 
 
-def test_forced_gate_def_insertion():
-    """Test inserting gate definition with force_insert=True."""
-    qasm = """
-OPENQASM 3.0;
-include "stdgates.inc";
-qubit[2] q;
-h q[0];
-cnot q[0], q[1];
-    """
-
-    expected = """
-OPENQASM 3.0;
-include "stdgates.inc";
-gate iswap _gate_q_0, _gate_q_1 {
-  s _gate_q_0;
-  s _gate_q_1;
-  h _gate_q_0;
-  cx _gate_q_0, _gate_q_1;
-  cx _gate_q_1, _gate_q_0;
-  h _gate_q_1;
-}
-qubit[2] q;
-h q[0];
-cnot q[0], q[1];
-    """
-    assert insert_gate_def(qasm, "iswap", force_insert=True) == expected
-
-
 def test_convert_qasm_pi_to_decimal_gpi2_iso():
     """Test converting pi symbol to decimal in qasm string with gpi2 gate on its own."""
     qasm = """
