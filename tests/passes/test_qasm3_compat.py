@@ -378,6 +378,33 @@ def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
     assert convert_qasm_pi_to_decimal(qasm) == expected
 
 
+def test_forced_gate_def_insertion():
+    """Test inserting gate definition with force_insert=True."""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+h q[0];
+cnot q[0], q[1];
+    """
+
+    expected = """
+OPENQASM 3.0;
+gate iswap _gate_q_0, _gate_q_1 {
+  s _gate_q_0;
+  s _gate_q_1;
+  h _gate_q_0;
+  cx _gate_q_0, _gate_q_1;
+  cx _gate_q_1, _gate_q_0;
+  h _gate_q_1;
+}
+include "stdgates.inc";
+qubit[2] q;
+h q[0];
+cnot q[0], q[1];
+    """
+    assert insert_gate_def(qasm, "iswap", force_insert=True) == expected
+
 def test_normalize_case_insensitive_map():
     """Test normalizing a case-insensitive map."""
     test_map = {"a": 1, "B": 2, "c": 3}
