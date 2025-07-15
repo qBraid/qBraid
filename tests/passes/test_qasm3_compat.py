@@ -413,6 +413,7 @@ OPENQASM 3.0;
 include "stdgates.inc";
 qubit[1] q;
 h q[0];
+sxdg q[0];
     """
 
     expected = """
@@ -425,8 +426,9 @@ gate sxdg _gate_q_0 {
 include "stdgates.inc";
 qubit[1] q;
 h q[0];
+sxdg q[0];
     """
-    result = insert_gate_def(qasm, "sxdg", force_insert=True)
+    result = insert_gate_def(qasm, "sxdg")
     assert result == expected
 
 
