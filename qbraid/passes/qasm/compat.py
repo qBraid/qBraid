@@ -51,16 +51,14 @@ def _insert_gate_def(qasm3_str: str, defn: str) -> str:
 
     lines = qasm3_str.splitlines()
 
-    include_idx = -1
-    openqasm_idx = -1
+    # Note: In future move gate definition after include statement.
+    insert_index = 0
     for i, line in enumerate(lines):
-        if "include" in line:
-            include_idx = i
-        elif "OPENQASM" in line and openqasm_idx == -1:
-            openqasm_idx = i
+        if "include" in line or "OPENQASM" in line:
+            insert_index = i + 1
             break
 
-    lines.insert(max(include_idx, openqasm_idx) + 1, defn.strip())
+    lines.insert(insert_index, defn.strip())
 
     return "\n".join(lines)
 
