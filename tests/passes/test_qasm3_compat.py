@@ -378,6 +378,82 @@ def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
     assert convert_qasm_pi_to_decimal(qasm) == expected
 
 
+def test_forced_gate_def_insertion():
+    """Test inserting gate definition with force_insert=True."""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+h q[0];
+cnot q[0], q[1];
+    """
+
+    expected = """
+OPENQASM 3.0;
+gate iswap _gate_q_0, _gate_q_1 {
+  s _gate_q_0;
+  s _gate_q_1;
+  h _gate_q_0;
+  cx _gate_q_0, _gate_q_1;
+  cx _gate_q_1, _gate_q_0;
+  h _gate_q_1;
+}
+include "stdgates.inc";
+qubit[2] q;
+h q[0];
+cnot q[0], q[1];
+    """
+    assert insert_gate_def(qasm, "iswap", force_insert=True) == expected
+
+
+def test_gate_def_insertion_with_include():
+    """Test inserting gate definition when include statement is present (include_idx case)."""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[1] q;
+h q[0];
+sxdg q[0];
+    """
+
+    expected = """
+OPENQASM 3.0;
+gate sxdg _gate_q_0 {
+  s _gate_q_0;
+  h _gate_q_0;
+  s _gate_q_0;
+}
+include "stdgates.inc";
+qubit[1] q;
+h q[0];
+sxdg q[0];
+    """
+    result = insert_gate_def(qasm, "sxdg")
+    assert result == expected
+
+
+def test_gate_def_insertion_without_include():
+    """Test inserting gate definition when no include statement is present (openqasm_idx case)."""
+    qasm = """
+OPENQASM 3.0;
+qubit[1] q;
+h q[0];
+    """
+
+    expected = """
+OPENQASM 3.0;
+gate sxdg _gate_q_0 {
+  s _gate_q_0;
+  h _gate_q_0;
+  s _gate_q_0;
+}
+qubit[1] q;
+h q[0];
+    """
+    result = insert_gate_def(qasm, "sxdg", force_insert=True)
+    assert result == expected
+
+
 def test_normalize_case_insensitive_map():
     """Test normalizing a case-insensitive map."""
     test_map = {"a": 1, "B": 2, "c": 3}

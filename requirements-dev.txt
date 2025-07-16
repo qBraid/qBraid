@@ -19,6 +19,7 @@ qiskit-aer>=0.15.0; python_version < "3.13"
 qiskit-qir
 qiskit-ionq>=0.5.12
 pyqpanda3>=0.2.0; python_version < "3.13"
+autoqasm>=0.1.2,<0.2
 
 # optional runtime dependencies
 qiskit-ibm-runtime>=0.25.0,<0.41

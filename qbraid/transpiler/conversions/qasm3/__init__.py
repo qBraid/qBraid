@@ -26,7 +26,7 @@ Functions
    qasm3_to_ionq
 
 """
-from .qasm3_extras import qasm3_to_pyqir
+from .qasm3_extras import autoqasm_to_qasm3, qasm3_to_pyqir
 from .qasm3_to_braket import qasm3_to_braket
 from .qasm3_to_ionq import qasm3_to_ionq
 from .qasm3_to_openqasm3 import qasm3_to_openqasm3
@@ -37,5 +37,6 @@ __all__ = [
     "qasm3_to_openqasm3",
     "qasm3_to_qiskit",
     "qasm3_to_pyqir",
+    "autoqasm_to_qasm3",
     "qasm3_to_ionq",
 ]
