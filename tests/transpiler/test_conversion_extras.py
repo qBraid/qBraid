@@ -18,7 +18,6 @@ from typing import Callable
 import braket.circuits
 import pytest
 
-# pylint: disable=unused-import
 try:
     import pyqir
 
