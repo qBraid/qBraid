@@ -19,6 +19,18 @@ Types of changes:
 
 ### Improved / Modified
 
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.8] - 2025-07-22
+
+### Improved / Modified
+
 - Removed legacy `pkg_resources` logic for loading entry points (`qbraid._entrypoints`), as support for Python 3.9 has been dropped and the project now requires Python 3.10 or higher. ([#1002](https://github.com/qBraid/qBraid/issues/1002))
 - Populated basis gates property in profile of AWS Braket provider device ([#1003](https://github.com/qBraid/qBraid/pull/1003))
 - Throw a `UserWarning` instead of a `ValueError` when checking for the sum of result probabilities from job to be equal
@@ -29,10 +41,6 @@ to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
 - Updated `QiskitRuntimeProvider` default channel to `ibm_quantum_platform` in preparation for the sunsetting of the IBM Quantum channel in favor of IBM Cloud. See `qiskit-ibm-runtime` updated instructions for [account setup](https://github.com/Qiskit/qiskit-ibm-runtime/blob/0.40.1/README.md#account-setup). ([#1011](https://github.com/qBraid/qBraid/pull/1011))
 - Implemented `autoqasm_to_qasm3` conversion extra in transpiler for support of AutoQASM to QASM3 conversion. Added `"autoqasm"` program type to program registry. ([#1013](https://github.com/qBraid/qBraid/pull/1013))
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 - Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
@@ -42,6 +50,7 @@ to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
 - Updated `qiskit-ibm-runtime` requirement from <0.39,>=0.25.0 to >=0.25.0,<0.41 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Updated `pydantic` requirement from >2.0.0 to >2.0.0,<=2.11.1 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Remove `qiskit-qir` (deprecated) from `qbraid[qir]` dependency extras ([#1001](https://github.com/qBraid/qBraid/pull/1001))
+- Updated `amazon-braket-sdk` requirement from >=1.83.0,<1.94.0 to >=1.83.0,<1.96.0 ([#1009](https://github.com/qBraid/qBraid/pull/1009))
 
 ## [0.9.7] - 2025-06-13
 

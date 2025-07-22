@@ -111,7 +111,8 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'qibo': qibo.models.circuit.Circuit,
  'stim': stim._stim_sse2.Circuit,
  'pulser': pulser.sequence.sequence.Sequence,
- 'pyqpanda3': pyqpanda3.core.QProg}
+ 'pyqpanda3': pyqpanda3.core.QProg,
+ 'autoqasm': autoqasm.program.program.Program}
 ```
 
 Pass any registered quantum program along with a target package from
