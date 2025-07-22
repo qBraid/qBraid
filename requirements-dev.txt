@@ -3,8 +3,7 @@ amazon-braket-sdk>=1.83.0,<1.94.0
 cirq-core>=1.3,<1.6
 cudaq>=0.9.0; python_version < "3.13"
 pennylane<0.42
-pyquil>=4.4; python_version < "3.13"
-qcs-sdk-python>=0.21.12,<0.21.13; python_version < "3.13"
+pyquil>=4.16; python_version < "3.13"
 pytket>=1.31
 qiskit>=1.0,<3.0
 
@@ -30,6 +29,7 @@ azure-identity>=1.17,<2.0
 pyqubo>=1.4.0
 pulser-core>=1.4.0; python_version < "3.13"
 pulser-simulation>=1.4.0; python_version < "3.13"
+qcs-api-client>=0.26.5
 
 # visualization
 ipython
