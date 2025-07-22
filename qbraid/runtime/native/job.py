@@ -28,6 +28,7 @@ from qbraid.runtime.result_data import AhsResultData, AnnealingResultData, GateM
 from qbraid.runtime.schemas import RuntimeJobModel
 
 from .result import (
+    Equal1SimulatorResultData,
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
     QuEraQasmSimulatorResultData,
@@ -113,6 +114,7 @@ class QbraidJob(QuantumJob):
             "qbraid_qir_simulator": QbraidQirSimulatorResultData,
             "quera_qasm_simulator": QuEraQasmSimulatorResultData,
             "nec_vector_annealer": NECVectorAnnealerResultData,
+            "equal1_simulator": Equal1SimulatorResultData,
         }
 
         result_data_cls = device_to_result_data.get(device_id)
