@@ -39,5 +39,5 @@ __all__ = [
     "qasm3_to_qiskit",
     "qasm3_to_pyqir",
     "qasm3_to_ionq",
-    "autoqasm_to_qasm3"
+    "autoqasm_to_qasm3",
 ]
