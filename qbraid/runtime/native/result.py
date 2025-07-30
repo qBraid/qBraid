@@ -15,9 +15,11 @@ managed natively through qBraid.
 """
 from __future__ import annotations
 
+import base64
 from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.exceptions import QbraidError
+from qbraid.programs.typer import Qasm2StringType
 from qbraid.runtime.result_data import AnnealingResultData, GateModelResultData
 
 if TYPE_CHECKING:
@@ -102,6 +104,24 @@ class QbraidQirSimulatorResultData(GateModelResultData):
     def seed(self) -> Optional[int]:
         """Returns the seed used for the simulation."""
         return self._seed
+
+
+class Equal1SimulatorResultData(GateModelResultData):
+    """Class for storing and accessing the results of an Equal1 simulator job."""
+
+    def __init__(self, compiled_output: str, **kwargs):
+        """Create a new Equal1SimulatorResultData instance."""
+        super().__init__(**kwargs)
+        self._compiled_output = self._decode_base64(compiled_output)
+
+    @staticmethod
+    def _decode_base64(value: str) -> str:
+        return base64.b64decode(value.encode("utf-8")).decode("utf-8")
+
+    @property
+    def compiled_output(self) -> Qasm2StringType:
+        """Returns the compiled output of the simulation."""
+        return self._compiled_output
 
 
 class NECVectorAnnealerResultData(AnnealingResultData):

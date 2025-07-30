@@ -93,6 +93,7 @@ class QbraidDevice(QuantumDevice):
         backend: Optional[str] = None,
         params: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
+        runtime_options: Optional[dict[str, Any]] = None,
     ) -> qbraid.runtime.QbraidJob:
         """
         Creates a qBraid Quantum Job.
@@ -120,6 +121,8 @@ class QbraidDevice(QuantumDevice):
             params (dict, optional): Additional parameters to include in the job payload.
             error_mitigation (dict, optional): Dictionary containing error mitigation
                 parameters. Only applicable for certain devices. Defaults to None.
+            runtime_options (dict, optional): Additional runtime options to include in the
+                job payload. Only applicable for certain devices. Defaults to None.
 
         Returns:
             QbraidJob: The job objects representing the submitted job.
@@ -131,6 +134,7 @@ class QbraidDevice(QuantumDevice):
         tags_json = json.dumps(tags)
         error_mitig_json = json.dumps(error_mitigation) if error_mitigation else None
         params_json = QuboSolveParams(**params).model_dump_json() if params else None
+        runtime_options_json = json.dumps(runtime_options) if runtime_options else None
 
         payload = {
             "qbraidDeviceId": self.id,
@@ -145,6 +149,7 @@ class QbraidDevice(QuantumDevice):
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
+            "runtimeOptions": runtime_options_json,
             **run_input,
         }
 
@@ -154,6 +159,7 @@ class QbraidDevice(QuantumDevice):
         payload["tags"] = tags
         payload["params"] = params
         payload["errorMitigation"] = error_mitigation
+        payload["runtimeOptions"] = runtime_options
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)

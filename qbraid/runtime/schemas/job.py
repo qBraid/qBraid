@@ -26,6 +26,7 @@ from .base import Credits, QbraidSchemaBase
 from .experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
+    Equal1SimulationMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
     QbraidQirSimulationMetadata,
@@ -140,6 +141,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         native_gate_models = {
             "qbraid_qir_simulator": QbraidQirSimulationMetadata,
             "quera_qasm_simulator": QuEraQasmSimulationMetadata,
+            "equal1_simulator": Equal1SimulationMetadata,
         }
 
         if experiment_type == ExperimentType.GATE_MODEL:
