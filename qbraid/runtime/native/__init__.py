@@ -37,6 +37,7 @@ ResultData Subclasses
     QuEraQasmSimulatorResultData
     QbraidQirSimulatorResultData
     NECVectorAnnealerResultData
+    Equal1SimulatorResultData
 
 """
 from qbraid_core import QbraidClient, QbraidSession, Session
@@ -46,6 +47,7 @@ from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
 from .result import (
+    Equal1SimulatorResultData,
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
     QuEraQasmSimulatorResultData,
@@ -62,4 +64,5 @@ __all__ = [
     "QuEraQasmSimulatorResultData",
     "QbraidQirSimulatorResultData",
     "NECVectorAnnealerResultData",
+    "Equal1SimulatorResultData",
 ]
