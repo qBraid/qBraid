@@ -8,7 +8,7 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint:disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 """
 Unit tests for Azure Quantum runtime (remote)
 
@@ -42,6 +42,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.remote
+@pytest.mark.skip(reason="The Free Credits plan has been discontinued in Azure Quantum")
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
     device = provider.get_device("quantinuum.sim.h1-1sc")
@@ -74,6 +75,7 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
 
 
 @pytest.mark.remote
+@pytest.mark.skip(reason="The Free Credits plan has been discontinued in Azure Quantum")
 def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     """Test submitting a circuit JSON to run on the IonQ simulator."""
     device = provider.get_device("ionq.simulator")
@@ -159,6 +161,7 @@ def quil_string(pyquil_program: pyquil_.Program) -> str:
 @pytest.mark.remote
 @pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 @pytest.mark.parametrize("direct", [(True), (False)])
+@pytest.mark.skip(reason="The Free Credits plan has been discontinued in Azure Quantum")
 def test_submit_quil_to_rigetti(
     provider: AzureQuantumProvider, pyquil_program: pyquil_.Program, quil_string: str, direct: bool
 ):

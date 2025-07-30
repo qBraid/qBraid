@@ -20,6 +20,7 @@ Types of changes:
 - Added `Equal1SimulationMetadata` and `Equal1SimulatorResultData` classes to support processing of Equal 1 simulator v0.2.2 job data including base64 encoded "compiledOut" ([#1017](https://github.com/qBraid/qBraid/issues/1017))
 
 ### Improved / Modified
+- Skip remote Azure provider tests that now require payed plan ([#1024](https://github.com/qBraid/qBraid/pull/1024))
 
 ### Deprecated
 
