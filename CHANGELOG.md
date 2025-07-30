@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Skip remote Azure provider tests that now require payed plan ([#1024](https://github.com/qBraid/qBraid/pull/1024))
 
 ### Deprecated
 
