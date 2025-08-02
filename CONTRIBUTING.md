@@ -140,7 +140,7 @@ For code changes, please ensure that:
 2. Docstrings are thorough and accurate for both new and updated features.
 3. All integration tests, including remote tests (as applicable), are passing.
 4. New functions and classes are annotated with Python type hints to support `py.typed`.
-5. (Optional) Yor name and affiliation are added to [CITATION.cff](CITATION.cff).
+5. (Optional) Your name and affiliation are added to [CITATION.cff](CITATION.cff).
 
 ### Integration Tests
 
@@ -158,7 +158,7 @@ Run the following commands locally to confirm that your changes meet our quality
 
 3. **Code Style**
    - Command: `tox -e format-check`
-   - Verify that code formatting complies with project standards. Use `pylint: disable` only when neccessary, and document any exceptions or updates to the project's code style configurations. New functions and classes must be annotated with Python type hints to support `py.typed`.
+   - Verify that code formatting complies with project standards. Use `pylint: disable` only when necessary, and document any exceptions or updates to the project's code style configurations. New functions and classes must be annotated with Python type hints to support `py.typed`.
 
 ### Submitting a Pull Request
 
