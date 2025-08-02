@@ -263,7 +263,7 @@ def test_set_job_status_message():
 
 
 def test_set_job_status_from_status_text(mock_job):
-    """Test that a status message is set correctly from statusText job data recieved from client."""
+    """Test that a status message is set correctly from statusText job data received from client."""
     status = mock_job.status()
     assert status == JobStatus.FAILED
     assert status.status_message == "Some error message"
