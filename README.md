@@ -171,7 +171,7 @@ graph.plot(seed=20, k=3, legend=True)
 
 ### QbraidProvider
 
-Run experiements using on-demand simulators provided by qBraid. Retrieve a list of available devices:
+Run experiments using on-demand simulators provided by qBraid. Retrieve a list of available devices:
 
 ```python
 from qbraid import QbraidProvider
@@ -220,7 +220,7 @@ plot_histogram(batch_counts)
 ## Launch on qBraid
 
 The "Launch on qBraid" button (top) can be added to any public GitHub
-repository. Clicking on it automaically opens qBraid Lab, and performs a
+repository. Clicking on it automatically opens qBraid Lab, and performs a
 `git clone` of the project repo into your account's home directory. Copy the
 code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub
 info.

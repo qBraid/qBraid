@@ -157,7 +157,7 @@ Run the following commands locally to confirm that your changes meet our quality
 
 3. **Code Style**
    - Command: `tox -e format-check`
-   - Verify that code formatting complies with project standards. Use `pylint: disable` only when neccessary, and document any exceptions or updates to the project's code style configurations. New functions and classes must be annotated with Python type hints to support `py.typed`.
+   - Verify that code formatting complies with project standards. Use `pylint: disable` only when necessary, and document any exceptions or updates to the project's code style configurations. New functions and classes must be annotated with Python type hints to support `py.typed`.
 
 ### Submitting a Pull Request
 
