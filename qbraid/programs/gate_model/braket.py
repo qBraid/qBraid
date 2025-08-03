@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
+from braket.circuits.gates import PulseGate
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -132,6 +133,19 @@ class BraketCircuit(GateModelProgram):
 
     def serialize(self) -> dict[str, str]:
         """Return the program in a format suitable for submission to the qBraid API."""
+        # Check if this is a pulse circuit
+        has_pulse_gates = any(isinstance(instr.operator, PulseGate) for instr in self.program.instructions)
+        
+        if has_pulse_gates:
+            # For pulse circuits, directly convert to OpenQASM and extract source
+            try:
+                qasm_program = self.program.to_ir(ir_type="OPENQASM")
+                return {"openQasm": qasm_program.source}
+            except Exception as e:
+                # If OpenQASM conversion fails, fall back to the original method
+                pass
+        
+        # For non-pulse circuits, use the original conversion method
         # pylint: disable=import-outside-toplevel
         from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
         from qbraid.transpiler.conversions.braket import braket_to_qasm3

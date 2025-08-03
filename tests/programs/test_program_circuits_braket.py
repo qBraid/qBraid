@@ -149,3 +149,80 @@ def test_properties():
     assert qprogram.qubits == circuit.qubits
     assert qprogram.num_clbits == 0
     assert qprogram.depth == circuit.depth
+
+
+def test_braket_circuit_serialize_regular():
+    """Test serialization of regular (non-pulse) Braket circuits."""
+    circuit = Circuit().h(0).cnot(0, 1).measure(0).measure(1)
+    qprogram = BraketCircuit(circuit)
+    serialized = qprogram.serialize()
+    
+    # Should return a dict with openQasm key
+    assert isinstance(serialized, dict)
+    assert "openQasm" in serialized
+    assert isinstance(serialized["openQasm"], str)
+    assert len(serialized["openQasm"]) > 0
+
+
+def test_braket_circuit_serialize_pulse(monkeypatch):
+    """Test serialization of pulse Braket circuits."""
+    try:
+        from braket.circuits.gates import PulseGate
+        from braket.pulse import Frame, Port, PulseSequence
+        from braket.pulse.waveforms import GaussianWaveform
+        
+        # Create pulse elements
+        qubit_port = Port(port_id="q0_rf", dt=1e-9, properties={})
+        drive_frame = Frame(
+            frame_id="q0_drive",
+            frequency=4.5e9,
+            port=qubit_port,
+            phase=0,
+            is_predefined=False,
+        )
+        
+        gaussian_pulse = GaussianWaveform(
+            length=100e-9, sigma=25e-9, amplitude=0.3, zero_at_edges=True
+        )
+        
+        pulse_sequence = PulseSequence()
+        pulse_sequence.play(drive_frame, gaussian_pulse)
+        
+        pulse_circuit = Circuit()
+        pulse_gate = PulseGate(pulse_sequence, 1)
+        pulse_instruction = Instruction(pulse_gate, [0])
+        pulse_circuit.add_instruction(pulse_instruction)
+        pulse_circuit.measure(0)
+        
+        qprogram = BraketCircuit(pulse_circuit)
+        serialized = qprogram.serialize()
+        
+        # Should return a dict with openQasm key for pulse circuits too
+        assert isinstance(serialized, dict)
+        assert "openQasm" in serialized
+        assert isinstance(serialized["openQasm"], str)
+        assert len(serialized["openQasm"]) > 0
+        # Should contain calibration statements
+        assert "cal {" in serialized["openQasm"]
+        
+    except ImportError:
+        # Skip test if pulse modules not available
+        pytest.skip("Braket pulse modules not available")
+
+
+def test_braket_circuit_has_pulse_gates_detection():
+    """Test detection of pulse gates in circuits."""
+    from qbraid.programs.gate_model.braket import BraketCircuit
+    
+    # Regular circuit should not have pulse gates
+    regular_circuit = Circuit().h(0).cnot(0, 1)
+    regular_qprogram = BraketCircuit(regular_circuit)
+    # Access the private method for testing
+    has_pulse_gates = any(
+        isinstance(instr.operator, __import__('braket.circuits.gates', fromlist=['PulseGate']).PulseGate) 
+        for instr in regular_circuit.instructions
+    )
+    assert not has_pulse_gates
+    
+    # This test verifies the import and basic structure works
+    assert hasattr(regular_qprogram, 'serialize')

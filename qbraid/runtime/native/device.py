@@ -149,9 +149,12 @@ class QbraidDevice(QuantumDevice):
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
-            "runtimeOptions": runtime_options_json,
             **run_input,
         }
+        
+        # Only include runtimeOptions if it's not None
+        if runtime_options is not None:
+            payload["runtimeOptions"] = runtime_options_json
 
         job_data = self.client.create_job(data=payload)
 
@@ -159,7 +162,9 @@ class QbraidDevice(QuantumDevice):
         payload["tags"] = tags
         payload["params"] = params
         payload["errorMitigation"] = error_mitigation
-        payload["runtimeOptions"] = runtime_options
+        # Only set runtimeOptions if it was originally provided
+        if runtime_options is not None:
+            payload["runtimeOptions"] = runtime_options
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
