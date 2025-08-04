@@ -140,7 +140,6 @@ For code changes, please ensure that:
 2. Docstrings are thorough and accurate for both new and updated features.
 3. All integration tests, including remote tests (as applicable), are passing.
 4. New functions and classes are annotated with Python type hints to support `py.typed`.
-5. (Optional) Your name and affiliation are added to [CITATION.cff](CITATION.cff).
 
 ### Integration Tests
 

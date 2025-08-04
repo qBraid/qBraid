@@ -15,7 +15,7 @@ Unit tests for remote job submissions to the NEC Vector Annealer using the Qbrai
 import pytest
 from qbraid_core import QbraidSession
 
-from qbraid import QbraidProvider
+from qbraid import QbraidJob, QbraidProvider
 from qbraid._logging import logger
 from qbraid.runtime import DeviceStatus
 from qbraid.runtime.native.result import NECVectorAnnealerResultData
@@ -58,11 +58,12 @@ def test_submit_qubo_job_to_nec_vector_annealer():
     if device.status() != DeviceStatus.ONLINE:
         pytest.skip("NEC Vector Annealer is not online")
 
-    job = device.run(qubo, params=params)
+    job: QbraidJob = device.run(qubo, params=params)
 
+    # pylint: disable=no-member
     job.wait_for_final_state()
-
     result = job.result()
+    # pylint: enable=no-member
 
     result_data = result.data
     assert isinstance(result_data, NECVectorAnnealerResultData)

@@ -17,7 +17,7 @@ import warnings
 
 import pytest
 
-from qbraid import GateModelResultData, QbraidProvider
+from qbraid import GateModelResultData, QbraidJob, QbraidProvider
 
 
 @pytest.mark.remote
@@ -47,10 +47,13 @@ def test_qiskit_ionq_workflow():
         device = provider.get_device("ionq_simulator")
 
         shots = 10
-        job = device.run(qiskit_circuit_transpiled, shots=shots)
-        job.wait_for_final_state()
+        job: QbraidJob = device.run(qiskit_circuit_transpiled, shots=shots)
 
+        # pylint: disable=no-member
+        job.wait_for_final_state()
         result = job.result()
+        # pylint: enable=no-member
+
         assert result.success
         assert isinstance(result.data, GateModelResultData)
 
