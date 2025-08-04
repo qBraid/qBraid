@@ -383,7 +383,7 @@ class QbraidDevice(QuantumDevice):
                 runtime_payload = {**aux_payload, **run_input_json}
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
                 jobs.append(job)
-        return jobs[0] if len(jobs) == 1 and is_single_input else jobs
+        return jobs[0] if (len(jobs) == 1 and is_single_input) else jobs
 
     def estimate_cost(
         self, shots: Optional[int], execution_time: Optional[Union[float, int]]
