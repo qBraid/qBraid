@@ -152,8 +152,9 @@ class QbraidDevice(QuantumDevice):
             **run_input,
         }
 
+        # TODO: Move runtimeOptions to initial payload declaration once supported by qBraid API
         if runtime_options_json:
-            payload["runtimeOptions"] = runtime_options_json
+            payload["runtimeOptions"] = runtime_options_json  # pragma: no cover
 
         job_data = self.client.create_job(data=payload)
 
