@@ -149,9 +149,11 @@ class QbraidDevice(QuantumDevice):
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
-            "runtimeOptions": runtime_options_json,
             **run_input,
         }
+
+        if runtime_options_json:
+            payload["runtimeOptions"] = runtime_options_json
 
         job_data = self.client.create_job(data=payload)
 
