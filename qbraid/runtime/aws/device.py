@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
+from braket.circuits.measure import Measure
 
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
 from qbraid.runtime.device import QuantumDevice
@@ -114,23 +115,31 @@ class BraketDevice(QuantumDevice):
 
         ## TODO: This block causes error for circuits with measurement. Needs to restructure this block
         ## add a tighter condition on when it is triggered.
-        # if provider == "IONQ":
-        #     graph = self.scheme.conversion_graph
-        #     if (
-        #         graph is not None
-        #         and graph.has_edge("pytket", "braket")
-        #         and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
-        #         and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
-        #         and self._target_spec.alias == "braket"
-        #     ):
-        #         tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
-        #         tk_program = load_program(tk_circuit)
-        #         tk_program.transform(self)
-        #         tk_transformed = tk_program.program
-        #         braket_transformed = transpile(
-        #             tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
-        #         )
-        #         program = braket_transformed
+        includes_measurement = False
+        if isinstance(run_input, Circuit):
+            includes_measurement = any(
+                [
+                    isinstance(instruction.operator, Measure)
+                    for instruction in run_input.instructions
+                ]
+            )
+        if provider == "IONQ" and isinstance(run_input, Circuit) and not includes_measurement:
+            graph = self.scheme.conversion_graph
+            if (
+                graph is not None
+                and graph.has_edge("pytket", "braket")
+                and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
+                and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
+                and self._target_spec.alias == "braket"
+            ):
+                tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
+                tk_program = load_program(tk_circuit)
+                tk_program.transform(self)
+                tk_transformed = tk_program.program
+                braket_transformed = transpile(
+                    tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
+                )
+                program = braket_transformed
 
         qprogram = load_program(program)
         qprogram.transform(self)
@@ -159,12 +168,11 @@ class BraketDevice(QuantumDevice):
             The job like object for the run.
 
         """
-        # from braket.circuits.serialization import OpenQASMSerializationProperties
-        # print(run_input._to_openqasm(OpenQASMSerializationProperties(), {}).source)
-
-        tags = {}
+        # Extract partial measurement qubit information and add as tags for job tracking
+        tags: dict[str, str] = {}
         if hasattr(run_input, "partial_measurement_qubits"):
-            partial_measurement_qubits = run_input.partial_measurement_qubits
+            partial_measurement_qubits: list[int] = run_input.partial_measurement_qubits
+            # Convert qubit indices to a string format for tagging (e.g., "0/2/3")
             tag_value = "/".join([str(x) for x in partial_measurement_qubits])
             tags = {"partial_measurement_qubits": tag_value}
 

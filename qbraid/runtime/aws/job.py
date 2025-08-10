@@ -105,6 +105,7 @@ class BraketQuantumTask(QuantumJob):
         if not builder_class or not data_class:
             raise ValueError(f"Unsupported result type: {type(bk_result).__name__}")
 
+        # Retrieve partial measurement qubit information from job tags
         partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
             bk_result.measured_qubits
         )
@@ -149,15 +150,33 @@ class BraketQuantumTask(QuantumJob):
     def _get_partial_measurement_qubits_from_tags(
         self, all_measurement_qubits: list[int]
     ) -> list[int] | None:
+        """
+        Retrieve partial measurement qubit indices from quantum task tags.
+
+        This method queries the AWS Braket service to get the quantum task metadata
+        and extracts the partial measurement qubit information that was stored as tags
+        during job submission. It then maps these qubit indices to their positions
+        in the measurement results array.
+
+        Args:
+            all_measurement_qubits: List of all qubits that were measured in the circuit,
+                in the order they appear in the measurement results.
+
+        Returns:
+            List of indices corresponding to the positions of partial measurement qubits
+            in the measurement results array, or None if no partial measurements were used.
+        """
         braket_client = boto3.client("braket")
         response = braket_client.get_quantum_task(quantumTaskArn=self._task.id)
 
         if "partial_measurement_qubits" not in response["tags"]:
             return None
 
-        partial_measurement_qubits = response["tags"]["partial_measurement_qubits"]
-        partial_measurement_qubits = [int(q) for q in partial_measurement_qubits.split("/")]
+        # Parse the partial measurement qubit indices from the tag string (e.g., "0/2/3")
+        partial_measurement_qubits_str = response["tags"]["partial_measurement_qubits"]
+        partial_measurement_qubits = [int(q) for q in partial_measurement_qubits_str.split("/")]
 
+        # Map the original qubit indices to their positions in the measurement results array
         partial_measurement_qubit_indices = [
             all_measurement_qubits.index(q) for q in partial_measurement_qubits
         ]

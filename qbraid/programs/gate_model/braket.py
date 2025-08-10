@@ -127,14 +127,36 @@ class BraketCircuit(GateModelProgram):
         self._program = contig_circuit
 
     def pad_measurements(self) -> None:
-        partial_measurement_qubits = []
+        """
+        Pad the circuit with measurements on all qubits and track partial measurements. It adds partial
+        measurement support to device that requires measuring all qubits (e.g., IonQ devices).
+
+        This method identifies qubits that already have measurement instructions (partial measurements)
+        and adds measurement instructions to all remaining qubits. It stores the list of originally
+        measured qubits as an attribute for later use in result processing.
+
+        The method modifies the circuit in-place and sets the `partial_measurement_qubits` attribute
+        on the program object to track which qubits were originally measured before padding. The
+        padding only occur when there is partial measurement in a circuit. If there is no measurement
+        int the circuit, the backend assumes measuring all qubits and no padding is applied.
+        """
+        # Track qubits that already have measurement instructions
+        partial_measurement_qubits: list[int] = []
         for instruction in self._program.instructions:
             if isinstance(instruction.operator, Measure):
                 partial_measurement_qubits.append(int(instruction.target[0]))
 
+        # Only apply padding when there is partial measurement
+        print("partial_measurement_qubits: ", partial_measurement_qubits)
+        if len(partial_measurement_qubits) == 0:
+            return None
+
+        # Add measurements to all qubits that don't already have them
         for qubit in self._program.qubits:
             if qubit not in partial_measurement_qubits:
                 self._program.measure(qubit)
+
+        # Store the original partial measurement qubits for result processing
         self._program.partial_measurement_qubits = partial_measurement_qubits
 
     def transform(self, device) -> None:
@@ -142,6 +164,7 @@ class BraketCircuit(GateModelProgram):
         if device.simulator:
             self.remove_idle_qubits()
 
+        # For IonQ and Amazon Braket devices, pad measurements to support partial measurement
         if device._provider_name in ["IonQ", "Amazon Braket"]:
             self.pad_measurements()
 

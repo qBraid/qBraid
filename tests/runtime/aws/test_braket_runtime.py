@@ -497,9 +497,11 @@ def test_device_submit_task_with_tags(mock_provider):
     assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
 
 
+@patch("qbraid.runtime.aws.job.BraketQuantumTask._get_partial_measurement_qubits_from_tags")
 @patch("qbraid.runtime.aws.job.AwsQuantumTask")
-def test_job_load_completed(mock_aws_quantum_task):
+def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):
     """Test is terminal state method for BraketQuantumTask."""
+    mock_partial_measurements.return_value = []
     circuit = Circuit().h(0).cnot(0, 1)
     mock_device = LocalSimulator()
     mock_job = mock_device.run(circuit, shots=10)
