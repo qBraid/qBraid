@@ -36,8 +36,11 @@ class ResultDecodingError(QbraidRuntimeError):
 class BraketGateModelResultBuilder:
     """Wrapper class for Amazon Braket result objects."""
 
-    def __init__(self, result: GateModelQuantumTaskResult):
+    def __init__(
+        self, result: GateModelQuantumTaskResult, partial_measurement_qubits: list[int] = None
+    ):
         self._result = result
+        self.partial_measurement_qubits = partial_measurement_qubits
 
     def measurements(self) -> np.ndarray:
         """
@@ -47,12 +50,17 @@ class BraketGateModelResultBuilder:
 
         """
         result: GateModelQuantumTaskResult = self._result
-        return np.flip(result.measurements, 1)
+        measurements = result.measurements
+        if self.partial_measurement_qubits:
+            measurements = marginal_measurement(measurements, self.partial_measurement_qubits)
+        return np.flip(measurements, 1)
 
     def get_counts(self) -> dict[str, int]:
         """Returns the histogram data of the run"""
         result: GateModelQuantumTaskResult = self._result
         braket_counts = dict(result.measurement_counts)
+        if self.partial_measurement_qubits:
+            braket_counts = marginal_count(braket_counts, self.partial_measurement_qubits)
         qbraid_counts = {}
         for key in braket_counts:
             str_key = "".join(reversed([str(i) for i in key]))
@@ -63,8 +71,13 @@ class BraketGateModelResultBuilder:
 class BraketAhsResultBuilder:
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
-    def __init__(self, result: AnalogHamiltonianSimulationQuantumTaskResult):
+    def __init__(
+        self,
+        result: AnalogHamiltonianSimulationQuantumTaskResult,
+        partial_measurement_qubits: list[int],
+    ):
         self._result = result
+        self.partial_measurement_qubits = partial_measurement_qubits
 
     def measurements(self) -> list[AhsShotResult]:
         """Get the list of shot results from the AHS job."""
@@ -114,3 +127,42 @@ class BraketAhsResultBuilder:
             raise ResultDecodingError from err
 
         return None if not state_counts else dict(state_counts)
+
+
+def marginal_measurement(
+    measurements: list[list[int]], qubit_indices: list[int]
+) -> list[list[int]]:
+    """
+    Extract marginal measurement results for the specified qubits.
+
+    Args:
+        measurements (list[list[int]]): Raw measurement results from each shot.
+            Each inner list is the result for all qubits, e.g. [0, 1, 0, 1].
+        qubit_indices (list[int]): List of qubit indices to keep.
+            0 means the first element in each shot list.
+
+    Returns:
+        list[list[int]]: Marginalized measurement results keeping only the specified qubits.
+    """
+    return [[shot[i] for i in qubit_indices] for shot in measurements]
+
+
+def marginal_count(count_dict: dict[str, int], qubit_indices: list[int]) -> dict[str, int]:
+    """
+    Compute marginal counts for specified qubits.
+
+    Args:
+        count_dict (dict[str, int]): Dictionary mapping bitstrings (e.g., "0101") to counts (integers).
+        qubit_indices (list[int]): List of qubit indices to keep.
+                                   0 is the leftmost bit in the bitstring.
+
+    Returns:
+        dict[str, int]: Dictionary mapping reduced bitstrings to marginal counts.
+    """
+    marginal = {}
+
+    for bitstring, count in count_dict.items():
+        reduced_bits = "".join(bitstring[i] for i in qubit_indices)
+        marginal[reduced_bits] = marginal.get(reduced_bits, 0) + count
+
+    return marginal

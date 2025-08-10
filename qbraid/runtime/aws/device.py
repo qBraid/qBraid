@@ -112,28 +112,29 @@ class BraketDevice(QuantumDevice):
                 program, str(AnalogHamiltonianSimulation), experiment_type
             )
 
-        if provider == "IONQ":
-            graph = self.scheme.conversion_graph
-            if (
-                graph is not None
-                and graph.has_edge("pytket", "braket")
-                and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
-                and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
-                and self._target_spec.alias == "braket"
-            ):
-                tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
-                tk_program = load_program(tk_circuit)
-                tk_program.transform(self)
-                tk_transformed = tk_program.program
-                braket_transformed = transpile(
-                    tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
-                )
-                program = braket_transformed
+        ## TODO: This block causes error for circuits with measurement. Needs to restructure this block
+        ## add a tighter condition on when it is triggered.
+        # if provider == "IONQ":
+        #     graph = self.scheme.conversion_graph
+        #     if (
+        #         graph is not None
+        #         and graph.has_edge("pytket", "braket")
+        #         and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
+        #         and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
+        #         and self._target_spec.alias == "braket"
+        #     ):
+        #         tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
+        #         tk_program = load_program(tk_circuit)
+        #         tk_program.transform(self)
+        #         tk_transformed = tk_program.program
+        #         braket_transformed = transpile(
+        #             tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
+        #         )
+        #         program = braket_transformed
 
-        else:
-            qprogram = load_program(program)
-            qprogram.transform(self)
-            program = qprogram.program
+        qprogram = load_program(program)
+        qprogram.transform(self)
+        program = qprogram.program
 
         return program
 
@@ -158,9 +159,18 @@ class BraketDevice(QuantumDevice):
             The job like object for the run.
 
         """
+        # from braket.circuits.serialization import OpenQASMSerializationProperties
+        # print(run_input._to_openqasm(OpenQASMSerializationProperties(), {}).source)
+
+        tags = {}
+        if hasattr(run_input, "partial_measurement_qubits"):
+            partial_measurement_qubits = run_input.partial_measurement_qubits
+            tag_value = "/".join([str(x) for x in partial_measurement_qubits])
+            tags = {"partial_measurement_qubits": tag_value}
+
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
-        aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
+        aws_quantum_task_batch = self._device.run_batch(run_input, tags=tags, *args, **kwargs)
         tasks = [
             BraketQuantumTask(task.id, task=task, device=self._device)
             for task in aws_quantum_task_batch.tasks

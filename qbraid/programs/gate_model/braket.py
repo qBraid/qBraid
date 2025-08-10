@@ -17,6 +17,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
+from braket.circuits.measure import Measure
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -125,10 +126,24 @@ class BraketCircuit(GateModelProgram):
             contig_circuit.add_instruction(contig_instr)
         self._program = contig_circuit
 
+    def pad_measurements(self) -> None:
+        partial_measurement_qubits = []
+        for instruction in self._program.instructions:
+            if isinstance(instruction.operator, Measure):
+                partial_measurement_qubits.append(int(instruction.target[0]))
+
+        for qubit in self._program.qubits:
+            if qubit not in partial_measurement_qubits:
+                self._program.measure(qubit)
+        self._program.partial_measurement_qubits = partial_measurement_qubits
+
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
         if device.simulator:
             self.remove_idle_qubits()
+
+        if device._provider_name in ["IonQ", "Amazon Braket"]:
+            self.pad_measurements()
 
     def serialize(self) -> dict[str, str]:
         """Return the program in a format suitable for submission to the qBraid API."""

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
+import boto3
 from braket.aws import AwsQuantumTask
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
     AnalogHamiltonianSimulationQuantumTaskResult,
@@ -104,9 +105,20 @@ class BraketQuantumTask(QuantumJob):
         if not builder_class or not data_class:
             raise ValueError(f"Unsupported result type: {type(bk_result).__name__}")
 
+        partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
+            bk_result.measured_qubits
+        )
         result_data = {
-            "measurement_counts": builder_class(bk_result).get_counts() if success else None,
-            "measurements": builder_class(bk_result).measurements() if success else None,
+            "measurement_counts": (
+                builder_class(bk_result, partial_measurement_qubits).get_counts()
+                if success
+                else None
+            ),
+            "measurements": (
+                builder_class(bk_result, partial_measurement_qubits).measurements()
+                if success
+                else None
+            ),
         }
 
         data = data_class(**result_data)
@@ -133,3 +145,20 @@ class BraketQuantumTask(QuantumJob):
         """Return the cost of the job."""
         decimal_cost = self._get_cost(self.id)
         return float(decimal_cost)
+
+    def _get_partial_measurement_qubits_from_tags(
+        self, all_measurement_qubits: list[int]
+    ) -> list[int] | None:
+        braket_client = boto3.client("braket")
+        response = braket_client.get_quantum_task(quantumTaskArn=self._task.id)
+
+        if "partial_measurement_qubits" not in response["tags"]:
+            return None
+
+        partial_measurement_qubits = response["tags"]["partial_measurement_qubits"]
+        partial_measurement_qubits = [int(q) for q in partial_measurement_qubits.split("/")]
+
+        partial_measurement_qubit_indices = [
+            all_measurement_qubits.index(q) for q in partial_measurement_qubits
+        ]
+        return partial_measurement_qubit_indices
