@@ -25,10 +25,13 @@ Types of changes:
 ### Deprecated
 
 ### Removed
+- Removed `benchmarking` module from `tests` as not relevant or used ([#1026](https://github.com/qBraid/qBraid/pull/1026))
 
 ### Fixed
+- Fixed bug that returned a single job instead of a list of jobs after batch job submission in the native provider runtime for QuEra Aquila using Bloqade Analog ([#1026](https://github.com/qBraid/qBraid/pull/1026))
 
 ### Dependencies
+- Reset Cirq dependency extra upper-bound to <1.5 ([#1026](https://github.com/qBraid/qBraid/pull/1026))
 
 ## [0.9.8] - 2025-07-22
 

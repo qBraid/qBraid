@@ -149,9 +149,12 @@ class QbraidDevice(QuantumDevice):
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
-            "runtimeOptions": runtime_options_json,
             **run_input,
         }
+
+        # TODO: Move runtimeOptions to initial payload declaration once supported by qBraid API
+        if runtime_options_json:
+            payload["runtimeOptions"] = runtime_options_json  # pragma: no cover
 
         job_data = self.client.create_job(data=payload)
 
@@ -381,7 +384,7 @@ class QbraidDevice(QuantumDevice):
                 runtime_payload = {**aux_payload, **run_input_json}
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
                 jobs.append(job)
-        return jobs[0] if is_single_input else jobs
+        return jobs[0] if (len(jobs) == 1 and is_single_input) else jobs
 
     def estimate_cost(
         self, shots: Optional[int], execution_time: Optional[Union[float, int]]
