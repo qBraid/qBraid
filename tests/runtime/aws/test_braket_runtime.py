@@ -520,8 +520,6 @@ def test_device_submit_with_partial_measurement_tags(mock_aws_device, sv1_profil
 
     # Verify that run_batch was called with the correct tags
     expected_tags = {"partial_measurement_qubits": "0/2"}
-    mock_device_instance.run
-
     mock_device_instance.run.assert_called_once_with(circuit, tags=expected_tags, shots=100)
 
     # Verify the returned task

@@ -12,8 +12,6 @@
 Unit tests for result builder utility functions for partial measurements
 
 """
-import pytest
-
 from qbraid.runtime.aws.result_builder import marginal_count, marginal_measurement
 
 

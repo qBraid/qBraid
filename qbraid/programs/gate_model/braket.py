@@ -63,8 +63,8 @@ class BraketCircuit(GateModelProgram):
         return self.program.to_unitary()
 
     def populate_idle_qubits(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, adds identity gates to vacant registers as needed."""
+        """Check whether the circuit uses contiguous qubits/indices,
+        and if not, add identity gates to vacant registers as needed."""
         max_qubit = 0
         occupied_qubits = []
         circuit = self.program.copy()
@@ -81,8 +81,8 @@ class BraketCircuit(GateModelProgram):
         self._program = circuit
 
     def remove_idle_qubits(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, reduces dimension accordingly."""
+        """Check whether the circuit uses contiguous qubits/indices,
+        and if not, reduce dimension accordingly."""
         qubit_map = {}
         circuit = self.program.copy()
         circuit_qubits = list(circuit.qubits)
@@ -128,17 +128,21 @@ class BraketCircuit(GateModelProgram):
 
     def pad_measurements(self) -> None:
         """
-        Pad the circuit with measurements on all qubits and track partial measurements. It adds partial
-        measurement support to device that requires measuring all qubits (e.g., IonQ devices).
+        Pad the circuit with measurements on all qubits and track partial measurements.
 
-        This method identifies qubits that already have measurement instructions (partial measurements)
-        and adds measurement instructions to all remaining qubits. It stores the list of originally
-        measured qubits as an attribute for later use in result processing.
+        It adds partial measurement support to device that requires measuring all qubits
+        (e.g., IonQ devices).
 
-        The method modifies the circuit in-place and sets the `partial_measurement_qubits` attribute
-        on the program object to track which qubits were originally measured before padding. The
-        padding only occur when there is partial measurement in a circuit. If there is no measurement
-        int the circuit, the backend assumes measuring all qubits and no padding is applied.
+        This method identifies qubits that already have measurement instructions (partial
+        measurements) and adds measurement instructions to all remaining qubits. It stores
+        the list of originally measured qubits as an attribute for later use in result
+        processing.
+
+        The method modifies the circuit in-place and sets the `partial_measurement_qubits`
+        attribute on the program object to track which qubits were originally measured
+        before padding. The padding only occur when there is partial measurement in a
+        circuit. If there is no measurement int the circuit, the backend assumes measuring
+        all qubits and no padding is applied.
         """
         # Track qubits that already have measurement instructions
         partial_measurement_qubits: list[int] = []
@@ -148,7 +152,7 @@ class BraketCircuit(GateModelProgram):
 
         # Only apply padding when there is partial measurement
         if len(partial_measurement_qubits) == 0:
-            return None
+            return
 
         # Add measurements to all qubits that don't already have them
         for qubit in self._program.qubits:

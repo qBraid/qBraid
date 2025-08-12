@@ -113,15 +113,12 @@ class BraketDevice(QuantumDevice):
                 program, str(AnalogHamiltonianSimulation), experiment_type
             )
 
-        ## TODO: This block causes error for circuits with measurement. Needs to restructure this block
-        ## add a tighter condition on when it is triggered.
+        # Use Tket to transform circuits for IonQ to support a bigger gateset. The transformation
+        # only applies when no measurement is presented in the circuit.
         includes_measurement = False
         if isinstance(run_input, Circuit):
             includes_measurement = any(
-                [
-                    isinstance(instruction.operator, Measure)
-                    for instruction in run_input.instructions
-                ]
+                isinstance(instruction.operator, Measure) for instruction in run_input.instructions
             )
         if provider == "IONQ" and isinstance(run_input, Circuit) and not includes_measurement:
             graph = self.scheme.conversion_graph
@@ -171,7 +168,7 @@ class BraketDevice(QuantumDevice):
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
 
-        if any([hasattr(circuit, "partial_measurement_qubits") for circuit in run_input]):
+        if any(hasattr(circuit, "partial_measurement_qubits") for circuit in run_input):
             # Extract partial measurement qubit information and add as tags for job tracking
             tasks = []
             for circuit in run_input:
