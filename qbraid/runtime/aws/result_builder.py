@@ -69,7 +69,6 @@ class BraketGateModelResultBuilder:
         result: GateModelQuantumTaskResult = self._result
         measurements = result.measurements
 
-        # Filter measurements to include only partial measurement qubits if specified
         if self.partial_measurement_qubits:
             measurements = marginal_measurement(measurements, self.partial_measurement_qubits)
 
@@ -80,13 +79,10 @@ class BraketGateModelResultBuilder:
         """
         Get measurement counts histogram with partial measurement support.
 
-        Returns a dictionary mapping bitstrings to their occurrence counts.
-        If partial measurements were used, only the counts for the originally
-        measured qubits are returned.
-
         Returns:
-            Dictionary mapping bitstrings (e.g., "101") to their counts.
-            The bitstring order is reversed to match qBraid conventions.
+            Dictionary mapping bitstrings (e.g., "101") to their counts. The bitstring
+            order is reversed to match qBraid conventions. If partial measurements were
+            used, only the counts for the originally measured qubits are returned.
         """
         result: GateModelQuantumTaskResult = self._result
         braket_counts = dict(result.measurement_counts)
@@ -117,8 +113,7 @@ class BraketAhsResultBuilder:
         Args:
             result: The Braket AHS quantum task result containing measurement data.
             partial_measurement_qubits: Optional list of partial measurement qubit indices.
-                Currently not used for AHS results but maintained
-                for interface consistency.
+                Currently not used for AHS results but maintained for interface consistency.
         """
         self._result = result
         self.partial_measurement_qubits = partial_measurement_qubits
@@ -184,9 +179,9 @@ def marginal_measurement(
 
     Args:
         measurements: Raw measurement results from each shot.
-                     Each inner list contains the measurement result for all qubits.
+            Each inner list contains the measurement result for all qubits.
         qubit_indices: List of qubit indices to keep in the results.
-                      Index 0 corresponds to the first element in each shot list.
+            Index 0 corresponds to the first element in each shot list.
 
     Returns:
         Filtered measurement results containing only the specified qubits.
@@ -226,7 +221,6 @@ def marginal_count(count_dict: dict[str, int], qubit_indices: list[int]) -> dict
     marginal: dict[str, int] = {}
 
     for bitstring, count in count_dict.items():
-        # Extract bits at specified indices to form the reduced bitstring
         reduced_bits = "".join(bitstring[i] for i in qubit_indices)
         marginal[reduced_bits] = marginal.get(reduced_bits, 0) + count
 

@@ -63,8 +63,8 @@ class BraketCircuit(GateModelProgram):
         return self.program.to_unitary()
 
     def populate_idle_qubits(self) -> None:
-        """Check whether the circuit uses contiguous qubits/indices,
-        and if not, add identity gates to vacant registers as needed."""
+        """Checks whether the circuit uses contiguous qubits/indices,
+        and if not, adds identity gates to vacant registers as needed."""
         max_qubit = 0
         occupied_qubits = []
         circuit = self.program.copy()
@@ -81,8 +81,8 @@ class BraketCircuit(GateModelProgram):
         self._program = circuit
 
     def remove_idle_qubits(self) -> None:
-        """Check whether the circuit uses contiguous qubits/indices,
-        and if not, reduce dimension accordingly."""
+        """Checks whether the circuit uses contiguous qubits/indices,
+        and if not, reduces dimension accordingly."""
         qubit_map = {}
         circuit = self.program.copy()
         circuit_qubits = list(circuit.qubits)
@@ -167,7 +167,7 @@ class BraketCircuit(GateModelProgram):
         if device.simulator:
             self.remove_idle_qubits()
 
-        # For IonQ and Amazon Braket devices, pad measurements to support partial measurement
+        # For IonQ and Amazon Braket simulators, pad measurements to support partial measurement
         if device._provider_name in ["IonQ", "Amazon Braket"]:
             self.pad_measurements()
 

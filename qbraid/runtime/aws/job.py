@@ -155,7 +155,7 @@ class BraketQuantumTask(QuantumJob):
 
         This method queries the AWS Braket service to get the quantum task metadata
         and extracts the partial measurement qubit information that was stored as tags
-        during job submission. It then maps these qubit indices to their positions
+        during task submission. It then maps these qubit indices to their positions
         in the measurement results array.
 
         Args:
