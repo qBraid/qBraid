@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
+from braket.circuits.measure import Measure
 
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
 from qbraid.runtime.device import QuantumDevice
@@ -112,7 +113,14 @@ class BraketDevice(QuantumDevice):
                 program, str(AnalogHamiltonianSimulation), experiment_type
             )
 
-        if provider == "IONQ":
+        # Use Tket to transform circuits for IonQ to support a bigger gateset. The transformation
+        # only applies when no measurement is presented in the circuit.
+        includes_measurement = False
+        if isinstance(run_input, Circuit):
+            includes_measurement = any(
+                isinstance(instruction.operator, Measure) for instruction in run_input.instructions
+            )
+        if provider == "IONQ" and isinstance(run_input, Circuit) and not includes_measurement:
             graph = self.scheme.conversion_graph
             if (
                 graph is not None
@@ -130,10 +138,9 @@ class BraketDevice(QuantumDevice):
                 )
                 program = braket_transformed
 
-        else:
-            qprogram = load_program(program)
-            qprogram.transform(self)
-            program = qprogram.program
+        qprogram = load_program(program)
+        qprogram.transform(self)
+        program = qprogram.program
 
         return program
 
@@ -160,11 +167,26 @@ class BraketDevice(QuantumDevice):
         """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
-        aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
-        tasks = [
-            BraketQuantumTask(task.id, task=task, device=self._device)
-            for task in aws_quantum_task_batch.tasks
-        ]
+
+        if any(hasattr(circuit, "partial_measurement_qubits") for circuit in run_input):
+            # Extract partial measurement qubit information and add as tags for job tracking
+            tasks = []
+            for circuit in run_input:
+                tags: dict[str, str] = {}
+                if hasattr(circuit, "partial_measurement_qubits"):
+                    partial_measurement_qubits: list[int] = circuit.partial_measurement_qubits
+                    # Convert qubit indices to a string format for tagging (e.g., "0/2/3")
+                    tag_value = "/".join([str(x) for x in partial_measurement_qubits])
+                    tags = {"partial_measurement_qubits": tag_value}
+                task = self._device.run(circuit, tags=tags, *args, **kwargs)
+                tasks.append(BraketQuantumTask(task.id, task=task, device=self._device))
+        else:
+            aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
+            tasks = [
+                BraketQuantumTask(task.id, task=task, device=self._device)
+                for task in aws_quantum_task_batch.tasks
+            ]
+
         if is_single_input:
             return tasks[0]
         return tasks

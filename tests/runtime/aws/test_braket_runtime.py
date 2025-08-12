@@ -497,9 +497,102 @@ def test_device_submit_task_with_tags(mock_provider):
     assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
 
 
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_submit_with_partial_measurement_tags(mock_aws_device, sv1_profile):
+    """Test that partial measurement qubits are properly tagged during submission."""
+    # Mock the AWS device and its run_batch method
+    mock_device_instance = MagicMock()
+    mock_aws_device.return_value = mock_device_instance
+
+    # Create a mock batch result
+    mock_task = MagicMock()
+    mock_task.id = "test_task_id"
+    mock_device_instance.run.return_value = mock_task
+
+    device = BraketDevice(sv1_profile)
+
+    # Create a circuit with partial measurement qubits attribute
+    circuit = Circuit().h(0).cnot(0, 1)
+    circuit.partial_measurement_qubits = [0, 2]
+
+    # Submit the circuit
+    result = device.submit(circuit, shots=100)
+
+    # Verify that run_batch was called with the correct tags
+    expected_tags = {"partial_measurement_qubits": "0/2"}
+    mock_device_instance.run.assert_called_once_with(circuit, tags=expected_tags, shots=100)
+
+    # Verify the returned task
+    assert isinstance(result, BraketQuantumTask)
+    assert result.id == "test_task_id"
+
+
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_submit_without_partial_measurement_tags(mock_aws_device, sv1_profile):
+    """Test submission without partial measurement qubits."""
+    # Mock the AWS device and its run_batch method
+    mock_device_instance = MagicMock()
+    mock_aws_device.return_value = mock_device_instance
+
+    # Create a mock batch result
+    mock_task = MagicMock()
+    mock_task.id = "test_task_id"
+    mock_batch_result = MagicMock()
+    mock_batch_result.tasks = [mock_task]
+    mock_device_instance.run_batch.return_value = mock_batch_result
+
+    device = BraketDevice(sv1_profile)
+
+    circuit = Circuit().h(0).cnot(0, 1)
+    result = device.submit(circuit, shots=100)
+
+    # Verify that run_batch was called with empty tags
+    mock_device_instance.run_batch.assert_called_once_with([circuit], shots=100)
+
+    # Verify the returned task
+    assert isinstance(result, BraketQuantumTask)
+    assert result.id == "test_task_id"
+
+
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_submit_batch_with_partial_measurements(mock_aws_device, sv1_profile):
+    """Test batch submission with partial measurement tags."""
+    # Mock the AWS device and its run_batch method
+    mock_device_instance = MagicMock()
+    mock_aws_device.return_value = mock_device_instance
+
+    # Create mock batch results
+    mock_task = MagicMock()
+    mock_task.id = "test_task_id"
+    mock_device_instance.run.return_value = mock_task
+
+    device = BraketDevice(sv1_profile)
+
+    # Create circuits with partial measurement qubits
+    circuit1 = Circuit().h(0).cnot(0, 1)
+    circuit1.partial_measurement_qubits = [0]
+    circuit2 = Circuit().h(1).cnot(1, 2)
+    circuit2.partial_measurement_qubits = [1, 2]
+    results = device.submit([circuit1, circuit2], shots=100)
+
+    # Verify the tags
+    expected_tags1 = {"partial_measurement_qubits": "0"}
+    expected_tags2 = {"partial_measurement_qubits": "1/2"}
+    assert mock_device_instance.run.call_args_list[0][1]["tags"] == expected_tags1
+    assert mock_device_instance.run.call_args_list[1][1]["tags"] == expected_tags2
+
+    # Verify the returned tasks
+    assert isinstance(results, list)
+    assert len(results) == 2
+    assert results[0].id == "test_task_id"
+    assert results[1].id == "test_task_id"
+
+
+@patch("qbraid.runtime.aws.job.BraketQuantumTask._get_partial_measurement_qubits_from_tags")
 @patch("qbraid.runtime.aws.job.AwsQuantumTask")
-def test_job_load_completed(mock_aws_quantum_task):
+def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):
     """Test is terminal state method for BraketQuantumTask."""
+    mock_partial_measurements.return_value = []
     circuit = Circuit().h(0).cnot(0, 1)
     mock_device = LocalSimulator()
     mock_job = mock_device.run(circuit, shots=10)
@@ -564,6 +657,57 @@ def test_result_get_counts():
     result = BraketGateModelResultBuilder(mock_result)
     expected_output = {"110": 10, "101": 5}
     assert result.get_counts() == expected_output
+
+
+def test_result_measurements_with_partial_measurements():
+    """Test measurements method with partial measurement qubits."""
+    mock_measurements = np.array([[0, 1, 1, 0], [1, 0, 1, 1]])
+    mock_result = MagicMock()
+    mock_result.measurements = mock_measurements
+
+    # Test with partial measurement qubits [0, 2] (first and third qubits)
+    partial_measurement_qubits = [0, 2]
+    result = BraketGateModelResultBuilder(mock_result, partial_measurement_qubits)
+
+    # Should return only measurements for qubits 0 and 2, with reversed order
+    expected_output = np.array([[1, 0], [1, 1]])  # Reversed: [[0, 1], [1, 1]]
+    np.testing.assert_array_equal(result.measurements(), expected_output)
+
+
+def test_result_get_counts_with_partial_measurements():
+    """Test get_counts method with partial measurement qubits."""
+    mock_measurement_counts = {"0110": 10, "1011": 5, "0111": 3}
+    mock_result = MagicMock()
+    mock_result.measurement_counts = mock_measurement_counts
+
+    # Test with partial measurement qubits [0, 2] (first and third qubits)
+    partial_measurement_qubits = [0, 2]
+    result = BraketGateModelResultBuilder(mock_result, partial_measurement_qubits)
+
+    # Should marginalize to qubits 0 and 2: "01": 10+3=13, "11": 5, then reverse
+    expected_output = {"10": 13, "11": 5}
+    assert result.get_counts() == expected_output
+
+
+def test_result_builder_initialization_with_partial_measurements():
+    """Test BraketGateModelResultBuilder initialization with partial measurements."""
+    mock_result = MagicMock()
+    partial_measurement_qubits = [0, 2, 3]
+
+    result_builder = BraketGateModelResultBuilder(mock_result, partial_measurement_qubits)
+
+    assert result_builder._result == mock_result
+    assert result_builder.partial_measurement_qubits == partial_measurement_qubits
+
+
+def test_result_builder_initialization_without_partial_measurements():
+    """Test BraketGateModelResultBuilder initialization without partial measurements."""
+    mock_result = MagicMock()
+
+    result_builder = BraketGateModelResultBuilder(mock_result)
+
+    assert result_builder._result == mock_result
+    assert result_builder.partial_measurement_qubits is None
 
 
 def test_get_default_region_error():
@@ -650,6 +794,72 @@ def test_braket_job_cancel():
     task = MockTask("task2")
     braket_task = BraketQuantumTask("task2", task)
     assert braket_task.cancel() is None
+
+
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_with_partial_measurements(mock_boto_client):
+    """Test retrieving partial measurement qubits from tags when they exist."""
+    # Mock the Braket client response
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {"tags": {"partial_measurement_qubits": "0/2/3"}}
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    # All measured qubits in the order they appear in results
+    all_measurement_qubits = [0, 1, 2, 3, 4]
+
+    result = braket_task._get_partial_measurement_qubits_from_tags(all_measurement_qubits)
+
+    # Should return indices [0, 2, 3] in the all_measurement_qubits list
+    expected_indices = [0, 2, 3]  # positions of qubits 0, 2, 3 in the list
+    assert result == expected_indices
+
+    # Verify the client was called correctly
+    mock_client.get_quantum_task.assert_called_once_with(quantumTaskArn="task1")
+
+
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_without_partial_measurements(mock_boto_client):
+    """Test retrieving partial measurement qubits from tags when they don't exist."""
+    # Mock the Braket client response without partial measurement tags
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {"tags": {"other_tag": "some_value"}}
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    all_measurement_qubits = [0, 1, 2]
+
+    result = braket_task._get_partial_measurement_qubits_from_tags(all_measurement_qubits)
+
+    # Should return None when no partial measurement tags exist
+    assert result is None
+
+    mock_client.get_quantum_task.assert_called_once_with(quantumTaskArn="task1")
+
+
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_complex_mapping(mock_boto_client):
+    """Test partial measurement qubit mapping with non-contiguous qubits."""
+    # Mock the Braket client response
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {"tags": {"partial_measurement_qubits": "1/3"}}
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    # Measured qubits in a different order than circuit qubits
+    all_measurement_qubits = [3, 1, 0, 2]  # qubits measured in this order
+
+    result = braket_task._get_partial_measurement_qubits_from_tags(all_measurement_qubits)
+
+    # Qubit 1 is at index 1, qubit 3 is at index 0 in all_measurement_qubits
+    expected_indices = [1, 0]  # positions of qubits 1, 3 in the measurement results
+    assert result == expected_indices
 
 
 def test_get_tasks_by_tag_value_error():

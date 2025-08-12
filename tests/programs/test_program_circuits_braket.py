@@ -149,3 +149,124 @@ def test_properties():
     assert qprogram.qubits == circuit.qubits
     assert qprogram.num_clbits == 0
     assert qprogram.depth == circuit.depth
+
+
+def test_pad_measurements_no_existing_measurements():
+    """Test pad_measurements method when no measurements exist."""
+    circuit = Circuit().h(0).cnot(0, 1)
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    # Should have no measurement
+    measurement_count = sum(
+        1
+        for instr in qprogram.program.instructions
+        if hasattr(instr.operator, "__class__") and instr.operator.__class__.__name__ == "Measure"
+    )
+    assert measurement_count == 0
+
+
+def test_pad_measurements_with_existing_measurements():
+    """Test pad_measurements method when some measurements already exist."""
+    circuit = Circuit().h(0).cnot(0, 1).measure(0)
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    # Should have measurements on all qubits now
+    measurement_count = sum(
+        1
+        for instr in qprogram.program.instructions
+        if hasattr(instr.operator, "__class__") and instr.operator.__class__.__name__ == "Measure"
+    )
+    assert measurement_count == 2
+
+    # Should track the originally measured qubit
+    assert hasattr(qprogram.program, "partial_measurement_qubits")
+    assert qprogram.program.partial_measurement_qubits == [0]
+
+
+def test_pad_measurements_multiple_partial_measurements():
+    """Test pad_measurements method with multiple partial measurements."""
+    circuit = Circuit().h(0).cnot(0, 1).cnot(1, 2).measure(0).measure(2)
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    # Should have measurements on all qubits now
+    measurement_count = sum(
+        1
+        for instr in qprogram.program.instructions
+        if hasattr(instr.operator, "__class__") and instr.operator.__class__.__name__ == "Measure"
+    )
+    assert measurement_count == 3
+
+    # Should track the originally measured qubits
+    assert hasattr(qprogram.program, "partial_measurement_qubits")
+    assert set(qprogram.program.partial_measurement_qubits) == {0, 2}
+
+
+def test_transform_with_ionq_device():
+    """Test transform method with IonQ device calls pad_measurements."""
+    circuit = Circuit().h(0).cnot(0, 1).measure(0)
+    qprogram = BraketCircuit(circuit)
+
+    # Mock device with IonQ provider
+    mock_device = Mock()
+    mock_device.simulator = False
+    mock_device._provider_name = "IonQ"
+
+    qprogram.transform(mock_device)
+
+    # Should have padded measurements
+    measurement_count = sum(
+        1
+        for instr in qprogram.program.instructions
+        if hasattr(instr.operator, "__class__") and instr.operator.__class__.__name__ == "Measure"
+    )
+    assert measurement_count == 2
+    assert hasattr(qprogram.program, "partial_measurement_qubits")
+    assert qprogram.program.partial_measurement_qubits == [0]
+
+
+def test_transform_with_amazon_braket_device():
+    """Test transform method with Amazon Braket device calls pad_measurements."""
+    circuit = Circuit().h(0).cnot(0, 1).measure(1)
+    qprogram = BraketCircuit(circuit)
+
+    # Mock device with Amazon Braket provider
+    mock_device = Mock()
+    mock_device.simulator = False
+    mock_device._provider_name = "Amazon Braket"
+
+    qprogram.transform(mock_device)
+
+    # Should have padded measurements
+    measurement_count = sum(
+        1
+        for instr in qprogram.program.instructions
+        if hasattr(instr.operator, "__class__") and instr.operator.__class__.__name__ == "Measure"
+    )
+    assert measurement_count == 2
+    assert hasattr(qprogram.program, "partial_measurement_qubits")
+    assert qprogram.program.partial_measurement_qubits == [1]
+
+
+def test_transform_with_other_provider():
+    """Test transform method with other provider doesn't call pad_measurements."""
+    circuit = Circuit().h(0).cnot(0, 1).measure(0)
+    qprogram = BraketCircuit(circuit)
+
+    # Mock device with other provider
+    mock_device = Mock()
+    mock_device.simulator = False
+    mock_device._provider_name = "Other Provider"
+
+    qprogram.transform(mock_device)
+
+    # Should not have padded measurements
+    measurement_count = sum(
+        1
+        for instr in qprogram.program.instructions
+        if hasattr(instr.operator, "__class__") and instr.operator.__class__.__name__ == "Measure"
+    )
+    assert measurement_count == 1
+    assert not hasattr(qprogram.program, "partial_measurement_qubits")
