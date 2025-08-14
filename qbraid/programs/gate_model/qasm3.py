@@ -80,7 +80,7 @@ class OpenQasm3Program(GateModelProgram):
     @property
     def depth(self) -> int:
         """Return the unrolled circuit depth (i.e., length of critical path)."""
-        return self._module.depth()
+        return self._module.depth(decompose_native_gates=False)
 
     def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
