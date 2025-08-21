@@ -54,8 +54,8 @@ def equal1_partial_data():
         "compiledOutput": (
             "T1BFTlFBU00gMi4wOwppbmNsdWRlICJxZWxpYjEuaW5jIjsKcXJlZyBxWzZdOwpjcmVnIG1lYXNbMl07"
         ),
-        "executionMode": "simulation",
-        "deviceName": "bell1-6-lin",
+        "irType": "qasm2",
+        "noiseModel": "bell1-6",
     }
 
 
@@ -96,10 +96,9 @@ def test_equal1_simulation_metadata(equal1_full_data):
 
     # Test that all fields are correctly set
     assert metadata.compiled_output == equal1_full_data["compiledOutput"]
-    assert metadata.execution_mode == equal1_full_data["executionMode"]
-    assert metadata.device_name == equal1_full_data["deviceName"]
+    assert metadata.ir_type == equal1_full_data["irType"]
+    assert metadata.noise_model == equal1_full_data["noiseModel"]
     assert metadata.simulation_platform == equal1_full_data["simulationPlatform"]
-    assert metadata.simulation_mode == equal1_full_data["simulationMode"]
     assert metadata.execution_options == equal1_full_data["executionOptions"]
 
     # Test that the base class fields are accessible (inherited from GateModelExperimentMetadata)
@@ -116,12 +115,11 @@ def test_equal1_simulation_metadata_partial(equal1_partial_data):
 
     # Test that provided fields are set
     assert metadata.compiled_output == equal1_partial_data["compiledOutput"]
-    assert metadata.execution_mode == equal1_partial_data["executionMode"]
-    assert metadata.device_name == equal1_partial_data["deviceName"]
+    assert metadata.ir_type == equal1_partial_data["irType"]
+    assert metadata.noise_model == equal1_partial_data["noiseModel"]
 
     # Test that optional fields are None
     assert metadata.simulation_platform is None
-    assert metadata.simulation_mode is None
     assert metadata.execution_options is None
 
 
@@ -131,10 +129,9 @@ def test_equal1_simulation_metadata_empty():
 
     # Test that all fields are None when no data is provided
     assert metadata.compiled_output is None
-    assert metadata.execution_mode is None
-    assert metadata.device_name is None
+    assert metadata.ir_type is None
+    assert metadata.noise_model is None
     assert metadata.simulation_platform is None
-    assert metadata.simulation_mode is None
     assert metadata.execution_options is None
 
 
@@ -144,8 +141,8 @@ def test_equal1_simulation_metadata_with_qasm(equal1_data_with_qasm):
 
     # Test Equal1 specific fields
     assert metadata.compiled_output == equal1_data_with_qasm["compiledOutput"]
-    assert metadata.execution_mode == equal1_data_with_qasm["executionMode"]
-    assert metadata.device_name == equal1_data_with_qasm["deviceName"]
+    assert metadata.ir_type == equal1_data_with_qasm["irType"]
+    assert metadata.noise_model == equal1_data_with_qasm["noiseModel"]
 
     # Test inherited fields
     assert metadata.qasm == equal1_data_with_qasm["openQasm"]
