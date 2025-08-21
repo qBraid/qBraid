@@ -135,18 +135,16 @@ class Equal1SimulationMetadata(GateModelExperimentMetadata):
 
     Attributes:
         compiled_output (str, optional): The compiled output of the job.
-        execution_mode (str, optional): The execution mode of the job.
-        device_name (str, optional): The name of the device used for the job.
+        ir_type (str, optional): The type of intermediate representation used for the job.
+        noise_model (str, optional): The name of the noise model used for the job.
         simulation_platform (str, optional): The platform used for the simulation.
-        simulation_mode (str, optional): The mode used for the simulation.
         execution_options (dict[str, Any], optional): The execution options used for the job.
     """
 
     compiled_output: Optional[str] = Field(None, alias="compiledOutput")
-    execution_mode: Optional[str] = Field(None, alias="executionMode")
-    device_name: Optional[str] = Field(None, alias="deviceName")
+    ir_type: Optional[str] = Field(None, alias="irType")
+    noise_model: Optional[str] = Field(None, alias="noiseModel")
     simulation_platform: Optional[str] = Field(None, alias="simulationPlatform")
-    simulation_mode: Optional[str] = Field(None, alias="simulationMode")
     execution_options: Optional[dict[str, Any]] = Field(None, alias="executionOptions")
 
 
