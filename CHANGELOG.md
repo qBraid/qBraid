@@ -36,7 +36,7 @@ Types of changes:
 ### Dependencies
 - Reset Cirq dependency extra upper-bound to <1.5 ([#1026](https://github.com/qBraid/qBraid/pull/1026))
 - Updated `pyqasm` requirement from >=0.3.2,<0.5 to >=0.5.0,<0.6.0 ([#1032](https://github.com/qBraid/qBraid/pull/1032))
-- Updated `pennylane` requirement from <0.42 to <0.43 ([#1034](https://github.com/qBraid/qBraid/pull/1034))
+- Updated `pennylane` requirement from <0.42 to >=0.42.3,<0.43 ([#1034](https://github.com/qBraid/qBraid/pull/1034))
 
 ## [0.9.8] - 2025-07-22
 
