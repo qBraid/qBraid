@@ -166,7 +166,7 @@ class BraketQuantumTask(QuantumJob):
             List of indices corresponding to the positions of partial measurement qubits
             in the measurement results array, or None if no partial measurements were used.
         """
-        braket_client = boto3.client("braket")
+        braket_client = boto3.client("braket", region_name=self._task._aws_session.region)
         response = braket_client.get_quantum_task(quantumTaskArn=self._task.id)
 
         if "partial_measurement_qubits" not in response["tags"]:
