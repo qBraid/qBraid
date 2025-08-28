@@ -104,6 +104,7 @@ class RuntimeJobModel(QbraidSchemaBase):
     queue_position: Optional[int] = Field(None, ge=0, alias="queuePosition")
     metadata: Union[
         QbraidQirSimulationMetadata,
+        Equal1SimulationMetadata,
         QuEraQasmSimulationMetadata,
         GateModelExperimentMetadata,
         AnnealingExperimentMetadata,

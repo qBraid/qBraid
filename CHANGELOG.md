@@ -28,7 +28,7 @@ Types of changes:
 ```python
 result = job.result()
 
-compiled_output = result.details['compiledOutput']
+compiled_output = result.details['metadata']['compiledOutput']
 ```
 
 ### Deprecated
