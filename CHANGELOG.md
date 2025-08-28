@@ -23,7 +23,7 @@ Types of changes:
 - Skip remote Azure provider tests that now require payed plan ([#1024](https://github.com/qBraid/qBraid/pull/1024))
 - Adds support for partial measurements on IonQ and Amazon Braket devices by automatically padding circuits with measurements on all qubits while tracking and filtering results to show only the originally measured qubits. ([#1028](https://github.com/qBraid/qBraid/pull/1028))
 - Replaced `execution_mode` and `device_name` fields in the `Equal1SimulationMetadata` class with `ir_type` and `noise_model` to match data returned by Equal1 simulator v0.3.0 ([#1035](https://github.com/qBraid/qBraid/pull/1035))
-- Moved decoding logic from `Equal1SimulatorResultData` class to the `Equal1SimulationMetadata` schema, ensuring that compiled outputs are automatically decoded when metadata is instantiated. For `equal1_simulator` jobs, the `base64` decoded compiled output will now be accessible from a `Result` object as follows:
+- Moved decoding logic from `Equal1SimulatorResultData` class to the `Equal1SimulationMetadata` schema, ensuring that compiled outputs are automatically decoded when metadata is instantiated. For `equal1_simulator` jobs, the `base64` decoded compiled output will now be accessible from a `Result` object as follows ([#1040](https://github.com/qBraid/qBraid/pull/1040)):
 
 ```python
 result = job.result()
@@ -39,6 +39,7 @@ compiled_output = result.details['metadata']['compiledOutput']
 ### Fixed
 - Fixed bug that returned a single job instead of a list of jobs after batch job submission in the native provider runtime for QuEra Aquila using Bloqade Analog ([#1026](https://github.com/qBraid/qBraid/pull/1026))
 - Fixed the `boto3.client` initialization by adding the region_name parameter in `_get_partial_measurement_qubits_from_tags` method ([#1034](https://github.com/qBraid/qBraid/pull/1034))
+- Fixed bug that resulted in `AttributeError: 'NoneType' object has no attribute 'service'` when checking `BraketDevice.availability_window()`. Now ensures that `AwsDevice.properties` is defined using `refresh_metadata()` before proceeding with availability check. ([#1041](https://github.com/qBraid/qBraid/pull/1041))
 
 ### Dependencies
 - Reset Cirq dependency extra upper-bound to <1.5 ([#1026](https://github.com/qBraid/qBraid/pull/1026))
