@@ -71,7 +71,7 @@ class FakeAwsDevice(AwsDevice):
     def __init__(self, online, available):
         self._is_available = available
         self._status = "ONLINE" if online else "OFFLINE"
-        self._properties = TestProperties()
+        self._properties = None
 
     @property
     def is_available(self):
@@ -99,6 +99,10 @@ class FakeAwsDevice(AwsDevice):
     @properties.setter
     def properties(self, value):
         self._properties = value
+
+    def refresh_metadata(self):
+        """Refresh metadata of the device."""
+        self._properties = TestProperties()
 
 
 def test_next_available_time_offline():
