@@ -23,6 +23,13 @@ Types of changes:
 - Skip remote Azure provider tests that now require payed plan ([#1024](https://github.com/qBraid/qBraid/pull/1024))
 - Adds support for partial measurements on IonQ and Amazon Braket devices by automatically padding circuits with measurements on all qubits while tracking and filtering results to show only the originally measured qubits. ([#1028](https://github.com/qBraid/qBraid/pull/1028))
 - Replaced `execution_mode` and `device_name` fields in the `Equal1SimulationMetadata` class with `ir_type` and `noise_model` to match data returned by Equal1 simulator v0.3.0 ([#1035](https://github.com/qBraid/qBraid/pull/1035))
+- Moved decoding logic from `Equal1SimulatorResultData` class to the `Equal1SimulationMetadata` schema, ensuring that compiled outputs are automatically decoded when metadata is instantiated. For `equal1_simulator` jobs, the `base64` decoded compiled output will now be accessible from a `Result` object as follows:
+
+```python
+result = job.result()
+
+compiled_output = result.details['compiledOutput']
+```
 
 ### Deprecated
 
