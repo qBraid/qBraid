@@ -95,12 +95,14 @@ def _calculate_future_time(
 
 def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
     """Returns hr/min/sec until device is next available, or empty string if device is offline."""
-
     is_available_result = False
     available_time = None
 
     if device.status != "ONLINE":
         return False, "", None
+
+    if not device.properties:
+        device.refresh_metadata()
 
     if device.is_available:
         return True, "", None
