@@ -14,6 +14,7 @@ Module defining qBraid runtime experiment schemas.
 """
 from __future__ import annotations
 
+import base64
 from collections import Counter
 from typing import TYPE_CHECKING, Any, Optional, Union
 
@@ -134,7 +135,8 @@ class Equal1SimulationMetadata(GateModelExperimentMetadata):
     """Metadata specific to jobs submitted to the Equal1 simulator.
 
     Attributes:
-        compiled_output (str, optional): The compiled output of the job.
+        compiled_output (str, optional): The compiled output of the job
+            (automatically base64 decoded).
         ir_type (str, optional): The type of intermediate representation used for the job.
         noise_model (str, optional): The name of the noise model used for the job.
         simulation_platform (str, optional): The platform used for the simulation.
@@ -146,6 +148,19 @@ class Equal1SimulationMetadata(GateModelExperimentMetadata):
     noise_model: Optional[str] = Field(None, alias="noiseModel")
     simulation_platform: Optional[str] = Field(None, alias="simulationPlatform")
     execution_options: Optional[dict[str, Any]] = Field(None, alias="executionOptions")
+
+    @field_validator("compiled_output")
+    @classmethod
+    def decode_compiled_output(cls, value: Optional[str]) -> Optional[str]:
+        """Automatically decode base64 compiled output."""
+        if value is None:
+            return None
+        return cls._decode_base64(value)
+
+    @staticmethod
+    def _decode_base64(value: str) -> str:
+        """Decode base64 encoded string."""
+        return base64.b64decode(value.encode("utf-8")).decode("utf-8")
 
 
 class AhsExperimentMetadata(BaseModel):
