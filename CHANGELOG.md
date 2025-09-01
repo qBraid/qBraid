@@ -16,6 +16,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.9] - 2025-09-01
+
+### Added
 - Added opaque `runtime_options` (dict) argument to `QbraidDevice.submit()` to include in job payload ([#1017](https://github.com/qBraid/qBraid/issues/1017))
 - Added `Equal1SimulationMetadata` and `Equal1SimulatorResultData` classes to support processing of Equal 1 simulator v0.2.2 job data including base64 encoded "compiledOut" ([#1017](https://github.com/qBraid/qBraid/issues/1017))
 
