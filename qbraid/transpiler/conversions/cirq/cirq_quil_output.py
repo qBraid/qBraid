@@ -522,12 +522,16 @@ class QuilOutput:
             return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
 
         for main_op in self.operations:
-            decomposed = protocols.decompose(
-                main_op, keep=keep, fallback_decomposer=fallback, on_stuck_raise=on_stuck
-            )
+            try:
+                decomposed = protocols.decompose(
+                    main_op, keep=keep, fallback_decomposer=fallback, on_stuck_raise=on_stuck
+                )
+            except Exception as e:
+                decomposed = protocols.decompose(main_op)
 
             for decomposed_op in decomposed:
-                output_func(self._op_to_quil(decomposed_op))
+                if not repr(decomposed_op).startswith("cirq.global_phase_operation"):
+                    output_func(self._op_to_quil(decomposed_op))
 
     def rename_defgates(self, output: str) -> str:
         """A function for renaming the DEFGATEs within the QUIL output. This
