@@ -519,15 +519,13 @@ class QuilOutput:
             return QuilTwoQubitGate(mat).on(*op.qubits)  # pragma: no cover
 
         def on_stuck(bad_op):
-            return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
+            if not repr(bad_op).startswith("cirq.global_phase_operation"):
+                return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
 
         for main_op in self.operations:
-            try:
-                decomposed = protocols.decompose(
-                    main_op, keep=keep, fallback_decomposer=fallback, on_stuck_raise=on_stuck
-                )
-            except Exception as e:
-                decomposed = protocols.decompose(main_op)
+            decomposed = protocols.decompose(
+                main_op, keep=keep, fallback_decomposer=fallback, on_stuck_raise=on_stuck
+            )
 
             for decomposed_op in decomposed:
                 if not repr(decomposed_op).startswith("cirq.global_phase_operation"):
