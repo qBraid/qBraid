@@ -498,9 +498,13 @@ class QasmParser:
 
     def p_term(self, p):
         """term : NUMBER
-        | NATURAL_NUMBER
-        | PI"""
+        | NATURAL_NUMBER"""
         p[0] = p[1]
+
+    def p_pi(self, p):
+        """term : PI"""
+        p[0] = np.pi
+
 
     # qargs : qarg ',' qargs
     #      | qarg ';'
