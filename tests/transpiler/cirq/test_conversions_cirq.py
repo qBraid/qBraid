@@ -22,6 +22,7 @@ from qbraid.programs import NATIVE_REGISTRY, load_program
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
+from qbraid.interface.circuit_equality import circuits_allclose
 
 
 def find_cirq_targets(skip: Optional[list[str]] = None):
@@ -35,12 +36,28 @@ def find_cirq_targets(skip: Optional[list[str]] = None):
                 cirq_targets.append(target_library)
     return cirq_targets
 
+def frozencircuit_operation_circuit():
+    q0 = cirq.NamedQubit("q0")
+    return cirq.Circuit(
+        cirq.Y(q0), cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q0)), repetitions=5), cirq.Z(q0)
+    )       
+
+def global_phase_operation_circuit():
+    q0, q1 = cirq.NamedQubit("q0"), cirq.NamedQubit("q1")
+    return cirq.Circuit(
+        cirq.Y(q1).controlled_by(q0)
+    )
 
 TARGETS = find_cirq_targets()
 
+CIRCUITS = [
+    frozencircuit_operation_circuit(),
+    global_phase_operation_circuit()
+]
 
 @pytest.mark.parametrize("frontend", TARGETS)
-def test_convert_circuit_operation_from_cirq(frontend):
+@pytest.mark.parametrize("cirq_circuit", CIRCUITS)
+def test_convert_circuit_operation_from_cirq(frontend, cirq_circuit):
     """Test converting Cirq FrozenCircuit operation to OpenQASM"""
     q = cirq.NamedQubit("q")
     cirq_circuit = cirq.Circuit(
@@ -61,4 +78,8 @@ def test_convert_circuit_operation_from_cirq(frontend):
     except NotImplementedError:
         pytest.skip(f"Unitary calculation not implemented for {frontend}")
 
-    assert np.allclose(cirq_unitary, test_unitary)
+    try:
+        assert np.allclose(cirq_unitary, test_unitary)
+    except AssertionError:
+        # check if they are equivalent up to a global phase
+        assert circuits_allclose(cirq_circuit, test_circuit)
