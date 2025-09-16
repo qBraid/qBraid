@@ -1,6 +1,6 @@
 # optional program types
 amazon-braket-sdk>=1.83.0,<1.101.0
-cirq-core>=1.3,<1.5
+cirq-core>=1.3,<1.6
 cudaq>=0.9.0; python_version < "3.13"
 pennylane>=0.42.3,<0.43
 pyquil>=4.4; python_version < "3.13"
@@ -11,7 +11,7 @@ qiskit>=1.0,<3.0
 # transpiler extras
 ply>=3.6
 bloqade-analog>=0.16.2,<0.17.0; python_version < "3.13"
-cirq-ionq>=1.3,<1.5
+cirq-ionq>=1.3,<1.6
 qbraid-qir>=0.2.0,<=0.4.0
 pytket-braket>=0.35.1,<0.45.0
 qiskit-qasm3-import>=0.5.1

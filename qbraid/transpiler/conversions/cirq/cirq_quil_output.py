@@ -519,7 +519,9 @@ class QuilOutput:
             return QuilTwoQubitGate(mat).on(*op.qubits)  # pragma: no cover
 
         def on_stuck(bad_op):
-            return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
+            if not repr(bad_op).startswith("cirq.global_phase_operation"):
+                return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
+            return None
 
         for main_op in self.operations:
             decomposed = protocols.decompose(
@@ -527,7 +529,8 @@ class QuilOutput:
             )
 
             for decomposed_op in decomposed:
-                output_func(self._op_to_quil(decomposed_op))
+                if not repr(decomposed_op).startswith("cirq.global_phase_operation"):
+                    output_func(self._op_to_quil(decomposed_op))
 
     def rename_defgates(self, output: str) -> str:
         """A function for renaming the DEFGATEs within the QUIL output. This
