@@ -18,11 +18,11 @@ import cirq
 import numpy as np
 import pytest
 
+from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.programs import NATIVE_REGISTRY, load_program
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
-from qbraid.interface.circuit_equality import circuits_allclose
 
 
 def find_cirq_targets(skip: Optional[list[str]] = None):
@@ -38,6 +38,7 @@ def find_cirq_targets(skip: Optional[list[str]] = None):
 
 
 TARGETS = find_cirq_targets()
+
 
 @pytest.mark.parametrize("frontend", TARGETS)
 def test_convert_circuit_operation_from_cirq(frontend):
@@ -63,6 +64,7 @@ def test_convert_circuit_operation_from_cirq(frontend):
 
     assert np.allclose(cirq_unitary, test_unitary)
 
+
 @pytest.mark.parametrize("frontend", TARGETS)
 def test_convert_circuit_with_global_phase_from_cirq(frontend):
     """Test converting Cirq circuit with global phase to PyQuil"""
@@ -72,14 +74,13 @@ def test_convert_circuit_with_global_phase_from_cirq(frontend):
     graph = ConversionGraph()
 
     if not graph.has_path("cirq", frontend):
-        pytest.skip(f"conversion from cirq to {frontend} not yet supported")    
-    
+        pytest.skip(f"conversion from cirq to {frontend} not yet supported")
+
     test_circuit = transpile(cirq_circuit, frontend, conversion_graph=graph)
 
     try:
-        test_unitary = load_program(test_circuit).unitary()
+        load_program(test_circuit).unitary()
     except NotImplementedError:
         pytest.skip(f"Unitary calculation not implemented for {frontend}")
 
     assert circuits_allclose(cirq_circuit, test_circuit)
-

@@ -521,6 +521,7 @@ class QuilOutput:
         def on_stuck(bad_op):
             if not repr(bad_op).startswith("cirq.global_phase_operation"):
                 return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
+            return None
 
         for main_op in self.operations:
             decomposed = protocols.decompose(
