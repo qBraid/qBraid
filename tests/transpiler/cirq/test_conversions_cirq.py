@@ -36,28 +36,11 @@ def find_cirq_targets(skip: Optional[list[str]] = None):
                 cirq_targets.append(target_library)
     return cirq_targets
 
-def frozencircuit_operation_circuit():
-    q0 = cirq.NamedQubit("q0")
-    return cirq.Circuit(
-        cirq.Y(q0), cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q0)), repetitions=5), cirq.Z(q0)
-    )       
-
-def global_phase_operation_circuit():
-    q0, q1 = cirq.NamedQubit("q0"), cirq.NamedQubit("q1")
-    return cirq.Circuit(
-        cirq.Y(q1).controlled_by(q0)
-    )
 
 TARGETS = find_cirq_targets()
 
-CIRCUITS = [
-    frozencircuit_operation_circuit(),
-    global_phase_operation_circuit()
-]
-
 @pytest.mark.parametrize("frontend", TARGETS)
-@pytest.mark.parametrize("cirq_circuit", CIRCUITS)
-def test_convert_circuit_operation_from_cirq(frontend, cirq_circuit):
+def test_convert_circuit_operation_from_cirq(frontend):
     """Test converting Cirq FrozenCircuit operation to OpenQASM"""
     q = cirq.NamedQubit("q")
     cirq_circuit = cirq.Circuit(
@@ -78,8 +61,25 @@ def test_convert_circuit_operation_from_cirq(frontend, cirq_circuit):
     except NotImplementedError:
         pytest.skip(f"Unitary calculation not implemented for {frontend}")
 
+    assert np.allclose(cirq_unitary, test_unitary)
+
+@pytest.mark.parametrize("frontend", TARGETS)
+def test_convert_circuit_with_global_phase_from_cirq(frontend):
+    """Test converting Cirq circuit with global phase to PyQuil"""
+    q0, q1 = cirq.NamedQubit("q0"), cirq.NamedQubit("q1")
+    cirq_circuit = cirq.Circuit(cirq.Y(q1).controlled_by(q0))
+
+    graph = ConversionGraph()
+
+    if not graph.has_path("cirq", frontend):
+        pytest.skip(f"conversion from cirq to {frontend} not yet supported")    
+    
+    test_circuit = transpile(cirq_circuit, frontend, conversion_graph=graph)
+
     try:
-        assert np.allclose(cirq_unitary, test_unitary)
-    except AssertionError:
-        # check if they are equivalent up to a global phase
-        assert circuits_allclose(cirq_circuit, test_circuit)
+        test_unitary = load_program(test_circuit).unitary()
+    except NotImplementedError:
+        pytest.skip(f"Unitary calculation not implemented for {frontend}")
+
+    assert circuits_allclose(cirq_circuit, test_circuit)
+
