@@ -28,6 +28,7 @@ Types of changes:
 
 ### Dependencies
 - Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.5 to >=1.3,<1.6 ([#1049](https://github.com/qBraid/qBraid/pull/1049))
+- Update `qiskit-ibm-runtime` dependency from `>=0.25.0,<0.42` to `>=0.39.0,<0.42` ([#1052](https://github.com/qBraid/qBraid/pull/1052))
 
 ## [0.9.9] - 2025-09-01
 
