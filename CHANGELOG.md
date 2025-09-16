@@ -26,6 +26,7 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+- Update `qiskit-ibm-runtime` dependency from `>=0.25.0,<0.42` to `>=0.39.0,<0.42` ([#1052](https://github.com/qBraid/qBraid/pull/1052))
 
 ## [0.9.9] - 2025-09-01
 
