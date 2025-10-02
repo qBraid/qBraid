@@ -134,9 +134,10 @@ class BraketCircuit(GateModelProgram):
         (e.g., IonQ devices).
 
         This method identifies qubits that already have measurement instructions (partial
-        measurements) and adds measurement instructions to all remaining qubits. It stores
-        the list of originally measured qubits as an attribute for later use in result
-        processing.
+        measurements) and adds measurement instructions to all remaining qubits from qubit 0
+        to qubit N, where N is the highest qubit index. A measurement is added even if a
+        qubit has no gate. The list of originally measured qubits is stored as an attribute
+        for later use in the result processing.
 
         The method modifies the circuit in-place and sets the `partial_measurement_qubits`
         attribute on the program object to track which qubits were originally measured
@@ -154,8 +155,9 @@ class BraketCircuit(GateModelProgram):
         if len(partial_measurement_qubits) == 0:
             return
 
-        # Add measurements to all qubits that don't already have them
-        for qubit in self._program.qubits:
+        # Add measurements on qubit 0 to N if any of them doesn't already have a
+        # measurement. N is the highest qubit index in the circuit.
+        for qubit in range(max(self._program.qubits)+1):
             if qubit not in partial_measurement_qubits:
                 self._program.measure(qubit)
 
