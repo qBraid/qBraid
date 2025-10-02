@@ -157,7 +157,7 @@ class BraketCircuit(GateModelProgram):
 
         # Add measurements on qubit 0 to N if any of them doesn't already have a
         # measurement. N is the highest qubit index in the circuit.
-        for qubit in range(max(self._program.qubits)+1):
+        for qubit in range(max(self._program.qubits) + 1):
             if qubit not in partial_measurement_qubits:
                 self._program.measure(qubit)
 
