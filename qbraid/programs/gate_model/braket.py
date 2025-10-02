@@ -151,8 +151,11 @@ class BraketCircuit(GateModelProgram):
             if isinstance(instruction.operator, Measure):
                 partial_measurement_qubits.append(int(instruction.target[0]))
 
-        # Only apply padding when there is partial measurement
-        if len(partial_measurement_qubits) == 0:
+        # Only apply padding when there is partial measurement or there is non-continguous qubits
+        if (
+            len(partial_measurement_qubits) == 0
+            and max(self._program.qubits) + 1 == self._program.qubit_count
+        ):
             return
 
         # Add measurements on qubit 0 to N if any of them doesn't already have a
