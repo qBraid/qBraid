@@ -460,6 +460,30 @@ def test_device_ionq_transform(mock_aws_device):
     assert circuits_allclose(transformed_circuit, toffoli_circuit)
 
 
+@pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
+    """Test transform method for IonQ device for circuit with non-contiguous qubit indices."""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        simulator=False,
+        num_qubits=11,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="IonQ",
+        device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Aria-1",
+        experiment_type=ExperimentType.GATE_MODEL,
+    )
+    device = BraketDevice(profile)
+
+    circuit = Circuit().x(0).y(2)
+    transformed_circuit = device.transform(circuit)
+    expected_circuit = Circuit().x(0).y(2).measure(0).measure(1).measure(2)
+    print(transformed_circuit)
+    print(expected_circuit)
+    assert isinstance(transformed_circuit, Circuit)
+    assert transformed_circuit == expected_circuit
+
+
 @patch("qbraid.runtime.aws.BraketProvider")
 def test_device_submit_task_with_tags(mock_provider):
     """Test getting tagged quantum tasks."""
