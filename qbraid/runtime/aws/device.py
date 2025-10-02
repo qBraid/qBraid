@@ -16,8 +16,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union
 
+import boto3
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
-from braket.aws import AwsDevice
+from braket.aws import AwsDevice, AwsSession
 from braket.circuits import Circuit
 from braket.circuits.measure import Measure
 
@@ -48,7 +49,13 @@ class BraketDevice(QuantumDevice):
     ):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
-        self._device = AwsDevice(arn=self.id, aws_session=session)
+
+        region_name = "us-east-1"
+        endpoint_url = "https://braket-gamma.us-east-1.amazonaws.com"
+        braket_client = boto3.client("braket", region_name=region_name, endpoint_url=endpoint_url)
+        aws_session = AwsSession(braket_client=braket_client)
+
+        self._device = AwsDevice(arn=self.id, aws_session=aws_session)
         self._provider_name = self.profile.get("provider_name")
 
     @property
@@ -99,6 +106,8 @@ class BraketDevice(QuantumDevice):
     ) -> Union[Circuit, AnalogHamiltonianSimulation]:
         """Transpile a circuit for the device."""
         program = run_input
+        print("program: ")
+        print(program)
 
         provider = (self.profile.provider_name or "").upper()
         experiment_type = self.profile.experiment_type
@@ -172,6 +181,9 @@ class BraketDevice(QuantumDevice):
             # Extract partial measurement qubit information and add as tags for job tracking
             tasks = []
             for circuit in run_input:
+                # print("circuit: ")
+                # print(circuit)
+
                 tags: dict[str, str] = {}
                 if hasattr(circuit, "partial_measurement_qubits"):
                     partial_measurement_qubits: list[int] = circuit.partial_measurement_qubits
