@@ -467,7 +467,7 @@ def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
     mock_aws_device.return_value = Mock()
     profile = TargetProfile(
         simulator=False,
-        num_qubits=11,
+        num_qubits=25,
         program_spec=ProgramSpec(Circuit),
         provider_name="IonQ",
         device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Aria-1",
