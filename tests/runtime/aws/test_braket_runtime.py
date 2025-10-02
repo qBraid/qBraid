@@ -478,8 +478,6 @@ def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
     circuit = Circuit().x(0).y(2)
     transformed_circuit = device.transform(circuit)
     expected_circuit = Circuit().x(0).y(2).measure(0).measure(1).measure(2)
-    print(transformed_circuit)
-    print(expected_circuit)
     assert isinstance(transformed_circuit, Circuit)
     assert transformed_circuit == expected_circuit
 
