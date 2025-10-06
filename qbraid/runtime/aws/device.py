@@ -123,13 +123,20 @@ class BraketDevice(QuantumDevice):
             )
 
         # Use Tket to transform circuits for IonQ to support a bigger gateset. The transformation
-        # only applies when no measurement is presented in the circuit.
+        # only applies when no measurement is presented and the circuit only use contiguous qubits.
+        has_contiguous_qubits = False
         includes_measurement = False
         if isinstance(run_input, Circuit):
             includes_measurement = any(
                 isinstance(instruction.operator, Measure) for instruction in run_input.instructions
             )
-        if provider == "IONQ" and isinstance(run_input, Circuit) and not includes_measurement:
+            has_contiguous_qubits = max(run_input.qubits) + 1 == run_input.qubit_count
+        if (
+            provider == "IONQ"
+            and isinstance(run_input, Circuit)
+            and not includes_measurement
+            and has_contiguous_qubits
+        ):
             graph = self.scheme.conversion_graph
             if (
                 graph is not None
