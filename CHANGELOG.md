@@ -31,7 +31,7 @@ Types of changes:
 ## [0.9.10] - 2025-09-16
 
 ### Improved / Modified
-- Updated the `QasmParser`and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
+- Updated the `QasmParser` and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
 
 ### Dependencies
 - Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.5 to >=1.3,<1.6 ([#1049](https://github.com/qBraid/qBraid/pull/1049))
