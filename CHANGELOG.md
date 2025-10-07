@@ -18,7 +18,6 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
-- Updated the `QasmParser`and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
 - Support circuits that use non-contiguous qubit indices on IonQ device and simulators through Amazon Braket. A measurement is added to every unused qubit up to the max qubit index. The results are filtered such that it only returns the results for the original measurements. ([#1059](https://github.com/qBraid/qBraid/pull/1059))
 
 ### Deprecated
@@ -26,6 +25,13 @@ Types of changes:
 ### Removed
 
 ### Fixed
+
+### Dependencies
+
+## [0.9.10] - 2025-09-16
+
+### Improved / Modified
+- Updated the `QasmParser`and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
 
 ### Dependencies
 - Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.5 to >=1.3,<1.6 ([#1049](https://github.com/qBraid/qBraid/pull/1049))
