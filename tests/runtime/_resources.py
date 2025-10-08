@@ -37,23 +37,6 @@ DEVICE_DATA_QIR = {
     "pricing": {"perTask": 0.005, "perShot": 0, "perMinute": 0.075},
 }
 
-DEVICE_DATA_QUERA_QASM = {
-    "numberQubits": 30,
-    "pendingJobs": 0,
-    "qbraid_id": "quera_qasm_simulator",
-    "name": "Noisey QASM simulator",
-    "provider": "QuEra",
-    "paradigm": "gate-based",
-    "type": "SIMULATOR",
-    "vendor": "qBraid",
-    "runInputTypes": ["qasm2"],
-    "status": "ONLINE",
-    "isAvailable": True,
-    "processorType": "State vector",
-    "noiseModels": ["quera_lqs_backend"],
-    "pricing": {"perTask": 0, "perShot": 0, "perMinute": 0},
-}
-
 DEVICE_DATA_NEC = {
     "qbraid_id": "nec_vector_annealer",
     "name": "NEC Vector Annealer",
@@ -179,31 +162,6 @@ RESULTS_DATA_QIR = {
     **REDUNDANT_JOB_DATA,
 }
 
-RESULTS_DATA_QUERA_QASM = {
-    "measurementCounts": {"11111": 4, "00000": 6},
-    "backend": "cirq-gpu",
-    "quera_simulation_result": {
-        "flair_visual_version": "0.5.3",
-        "counts": {"0": 6, "31": 4},
-        "logs": (
-            ",atom_id,block_id,action_type,time,duration\n"
-            "0,0,TrapSLM,0,0\n"
-            "0,0,TrapAOD,0,31.024984394500784\n"
-            "0,0,DropAOD,31.024984394500784,0"
-        ),
-        "atom_animation_state": {
-            "block_durations": [],
-            "gate_events": [],
-            "qpu_fov": {"xmin": -6, "xmax": 218, "ymin": -5, "ymax": 66.5},
-            "atoms": [],
-            "slm_zone": [],
-            "aod_moves": [],
-        },
-        "noise_model": {"all_qubits": [0, 1, 2, 3, 4], "gate_events": []},
-    },
-    **REDUNDANT_JOB_DATA,
-}
-
 RESULTS_DATA_NEC = {
     "solutions": [
         {
@@ -290,7 +248,6 @@ class MockClient:
 
     DEVICE_MAP = {
         "qbraid_qir_simulator": DEVICE_DATA_QIR,
-        "quera_qasm_simulator": DEVICE_DATA_QUERA_QASM,
         "nec_vector_annealer": DEVICE_DATA_NEC,
         "quera_aquila": DEVICE_DATA_AQUILA,
     }
@@ -304,7 +261,6 @@ class MockClient:
 
     RESULTS_MAP = {
         "qbraid_qir_simulator": RESULTS_DATA_QIR,
-        "quera_qasm_simulator": RESULTS_DATA_QUERA_QASM,
         "nec_vector_annealer": RESULTS_DATA_NEC,
         "quera_aquila": RESULTS_DATA_AQUILA,
     }

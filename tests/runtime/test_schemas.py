@@ -304,22 +304,6 @@ def test_device_data_qir(device_data_qir):
     assert device.is_available is True
 
 
-def test_device_data_quera(device_data_quera):
-    """Test DeviceData class for QuEra QASM simulator."""
-    device = DeviceData(**device_data_quera)
-
-    assert device.provider == "QuEra"
-    assert device.name == "Noisey QASM simulator"
-    assert device.paradigm == "gate-based"
-    assert device.device_type == "SIMULATOR"
-    assert device.num_qubits == 30
-    assert device.pricing.perTask == Decimal("0")
-    assert device.pricing.perShot == Decimal("0")
-    assert device.pricing.perMinute == Decimal("0")
-    assert device.status == "ONLINE"
-    assert device.is_available is True
-
-
 def test_device_data_aquila(device_data_aquila):
     """Test DeviceData class for QuEra Aquila QPU."""
     device = DeviceData(**device_data_aquila)

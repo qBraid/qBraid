@@ -31,7 +31,6 @@ from .result import (
     Equal1SimulatorResultData,
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
-    QuEraQasmSimulatorResultData,
 )
 
 if TYPE_CHECKING:
@@ -112,7 +111,6 @@ class QbraidJob(QuantumJob):
         """Determine the appropriate ResultData class based on device_id and experiment_type."""
         device_to_result_data = {
             "qbraid_qir_simulator": QbraidQirSimulatorResultData,
-            "quera_qasm_simulator": QuEraQasmSimulatorResultData,
             "nec_vector_annealer": NECVectorAnnealerResultData,
             "equal1_simulator": Equal1SimulatorResultData,
         }

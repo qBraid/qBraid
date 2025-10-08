@@ -34,7 +34,6 @@ ResultData Subclasses
 .. autosummary::
    :toctree: ../stubs/
 
-    QuEraQasmSimulatorResultData
     QbraidQirSimulatorResultData
     NECVectorAnnealerResultData
     Equal1SimulatorResultData
@@ -50,7 +49,6 @@ from .result import (
     Equal1SimulatorResultData,
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
-    QuEraQasmSimulatorResultData,
 )
 
 __all__ = [
@@ -61,7 +59,6 @@ __all__ = [
     "QbraidDevice",
     "QbraidJob",
     "QirRunner",
-    "QuEraQasmSimulatorResultData",
     "QbraidQirSimulatorResultData",
     "NECVectorAnnealerResultData",
     "Equal1SimulatorResultData",

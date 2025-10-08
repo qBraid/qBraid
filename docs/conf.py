@@ -62,7 +62,6 @@ autodoc_mock_imports = [
     "stim",
     "qibo",
     "cudaq",
-    "flair_visual",
     "bloqade",
     "pandas",
     "pyqpanda3",

@@ -31,7 +31,6 @@ from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 from ._resources import (
     DEVICE_DATA_AQUILA,
     DEVICE_DATA_QIR,
-    DEVICE_DATA_QUERA_QASM,
     MockClient,
     MockDevice,
 )
@@ -150,12 +149,6 @@ def circuit_meas(request, run_inputs_meas):
 def device_data_qir():
     """Return a dictionary of device data for the qBraid QIR simulator."""
     return DEVICE_DATA_QIR
-
-
-@pytest.fixture
-def device_data_quera():
-    """Return a dictionary of device data for the QuEra QASM simulator."""
-    return DEVICE_DATA_QUERA_QASM
 
 
 @pytest.fixture

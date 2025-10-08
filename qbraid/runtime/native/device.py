@@ -40,7 +40,6 @@ if TYPE_CHECKING:
 
     import qbraid.programs
     import qbraid.runtime
-    import qbraid.transpiler
 
 
 class QbraidDevice(QuantumDevice):
