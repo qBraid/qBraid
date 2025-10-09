@@ -27,7 +27,7 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
-- - Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.6 to >=1.3,<1.7 ([#1063](https://github.com/qBraid/qBraid/pull/1063))
+- Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.6 to >=1.3,<1.7 ([#1063](https://github.com/qBraid/qBraid/pull/1063))
 
 ## [0.9.10] - 2025-09-16
 
