@@ -1,5 +1,5 @@
-# Copyright (C) 2024 qBraid
-# Copyright (C) Unitary Fund
+# Copyright (C) 2025 qBraid
+# Copyright (C) Unitary Foundation
 #
 # This file is part of the qBraid-SDK.
 #

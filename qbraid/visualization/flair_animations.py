@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 # Copyright (C) 2024 QuEra Computing Inc.
 #
 # This file is part of the qBraid-SDK
