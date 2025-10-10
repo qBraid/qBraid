@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# This file includes code adapted from Mitiq (https://github.com/unitaryfoundation/mitiq)
 
-# qbraid: skip-header
+# Inspired by Mitiq's Braket conversion module:
+# https://github.com/unitaryfoundation/mitiq/blob/v0.47.0/mitiq/interface/mitiq_braket/conversions.py
 
 """
 Module for converting Braket circuits to Cirq circuits

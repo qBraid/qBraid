@@ -1,4 +1,4 @@
-# Copyright (C) 2025 qBraid
+# Copyright 2025 qBraid
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# This file includes code adapted from Mitiq (https://github.com/unitaryfoundation/mitiq)
 
-# qbraid: skip-header
+# Some tests in this file were inspired by scenarios in Mitiq’s Braket conversion test suite:
+# https://github.com/unitaryfoundation/mitiq/blob/v0.47.0/mitiq/interface/mitiq_braket/tests/test_conversions_braket.py
 
 """
 Unit tests for converting Cirq circuits to Braket circuits

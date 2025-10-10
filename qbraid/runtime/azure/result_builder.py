@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
 # Portions of this file are adapted from the Microsoft Azure Quantum SDK
 # (permalink: https://github.com/microsoft/azure-quantum-python/blob/azure-quantum_v2.2.0/azure-quantum/azure/quantum/qiskit/job.py),
 # with modifications by qBraid. The original MIT license notice is available at:
 # https://github.com/microsoft/azure-quantum-python/blob/azure-quantum_v2.2.0/LICENSE
-
-# qbraid: skip-header
 
 """
 Module defining AzureResultBuilder class

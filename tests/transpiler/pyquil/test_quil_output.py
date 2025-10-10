@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
+
 # Portions of this file are adapted from Cirq
 # (permalink: https://github.com/quantumlib/Cirq/blob/v1.4.0/cirq-rigetti/cirq_rigetti/quil_output_test.py),
 # with modifications by qBraid. The original Apache-2.0 License notice is available at:
 # https://github.com/quantumlib/Cirq/blob/v1.4.0/LICENSE
-
-# qbraid: skip-header
 
 """
 Module for testing qBraid QuilOutput.
