@@ -1,5 +1,4 @@
 # Copyright (C) 2025 qBraid
-# Copyright (C) 2020 The Cirq Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,9 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# This file includes code adapted from Cirq
-# (https://github.com/quantumlib/Cirq/blob/v1.4.0/cirq-rigetti/cirq_rigetti/quil_input_test.py)
-# with modifications by qBraid.
+# Portions of this file are adapted from Cirq
+# (permalink: https://github.com/quantumlib/Cirq/blob/v1.4.0/cirq-rigetti/cirq_rigetti/quil_input_test.py),
+# with modifications by qBraid. The original Apache-2.0 License notice is available at:
+# https://github.com/quantumlib/Cirq/blob/v1.4.0/LICENSE
 
 # qbraid: skip-header
 
