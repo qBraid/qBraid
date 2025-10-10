@@ -19,6 +19,7 @@ Types of changes:
 
 ### Improved / Modified
 - Support circuits that use non-contiguous qubit indices on IonQ device and simulators through Amazon Braket. A measurement is added to every unused qubit up to the max qubit index. The results are filtered such that it only returns the results for the original measurements. ([#1059](https://github.com/qBraid/qBraid/pull/1059))
+- Change project license from GPL-3.0 to Apache-2.0. ([#1064](https://github.com/qBraid/qBraid/pull/1064))
 
 ### Deprecated
 
