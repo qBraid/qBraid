@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # Portions of this file are adapted from Cirq
-# (permalink: https://github.com/quantumlib/Cirq/blob/v1.4.0/cirq-core/cirq/contrib/qasm_import/_parser_test.py),
+# https://github.com/quantumlib/Cirq/blob/v1.4.0/cirq-core/cirq/contrib/qasm_import/_parser_test.py,
 # with modifications by qBraid. The original Apache-2.0 License notice is available at:
 # https://github.com/quantumlib/Cirq/blob/v1.4.0/LICENSE
 

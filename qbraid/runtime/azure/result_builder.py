@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=line-too-long
 # Portions of this file are adapted from the Microsoft Azure Quantum SDK
-# (permalink: https://github.com/microsoft/azure-quantum-python/blob/azure-quantum_v2.2.0/azure-quantum/azure/quantum/qiskit/job.py),
+# (https://github.com/microsoft/azure-quantum-python/blob/azure-quantum_v2.2.0/azure-quantum/azure/quantum/qiskit/job.py),
 # with modifications by qBraid. The original MIT license notice is available at:
 # https://github.com/microsoft/azure-quantum-python/blob/azure-quantum_v2.2.0/LICENSE
+# pylint: enable=line-too-long
 
 """
 Module defining AzureResultBuilder class

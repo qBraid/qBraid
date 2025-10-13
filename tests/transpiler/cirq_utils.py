@@ -72,7 +72,8 @@ def compare_circuits(circuit1: cirq.Circuit, circuit2: cirq.Circuit):
                     print(f" Unique to circuit2 in moment {i}: {unique_to_circuit2}")
 
 
-# Inspired by Mitiq utils function: https://github.com/unitaryfoundation/mitiq/blob/899e07add82a1d7de525cdbae9b5aea06b7996b2/mitiq/utils.py#L121
+# Inspired by Mitiq utils function:
+# https://github.com/unitaryfoundation/mitiq/blob/899e07add82a1d7de525cdbae9b5aea06b7996b2/mitiq/utils.py#L121
 def _equal(
     circuit_one: cirq.Circuit,
     circuit_two: cirq.Circuit,
