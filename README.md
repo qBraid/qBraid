@@ -16,7 +16,7 @@
   <a href="https://pepy.tech/project/qbraid">
     <img src="https://static.pepy.tech/badge/qbraid" alt="Downloads"/>
   </a>
-  <a href="https://www.gnu.org/licenses/gpl-3.0.html">
+  <a href="http://www.apache.org/licenses/LICENSE-2.0">
     <img src="https://img.shields.io/github/license/qBraid/qbraid.svg" alt="License"/>
   </a>
   <a href="https://doi.org/10.5281/zenodo.12627597">
@@ -241,4 +241,4 @@ Use the badge in your project's `README.rst`:
 
 ## License
 
-[GNU General Public License v3.0](LICENSE)
+[Apache-2.0 License](LICENSE)
