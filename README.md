@@ -19,8 +19,8 @@
   <a href="http://www.apache.org/licenses/LICENSE-2.0">
     <img src="https://img.shields.io/github/license/qBraid/qbraid.svg" alt="License"/>
   </a>
-  <a href="https://doi.org/10.5281/zenodo.12627597">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.12627597.svg" alt="DOI">
+  <a href="https://doi.org/10.5281/zenodo.12627596">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.12627596.svg" alt="DOI">
   </a>
 </p>
 
