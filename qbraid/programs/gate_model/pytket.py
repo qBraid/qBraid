@@ -154,11 +154,12 @@ class PytketCircuit(GateModelProgram):
         gates: Optional[Union[list[Circuit], Command]], flat: bool = False
     ) -> np.ndarray:
         """Return the unitary of the Command"""
-        gates = gates if isinstance(gates, list) else [gates]
-        a = list(map(max, [gate.qubits for gate in gates]))
+        gates = gates if isinstance(gates, list) else [gates]  # type: ignore[list-item]
+        a = list(map(max, [gate.qubits for gate in gates]))  # type: ignore[union-attr]
         circuit = Circuit(max(a).index[0] + 1)
         for gate in gates:
-            gate_op = gate.op
+            gate_op = gate.op  # type: ignore[attr-defined]
+            # type: ignore[attr-defined]
             circuit.add_gate(gate_op.type, gate_op.params, gate.qubits)
         if flat:
             circuit.remove_blank_wires()

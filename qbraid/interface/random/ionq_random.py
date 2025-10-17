@@ -98,10 +98,10 @@ def ionq_random(
         create_gateset_ionq, num_qubits, depth, max_operands, seed, False
     )
 
-    ionq_dict = transpile(qasm3_program, "ionq")
+    ionq_dict = transpile(qasm3_program, "ionq")  # type: ignore[assignment]
 
-    ionq_program = IonQProgram(ionq_dict)
+    ionq_program = IonQProgram(ionq_dict)  # type: ignore[arg-type]
 
     ionq_program.validate_for_gateset()
 
-    return ionq_dict
+    return ionq_dict  # type: ignore[return-value]

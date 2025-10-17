@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import base64
 
-import cudaq
+import cudaq  # type: ignore[import-not-found]
 
 from qbraid.programs.exceptions import ProgramTypeError
 

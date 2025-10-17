@@ -189,6 +189,6 @@ class BraketCircuit(GateModelProgram):
         # pylint: enable=import-outside-toplevel
 
         qasm = braket_to_qasm3(self.program)
-        program = OpenQasm3Program(qasm)
+        program = OpenQasm3Program(qasm)  # type: ignore[arg-type]
 
         return program.serialize()

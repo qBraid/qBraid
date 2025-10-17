@@ -197,5 +197,6 @@ disable_error_code = [
     "import-untyped",
     "call-arg",  # Pydantic models with extra="allow" confuse mypy
     "override",  # Provider/device subclasses intentionally narrow return types
+    "type-var",  # TypeVars in return types without params is an architectural pattern
 ]
-exclude = "^(qbraid/(programs/gate_model/|transpiler/conversions/|interface/))"
+exclude = "^(qbraid/transpiler/conversions/)"

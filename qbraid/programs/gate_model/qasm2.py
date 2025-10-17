@@ -18,7 +18,7 @@ Module defining OpenQasm2Program class.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pyqasm
@@ -52,7 +52,7 @@ class OpenQasm2Program(GateModelProgram):
         return self._module._qubit_registers
 
     @property
-    def module(self) -> pyqasm.Module:
+    def module(self) -> Any:  # pyqasm.Module
         """Return the pyqasm module."""
         return self._module
 

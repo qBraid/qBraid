@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 from qbraid.programs import load_program
+from qbraid.programs.gate_model import GateModelProgram
 
 if TYPE_CHECKING:
     import qbraid
@@ -49,7 +50,7 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.nda
     if a.shape != b.shape or a.size == 0:
         return np.copy(a), np.copy(b)
 
-    k = max(np.ndindex(*a.shape), key=lambda t: abs(b[t]))
+    k = max(np.ndindex(*a.shape), key=lambda t: abs(b[t]))  # type: ignore[arg-type,return-value]
 
     def dephase(v):
         r = np.real(v)
@@ -128,6 +129,10 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
 
     program0 = load_program(circuit0)
     program1 = load_program(circuit1)
+
+    # Type narrowing: only GateModelProgram has these methods
+    if not isinstance(program0, GateModelProgram) or not isinstance(program1, GateModelProgram):
+        raise TypeError("Both programs must be GateModelProgram instances for unitary comparison")
 
     if index_contig:
         program0.remove_idle_qubits()
