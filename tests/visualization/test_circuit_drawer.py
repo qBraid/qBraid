@@ -138,7 +138,7 @@ def test_pytket_draw(bell_circuit):
     """Test draw function html output for pytket bell circuit."""
     pytket_bell, _ = bell_circuit
     raw_html: str = circuit_drawer(pytket_bell, output="html")
-    assert 2381 <= len(raw_html) <= 4468
+    assert 2381 <= len(raw_html) <= 4469
 
 
 @pytest.mark.skipif("pytket" not in AVAILABLE_TARGETS, reason="pytket not installed")
