@@ -60,12 +60,17 @@ class QiskitGateModelResultBuilder:
             logger.warning("Memory states (measurements) data not available for this job: %s", err)
             return None
 
-        qbraid_meas = [self._format_measurements(qiskit_meas[i]) for i in range(num_circuits)]
+        qbraid_meas_list = [self._format_measurements(qiskit_meas[i]) for i in range(num_circuits)]
 
+        qbraid_meas: list[list[int]]
         if num_circuits == 1:
-            qbraid_meas = qbraid_meas[0]
+            qbraid_meas = qbraid_meas_list[0]
         else:
-            qbraid_meas = normalize_tuples(qbraid_meas)
+            # Convert to tuples for normalize_tuples, then back to lists
+            tuple_meas = [[tuple(shot) for shot in circuit] for circuit in qbraid_meas_list]
+            normalized = normalize_tuples(tuple_meas)
+            # type: ignore[misc]
+            qbraid_meas = [[list(shot) for shot in circuit] for circuit in normalized]
 
         return np.array(qbraid_meas)
 

@@ -102,8 +102,9 @@ class IonQDevice(QuantumDevice):
         device_data = self.session.get_device(self.id)
         return device_data["average_queue_time"]
 
-    def transform(self, run_input: QasmStringType) -> QasmStringType:
+    def transform(self, run_input: QasmStringType) -> QasmStringType:  # type: ignore[override]
         """Transform the input to the IonQ device."""
+        # type: ignore[assignment]
         program: OpenQasm2Program | OpenQasm3Program = load_program(run_input)
 
         try:
@@ -125,7 +126,7 @@ class IonQDevice(QuantumDevice):
         input_format = batch_input[0].get("format", DEFAULT_FORMAT)
         input_gateset = batch_input[0].get("gateset", DEFAULT_GATESET)
         max_qubits = 0
-        circuits = []
+        circuits: list[dict[str, Any]] = []
 
         for i, run_input in enumerate(batch_input):
             if not isinstance(run_input, IonQDict):
@@ -176,7 +177,7 @@ class IonQDevice(QuantumDevice):
         }
         job_data.update({key: value for key, value in optional_fields.items() if value is not None})
         serialized_data = json.dumps(job_data)
-        job_data = self.session.create_job(serialized_data)
+        job_data = self.session.create_job(serialized_data)  # type: ignore[arg-type]
         job_id = job_data.get("id")
         if not job_id:
             raise ValueError("Job ID not found in the response")
@@ -202,9 +203,9 @@ class IonQDevice(QuantumDevice):
             )
             run_input_compat.append(ionq_dict)
 
-        return run_input_compat
+        return run_input_compat  # type: ignore[return-value]
 
-    def run(
+    def run(  # type: ignore[override]
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
         *args,
@@ -228,7 +229,7 @@ class IonQDevice(QuantumDevice):
             An IonQJob object or a list of IonQJob objects corresponding to the input.
         """
         is_single_input = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_input else run_input
+        run_input = [run_input] if is_single_input else run_input  # type: ignore[list-item]
 
         if (
             "qiskit" in QPROGRAM_REGISTRY

@@ -150,7 +150,7 @@ class OQCDevice(QuantumDevice):
 
         return datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
 
-    def transform(self, run_input: str) -> str:
+    def transform(self, run_input: str) -> str:  # type: ignore[override]
         """Transforms the input program before submitting it to the device."""
         qasm_module = pyqasm.loads(run_input)
         qasm_module.remove_includes()
@@ -206,7 +206,7 @@ class OQCDevice(QuantumDevice):
             raise ValueError(f"Invalid configuration option: {err.args[0]}") from err
 
     # pylint: disable-next=arguments-differ
-    def submit(self, run_input, **kwargs) -> Union[OQCJob, list[OQCJob]]:
+    def submit(self, run_input, **kwargs) -> Union[OQCJob, list[OQCJob]]:  # type: ignore[override]
         """Submit one or more jobs to the device."""
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input

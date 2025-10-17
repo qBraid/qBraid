@@ -152,13 +152,15 @@ class BraketAhsResultBuilder:
                 the result object.
 
         """
-        state_counts = Counter()
+        state_counts: Counter[str] = Counter()
         states = ["e", "r", "g"]
         try:
             for shot in self.measurements():
                 if shot.success:
                     pre = shot.pre_sequence
                     post = shot.post_sequence
+                    if pre is None or post is None:
+                        continue
                     # converting presequence and postsequence measurements to state_idx
                     state_idx = [
                         0 if pre_i == 0 else 1 if post_i == 0 else 2

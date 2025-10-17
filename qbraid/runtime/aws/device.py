@@ -76,7 +76,7 @@ class BraketDevice(QuantumDevice):
 
         return DeviceStatus.OFFLINE
 
-    def availability_window(self) -> tuple[bool, str, str]:
+    def availability_window(self) -> tuple[bool, str, Optional[str]]:
         """Provides device availability status. Indicates current availability,
         time remaining (hours, minutes, seconds) until next availability or
         unavailability, and future UTC datetime of next change in availability status.
@@ -133,12 +133,16 @@ class BraketDevice(QuantumDevice):
             and has_contiguous_qubits
         ):
             graph = self.scheme.conversion_graph
+            target_spec = self._target_spec
+            target_alias = None
+            if target_spec is not None and hasattr(target_spec, "alias"):
+                target_alias = target_spec.alias  # type: ignore[attr-defined]
             if (
                 graph is not None
                 and graph.has_edge("pytket", "braket")
                 and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
                 and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
-                and self._target_spec.alias == "braket"
+                and target_alias == "braket"
             ):
                 tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
                 tk_program = load_program(tk_circuit)

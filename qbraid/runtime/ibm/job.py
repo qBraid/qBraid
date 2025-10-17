@@ -85,9 +85,10 @@ class QiskitJob(QuantumJob):
         """
         if service is None:
             if self._device and getattr(self._device, "_service", None):
-                service = self._device._service
+                service = self._device._service  # type: ignore[attr-defined]
             else:
                 try:
+                    # type: ignore[attr-defined]
                     service = qbraid_rt_ibm.QiskitRuntimeProvider().runtime_service
                 except Exception as err:
                     raise QbraidRuntimeError("Failed to initialize the quantum service.") from err

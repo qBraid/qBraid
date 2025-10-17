@@ -113,20 +113,17 @@ class BraketQuantumTask(QuantumJob):
         partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
             bk_result.measured_qubits
         )
+        builder = builder_class(bk_result, partial_measurement_qubits)  # type: ignore[misc]
         result_data = {
             "measurement_counts": (
-                builder_class(bk_result, partial_measurement_qubits).get_counts()
-                if success
-                else None
+                builder.get_counts() if success else None  # type: ignore[attr-defined]
             ),
             "measurements": (
-                builder_class(bk_result, partial_measurement_qubits).measurements()
-                if success
-                else None
+                builder.measurements() if success else None  # type: ignore[attr-defined]
             ),
         }
 
-        data = data_class(**result_data)
+        data = data_class(**result_data)  # type: ignore[misc]
         return Result(device_id=device_id, job_id=job_id, success=success, data=data, **metadata)
 
     def cancel(self) -> None:
@@ -148,7 +145,7 @@ class BraketQuantumTask(QuantumJob):
 
     def get_cost(self) -> float:
         """Return the cost of the job."""
-        decimal_cost = self._get_cost(self.id)
+        decimal_cost = self._get_cost(str(self.id))
         return float(decimal_cost)
 
     def _get_partial_measurement_qubits_from_tags(

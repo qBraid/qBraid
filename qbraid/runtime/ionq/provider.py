@@ -121,13 +121,13 @@ class IonQProvider(QuantumProvider):
         device_id = data.get("backend")
         simulator = device_id == "simulator"
         charact = self._get_characterization(data)
-        basis_gates = self._get_basis_gates(device_id)
+        basis_gates = self._get_basis_gates(device_id)  # type: ignore[arg-type]
         noise_models = (
             NoiseModelSet.from_iterable(data.get("noise_models", [])) if simulator else None
         )
 
-        return TargetProfile(
-            device_id=device_id,
+        return TargetProfile(  # type: ignore[arg-type]
+            device_id=device_id,  # type: ignore[arg-type]
             simulator=simulator,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=data.get("qubits"),
@@ -137,7 +137,7 @@ class IonQProvider(QuantumProvider):
             ],
             provider_name="IonQ",
             basis_gates=basis_gates,
-            characterization=charact,
+            characterization=charact,  # type: ignore[arg-type]
             noise_models=noise_models,
         )
 
@@ -149,7 +149,7 @@ class IonQProvider(QuantumProvider):
         return IonQDevice(profile, self.session)
 
     @cached_method
-    def get_devices(self, **kwargs) -> list[IonQDevice]:
+    def get_devices(self, **kwargs) -> list[IonQDevice]:  # type: ignore[override]
         """Get a list of IonQ devices."""
         devices = self.session.get_devices(**kwargs)
         return [

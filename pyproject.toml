@@ -194,6 +194,8 @@ ignore = ["E731"]
 [tool.mypy]
 disable_error_code = [
     "valid-type",
-    "import-untyped"
+    "import-untyped",
+    "call-arg",  # Pydantic models with extra="allow" confuse mypy
+    "override",  # Provider/device subclasses intentionally narrow return types
 ]
-exclude = "^(qbraid/(programs/(gate_model/|ahs/|annealing/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|ibm/|aws/)))"
+exclude = "^(qbraid/(programs/gate_model/|transpiler/conversions/|interface/))"

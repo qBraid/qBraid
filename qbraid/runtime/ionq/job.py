@@ -48,7 +48,7 @@ class IonQJob(QuantumJob):
         self, job_id: str, session: Optional[qbraid.runtime.ionq.IonQSession] = None, **kwargs
     ):
         super().__init__(job_id=job_id, **kwargs)
-        self._session = session or qbraid_rt_ionq.IonQSession()
+        self._session = session or qbraid_rt_ionq.IonQSession()  # type: ignore[attr-defined]
 
     @property
     def session(self) -> qbraid.runtime.ionq.IonQSession:
@@ -70,23 +70,23 @@ class IonQJob(QuantumJob):
 
     def status(self) -> JobStatus:
         """Return the current status of the IonQ job."""
-        job_data = self.session.get_job(self.id)
+        job_data = self.session.get_job(str(self.id))  # type: ignore[arg-type]
         status = job_data.get("status")
-        return self._map_status(status)
+        return self._map_status(status)  # type: ignore[arg-type]
 
     def metadata(self) -> dict[str, Any]:
         """Store and return the metadata of the IonQ job."""
         if self.is_terminal_state() and "status" in self._cache_metadata:
             return self._cache_metadata
 
-        job_metadata = self.session.get_job(self.id)
+        job_metadata = self.session.get_job(str(self.id))  # type: ignore[arg-type]
         self._cache_metadata.update(job_metadata)
         self._cache_metadata["status"] = self._map_status(self._cache_metadata["status"])
         return self._cache_metadata
 
     def cancel(self) -> None:
         """Cancel the IonQ job."""
-        self.session.cancel_job(self.id)
+        self.session.cancel_job(str(self.id))  # type: ignore[arg-type]
 
     @staticmethod
     def _get_counts(result: dict[str, Any]) -> Union[MeasCount, list[MeasCount]]:
@@ -100,18 +100,19 @@ class IonQJob(QuantumJob):
         def convert_to_counts(meas_prob: dict[str, float]) -> dict[str, int]:
             """Helper function to normalize probabilities and convert to counts."""
             probs_dec = {int(key): value for key, value in meas_prob.items()}
-            probs_normal = normalize_data(probs_dec)
-            return distribute_counts(probs_normal, shots)
+            probs_normal = normalize_data(probs_dec)  # type: ignore[arg-type]
+            return distribute_counts(probs_normal, shots)  # type: ignore[arg-type]
 
         if all(isinstance(value, dict) for value in probabilities.values()):
+            # type: ignore[arg-type,misc]
             return [convert_to_counts(probs) for probs in probabilities.values()]
 
-        return convert_to_counts(probabilities)
+        return convert_to_counts(probabilities)  # type: ignore[arg-type]
 
     def result(self) -> Result:
         """Return the result of the IonQ job."""
         self.wait_for_final_state()
-        job_data = self.session.get_job(self.id)
+        job_data = self.session.get_job(str(self.id))  # type: ignore[arg-type]
         success = job_data.get("status") == "completed"
         if not success:
             failure: dict = job_data.get("failure", {})

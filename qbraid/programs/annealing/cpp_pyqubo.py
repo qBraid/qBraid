@@ -38,9 +38,9 @@ class PyQuboModel(AnnealingProgram):
     def to_problem(self, **kwargs) -> QuboProblem:
         """Converts the cpp_pyqubo.Model to a Problem instance."""
         qubo, _ = self.program.to_qubo(**kwargs)
-        coefficients = {}
+        coefficients: dict[tuple[str, str], float] = {}
 
         for key, value in qubo.items():
             coefficients[key] = value
 
-        return QuboProblem(coefficients)
+        return QuboProblem(coefficients)  # type: ignore[arg-type]

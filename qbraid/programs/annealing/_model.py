@@ -92,7 +92,7 @@ class QuboProblem(Problem):
         super().__init__(
             problem_type=ProblemType.QUBO,
             linear={},
-            quadratic=coefficients,
+            quadratic=coefficients,  # type: ignore[arg-type]
         )
 
 
@@ -133,7 +133,7 @@ class ProblemEncoder(json.JSONEncoder):
         if isinstance(o, AnnealingProgram):
             return self.default(o.to_problem())
         if isinstance(o, Problem):
-            data = {"problem_type": o.problem_type.value}
+            data: dict[str, Any] = {"problem_type": o.problem_type.value}
             if o.linear:
                 data["linear"] = o.linear
             if o.quadratic:

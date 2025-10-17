@@ -56,7 +56,7 @@ class OQCProvider(QuantumProvider):
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
         data = data.copy()
-        device_id = data.get("id")
+        device_id_initial = data.get("id")
         feature_set: Union[str, dict] = data.get("feature_set", {})
 
         if not isinstance(feature_set, dict):
@@ -64,7 +64,7 @@ class OQCProvider(QuantumProvider):
                 data["feature_set"] = json.loads(feature_set)
             except json.JSONDecodeError as err:
                 raise ValueError(
-                    f"Failed to decode feature set data for device '{device_id}'."
+                    f"Failed to decode feature set data for device '{device_id_initial}'."
                 ) from err
 
         try:
@@ -75,7 +75,9 @@ class OQCProvider(QuantumProvider):
             num_qubits: int = feauture_set.pop("qubit_count")
             simulator: bool = feauture_set.pop("simulator", False)
         except KeyError as err:
-            raise ValueError(f"Failed to gather profile data for device '{device_id}'.") from err
+            raise ValueError(
+                f"Failed to gather profile data for device '{device_id_initial}'."
+            ) from err
 
         dynamic_fields = {"active", "status"}
         pricing_fields = {"price_per_shot", "price_per_task"}
@@ -85,21 +87,21 @@ class OQCProvider(QuantumProvider):
             if k not in dynamic_fields
         }
 
-        return TargetProfile(
+        return TargetProfile(  # type: ignore[call-arg]
             device_id=device_id,
             simulator=simulator,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
             program_spec=ProgramSpec(str, alias="qasm3"),
-            device_name=device_name,
-            endpoint_url=endpoint_url,
+            device_name=device_name,  # type: ignore[arg-type]
+            endpoint_url=endpoint_url,  # type: ignore[arg-type]
             provider_name="OQC",
-            feature_set=feauture_set,
-            **static_data,
+            feature_set=feauture_set,  # type: ignore[arg-type]
+            **static_data,  # type: ignore[arg-type]
         )
 
     @cached_method
-    def get_devices(self) -> list[OQCDevice]:
+    def get_devices(self) -> list[OQCDevice]:  # type: ignore[override]
         """Get all OQC devices."""
         devices: list[dict] = self.client.get_qpus()
         return [

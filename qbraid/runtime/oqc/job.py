@@ -73,7 +73,7 @@ class OQCJob(QuantumJob):
 
     def __init__(self, job_id: str, client: Optional[OQCClient] = None, **kwargs):
         super().__init__(job_id=job_id, **kwargs)
-        self._client = client or qbraid_rt_oqc.OQCProvider().client
+        self._client = client or qbraid_rt_oqc.OQCProvider().client  # type: ignore[attr-defined]
         self._qpu_id: Optional[str] = None
         self._terminal_status: Optional[JobStatus] = None
 
