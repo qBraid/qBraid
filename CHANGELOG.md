@@ -26,6 +26,7 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+- Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44 ([#1070](https://github.com/qBraid/qBraid/pull/1070))
 
 ## [0.10.0] - 2025-10-14
 
