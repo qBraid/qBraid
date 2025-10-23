@@ -18,14 +18,29 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
-- Updated the `QasmParser`and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
-- Support circuits that use non-contiguous qubit indices on IonQ device and simulators through Amazon Braket. A measurement is added to every unused qubit up to the max qubit index. The results are filtered such that it only returns the results for the original measurements. ([#1059](https://github.com/qBraid/qBraid/pull/1059))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+### Dependencies
+- Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44 ([#1070](https://github.com/qBraid/qBraid/pull/1070))
+
+## [0.10.0] - 2025-10-14
+
+### Improved / Modified
+- Support circuits that use non-contiguous qubit indices on IonQ device and simulators through Amazon Braket. A measurement is added to every unused qubit up to the max qubit index. The results are filtered such that it only returns the results for the original measurements. ([#1059](https://github.com/qBraid/qBraid/pull/1059))
+- Change project license from GPL-3.0 to Apache-2.0. ([#1064](https://github.com/qBraid/qBraid/pull/1064))
+
+### Dependencies
+- Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.6 to >=1.3,<1.7 ([#1063](https://github.com/qBraid/qBraid/pull/1063))
+
+## [0.9.10] - 2025-09-16
+
+### Improved / Modified
+- Updated the `QasmParser` and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
 
 ### Dependencies
 - Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.5 to >=1.3,<1.6 ([#1049](https://github.com/qBraid/qBraid/pull/1049))
