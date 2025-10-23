@@ -38,6 +38,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
         with:
+          ref: ${{ (github.event_name == 'release') && 'main' || github.ref }}
           fetch-depth: 0
 
       - name: Set up Python
