@@ -47,7 +47,6 @@ from .options import RuntimeOptions
 if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
-    import qbraid.transpiler
 
 
 class QuantumDevice(ABC):
@@ -103,6 +102,11 @@ class QuantumDevice(ABC):
         if not self._scheme.conversion_graph:
             self._scheme.update_values(conversion_graph=ConversionGraph(include_isolated=True))
         return self._scheme
+
+    @property
+    def options(self) -> RuntimeOptions:
+        """Return the runtime options."""
+        return self._options
 
     def __repr__(self):
         """Return a string representation of the device."""
