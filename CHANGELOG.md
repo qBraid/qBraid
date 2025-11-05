@@ -22,6 +22,7 @@ Types of changes:
 ### Deprecated
 
 ### Removed
+- Removed `qbraid-core[runner]` dependency from `qbraid[qir]` extra. The only additional package that was being installed was `psutil` in order to support a function that tracks memory usage during a subprocess call to `qir-runner`. But people are mainly interested in this "extra" for the `qbraid-qir` conversions, and since this is outside of that scope, better to take it out and keep the dependencies lean. ([#1083](https://github.com/qBraid/qBraid/pull/1083))
 
 ### Fixed
 
