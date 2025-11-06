@@ -22,7 +22,7 @@ from qbraid.programs.typer import Qasm2String, Qasm2StringType, Qasm3StringType
 from qbraid.transpiler.annotations import weight
 
 
-@weight(0.7)
+@weight(1)
 def qasm2_to_qasm3(qasm_str: Qasm2StringType) -> Qasm3StringType:
     """Convert a OpenQASM 2.0 string to OpenQASM 3.0 string
 

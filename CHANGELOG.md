@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
 
 ### Deprecated
 
