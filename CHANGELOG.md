@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
 
 ### Deprecated
 
@@ -33,7 +34,6 @@ Types of changes:
 ### Improved / Modified
 - Support circuits that use non-contiguous qubit indices on IonQ device and simulators through Amazon Braket. A measurement is added to every unused qubit up to the max qubit index. The results are filtered such that it only returns the results for the original measurements. ([#1059](https://github.com/qBraid/qBraid/pull/1059))
 - Change project license from GPL-3.0 to Apache-2.0. ([#1064](https://github.com/qBraid/qBraid/pull/1064))
-- Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
 
 ### Dependencies
 - Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.6 to >=1.3,<1.7 ([#1063](https://github.com/qBraid/qBraid/pull/1063))
