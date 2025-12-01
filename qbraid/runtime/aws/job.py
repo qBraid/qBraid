@@ -95,6 +95,11 @@ class BraketQuantumTask(QuantumJob):
 
         bk_result = self._task.result()
         metadata = self._task.metadata()
+        additional_metadata = dict(bk_result.additional_metadata)
+        for key, value in additional_metadata.items():
+            if value is not None:
+                metadata[key] = value
+
         success = metadata["status"] == "COMPLETED"
         device_id = metadata["deviceArn"]
         job_id = metadata["quantumTaskArn"]
