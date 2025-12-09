@@ -19,6 +19,7 @@ Types of changes:
 
 ### Improved / Modified
 - Updated number of shots used in Amazon Braket remote tests to minimum of 100 to match new lower bound of providers like IonQ (enforced by AWS, server-side) ([#1089](https://github.com/qBraid/qBraid/pull/1089))
+- Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
 
 ### Deprecated
 
