@@ -24,7 +24,7 @@ autoqasm>=0.1.2,<0.3
 # optional runtime dependencies
 qiskit-ibm-runtime>=0.39.0,<0.42
 oqc-qcaas-client>=3.11.0; python_version < "3.13"
-azure-quantum>=2.0,<2.3
+azure-quantum>=2.0,<3.2
 azure-storage-blob>=12.20,<13.0
 azure-identity>=1.17,<2.0
 pyqubo>=1.4.0
