@@ -29,12 +29,14 @@ Functions
    qiskit_to_pyqir
    qiskit_to_ionq
    qiskit_qop_to_openfermion_qop
+   qiskit_fop_to_openfermion_fop
 
 """
 from .qiskit_extras import qiskit_to_braket, qiskit_to_ionq, qiskit_to_pyqir
 from .qiskit_to_qasm2 import qiskit_to_qasm2
 from .qiskit_to_qasm3 import qiskit_to_qasm3
 from .qiskit_qop_to_openfermion_qop import qiskit_qop_to_openfermion_qop
+from .qiskit_fop_to_openfermion_fop import qiskit_fop_to_openfermion_fop
 
 __all__ = [
     "qiskit_to_qasm2",
@@ -43,4 +45,5 @@ __all__ = [
     "qiskit_to_pyqir",
     "qiskit_to_ionq",
     "qiskit_qop_to_openfermion_qop"
+    "qiskit_fop_to_openfermion_fop"
 ]

@@ -66,7 +66,6 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
     imported: dict[str, Type[Any]] = {}
 
     for m in opt_modules:
-        print('opt', m)
         try:
             data = m.split(".")
             for i, _ in enumerate(data):
@@ -83,12 +82,10 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
                     mn = "qiskit"
             else:
                 mn = splitm[0]
-            print(mn)
+
             module: ModuleType = import_module(mn)
-            print(module)
             globals()[m] = module
             program_type = _get_class(module.__name__ + ("" if len(splitm) == 1 else "_"+splitm[1]))
-            print('prog_type', program_type)
             program_type_alias = _assign_default_type_alias(imported, program_type, m)
             program_type_alias = data[0] if program_type_alias == "builtins" else program_type_alias
             imported[program_type_alias] = program_type

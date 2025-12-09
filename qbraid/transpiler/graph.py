@@ -144,7 +144,7 @@ class ConversionGraph(rx.PyDiGraph):
         conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
         conversion_pairs: list[list[str, str]] = [
             conversion.split("_to_") for conversion in conversion_functions
-            if ('qop' not in conversion or 'fop' not in conversion)
+            if not ('qop' in conversion or 'fop' in conversion)
         ]
         registered_conversion_pairs: list[list[str, str]] = [
             [source, target]

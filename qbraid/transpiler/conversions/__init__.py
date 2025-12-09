@@ -65,7 +65,6 @@ def _update_registered_conversions() -> None:
     base_path = "qbraid.transpiler.conversions."
 
     for lib in NATIVE_REGISTRY:
-        print(lib)
         try:
             # Dynamically import the sub-module
             sub_module = importlib.import_module(base_path + lib)
@@ -77,17 +76,12 @@ def _update_registered_conversions() -> None:
                 if callable(getattr(sub_module, name))
                 and inspect.isfunction(getattr(sub_module, name))
             ]
-            print(function_names)
-            print(NATIVE_REGISTRY)
-            print(QPROGRAM_REGISTRY)
             # Add functions to the current namespace
             for name in function_names:
                 p1, p2 = name.split("_to_")
                 # Create tuples for both pair and its reverse
                 pair = (p1, p2)
                 reverse_pair = (p2, p1)
-                print(pair)
-                print(pair in valid_combinations_cache or reverse_pair in valid_combinations_cache)
 
                 # Check if either pair or its reverse has been seen as valid before
                 if pair in valid_combinations_cache or reverse_pair in valid_combinations_cache:
