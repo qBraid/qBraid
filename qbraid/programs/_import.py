@@ -28,7 +28,8 @@ from typing import Any, Type
 from .typer import BOUND_QBRAID_META_TYPES, QBRAID_META_TYPES
 
 
-def _assign_default_type_alias(imported: dict[str, Any], program_type: Type[Any]) -> str:
+def _assign_default_type_alias(imported: dict[str, Any], program_type: Type[Any],
+                               full_name: str) -> str:
     """
     Determines a unique alias for the given program type based on its module name.
 
@@ -44,7 +45,10 @@ def _assign_default_type_alias(imported: dict[str, Any], program_type: Type[Any]
     """
     module_name = program_type.__module__
     module_parts = module_name.split(".")
-    alias = module_parts[0]
+    if len(full_name.split("_")) > 1:
+        alias = full_name
+    else:
+        alias = module_parts[0]
 
     if alias in imported:
         if len(module_parts) > 1:
@@ -62,6 +66,7 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
     imported: dict[str, Type[Any]] = {}
 
     for m in opt_modules:
+        print('opt', m)
         try:
             data = m.split(".")
             for i, _ in enumerate(data):
@@ -70,10 +75,21 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
             # to be more secure, do not do module = globals()[m] = import_module(), as it could
             # create globals()[m] and later throw an error as there is no module named like that.
             # Is prefered to let module be import_module() and throw an exception if is needed
-            module: ModuleType = import_module(m)
+            splitm = m.split("_")
+            if len(splitm) > 1:
+                if m != "qiskit_fop":
+                    mn = splitm[0]
+                else:
+                    mn = "qiskit"
+            else:
+                mn = splitm[0]
+            print(mn)
+            module: ModuleType = import_module(mn)
+            print(module)
             globals()[m] = module
-            program_type = _get_class(module.__name__)
-            program_type_alias = _assign_default_type_alias(imported, program_type)
+            program_type = _get_class(module.__name__ + ("" if len(splitm) == 1 else "_"+splitm[1]))
+            print('prog_type', program_type)
+            program_type_alias = _assign_default_type_alias(imported, program_type, m)
             program_type_alias = data[0] if program_type_alias == "builtins" else program_type_alias
             imported[program_type_alias] = program_type
         except Exception:  # pylint: disable=broad-except
@@ -88,8 +104,21 @@ def _get_class(module: str):
         return bloqade.analog.builder.assign.BatchAssign  # type: ignore # noqa: F821
     if module == "cirq":
         return cirq.Circuit  # type: ignore # noqa: F821
+    if module == "openfermion":
+        return openfermion  # type: ignore # noqa: F821
+    if module == "openfermion_qop":
+        import openfermion as openfermion_qop
+        return openfermion_qop.ops.operators.qubit_operator.QubitOperator  # type: ignore # noqa: F821
+    if module == "openfermion_fop":
+        import openfermion as openfermion_fop
+        return openfermion_fop.ops.operators.fermion_operator.FermionOperator  # type: ignore # noqa: F821
     if module == "qiskit":
         return qiskit.QuantumCircuit  # type: ignore # noqa: F821
+    if module == "qiskit_qop":
+        return qiskit.quantum_info.SparsePauliOp  # type: ignore # noqa: F821
+    if module == "qiskit_fop":
+        import qiskit_nature.second_q.operators as qiskit_fop
+        return qiskit_fop.FermionicOp  # type: ignore # noqa: F821
     if module == "braket.ahs":
         return braket.ahs.AnalogHamiltonianSimulation  # type: ignore # noqa: F821
     if module == "braket.circuits":
@@ -127,7 +156,12 @@ def _get_class(module: str):
 dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
     [
         "cirq",
+        "openfermion",
+        "openfermion_qop",
+        "openfermion_fop",
         "qiskit",
+        "qiskit_qop",
+        "qiskit_fop",
         "pennylane",
         "pyquil",
         "pytket",
