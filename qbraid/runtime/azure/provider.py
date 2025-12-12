@@ -23,7 +23,6 @@ import os
 import warnings
 from typing import TYPE_CHECKING, Optional
 
-from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
 from azure.quantum.target import Target
 from qbraid_core._import import LazyLoader
@@ -39,6 +38,7 @@ from .io_format import InputDataFormat
 
 if TYPE_CHECKING:
     from pulser.sequence import Sequence
+    from azure.identity import ClientSecretCredential
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
 pyqir = LazyLoader("pyqir", globals(), "pyqir")
@@ -49,6 +49,8 @@ DEVICE_NUM_QUBITS = {
     "ionq.qpu.aria-1": 25,
     "ionq.qpu.aria-2": 25,
     "ionq.qpu.forte": 32,
+    "ionq.qpu.forte-1": 36,
+    "ionq.qpu.forte-enterprise-1": 36,
     "quantinuum.sim.h1-1sc": 20,
     "quantinuum.sim.h2-1sc": 56,
     "quantinuum.sim.h2-2sc": 56,
@@ -60,6 +62,7 @@ DEVICE_NUM_QUBITS = {
     "quantinuum.qpu.h2-2": 56,
     "rigetti.sim.qvm": None,
     "rigetti.qpu.ankaa-3": 84,
+    "rigetti.qpu.cepheus-1-36q": 36,
     "pasqal.sim.emu-tn": 100,
     "pasqal.qpu.fresnel": 100,
 }

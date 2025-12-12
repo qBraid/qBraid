@@ -73,7 +73,7 @@ def _calculate_day_factor(day: int, start_time: datetime.time, end_time: datetim
 
 def _calculate_future_time(
     available_time: int, current_datetime_utc: datetime.datetime
-) -> tuple[str, str]:
+) -> tuple[str, datetime.datetime]:
     """
     Calculates future time from the current datetime in UTC and the available time in seconds.
 
@@ -92,12 +92,12 @@ def _calculate_future_time(
 
     time_delta = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
     future_time = current_datetime_utc + time_delta
-    utc_datetime_str = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # utc_datetime_str = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-    return available_time_hms, utc_datetime_str
+    return available_time_hms, future_time
 
 
-def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
+def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[datetime.datetime]]:
     """Returns hr/min/sec until device is next available, or empty string if device is offline."""
     is_available_result = False
     available_time = None
@@ -152,7 +152,7 @@ def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
     if available_time is None:
         return is_available_result, "", None
 
-    available_time_hms, utc_datetime_str = _calculate_future_time(
+    available_time_hms, utc_datetime = _calculate_future_time(
         available_time, current_datetime_utc
     )
-    return is_available_result, available_time_hms, utc_datetime_str
+    return is_available_result, available_time_hms, utc_datetime

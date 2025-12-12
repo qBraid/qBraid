@@ -23,13 +23,13 @@ from typing import TYPE_CHECKING, Optional, Union
 
 import pyqasm
 from qcaas_client.client import QPUTask
-from qcaas_client.compiler_config import (
+from qcaas_client.client import (
     CompilerConfig,
-    MetricsType,
     QuantumResultsFormat,
     Tket,
     TketOptimizations,
 )
+from qcaas_client.compiler_config import MetricsType
 
 from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
@@ -147,8 +147,10 @@ class OQCDevice(QuantumDevice):
                     f"Falied to fetch next active window for device '{self.id}'. "
                     "Note: Currently only AWS windows are defined."
                 ) from next_window_err
-
-        return datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        try:
+            return datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        except ValueError as _err:
+            return datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00"))
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""
