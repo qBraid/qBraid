@@ -21,14 +21,22 @@ Module defining QbraidDevice class
 from __future__ import annotations
 
 import json
+import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+from pyqasm import ValidationError
 from qbraid_core.decimal import Credits
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
-from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
+from qbraid.programs import (
+    ExperimentType,
+    ProgramSpec,
+    get_program_type_alias,
+    load_program,
+)
+from qbraid.runtime import ValidationLevel
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -209,7 +217,18 @@ class QbraidDevice(QuantumDevice):
         if program_spec.native is False:
             return aux_payload
 
-        qbraid_program = load_program(program)
+        try:
+            qbraid_program = load_program(program)
+        except ValidationError as err:
+            validation_option = self.options.get("validate")
+            if validation_option == ValidationLevel.RAISE:
+                raise err
+            if validation_option == ValidationLevel.WARN:
+                warnings.warn(
+                    f"Program validation failed in QbraidDevice._construct_aux_payload: {err}",
+                    type(err),
+                )
+            return aux_payload
 
         payload_key = {
             ExperimentType.GATE_MODEL: "circuitNumQubits",
