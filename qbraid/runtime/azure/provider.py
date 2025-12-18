@@ -37,8 +37,8 @@ from .device import AzureQuantumDevice
 from .io_format import InputDataFormat
 
 if TYPE_CHECKING:
-    from pulser.sequence import Sequence
     from azure.identity import ClientSecretCredential
+    from pulser.sequence import Sequence
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
 pyqir = LazyLoader("pyqir", globals(), "pyqir")

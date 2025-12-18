@@ -106,21 +106,14 @@ class BraketGateModelResultBuilder:
 class BraketAhsResultBuilder:
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
-    def __init__(
-        self,
-        result: AnalogHamiltonianSimulationQuantumTaskResult,
-        partial_measurement_qubits: Optional[list[int]] = None,
-    ):
+    def __init__(self, result: AnalogHamiltonianSimulationQuantumTaskResult):
         """
         AHS result builder.
 
         Args:
             result: The Braket AHS quantum task result containing measurement data.
-            partial_measurement_qubits: Optional list of partial measurement qubit indices.
-                Currently not used for AHS results but maintained for interface consistency.
         """
         self._result = result
-        self.partial_measurement_qubits = partial_measurement_qubits
 
     def measurements(self) -> list[AhsShotResult]:
         """Get the list of shot results from the AHS job."""

@@ -152,7 +152,5 @@ def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[datetime
     if available_time is None:
         return is_available_result, "", None
 
-    available_time_hms, utc_datetime = _calculate_future_time(
-        available_time, current_datetime_utc
-    )
+    available_time_hms, utc_datetime = _calculate_future_time(available_time, current_datetime_utc)
     return is_available_result, available_time_hms, utc_datetime
