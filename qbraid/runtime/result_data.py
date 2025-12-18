@@ -81,8 +81,6 @@ class ResultData(ABC):
         """Creates a new ResultData instance from an ExperimentMetadata object."""
         return cls.from_dict(model.model_dump(**kwargs))
 
-    # TODO: Add abstract get counts method to enhance type hinting
-
 
 class GateModelResultData(ResultData):
     """Class for storing and accessing the results of a gate model quantum job."""

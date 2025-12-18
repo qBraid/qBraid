@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `AzureQuantumDevice.avg_queue_time()` method which returns int average queue time in min ([#1097](https://github.com/qBraid/qBraid/pull/1097))
 
 ### Improved / Modified
 - Updated number of shots used in Amazon Braket remote tests to minimum of 100 to match new lower bound of providers like IonQ (enforced by AWS, server-side) ([#1089](https://github.com/qBraid/qBraid/pull/1089))
@@ -26,6 +27,8 @@ Types of changes:
 - Removed `qbraid-core[runner]` dependency from `qbraid[qir]` extra. The only additional package that was being installed was `psutil` in order to support a function that tracks memory usage during a subprocess call to `qir-runner`. But people are mainly interested in this "extra" for the `qbraid-qir` conversions, and since this is outside of that scope, better to take it out and keep the dependencies lean. ([#1083](https://github.com/qBraid/qBraid/pull/1083))
 
 ### Fixed
+- Fixed `OQCDevice.get_next_window()` method with more robust ISO datetime string handling ([#1097](https://github.com/qBraid/qBraid/pull/1097))
+- Fixed `BraketQuantumTask.result()` to correctly handle `AnalogHamiltonianSimulationQuantumTaskResult` given the fact the partial measurement qubits aren't applicable to that job/result type. ([#1097](https://github.com/qBraid/qBraid/pull/1097))
 
 ### Dependencies
 - Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44 ([#1070](https://github.com/qBraid/qBraid/pull/1070))
