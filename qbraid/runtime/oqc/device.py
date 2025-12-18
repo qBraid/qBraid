@@ -122,8 +122,6 @@ class OQCDevice(QuantumDevice):
             start_time = self.get_next_window()
             now = datetime.datetime.now(datetime.timezone.utc)
 
-            print(start_time)
-
             if now > start_time:  # TODO: does this comparison correctly account for timezones?
                 return DeviceStatus.ONLINE
         except ResourceNotFoundError as err:  # pylint: disable=broad-exception-caught
