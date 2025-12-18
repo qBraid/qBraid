@@ -92,8 +92,6 @@ def _calculate_future_time(
 
     time_delta = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
     future_time = current_datetime_utc + time_delta
-    # utc_datetime_str = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-
     return available_time_hms, future_time
 
 
