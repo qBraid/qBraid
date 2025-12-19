@@ -18,7 +18,7 @@ Module defining BraketDeviceWrapper Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
@@ -38,8 +38,6 @@ if TYPE_CHECKING:
     import braket.aws
 
     import qbraid.runtime
-    import qbraid.runtime.aws
-    import qbraid.transpiler
 
 
 class BraketDevice(QuantumDevice):
@@ -48,7 +46,7 @@ class BraketDevice(QuantumDevice):
     def __init__(
         self,
         profile: qbraid.runtime.TargetProfile,
-        session: Optional[braket.aws.AwsSession] = None,
+        session: braket.aws.AwsSession | None = None,
     ):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
@@ -99,8 +97,8 @@ class BraketDevice(QuantumDevice):
         return total_queued
 
     def transform(
-        self, run_input: Union[Circuit, AnalogHamiltonianSimulation]
-    ) -> Union[Circuit, AnalogHamiltonianSimulation]:
+        self, run_input: Circuit | AnalogHamiltonianSimulation
+    ) -> Circuit | AnalogHamiltonianSimulation:
         """Transpile a circuit for the device."""
         program = run_input
 
@@ -157,12 +155,16 @@ class BraketDevice(QuantumDevice):
 
     def submit(
         self,
-        run_input: Union[
-            Circuit, AnalogHamiltonianSimulation, list[Circuit], list[AnalogHamiltonianSimulation]
-        ],
+        run_input: (
+            Circuit
+            | AnalogHamiltonianSimulation
+            | list[Circuit]
+            | list[AnalogHamiltonianSimulation]
+        ),
         *args,
+        tags: dict[str, str] | None = None,
         **kwargs,
-    ) -> Union[BraketQuantumTask, list[BraketQuantumTask]]:
+    ) -> BraketQuantumTask | list[BraketQuantumTask]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -170,6 +172,7 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
+            tags (dict[str, str]): A dictionary of tags to associate with the job.
             shots (int): The number of times to run the task on the device.
 
         Returns:
@@ -182,17 +185,18 @@ class BraketDevice(QuantumDevice):
         if any(hasattr(circuit, "partial_measurement_qubits") for circuit in run_input):
             # Extract partial measurement qubit information and add as tags for job tracking
             tasks = []
+            tags = tags or {}
             for circuit in run_input:
-                tags: dict[str, str] = {}
+                current_tags = tags.copy()
                 if hasattr(circuit, "partial_measurement_qubits"):
                     partial_measurement_qubits: list[int] = circuit.partial_measurement_qubits
                     # Convert qubit indices to a string format for tagging (e.g., "0/2/3")
                     tag_value = "/".join([str(x) for x in partial_measurement_qubits])
-                    tags = {"partial_measurement_qubits": tag_value}
-                task = self._device.run(circuit, tags=tags, *args, **kwargs)
+                    current_tags["partial_measurement_qubits"] = tag_value
+                task = self._device.run(circuit, *args, tags=current_tags, **kwargs)
                 tasks.append(BraketQuantumTask(task.id, task=task, device=self._device))
         else:
-            aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
+            aws_quantum_task_batch = self._device.run_batch(run_input, *args, tags=tags, **kwargs)
             tasks = [
                 BraketQuantumTask(task.id, task=task, device=self._device)
                 for task in aws_quantum_task_batch.tasks

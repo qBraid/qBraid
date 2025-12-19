@@ -110,20 +110,23 @@ class BraketQuantumTask(QuantumJob):
             raise ValueError(f"Unsupported result type: {type(bk_result).__name__}")
 
         # Retrieve partial measurement qubit information from job tags
-        partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
-            bk_result.measured_qubits
-        )
+        if isinstance(bk_result, GateModelQuantumTaskResult) and hasattr(
+            bk_result, "measured_qubits"
+        ):
+            partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
+                bk_result.measured_qubits
+            )
+            builder: BraketGateModelResultBuilder = builder_class(
+                bk_result, partial_measurement_qubits
+            )
+        else:
+            builder: BraketGateModelResultBuilder | BraketAhsResultBuilder = builder_class(
+                bk_result
+            )
+
         result_data = {
-            "measurement_counts": (
-                builder_class(bk_result, partial_measurement_qubits).get_counts()
-                if success
-                else None
-            ),
-            "measurements": (
-                builder_class(bk_result, partial_measurement_qubits).measurements()
-                if success
-                else None
-            ),
+            "measurement_counts": builder.get_counts() if success else None,
+            "measurements": builder.measurements() if success else None,
         }
 
         data = data_class(**result_data)
