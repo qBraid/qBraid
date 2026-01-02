@@ -171,10 +171,32 @@ class BraketCircuit(GateModelProgram):
         # Store the original partial measurement qubits for result processing
         self._program.partial_measurement_qubits = partial_measurement_qubits
 
+    def replace_i_with_rz_zero(self) -> None:
+        """Replace all 'i' gates with 'rz(0)' gates in the circuit.
+
+        This transformation is useful for IonQ devices that may not support
+        the identity gate directly but can handle rz gates with zero angle.
+        """
+        circuit = self.program.copy()
+        new_circuit = Circuit()
+
+        for instruction in circuit.instructions:
+            if instruction.operator.name.lower() == "i":
+                for target_qubit in instruction.target:
+                    new_circuit.rz(target_qubit, 0)
+            else:
+                new_circuit.add_instruction(instruction)
+
+        self._program = new_circuit
+
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
         if device.simulator:
             self.remove_idle_qubits()
+
+        # For IonQ devices, replace identity gates with rz(0) gates
+        if device._provider_name == "IonQ":
+            self.replace_i_with_rz_zero()
 
         # For IonQ and Amazon Braket simulators, pad measurements to support partial measurement
         if device._provider_name in ["IonQ", "Amazon Braket"]:

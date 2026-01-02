@@ -274,3 +274,23 @@ def test_transform_with_other_provider():
     )
     assert measurement_count == 1
     assert not hasattr(qprogram.program, "partial_measurement_qubits")
+
+
+def test_replace_i_with_rz_zero():
+    """Test replace_i_with_rz_zero method replaces identity gates with rz(0) gates."""
+    circuit = Circuit().i(0).h(1).i(2).cnot(0, 1)
+    qprogram = BraketCircuit(circuit)
+    qprogram.replace_i_with_rz_zero()
+
+    i_gate_count = sum(
+        1 for instr in qprogram.program.instructions if instr.operator.name.lower() == "i"
+    )
+    rz_gate_count = sum(
+        1 for instr in qprogram.program.instructions if instr.operator.name.lower() == "rz"
+    )
+
+    assert i_gate_count == 0  # No identity gates should remain
+    assert rz_gate_count == 2  # Should have 2 rz gates (from the 2 identity gates)
+    for instr in qprogram.program.instructions:
+        if instr.operator.name.lower() == "rz":
+            assert instr.operator.angle == 0
