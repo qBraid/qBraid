@@ -51,13 +51,7 @@ class BraketDevice(QuantumDevice):
     ):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
-
-        region_name = "us-east-1"
-        endpoint_url = "https://braket-gamma.us-east-1.amazonaws.com"
-        braket_client = boto3.client("braket", region_name=region_name, endpoint_url=endpoint_url)
-        aws_session = AwsSession(braket_client=braket_client)
-
-        self._device = AwsDevice(arn=self.id, aws_session=aws_session)
+        self._device = AwsDevice(arn=self.id, aws_session=session)
         self._provider_name = self.profile.get("provider_name")
 
     @property
@@ -108,8 +102,6 @@ class BraketDevice(QuantumDevice):
     ) -> Circuit | AnalogHamiltonianSimulation:
         """Transpile a circuit for the device."""
         program = run_input
-        print("program: ")
-        print(program)
 
         provider = (self.profile.provider_name or "").upper()
         experiment_type = self.profile.experiment_type

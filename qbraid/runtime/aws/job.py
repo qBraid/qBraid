@@ -64,13 +64,7 @@ class BraketQuantumTask(QuantumJob):
         """Create a BraketQuantumTask."""
 
         super().__init__(task_id, **kwargs)
-
-        region_name = "us-east-1"
-        endpoint_url = "https://braket-gamma.us-east-1.amazonaws.com"
-        braket_client = boto3.client("braket", region_name=region_name, endpoint_url=endpoint_url)
-        aws_session = AwsSession(braket_client=braket_client)
-
-        self._task = task or AwsQuantumTask(task_id, aws_session=aws_session)
+        self._task = task or AwsQuantumTask(task_id)
 
     def status(self):
         """Returns status from Braket QuantumTask object metadata."""
