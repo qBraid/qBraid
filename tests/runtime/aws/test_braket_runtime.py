@@ -24,6 +24,7 @@ import json
 import warnings
 from unittest.mock import MagicMock, Mock, patch
 
+import boto3
 import numpy as np
 import pytest
 from botocore.exceptions import NoCredentialsError
@@ -82,6 +83,11 @@ class TestAwsSession:
 
     def __init__(self):
         self.region = "us-east-1"
+
+    @property
+    def braket_client(self):
+        """Return a braket client."""
+        return boto3.client("braket", region_name=self.region)
 
     def get_device(self, arn):  # pylint: disable=unused-argument
         """Returns metadata for a device."""
