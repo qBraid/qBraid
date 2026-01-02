@@ -121,7 +121,9 @@ class BraketProvider(QuantumProvider):
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
         )
-        braket_client = boto_session.client("braket", region_name=region_name, endpoint_url=os.environ.get("BRAKET_ENDPOINT"))
+        braket_client = boto_session.client(
+            "braket", region_name=region_name, endpoint_url=os.environ.get("BRAKET_ENDPOINT")
+        )
         return AwsSession(
             boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
         )
@@ -194,12 +196,6 @@ class BraketProvider(QuantumProvider):
             ) from err
         region_name = region_name or self._get_default_region()
         aws_session = self._get_aws_session(region_name=region_name)
-        
-        # region_name = "us-east-1"
-        # endpoint_url = "https://braket-gamma.us-east-1.amazonaws.com"
-        # braket_client = boto3.client("braket", region_name=region_name, endpoint_url=endpoint_url)
-        # aws_session = AwsSession(braket_client=braket_client)
-
         device = AwsDevice(arn=device_id, aws_session=aws_session)
         profile = self._build_runtime_profile(device)
         return BraketDevice(profile=profile, session=device.aws_session)

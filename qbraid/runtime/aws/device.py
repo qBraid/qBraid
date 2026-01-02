@@ -20,9 +20,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import boto3
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
-from braket.aws import AwsDevice, AwsSession
+from braket.aws import AwsDevice
 from braket.circuits import Circuit
 from braket.circuits.measure import Measure
 
