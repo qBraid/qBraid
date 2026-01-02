@@ -143,7 +143,8 @@ def test_next_available_random(mock_utc_datetime):  # pylint: disable=unused-arg
     device.properties.service.executionWindows = [execution_window]
 
     result = next_available_time(device)
-    assert result == (False, "00:30:00", "2024-07-01T16:00:00Z")
+    next_available_datetime = datetime.datetime(2024, 7, 1, 16, 0, 0, tzinfo=datetime.timezone.utc)
+    assert result == (False, "00:30:00", next_available_datetime)
 
 
 def test_next_available_time_no_execution_window():
@@ -221,7 +222,8 @@ def test_next_available_time_midnight(mock_utc_datetime):  # pylint: disable=unu
     device.properties.service.executionWindows = [execution_window]
 
     result = next_available_time(device)
-    assert result == (True, "17:00:00", "2024-07-10T22:00:00Z")
+    next_available_datetime = datetime.datetime(2024, 7, 10, 22, 0, 0, tzinfo=datetime.timezone.utc)
+    assert result == (True, "17:00:00", next_available_datetime)
 
 
 def test_calculate_day_factor():

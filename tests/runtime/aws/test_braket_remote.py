@@ -66,7 +66,7 @@ def test_get_quantum_task_cost_simulator(braket_circuit):
     device = provider.get_device("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
 
     with Tracker() as tracker:
-        task = device.run(braket_circuit, shots=2)
+        task = device.run(braket_circuit, shots=100)
         task.result()
 
     expected = tracker.simulator_tasks_cost()
@@ -86,7 +86,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_no_meas):
     region_name = AwsDevice.get_device_region(braket_most_busy.id)
     aws_session = provider._get_aws_session(region_name)
 
-    qbraid_job = braket_most_busy.run(braket_no_meas, shots=10)
+    qbraid_job = braket_most_busy.run(braket_no_meas, shots=100)
     qbraid_job.cancel()
 
     task_arn = qbraid_job.id
@@ -120,7 +120,7 @@ def test_get_quantum_task_cost_region_mismatch(braket_most_busy, braket_circuit)
         pytest.skip("No AWS QPU devices available")
 
     braket_device = braket_most_busy._device
-    task = braket_device.run(braket_circuit, shots=10)
+    task = braket_device.run(braket_circuit, shots=100)
     task.cancel()
 
     task_arn = task.id

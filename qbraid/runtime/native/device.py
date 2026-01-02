@@ -75,7 +75,7 @@ class QbraidDevice(QuantumDevice):
         status: Optional[str] = device_data.get("status")
         if not status:
             raise QbraidRuntimeError("Failed to retrieve device status")
-        return DeviceStatus(status.lower())
+        return DeviceStatus(status)
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the backend"""

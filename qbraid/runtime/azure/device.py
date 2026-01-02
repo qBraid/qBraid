@@ -79,6 +79,13 @@ class AzureQuantumDevice(QuantumDevice):
             return True
         return False
 
+    def avg_queue_time(self) -> int | None:
+        """Return the average queue time for the Azure device (in minutes)."""
+        avg_queue_time_sec = self._device.average_queue_time
+        if avg_queue_time_sec is None:
+            return None
+        return int(avg_queue_time_sec / 60)
+
     def submit(
         self, run_input: qbraid.programs.QPROGRAM | list(qbraid.programs.QPROGRAM), *args, **kwargs
     ) -> AzureQuantumJob | list(AzureQuantumJob):

@@ -36,8 +36,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
+          ref: ${{ (github.event_name == 'release') && 'main' || github.ref }}
           fetch-depth: 0
 
       - name: Set up Python
