@@ -31,6 +31,7 @@ Types of changes:
 ### Fixed
 - Fixed `OQCDevice.get_next_window()` method with more robust ISO datetime string handling ([#1097](https://github.com/qBraid/qBraid/pull/1097))
 - Fixed `BraketQuantumTask.result()` to correctly handle `AnalogHamiltonianSimulationQuantumTaskResult` given the fact the partial measurement qubits aren't applicable to that job/result type. ([#1097](https://github.com/qBraid/qBraid/pull/1097))
+- Fixed OQC runtime tests by padding the date-time month/day with leading zero to ensure valid ISO format ([#1103](https://github.com/qBraid/qBraid/pull/1103))
 
 ### Dependencies
 - Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44 ([#1070](https://github.com/qBraid/qBraid/pull/1070))
