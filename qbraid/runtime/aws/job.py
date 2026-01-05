@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-import boto3
 from braket.aws import AwsQuantumTask
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
     AnalogHamiltonianSimulationQuantumTaskResult,
