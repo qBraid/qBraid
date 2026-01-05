@@ -22,6 +22,7 @@ Types of changes:
 - Added a transformation for programs targeting IonQ devices, converting all `i` gates to `rz(0)`. This transformation is useful because IonQ devices do not support the identity gate directly. ([#1102](https://github.com/qBraid/qBraid/pull/1102))
 - Updated number of shots used in Amazon Braket remote tests to minimum of 100 to match new lower bound of providers like IonQ (enforced by AWS, server-side) ([#1089](https://github.com/qBraid/qBraid/pull/1089))
 - Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
+- For Amazon Braket devices, users can now use environment variables to define region name (`"AWS_REGION"`) and endpoint url (`"BRAKET_ENDPOINT"`). This is useful when an application wraps over qBraid and does not have direct access to qBraid Provider class or AwsSession class. ([#1100](https://github.com/qBraid/qBraid/pull/1100))
 
 ### Deprecated
 

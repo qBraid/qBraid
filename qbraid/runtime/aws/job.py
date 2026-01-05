@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-import boto3
 from braket.aws import AwsQuantumTask
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
     AnalogHamiltonianSimulationQuantumTaskResult,
@@ -173,7 +172,7 @@ class BraketQuantumTask(QuantumJob):
             List of indices corresponding to the positions of partial measurement qubits
             in the measurement results array, or None if no partial measurements were used.
         """
-        braket_client = boto3.client("braket", region_name=self._task._aws_session.region)
+        braket_client = self._task._aws_session.braket_client
         response = braket_client.get_quantum_task(quantumTaskArn=self._task.id)
 
         if "partial_measurement_qubits" not in response["tags"]:

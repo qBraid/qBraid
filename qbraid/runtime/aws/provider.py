@@ -112,7 +112,7 @@ class BraketProvider(QuantumProvider):
 
     def _get_aws_session(self, region_name: Optional[str] = None) -> braket.aws.AwsSession:
         """Returns the AwsSession provider."""
-        region_name = region_name or self._get_default_region()
+        region_name = region_name or os.environ.get("AWS_REGION") or self._get_default_region()
         default_bucket = self._get_s3_default_bucket()
 
         boto_session = Session(
@@ -121,7 +121,9 @@ class BraketProvider(QuantumProvider):
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
         )
-        braket_client = boto_session.client("braket", region_name=region_name)
+        braket_client = boto_session.client(
+            "braket", region_name=region_name, endpoint_url=os.environ.get("BRAKET_ENDPOINT")
+        )
         return AwsSession(
             boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
         )
