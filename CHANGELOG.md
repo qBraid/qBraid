@@ -16,6 +16,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.10.1] - 2026-01-13
+
+### Added
 - Added `AzureQuantumDevice.avg_queue_time()` method which returns int average queue time in min ([#1097](https://github.com/qBraid/qBraid/pull/1097))
 
 ### Improved / Modified
@@ -23,8 +37,6 @@ Types of changes:
 - Updated number of shots used in Amazon Braket remote tests to minimum of 100 to match new lower bound of providers like IonQ (enforced by AWS, server-side) ([#1089](https://github.com/qBraid/qBraid/pull/1089))
 - Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
 - For Amazon Braket devices, users can now use environment variables to define region name (`"AWS_REGION"`) and endpoint url (`"BRAKET_ENDPOINT"`). This is useful when an application wraps over qBraid and does not have direct access to qBraid Provider class or AwsSession class. ([#1100](https://github.com/qBraid/qBraid/pull/1100))
-
-### Deprecated
 
 ### Removed
 - Removed `qbraid-core[runner]` dependency from `qbraid[qir]` extra. The only additional package that was being installed was `psutil` in order to support a function that tracks memory usage during a subprocess call to `qir-runner`. But people are mainly interested in this "extra" for the `qbraid-qir` conversions, and since this is outside of that scope, better to take it out and keep the dependencies lean. ([#1083](https://github.com/qBraid/qBraid/pull/1083))
@@ -35,7 +47,7 @@ Types of changes:
 - Fixed OQC runtime tests by padding the date-time month/day with leading zero to ensure valid ISO format ([#1103](https://github.com/qBraid/qBraid/pull/1103))
 
 ### Dependencies
-- Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44 ([#1070](https://github.com/qBraid/qBraid/pull/1070))
+- Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44,<0.2.0 ([#1108](https://github.com/qBraid/qBraid/pull/1108))
 
 ## [0.10.0] - 2025-10-14
 
