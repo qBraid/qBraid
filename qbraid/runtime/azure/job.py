@@ -29,7 +29,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import AhsResultData, GateModelResultData
+from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
 from .io_format import OutputDataFormat
 
@@ -131,7 +131,7 @@ class AzureQuantumJob(QuantumJob):
             )
         builder = AzureResultBuilder(job)
         if job.details.output_data_format == OutputDataFormat.PASQAL.value:
-            data = AhsResultData(measurement_counts=builder.get_counts())
+            data = AnalogResultData(measurement_counts=builder.get_counts())
         else:
             data = GateModelResultData(measurement_counts=builder.get_counts())
         return Result(

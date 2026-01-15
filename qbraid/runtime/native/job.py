@@ -28,7 +28,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result, ResultDataType
-from qbraid.runtime.result_data import AhsResultData, AnnealingResultData, GateModelResultData
+from qbraid.runtime.result_data import AnalogResultData, AnnealingResultData, GateModelResultData
 from qbraid.runtime.schemas import RuntimeJobModel
 
 if TYPE_CHECKING:
@@ -48,6 +48,7 @@ class QbraidJob(QuantumJob):
         **kwargs,
     ):
         super().__init__(job_id, device, **kwargs)
+        self._device = device
         self._client = client
 
     @property
@@ -66,19 +67,17 @@ class QbraidJob(QuantumJob):
 
     def queue_position(self) -> Optional[int]:
         """Return the position of the job in the queue."""
-        job_data = self.metadata()
-        return job_data.get("queue_position", job_data.get("queuePosition"))
+        return self.metadata()["queuePosition"]
 
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
         terminal_states = JobStatus.terminal_states()
         if self._cache_metadata.get("status") not in terminal_states:
-            client_data = self.client.get_job(self.id)
-            job_model = RuntimeJobModel.from_dict(client_data)
-            job_data = job_model.model_dump(exclude={"metadata", "cost"})
-            status = JobStatus(job_data.pop("status"))
-            if job_model.status_text is not None:
-                status.set_status_message(job_model.status_text)
+            job_model = self.client.get_job(self.id)
+            status = job_model.status
+            job_data = job_model.model_dump(exclude={"statusMsg"})
+            if job_model.statusMsg is not None:
+                status.set_status_message(job_model.statusMsg)
             self._cache_metadata.update({**job_data, "status": status})
         return self._cache_metadata["status"]
 
@@ -104,20 +103,18 @@ class QbraidJob(QuantumJob):
 
     @staticmethod
     def get_result_data_cls(
-        device_id: Optional[str] = None, experiment_type: Optional[ExperimentType] = None
-    ) -> Union[Type[GateModelResultData], Type[AnnealingResultData], Type[AhsResultData]]:
+        experiment_type: ExperimentType,
+    ) -> Union[Type[GateModelResultData], Type[AnnealingResultData], Type[AnalogResultData]]:
         """Determine the appropriate ResultData class based on device_id and experiment_type."""
         experiment_type_to_result_data = {
             ExperimentType.GATE_MODEL: GateModelResultData,
             ExperimentType.ANNEALING: AnnealingResultData,
-            ExperimentType.ANNEALING: AhsResultData,
+            ExperimentType.ANNEALING: AnalogResultData,
         }
         result_data_cls = experiment_type_to_result_data.get(experiment_type)
 
         if not result_data_cls:
-            raise ValueError(
-                f"Unsupported device_id '{device_id}' or experiment_type '{experiment_type.name}'"
-            )
+            raise ValueError(f"Unsupported experiment_type '{experiment_type.name}'")
 
         return result_data_cls
 
@@ -125,33 +122,23 @@ class QbraidJob(QuantumJob):
         """Return the results of the job."""
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
-        success = job_data.get("status") == JobStatus.COMPLETED.name
-        job_result = self.client.get_job_result(self.id) if success else {}
-        job_result.update(job_data)
-        model = RuntimeJobModel.from_dict(job_result)
-        result_data_cls = self.get_result_data_cls(model.device_id, model.experiment_type)
-        data = result_data_cls.from_object(model.metadata)
+        success = job_data.status == JobStatus.COMPLETED
+        job_result = self.client.get_job_result(self.id) if success else None
+        result_data_raw = job_result.resultData if job_result else {}
+        metadata_cls = RuntimeJobModel._get_metadata_model(job_data.experimentType, job_data.jobQrn)
+        metadata = metadata_cls(**result_data_raw)
+        result_data_cls = self.get_result_data_cls(job_data.experimentType)
+        data = result_data_cls.from_object(metadata)
         exclude = (
             {"solutions", "num_solutions"}
-            if model.experiment_type == ExperimentType.ANNEALING
-            else {"measurement_counts", "measurements"}
+            if job_data.experimentType == ExperimentType.ANNEALING
+            else {"measurementCounts", "measurements"}
         )
-        metadata_dump = model.metadata.model_dump(by_alias=True, exclude=exclude)
-        model_dump = model.model_dump(
-            by_alias=True, exclude={"job_id", "device_id", "metadata", "queue_position"}
-        )
-        experiment_type: ExperimentType = model_dump["experimentType"]
-        status_text = (
-            model.status_text or model.status.status_message or model.status.default_message
-        )
-        model_dump.update(
-            {
-                "status": model.status.name,
-                "statusText": status_text,
-                "experimentType": experiment_type,
-            }
-        )
-        model_dump["metadata"] = metadata_dump
+        metadata_dump = metadata.model_dump(exclude=exclude)
         return Result[ResultDataType](
-            device_id=model.device_id, job_id=model.job_id, success=success, data=data, **model_dump
+            device_id=job_data.deviceQrn,
+            job_id=job_data.jobQrn,
+            success=success,
+            data=data,
+            **metadata_dump,
         )

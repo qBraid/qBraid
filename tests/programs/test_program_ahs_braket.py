@@ -32,7 +32,7 @@ from braket.ahs.pattern import Pattern
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ProgramTypeError, load_program
-from qbraid.programs.analog import AHSEncoder
+from qbraid.programs.analog import AnalogHamiltonianEncoder
 from qbraid.programs.analog.braket_ahs import BraketAHS, BraketAHSDecoder, BraketAHSEncoder
 
 
@@ -243,22 +243,22 @@ def test_braket_ahs_wrapper_attributes(ahs_program, register_data, hamiltonian_d
 
 
 def test_ahs_program_encoding(ahs_program, ahs_data):
-    """Test that AHSEncoder correctly encodes AnalogHamiltonianProgram."""
+    """Test that AnalogHamiltonianEncoder correctly encodes AnalogHamiltonianProgram."""
     program = BraketAHS(ahs_program)
-    encoded_json = json.dumps(program, cls=AHSEncoder)
+    encoded_json = json.dumps(program, cls=AnalogHamiltonianEncoder)
     assert json.loads(encoded_json) == ahs_data
 
 
 def test_non_supported_type_encoding():
     """Test that encoding a non-supported type raises a TypeError."""
     with pytest.raises(TypeError):
-        json.dumps({1, 2, 3}, cls=AHSEncoder)
+        json.dumps({1, 2, 3}, cls=AnalogHamiltonianEncoder)
 
 
 def test_fallback_to_superclass():
-    """Test that types not handled by AHSEncoder but supported by JSONEncoder are encoded."""
+    """Test that types not handled by AnalogHamiltonianEncoder but supported by JSONEncoder are encoded."""
     data = {"key": [1, 2, 3]}
-    encoded_json = json.dumps(data, cls=AHSEncoder)
+    encoded_json = json.dumps(data, cls=AnalogHamiltonianEncoder)
     assert json.loads(encoded_json) == data
 
 

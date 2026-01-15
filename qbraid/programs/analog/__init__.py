@@ -25,7 +25,7 @@ Classes
    :toctree: ../stubs/
 
    AnalogHamiltonianProgram
-   AHSEncoder
+   AnalogHamiltonianEncoder
 
 Submodules
 ------------
@@ -38,7 +38,7 @@ Submodules
 """
 import importlib
 
-from ._model import AHSEncoder, AnalogHamiltonianProgram
+from ._model import AnalogHamiltonianEncoder, AnalogHamiltonianProgram
 
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
@@ -56,6 +56,6 @@ for lib in NATIVE_REGISTRY:
         pass
 
 
-__all__ = ["AnalogHamiltonianProgram", "AHSEncoder"]
+__all__ = ["AnalogHamiltonianProgram", "AnalogHamiltonianEncoder"]
 
 __all__.extend(submodules)

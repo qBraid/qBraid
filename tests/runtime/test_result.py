@@ -35,8 +35,8 @@ from qbraid.runtime.postprocess import (
 )
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import (
-    AhsResultData,
-    AhsShotResult,
+    AnalogResultData,
+    AnalogShotResult,
     AnnealingResultData,
     GateModelResultData,
 )
@@ -89,21 +89,21 @@ def gate_model_result_data():
 
 
 @pytest.fixture
-def shot_result() -> AhsShotResult:
-    """Fixture to create an AhsShotResult object."""
+def shot_result() -> AnalogShotResult:
+    """Fixture to create an AnalogShotResult object."""
     success = True
     pre_sequence = np.array([1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1])
     post_sequence = np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0])
-    return AhsShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
+    return AnalogShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
 
 
 @pytest.fixture
-def shot_result_failed() -> AhsShotResult:
-    """Fixture to create an AhsShotResult object for failed shot."""
+def shot_result_failed() -> AnalogShotResult:
+    """Fixture to create an AnalogShotResult object for failed shot."""
     success = False
     pre_sequence = None
     post_sequence = None
-    return AhsShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
+    return AnalogShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
 
 
 @pytest.mark.parametrize(
@@ -129,15 +129,15 @@ def shot_result_failed() -> AhsShotResult:
 )
 def test_shot_result_to_dict(success, pre_sequence, post_sequence, expected_dict):
     """Test converting shot result data to dictionary format."""
-    shot_result = AhsShotResult(
+    shot_result = AnalogShotResult(
         success=success, pre_sequence=pre_sequence, post_sequence=post_sequence
     )
     assert shot_result.to_dict() == expected_dict
 
 
 @pytest.fixture
-def ahs_result_data(shot_result: AhsShotResult) -> AhsResultData:
-    """Fixture to create an AhsResultData object."""
+def ahs_result_data(shot_result: AnalogShotResult) -> AnalogResultData:
+    """Fixture to create an AnalogResultData object."""
     measurements = [shot_result]
     state_counts = Counter()
     states = ["e", "r", "g"]
@@ -153,7 +153,7 @@ def ahs_result_data(shot_result: AhsShotResult) -> AhsResultData:
             state_counts.update([state])
 
     measurement_counts = dict(state_counts)
-    return AhsResultData(measurement_counts=measurement_counts, measurements=measurements)
+    return AnalogResultData(measurement_counts=measurement_counts, measurements=measurements)
 
 
 @pytest.fixture
@@ -297,7 +297,7 @@ def test_decimal_get_counts():
 def test_result_data_experiment_type():
     """Test that result data classes return the correct experiment type."""
     gm_result_data = GateModelResultData()
-    ahs_result_data = AhsResultData()
+    ahs_result_data = AnalogResultData()
     assert gm_result_data.experiment_type == ExperimentType.GATE_MODEL
     assert ahs_result_data.experiment_type == ExperimentType.ANALOG
 
@@ -386,8 +386,8 @@ def test_to_dict_no_counts():
 
 
 def test_ahs_shot_result_equality(shot_result):
-    """Test equality of two AhsShotResult objects."""
-    shot_result_2 = AhsShotResult(
+    """Test equality of two AnalogShotResult objects."""
+    shot_result_2 = AnalogShotResult(
         success=True,
         pre_sequence=np.array([1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1]),
         post_sequence=np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0]),
@@ -395,7 +395,7 @@ def test_ahs_shot_result_equality(shot_result):
 
     assert shot_result == shot_result_2
 
-    shot_result_3 = AhsShotResult(
+    shot_result_3 = AnalogShotResult(
         success=True,
         pre_sequence=np.array([1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]),
         post_sequence=np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0]),
@@ -410,12 +410,12 @@ def test_ahs_shot_result_sequences_equal():
     seq1 = np.array([1, 1, 0])
     seq2 = np.array([1, 1, 0])
 
-    assert AhsShotResult._sequences_equal(seq1, seq2)
+    assert AnalogShotResult._sequences_equal(seq1, seq2)
 
     seq3 = np.array([0, 1, 0])
-    assert not AhsShotResult._sequences_equal(seq1, seq3)
-    assert AhsShotResult._sequences_equal(None, None)
-    assert not AhsShotResult._sequences_equal(seq1, None)
+    assert not AnalogShotResult._sequences_equal(seq1, seq3)
+    assert AnalogShotResult._sequences_equal(None, None)
+    assert not AnalogShotResult._sequences_equal(seq1, None)
 
 
 def test_ahs_result_data_experiment_type(ahs_result_data):
@@ -435,7 +435,7 @@ def test_ahs_result_data_get_counts(ahs_result_data):
 
 
 def test_ahs_result_data_to_dict(ahs_result_data):
-    """Test the to_dict method of AhsResultData."""
+    """Test the to_dict method of AnalogResultData."""
     expected_dict = {
         "measurement_counts": {"rrrgeggrrgr": 1},
         "measurements": ahs_result_data.measurements,
@@ -445,19 +445,19 @@ def test_ahs_result_data_to_dict(ahs_result_data):
 
 
 def test_ahs_result_data_repr():
-    """Test __repr__ method of AhsResultData."""
-    ahs_result_data = AhsResultData(
+    """Test __repr__ method of AnalogResultData."""
+    ahs_result_data = AnalogResultData(
         measurement_counts=[{"001010": 50, "001011": 50}], measurements=None
     )
     assert (
         repr(ahs_result_data)
-        == "AhsResultData(measurement_counts=[{'001010': 50, '001011': 50}], measurements=None)"
+        == "AnalogResultData(measurement_counts=[{'001010': 50, '001011': 50}], measurements=None)"
     )
 
 
 def test_ahs_result_data_no_measurement_counts():
     """Test to_dict and get_counts when there are no measurement counts."""
-    result_data = AhsResultData(measurement_counts=None, measurements=None)
+    result_data = AnalogResultData(measurement_counts=None, measurements=None)
 
     assert result_data.get_counts() is None
 
@@ -698,10 +698,10 @@ def test_repr(result_instance):
     ],
 )
 def test_ahs_result_data_measurement_counts_equality(counts1, counts2, expected):
-    """Test equality of AhsResultData objects with different measurement counts."""
-    shot = AhsShotResult(success=True, pre_sequence=np.array([1, 2]), post_sequence=None)
-    result1 = AhsResultData(measurement_counts=counts1, measurements=[shot])
-    result2 = AhsResultData(measurement_counts=counts2, measurements=[shot])
+    """Test equality of AnalogResultData objects with different measurement counts."""
+    shot = AnalogShotResult(success=True, pre_sequence=np.array([1, 2]), post_sequence=None)
+    result1 = AnalogResultData(measurement_counts=counts1, measurements=[shot])
+    result2 = AnalogResultData(measurement_counts=counts2, measurements=[shot])
     assert (result1 == result2) == expected
 
 
@@ -712,40 +712,40 @@ def test_ahs_result_data_measurement_counts_equality(counts1, counts2, expected)
         ([None], None, False),
         ([None], [None], True),
         ([], [], True),
-        ([None], [AhsShotResult(success=True)], False),
+        ([None], [AnalogShotResult(success=True)], False),
     ],
 )
 def test_ahs_result_data_measurements_none_equality(measurements1, measurements2, expected):
-    """Test equality of AhsResultData objects with different measurements."""
-    result1 = AhsResultData(measurement_counts=None, measurements=measurements1)
-    result2 = AhsResultData(measurement_counts=None, measurements=measurements2)
+    """Test equality of AnalogResultData objects with different measurements."""
+    result1 = AnalogResultData(measurement_counts=None, measurements=measurements1)
+    result2 = AnalogResultData(measurement_counts=None, measurements=measurements2)
     assert (result1 == result2) == expected
 
 
 @pytest.mark.parametrize(
     "measurements1, measurements2, expected",
     [
-        ([AhsShotResult(success=True)], [AhsShotResult(success=True)], True),
-        ([AhsShotResult(success=True)], [AhsShotResult(success=False)], False),
-        ([AhsShotResult(success=True)], [], False),
+        ([AnalogShotResult(success=True)], [AnalogShotResult(success=True)], True),
+        ([AnalogShotResult(success=True)], [AnalogShotResult(success=False)], False),
+        ([AnalogShotResult(success=True)], [], False),
         (
-            [AhsShotResult(success=True, pre_sequence=np.array([1, 2]))],
-            [AhsShotResult(success=True, pre_sequence=np.array([1, 3]))],
+            [AnalogShotResult(success=True, pre_sequence=np.array([1, 2]))],
+            [AnalogShotResult(success=True, pre_sequence=np.array([1, 3]))],
             False,
         ),
     ],
 )
 def test_ahs_result_data_measurements_list_equality(measurements1, measurements2, expected):
-    """Test equality of AhsResultData objects with different measurements."""
-    result1 = AhsResultData(measurement_counts=None, measurements=measurements1)
-    result2 = AhsResultData(measurement_counts=None, measurements=measurements2)
+    """Test equality of AnalogResultData objects with different measurements."""
+    result1 = AnalogResultData(measurement_counts=None, measurements=measurements1)
+    result2 = AnalogResultData(measurement_counts=None, measurements=measurements2)
     assert (result1 == result2) == expected
 
 
 def test_ahs_result_data_different_class_equality():
-    """Test equality of AhsResultData objects with different classes."""
-    result1 = AhsResultData(measurement_counts=None, measurements=None)
-    assert result1 != "not an AhsResultData"
+    """Test equality of AnalogResultData objects with different classes."""
+    result1 = AnalogResultData(measurement_counts=None, measurements=None)
+    assert result1 != "not an AnalogResultData"
 
 
 def test_ahs_result_data_from_dict_measurements_not_list():
@@ -755,7 +755,7 @@ def test_ahs_result_data_from_dict_measurements_not_list():
         "measurement_counts": {"00": 5, "01": 3},
     }
     with pytest.raises(ValueError, match="'measurements' must be a list or None."):
-        AhsResultData.from_dict(invalid_data)
+        AnalogResultData.from_dict(invalid_data)
 
 
 def test_ahs_result_data_from_dict_measurements_items_not_dict():
@@ -765,7 +765,7 @@ def test_ahs_result_data_from_dict_measurements_items_not_dict():
         "measurement_counts": {"00": 5, "01": 3},
     }
     with pytest.raises(ValueError, match="Each item in 'measurements' must be a dictionary."):
-        AhsResultData.from_dict(invalid_data)
+        AnalogResultData.from_dict(invalid_data)
 
 
 def test_ahs_result_data_from_dict_valid_data():
@@ -774,7 +774,7 @@ def test_ahs_result_data_from_dict_valid_data():
         "measurements": [{"success": True, "pre_sequence": [1, 2], "post_sequence": [3, 4]}],
         "measurement_counts": {"00": 5, "01": 3},
     }
-    result = AhsResultData.from_dict(valid_data)
+    result = AnalogResultData.from_dict(valid_data)
     assert result.measurements is not None
     assert len(result.measurements) == 1
     assert result.measurements[0].success is True

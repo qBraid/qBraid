@@ -76,8 +76,8 @@ _lazy = {
         "ExperimentType",
     ],
     "runtime": [
-        "AhsResultData",
-        "AhsShotResult",
+        "AnalogResultData",
+        "AnalogShotResult",
         "DeviceStatus",
         "GateModelResultData",
         "JobStatus",
@@ -118,8 +118,8 @@ if TYPE_CHECKING:
     from .programs import load_program as load_program
     from .programs import register_program_type as register_program_type
     from .programs import unregister_program_type as unregister_program_type
-    from .runtime import AhsResultData as AhsResultData
-    from .runtime import AhsShotResult as AhsShotResult
+    from .runtime import AnalogResultData as AnalogResultData
+    from .runtime import AnalogShotResult as AnalogShotResult
     from .runtime import DeviceStatus as DeviceStatus
     from .runtime import GateModelResultData as GateModelResultData
     from .runtime import JobStatus as JobStatus

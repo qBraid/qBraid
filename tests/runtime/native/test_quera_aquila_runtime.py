@@ -27,7 +27,7 @@ import pytest
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 
 from qbraid.programs import ExperimentType
-from qbraid.runtime import AhsResultData, Result, TargetProfile
+from qbraid.runtime import AnalogResultData, Result, TargetProfile
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 
 from .._resources import JOB_DATA_AQUILA, RESULTS_DATA_AQUILA
@@ -82,9 +82,9 @@ def mock_job(mock_job_id, mock_device, mock_client) -> QbraidJob:
 
 
 @pytest.fixture
-def mock_result_data(result_data) -> AhsResultData:
-    """Mock QuEra Aquila AhsResultData for testing."""
-    return AhsResultData.from_dict(result_data)
+def mock_result_data(result_data) -> AnalogResultData:
+    """Mock QuEra Aquila AnalogResultData for testing."""
+    return AnalogResultData.from_dict(result_data)
 
 
 @pytest.fixture

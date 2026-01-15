@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result_data import AhsShotResult
+from qbraid.runtime.result_data import AnalogShotResult
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -115,11 +115,11 @@ class BraketAhsResultBuilder:
         """
         self._result = result
 
-    def measurements(self) -> list[AhsShotResult]:
+    def measurements(self) -> list[AnalogShotResult]:
         """Get the list of shot results from the AHS job."""
         result: AnalogHamiltonianSimulationQuantumTaskResult = self._result
         return [
-            AhsShotResult(
+            AnalogShotResult(
                 success=m.status.name == "SUCCESS",
                 pre_sequence=m.pre_sequence,
                 post_sequence=m.post_sequence,

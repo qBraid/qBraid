@@ -57,8 +57,8 @@ Classes
     Result
     ResultData
     GateModelResultData
-    AhsResultData
-    AhsShotResult
+    AnalogResultData
+    AnalogShotResult
     AnnealingResultData
 
 Exceptions
@@ -97,8 +97,8 @@ from .profile import TargetProfile
 from .provider import QuantumProvider
 from .result import Result
 from .result_data import (
-    AhsResultData,
-    AhsShotResult,
+    AnalogResultData,
+    AnalogShotResult,
     AnnealingResultData,
     GateModelResultData,
     ResultData,
@@ -130,8 +130,8 @@ __all__ = [
     "Result",
     "ResultData",
     "GateModelResultData",
-    "AhsResultData",
-    "AhsShotResult",
+    "AnalogResultData",
+    "AnalogShotResult",
     "AnnealingResultData",
     "ValidationLevel",
     "PROVIDERS",

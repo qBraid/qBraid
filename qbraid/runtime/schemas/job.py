@@ -100,8 +100,8 @@ class RuntimeJobModel(QbraidSchemaBase):
     ) -> type[ExperimentMetadata]:
         """Determine the appropriate metadata model based on experiment type and device ID."""
         native_gate_models = {
-            "qbraid_qir_simulator": QbraidQirSimulationMetadata,
-            "equal1_simulator": Equal1SimulationMetadata,
+            "qbraid:qbraid:sim:qir-sv": QbraidQirSimulationMetadata,
+            "qbraid:equal1:sim:bell-1": Equal1SimulationMetadata,
         }
 
         if experiment_type == ExperimentType.GATE_MODEL:

@@ -45,7 +45,7 @@ from braket.tasks import AnalogHamiltonianSimulationQuantumTaskResult
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ExperimentType, ProgramSpec
-from qbraid.runtime import AhsResultData, DeviceStatus, Result, TargetProfile
+from qbraid.runtime import AnalogResultData, DeviceStatus, Result, TargetProfile
 from qbraid.runtime.aws.device import BraketDevice
 from qbraid.runtime.aws.job import BraketQuantumTask
 from qbraid.runtime.aws.provider import BraketProvider
@@ -555,4 +555,4 @@ def test_ahs_task_result(ahs_result):
     assert result.success is True
     assert result.device_id == AQUILA_ARN
     assert result.job_id == TASK_ARN
-    assert isinstance(result.data, AhsResultData)
+    assert isinstance(result.data, AnalogResultData)

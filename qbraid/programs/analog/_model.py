@@ -65,7 +65,7 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
         """Return the program in a format suitable for submission to the qBraid API."""
         return Program(
             format="analog",
-            data=json.dumps(self, cls=AHSEncoder),
+            data=json.dumps(self, cls=AnalogHamiltonianEncoder),
         )
 
     def __eq__(self, other: Any) -> bool:
@@ -75,7 +75,7 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class AHSEncoder(json.JSONEncoder):
+class AnalogHamiltonianEncoder(json.JSONEncoder):
     """Class for encoding AnalogHamiltonianProgram objects to dictionaries.
 
     Example:
@@ -83,8 +83,8 @@ class AHSEncoder(json.JSONEncoder):
     .. code-block:: python
 
         >>> import json
-        >>> from qbraid.programs.analog import AHSEncoder
-        >>> json_str = json.dumps(ahs_program, cls=AHSEncoder)
+        >>> from qbraid.programs.analog import AnalogHamiltonianEncoder
+        >>> json_str = json.dumps(ahs_program, cls=AnalogHamiltonianEncoder)
 
     """
 

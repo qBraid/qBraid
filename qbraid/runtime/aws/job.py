@@ -31,7 +31,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import AhsResultData, GateModelResultData
+from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
 from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
@@ -100,7 +100,10 @@ class BraketQuantumTask(QuantumJob):
 
         result_mapping = {
             GateModelQuantumTaskResult: (BraketGateModelResultBuilder, GateModelResultData),
-            AnalogHamiltonianSimulationQuantumTaskResult: (BraketAhsResultBuilder, AhsResultData),
+            AnalogHamiltonianSimulationQuantumTaskResult: (
+                BraketAhsResultBuilder,
+                AnalogResultData,
+            ),
         }
 
         builder_class, data_class = result_mapping.get(type(bk_result), (None, None))
