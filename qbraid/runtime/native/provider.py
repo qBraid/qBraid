@@ -18,23 +18,23 @@ Module defining QbraidProvider class.
 """
 from __future__ import annotations
 
+import json
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import pyqasm
 from qbraid_core.exceptions import AuthError
-from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError, process_job_data
+from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeServiceRequestError
+from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
 from qbraid._caching import cached_method
-from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
-from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.ionq.provider import IonQProvider
 from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
-from qbraid.runtime.schemas.device import DeviceData
 from qbraid.transpiler import transpile
 
 from .device import QbraidDevice
@@ -44,18 +44,24 @@ if TYPE_CHECKING:
     import pyqir
 
 
-def _serialize_program(program) -> dict[str, str]:
+def _serialize_program(program) -> Program:
     qbraid_program = load_program(program)
     return qbraid_program.serialize()
 
 
-def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes]:
-    return {"bitcode": program.bitcode}
+def _serialize_pyqir(program: pyqir.Module) -> Program:
+    return Program(
+        format="qir.bc",
+        data=program.bitcode,
+    )
 
 
-def _serialize_sequence(sequence: pulser.Sequence) -> dict[str, str]:
+def _serialize_sequence(sequence: pulser.Sequence) -> Program:
     """Serialize a pulser sequence to a dictionary."""
-    return {"sequenceBuilder": sequence.to_abstract_repr()}
+    return Program(
+        format="pulser.sequence",
+        data={"sequence_builder": json.loads(sequence.to_abstract_repr())},
+    )
 
 
 def validate_qasm_no_measurements(
@@ -114,10 +120,12 @@ class QbraidProvider(QuantumProvider):
     authentications with qBraid Quantum services.
 
     Attributes:
-        client (qbraid_core.services.quantum.QuantumClient): qBraid QuantumClient object
+        client (qbraid_core.services.runtime.QuantumRuntimeClient): qBraid QuantumRuntimeClient object
     """
 
-    def __init__(self, api_key: Optional[str] = None, client: Optional[QuantumClient] = None):
+    def __init__(
+        self, api_key: Optional[str] = None, client: Optional[QuantumRuntimeClient] = None
+    ):
         """
         Initializes the QbraidProvider object
 
@@ -133,14 +141,14 @@ class QbraidProvider(QuantumProvider):
         self.client.session.save_config(**kwargs)
 
     @property
-    def client(self) -> QuantumClient:
-        """Return the QuantumClient object."""
+    def client(self) -> QuantumRuntimeClient:
+        """Return the QuantumRuntimeClient object."""
         if self._client is None:
             try:
-                self._client = QuantumClient(api_key=self._api_key)
+                self._client = QuantumRuntimeClient(api_key=self._api_key)
             except AuthError as err:
                 raise ResourceNotFoundError(
-                    "Failed to authenticate with the Quantum service."
+                    "Failed to authenticate with the Quantum Runtime service."
                 ) from err
         return self._client
 
@@ -170,63 +178,51 @@ class QbraidProvider(QuantumProvider):
         ]
 
     @staticmethod
-    def _get_basis_gates(device_data: dict[str, Any]) -> Optional[list[str]]:
+    def _get_basis_gates(device_qrn: str) -> Optional[list[str]]:
         """Return the basis gates for the qBraid device."""
-        provider = device_data["provider"]
-        if provider == "IonQ":
-            ionq_id = device_data["objArg"]
+        _vendor, provider, device_type, name = device_qrn.split(":")
+        if provider == "ionq":
+            ionq_id = "simulator" if device_type == "sim" else f"qpu.{name}"
             return IonQProvider._get_basis_gates(ionq_id)
         return None
 
-    def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
+    def _build_runtime_profile(self, device: RuntimeDevice) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
-        model = DeviceData(**device_data)
-        simulator = str(model.device_type).upper() == "SIMULATOR"
-        specs = self._get_program_specs(model.run_input_types, model.device_id)
+        simulator = device.deviceType == "SIMULATOR"
+        specs = self._get_program_specs(device.runInputTypes, device.qrn)
         program_spec = specs[0] if len(specs) == 1 else specs or None
         noise_models = (
-            NoiseModelSet.from_iterable(model.noise_models) if model.noise_models else None
+            NoiseModelSet.from_iterable(device.noiseModels) if device.noiseModels else None
         )
-        device_exp_type = "gate_model" if model.paradigm == "gate-based" else model.paradigm.lower()
-        experiment_type = ExperimentType(device_exp_type)
-        basis_gates = self._get_basis_gates(device_data)
+        experiment_type = device.paradigm
+        basis_gates = self._get_basis_gates(device.qrn)
+        provider = device.qrn.split(":")[1]
 
         return TargetProfile(
-            device_id=model.device_id,
+            device_id=device.qrn,
             simulator=simulator,
             experiment_type=experiment_type,
-            num_qubits=model.num_qubits,
+            num_qubits=device.numberQubits,
             program_spec=program_spec,
-            provider_name=model.provider,
+            provider_name=provider,
             noise_models=noise_models,
-            name=model.name,
-            pricing=model.pricing,
+            name=device.name,
+            pricing=device.pricing,
             basis_gates=basis_gates,
         )
 
     @cached_method(ttl=120)
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
-        query = kwargs or None
+        # query = kwargs or None
 
         try:
-            devices = self.client.search_devices(query)
-        except (ValueError, QuantumServiceRequestError) as err:
+            # TODO: Implement support for device query
+            devices = self.client.list_devices()
+        except (ValueError, QuantumRuntimeServiceRequestError) as err:
             raise ResourceNotFoundError("No devices found matching given criteria.") from err
 
-        filtered_devices = [
-            device
-            for device in devices
-            if device["vendor"] == "qBraid"
-            or (
-                device["vendor"] == "AWS"
-                and device["provider"] in {"AWS", "QuEra", "OQC", "IQM", "Rigetti"}
-            )
-            or (
-                device["vendor"] == "Azure"
-                and device["provider"] in {"Azure", "IonQ", "Quantinuum", "Rigetti", "Pasqal"}
-            )
-        ]
+        filtered_devices = [device for device in devices if device.directAccess is True]
 
         if not filtered_devices:
             raise ResourceNotFoundError("No devices found matching given criteria.")
@@ -242,64 +238,28 @@ class QbraidProvider(QuantumProvider):
             QuantumDevice: the quantum device corresponding to the given ID
 
         Raises:
-            ResourceNotFoundError: if device cannot be loaded from quantum service data
+            ResourceNotFoundError: If device cannot be loaded from quantum service data
+            ValueError: If qBraid does not support direct access to the device
         """
         try:
-            device_data = self.client.get_device(qbraid_id=device_id)
-        except (ValueError, QuantumServiceRequestError) as err:
+            device_model = self.client.get_device(device_id)
+        except (ValueError, QuantumRuntimeServiceRequestError) as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 
-        profile = self._build_runtime_profile(device_data)
+        if not device_model.directAccess:
+            raise ValueError(
+                f"qBraid does not currently support direct access to device '{device_id}'."
+            )
+
+        profile = self._build_runtime_profile(device_model)
         return QbraidDevice(profile, client=self.client)
-
-    # pylint: disable-next=too-many-arguments
-    def display_jobs(
-        self,
-        device_id: Optional[str] = None,
-        provider: Optional[str] = None,
-        status: Optional[str] = None,
-        tags: Optional[dict] = None,
-        max_results: int = 10,
-    ):
-        """Displays a list of quantum jobs submitted by user, tabulated by job ID,
-        the date/time it was submitted, and status. You can specify filters to
-        narrow the search by supplying a dictionary containing the desired criteria.
-
-        Args:
-            device_id (optional, str): The qBraid ID of the device used in the job.
-            provider (optional, str): The name of the provider.
-            tags (optional, dict): A list of tags associated with the job.
-            status (optional, str): The status of the job.
-            max_results (optional, int): Maximum number of results to display. Defaults to 10.
-        """
-        query: dict[str, Any] = {}
-
-        if provider:
-            query["provider"] = provider.lower()
-
-        if device_id:
-            query["qbraidDeviceId"] = device_id
-
-        if status:
-            query["status"] = status
-
-        if tags:
-            query.update({f"tags.{key}": value for key, value in tags.items()})
-
-        if max_results:
-            query["resultsPerPage"] = max_results
-
-        jobs = self.client.search_jobs(query)
-
-        job_data, msg = process_job_data(jobs, query)
-        return display_jobs_from_data(job_data, msg)
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
             user_metadata = self.client._user_metadata
-            organization_role = f'{user_metadata["organization"]}-{user_metadata["role"]}'
+            organization_user_id = user_metadata["organizationUserId"]
             hash_value = hash(
-                (self.__class__.__name__, self.client.session.api_key, organization_role)
+                (self.__class__.__name__, self.client.session.api_key, organization_user_id)
             )
             object.__setattr__(self, "_hash", hash_value)
         return self._hash  # pylint: disable=no-member

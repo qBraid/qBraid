@@ -32,8 +32,8 @@ from braket.ahs.pattern import Pattern
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ProgramTypeError, load_program
-from qbraid.programs.ahs import AHSEncoder
-from qbraid.programs.ahs.braket_ahs import BraketAHS, BraketAHSDecoder, BraketAHSEncoder
+from qbraid.programs.analog import AHSEncoder
+from qbraid.programs.analog.braket_ahs import BraketAHS, BraketAHSDecoder, BraketAHSEncoder
 
 
 @pytest.fixture

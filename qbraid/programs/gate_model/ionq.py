@@ -22,6 +22,8 @@ import json
 from enum import Enum
 from typing import Any
 
+from qbraid_core.services.runtime.schemas import Program
+
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
 
@@ -169,6 +171,9 @@ class IonQProgram(GateModelProgram):
                     f"Invalid gate '{gate}'. Must be in the '{gate_set_name.value}' gate set."
                 )
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        return {"ionqCircuit": json.dumps(self.program)}
+        return Program(
+            format=InputFormat.CIRCUIT.value,
+            data=json.dumps(self.program),
+        )

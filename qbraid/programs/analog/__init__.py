@@ -16,7 +16,7 @@
 Module containing sub-modules for interfacing with
 various quantum software libraries and program types.
 
-.. currentmodule:: qbraid.programs.ahs
+.. currentmodule:: qbraid.programs.analog
 
 Classes
 --------
@@ -44,7 +44,7 @@ _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 
 submodules = []
-base_path = "qbraid.programs.ahs."
+base_path = "qbraid.programs.analog."
 
 for lib in NATIVE_REGISTRY:
     try:

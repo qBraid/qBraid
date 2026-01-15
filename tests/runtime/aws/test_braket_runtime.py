@@ -437,7 +437,7 @@ def test_device_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
         program_spec=ProgramSpec(Circuit),
         provider_name="Amazon Braket",
         device_id=SV1_ARN,
-        experiment_type=ExperimentType.AHS,
+        experiment_type=ExperimentType.ANALOG,
     )
     device = BraketDevice(profile)
     with pytest.raises(DeviceProgramTypeMismatchError):

@@ -22,6 +22,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.program import QuantumProgram
 
@@ -140,6 +141,6 @@ class GateModelProgram(QuantumProgram, ABC):
         """Transform program to according to device target profile."""
         return None
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
         raise NotImplementedError

@@ -18,13 +18,10 @@ Module defining qBraid runtime job schemas.
 """
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any, ClassVar, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-
-from qbraid.programs import ExperimentType
-from qbraid.runtime.enums import JobStatus
+from pydantic import ConfigDict, Field, field_validator
+from qbraid_core.services.runtime.schemas import ExperimentType, JobStatus, TimeStamps
 
 from .base import Credits, QbraidSchemaBase
 from .experiment import (
@@ -34,47 +31,7 @@ from .experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
     QbraidQirSimulationMetadata,
-    QuEraQasmSimulationMetadata,
 )
-
-
-class TimeStamps(BaseModel):
-    """Model for capturing time-related information in an experiment.
-
-    Attributes:
-        createdAt (datetime): Timestamp when the job was created.
-        endedAt (datetime, optional): Timestamp when the job ended.
-        executionDuration (int, optional): Duration of execution in milliseconds.
-    """
-
-    createdAt: datetime
-    endedAt: Optional[datetime] = None
-    executionDuration: Optional[int] = Field(
-        default=None, ge=0, description="Execution time in milliseconds"
-    )
-
-    @field_validator("createdAt", "endedAt", mode="before")
-    @classmethod
-    def parse_datetimes(cls, value):
-        """Parses the timestamps into datetime objects.
-
-        Args:
-            value: The timestamp string.
-
-        Returns:
-            datetime: Parsed datetime object or None if value is not provided.
-        """
-        if value and isinstance(value, str):
-            return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
-        return value
-
-    @model_validator(mode="after")
-    def set_execution_duration(self):
-        """Calculates the execution duration if not provided."""
-        if self.executionDuration is None and self.createdAt and self.endedAt:
-            duration = (self.endedAt - self.createdAt).total_seconds() * 1000
-            self.executionDuration = int(duration)
-        return self
 
 
 class RuntimeJobModel(QbraidSchemaBase):
@@ -109,7 +66,6 @@ class RuntimeJobModel(QbraidSchemaBase):
     metadata: Union[
         QbraidQirSimulationMetadata,
         Equal1SimulationMetadata,
-        QuEraQasmSimulationMetadata,
         GateModelExperimentMetadata,
         AnnealingExperimentMetadata,
         AhsExperimentMetadata,
@@ -145,7 +101,6 @@ class RuntimeJobModel(QbraidSchemaBase):
         """Determine the appropriate metadata model based on experiment type and device ID."""
         native_gate_models = {
             "qbraid_qir_simulator": QbraidQirSimulationMetadata,
-            "quera_qasm_simulator": QuEraQasmSimulationMetadata,
             "equal1_simulator": Equal1SimulationMetadata,
         }
 
@@ -153,7 +108,7 @@ class RuntimeJobModel(QbraidSchemaBase):
             return native_gate_models.get(device_id, GateModelExperimentMetadata)
         if experiment_type == ExperimentType.ANNEALING:
             return AnnealingExperimentMetadata
-        if experiment_type == ExperimentType.AHS:
+        if experiment_type == ExperimentType.ANALOG:
             return AhsExperimentMetadata
 
         return ExperimentMetadata
@@ -176,7 +131,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         if experiment_type in {
             ExperimentType.GATE_MODEL,
             ExperimentType.ANNEALING,
-            ExperimentType.AHS,
+            ExperimentType.ANALOG,
         }:
             keys = {field.alias or name for name, field in model.model_fields.items()}
             metadata = {key: job_data.pop(key, None) for key in keys}

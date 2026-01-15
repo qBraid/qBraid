@@ -63,7 +63,7 @@ def mock_profile(device_id, device_data_aquila) -> TargetProfile:
     return TargetProfile(
         device_id=device_id,
         simulator=False,
-        experiment_type=ExperimentType.AHS,
+        experiment_type=ExperimentType.ANALOG,
         num_qubits=device_data_aquila["numberQubits"],
         program_spec=QbraidProvider._get_program_spec("braket_ahs", device_id),
     )

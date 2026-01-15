@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 pytestmark = pytest.mark.skipif(not bloqade_found, reason="bloqade not installed")
 
-from qbraid.programs.ahs.braket_ahs import BraketAHS  # noqa: F821
+from qbraid.programs.analog.braket_ahs import BraketAHS  # noqa: F821
 from qbraid.transpiler.conversions.braket_ahs import bloqade_to_braket_ahs  # noqa: F821
 
 

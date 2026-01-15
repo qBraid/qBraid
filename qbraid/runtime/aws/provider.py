@@ -144,7 +144,7 @@ class BraketProvider(QuantumProvider):
             experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:
-            experiment_type = ExperimentType.AHS
+            experiment_type = ExperimentType.ANALOG
             program_spec = program_spec or ProgramSpec(
                 AnalogHamiltonianSimulation, alias="braket_ahs"
             )

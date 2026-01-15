@@ -19,13 +19,10 @@ with a shared header for semantic versioning.
 """
 from __future__ import annotations
 
-from decimal import Decimal
-from typing import ClassVar, Union
+from typing import ClassVar
 
-import qbraid_core.decimal
-from pydantic import BaseModel, Field, GetCoreSchemaHandler, computed_field, model_validator
-from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import core_schema
+from pydantic import BaseModel, Field, computed_field, model_validator
+from qbraid_core.decimal import USD, Credits
 from typing_extensions import Annotated, Self
 
 
@@ -81,89 +78,3 @@ class QbraidSchemaBase(BaseModel):
         except ValueError as err:
             raise err
         return self
-
-
-class Credits(qbraid_core.decimal.Credits):
-    """Represents a value in Credits, subclassing decimal.Decimal.
-
-    Args:
-        value (str or int or float): The initial value for the Credits.
-    """
-
-    @classmethod
-    def __get_pydantic_core_schema__(  # pylint: disable-next=unused-argument
-        cls, source_type: type, handler: GetCoreSchemaHandler
-    ) -> core_schema.CoreSchema:
-        """Provide Pydantic with a schema for the Credits type."""
-        number_schema = core_schema.union_schema(
-            [
-                core_schema.int_schema(),
-                core_schema.float_schema(),
-                handler(Decimal),
-            ],
-            custom_error_type="credits_type",
-            custom_error_message="Input should be a number (int, float, or Decimal)",
-        )
-
-        # pylint: disable-next=unused-argument
-        def to_credits(value: Union[int, float, Decimal], info) -> "Credits":
-            return cls(value)
-
-        return core_schema.with_info_after_validator_function(to_credits, number_schema)
-
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, core_schema: core_schema.CoreSchema, handler
-    ) -> JsonSchemaValue:
-        """Provide a JSON schema for the Credits type."""
-        json_schema = handler(core_schema)
-        json_schema.update(
-            title="Credits",
-            description="A monetary amount where 1 Credit = $0.01 USD.",
-            examples=[10, 0.05, 1.5],
-            type="number",
-        )
-        return json_schema
-
-
-class USD(qbraid_core.decimal.USD):
-    """Represents a value in U.S. Dollars, subclassing decimal.Decimal.
-
-    Args:
-        value (str or int or float): The initial value for the USD.
-    """
-
-    @classmethod
-    def __get_pydantic_core_schema__(  # pylint: disable-next=unused-argument
-        cls, source_type: type, handler: GetCoreSchemaHandler
-    ) -> core_schema.CoreSchema:
-        """Provide Pydantic with a schema for the USD type."""
-        number_schema = core_schema.union_schema(
-            [
-                core_schema.int_schema(),
-                core_schema.float_schema(),
-                handler(Decimal),
-            ],
-            custom_error_type="usd_type",
-            custom_error_message="Input should be a number (int, float, or Decimal)",
-        )
-
-        # pylint: disable-next=unused-argument
-        def to_usd(value: Union[int, float, Decimal], info) -> "USD":
-            return cls(value)
-
-        return core_schema.with_info_after_validator_function(to_usd, number_schema)
-
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, core_schema: core_schema.CoreSchema, handler
-    ) -> JsonSchemaValue:
-        """Provide a JSON schema for the USD type."""
-        json_schema = handler(core_schema)
-        json_schema.update(
-            title="USD",
-            description="A monetary amount representing U.S. Dollars.",
-            examples=[10, 0.05, 1.5],
-            type="number",
-        )
-        return json_schema

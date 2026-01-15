@@ -299,7 +299,7 @@ def test_result_data_experiment_type():
     gm_result_data = GateModelResultData()
     ahs_result_data = AhsResultData()
     assert gm_result_data.experiment_type == ExperimentType.GATE_MODEL
-    assert ahs_result_data.experiment_type == ExperimentType.AHS
+    assert ahs_result_data.experiment_type == ExperimentType.ANALOG
 
 
 def test_to_dict_basic(gate_model_result_data):
@@ -420,7 +420,7 @@ def test_ahs_shot_result_sequences_equal():
 
 def test_ahs_result_data_experiment_type(ahs_result_data):
     """Test that the experiment type is AHS."""
-    assert ahs_result_data.experiment_type == ExperimentType.AHS
+    assert ahs_result_data.experiment_type == ExperimentType.ANALOG
 
 
 def test_ahs_result_data_measurements(ahs_result_data, shot_result):

@@ -318,7 +318,7 @@ class AhsResultData(ResultData):
     @property
     def experiment_type(self) -> ExperimentType:
         """Returns the experiment type."""
-        return ExperimentType.AHS
+        return ExperimentType.ANALOG
 
     @property
     def measurements(self) -> Optional[list[AhsShotResult]]:

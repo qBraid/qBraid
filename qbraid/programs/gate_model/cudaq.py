@@ -21,6 +21,7 @@ from __future__ import annotations
 import base64
 
 import cudaq
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -53,7 +54,10 @@ class CudaQKernel(GateModelProgram):
         """Return the number of classical bits in the circuit."""
         return 0
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
         qir: str = cudaq.translate(self.program, format="qir-base")
-        return {"qir": base64.b64encode(qir.encode("utf-8")).decode("utf-8")}
+        return Program(
+            format="qir.ll",
+            data=base64.b64encode(qir.encode("utf-8")).decode("utf-8"),
+        )

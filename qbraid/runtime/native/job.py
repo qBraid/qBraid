@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Type, Union
 
-from qbraid_core.services.quantum import QuantumClient
+from qbraid_core.services.runtime import QuantumRuntimeClient
 
 from qbraid._logging import logger
 from qbraid.programs import ExperimentType
@@ -31,15 +31,8 @@ from qbraid.runtime.result import Result, ResultDataType
 from qbraid.runtime.result_data import AhsResultData, AnnealingResultData, GateModelResultData
 from qbraid.runtime.schemas import RuntimeJobModel
 
-from .result import (
-    Equal1SimulatorResultData,
-    NECVectorAnnealerResultData,
-    QbraidQirSimulatorResultData,
-    QuEraQasmSimulatorResultData,
-)
-
 if TYPE_CHECKING:
-    import qbraid_core.services.quantum
+    import qbraid_core.services.runtime
 
     import qbraid.runtime
 
@@ -51,14 +44,14 @@ class QbraidJob(QuantumJob):
         self,
         job_id: str,
         device: Optional[qbraid.runtime.QbraidDevice] = None,
-        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
+        client: Optional[qbraid_core.services.runtime.QuantumRuntimeClient] = None,
         **kwargs,
     ):
         super().__init__(job_id, device, **kwargs)
         self._client = client
 
     @property
-    def client(self) -> qbraid_core.services.quantum.QuantumClient:
+    def client(self) -> qbraid_core.services.runtime.QuantumRuntimeClient:
         """
         Lazily initializes and returns the client object associated with the job.
         If the job has an associated device with a client, that client is used.
@@ -68,7 +61,7 @@ class QbraidJob(QuantumJob):
             QuantumClient: The client object associated with the job.
         """
         if self._client is None:
-            self._client = self._device.client if self._device else QuantumClient()
+            self._client = self._device.client if self._device else QuantumRuntimeClient()
         return self._client
 
     def queue_position(self) -> Optional[int]:
@@ -114,22 +107,12 @@ class QbraidJob(QuantumJob):
         device_id: Optional[str] = None, experiment_type: Optional[ExperimentType] = None
     ) -> Union[Type[GateModelResultData], Type[AnnealingResultData], Type[AhsResultData]]:
         """Determine the appropriate ResultData class based on device_id and experiment_type."""
-        device_to_result_data = {
-            "qbraid_qir_simulator": QbraidQirSimulatorResultData,
-            "quera_qasm_simulator": QuEraQasmSimulatorResultData,
-            "nec_vector_annealer": NECVectorAnnealerResultData,
-            "equal1_simulator": Equal1SimulatorResultData,
+        experiment_type_to_result_data = {
+            ExperimentType.GATE_MODEL: GateModelResultData,
+            ExperimentType.ANNEALING: AnnealingResultData,
+            ExperimentType.ANNEALING: AhsResultData,
         }
-
-        result_data_cls = device_to_result_data.get(device_id)
-
-        if not result_data_cls:
-            experiment_type_to_result_data = {
-                ExperimentType.GATE_MODEL: GateModelResultData,
-                ExperimentType.ANNEALING: AnnealingResultData,
-                ExperimentType.AHS: AhsResultData,
-            }
-            result_data_cls = experiment_type_to_result_data.get(experiment_type)
+        result_data_cls = experiment_type_to_result_data.get(experiment_type)
 
         if not result_data_cls:
             raise ValueError(
@@ -143,9 +126,7 @@ class QbraidJob(QuantumJob):
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
         success = job_data.get("status") == JobStatus.COMPLETED.name
-        job_result = (
-            self.client.get_job_results(self.id, wait_time=1, backoff_factor=1.4) if success else {}
-        )
+        job_result = self.client.get_job_result(self.id) if success else {}
         job_result.update(job_data)
         model = RuntimeJobModel.from_dict(job_result)
         result_data_cls = self.get_result_data_cls(model.device_id, model.experiment_type)

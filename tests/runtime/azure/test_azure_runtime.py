@@ -1505,5 +1505,5 @@ def test_build_profile_pasqal(mock_workspace):
     profile = provider._build_profile(mock_target)
 
     assert profile.program_spec.alias == "pulser"
-    assert profile.experiment_type == ExperimentType.AHS
+    assert profile.experiment_type == ExperimentType.ANALOG
     assert profile.num_qubits == 100

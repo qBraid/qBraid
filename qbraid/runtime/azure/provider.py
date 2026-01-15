@@ -157,7 +157,7 @@ class AzureQuantumProvider(QuantumProvider):
     def _get_experiment_type(input_data_format: InputDataFormat) -> ExperimentType:
         """Get the experiment type based on the input data format."""
         if input_data_format == InputDataFormat.PASQAL:
-            return ExperimentType.AHS
+            return ExperimentType.ANALOG
         return ExperimentType.GATE_MODEL
 
     def _build_profile(self, target: Target) -> TargetProfile:

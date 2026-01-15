@@ -25,13 +25,10 @@ Models
 
     QbraidSchemaBase
     QbraidSchemaHeader
-    DevicePricing
-    DeviceData
     ExperimentMetadata
     AhsExperimentMetadata
     AnnealingExperimentMetadata
     GateModelExperimentMetadata
-    QuEraQasmSimulationMetadata
     QbraidQirSimulationMetadata
     TimeStamps
     RuntimeJobModel
@@ -48,7 +45,6 @@ Classes
 
 """
 from .base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
-from .device import DeviceData, DevicePricing
 from .experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
@@ -56,22 +52,18 @@ from .experiment import (
     GateModelExperimentMetadata,
     QbraidQirSimulationMetadata,
     QuboSolveParams,
-    QuEraQasmSimulationMetadata,
 )
 from .job import RuntimeJobModel, TimeStamps
 
 __all__ = [
     "QbraidSchemaBase",
     "QbraidSchemaHeader",
-    "DevicePricing",
-    "DeviceData",
     "AhsExperimentMetadata",
     "AnnealingExperimentMetadata",
     "ExperimentMetadata",
     "GateModelExperimentMetadata",
     "QbraidQirSimulationMetadata",
     "QuboSolveParams",
-    "QuEraQasmSimulationMetadata",
     "RuntimeJobModel",
     "TimeStamps",
     "Credits",

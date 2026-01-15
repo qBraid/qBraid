@@ -119,22 +119,6 @@ class QbraidQirSimulationMetadata(GateModelExperimentMetadata):
     seed: Optional[int] = Field(None, alias="runnerSeed")
 
 
-class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
-    """Metadata specific to jobs submitted to the QuEra QASM simulator.
-
-    Attributes:
-        backend (str, optional): The name of the backend used for the simulation.
-        quera_simulation_result (dict[str, Any], optional): The result of the simulation
-            in a dictionary format. This includes data describing the state of the
-            QPU atoms used in the simulation and logs generated during the simulation,
-            among other things.
-
-    """
-
-    backend: Optional[str] = None
-    quera_simulation_result: Optional[dict[str, Any]] = None
-
-
 class Equal1SimulationMetadata(GateModelExperimentMetadata):
     """Metadata specific to jobs submitted to the Equal1 simulator.
 

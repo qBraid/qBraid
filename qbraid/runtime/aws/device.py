@@ -18,6 +18,7 @@ Module defining BraketDeviceWrapper Class
 """
 from __future__ import annotations
 
+import datetime
 from typing import TYPE_CHECKING
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
@@ -74,7 +75,7 @@ class BraketDevice(QuantumDevice):
 
         return DeviceStatus.OFFLINE
 
-    def availability_window(self) -> tuple[bool, str, str]:
+    def availability_window(self) -> tuple[bool, str, datetime.datetime | None]:
         """Provides device availability status. Indicates current availability,
         time remaining (hours, minutes, seconds) until next availability or
         unavailability, and future UTC datetime of next change in availability status.
@@ -108,7 +109,7 @@ class BraketDevice(QuantumDevice):
         if experiment_type == ExperimentType.GATE_MODEL and not isinstance(program, Circuit):
             raise DeviceProgramTypeMismatchError(program, str(Circuit), experiment_type)
 
-        if experiment_type == ExperimentType.AHS and not isinstance(
+        if experiment_type == ExperimentType.ANALOG and not isinstance(
             program, AnalogHamiltonianSimulation
         ):
             raise DeviceProgramTypeMismatchError(

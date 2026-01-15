@@ -18,7 +18,6 @@ Module for calculating Amazon Braket device availability.
 """
 
 import datetime
-from typing import Optional
 
 from braket.aws import AwsDevice
 from braket.device_schema import DeviceExecutionWindow, ExecutionDay
@@ -83,7 +82,7 @@ def _calculate_future_time(
 
     Returns:
         tuple: A tuple containing available time in "HH:MM:SS" format and
-               future UTC datetime in ISO 8601 format "YYYY-MM-DDTHH:MM:SSZ".
+               future UTC datetime in datetime.datetime format.
     """
     hours = available_time // 3600
     minutes = (available_time // 60) % 60
@@ -95,8 +94,15 @@ def _calculate_future_time(
     return available_time_hms, future_time
 
 
-def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[datetime.datetime]]:
-    """Returns hr/min/sec until device is next available, or empty string if device is offline."""
+def next_available_time(device: AwsDevice) -> tuple[bool, str, datetime.datetime | None]:
+    """Provides device availability status. Indicates current availability,
+    time remaining (hours, minutes, seconds) until next availability or
+    unavailability, and future UTC datetime of next change in availability status.
+
+    Returns:
+        tuple[bool, str, Optional[datetime.datetime]]: Current device availability, hr/min/sec until
+            availability switch, future UTC datetime of availability switch
+    """
     is_available_result = False
     available_time = None
 

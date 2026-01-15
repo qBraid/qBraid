@@ -31,7 +31,7 @@ from .exceptions import ProgramLoaderError
 from .registry import QPROGRAM
 
 if TYPE_CHECKING:
-    from qbraid.programs.ahs import AnalogHamiltonianProgram
+    from qbraid.programs.analog import AnalogHamiltonianProgram
     from qbraid.programs.annealing import AnnealingProgram
     from qbraid.programs.gate_model import GateModelProgram
 

@@ -28,7 +28,6 @@ from pydantic import BaseModel, ValidationError
 from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
-from qbraid.runtime.schemas.device import DeviceData, DevicePricing
 from qbraid.runtime.schemas.experiment import (
     AhsExperimentMetadata,
     ExperimentMetadata,
@@ -200,7 +199,7 @@ def test_populate_metadata(valid_qasm2_no_meas):
     assert populated_data["metadata"].qasm == valid_qasm2_no_meas
 
     job_data_ahs = {"numAtoms": 10}
-    populated_data = RuntimeJobModel._populate_metadata(job_data_ahs, ExperimentType.AHS)
+    populated_data = RuntimeJobModel._populate_metadata(job_data_ahs, ExperimentType.ANALOG)
     assert isinstance(populated_data["metadata"], AhsExperimentMetadata)
 
 
@@ -290,54 +289,6 @@ def test_parse_datetimes_for_none_type(mock_job_data):
     time_stamps["endedAt"] = None
     time_stamps_model = TimeStamps(**time_stamps)
     assert time_stamps_model.endedAt is None
-
-
-def test_device_data_qir(device_data_qir):
-    """Test DeviceData class for qBraid QIR simulator."""
-    device = DeviceData(**device_data_qir)
-
-    assert device.provider == "qBraid"
-    assert device.name == "QIR sparse simulator"
-    assert device.paradigm == "gate-based"
-    assert device.device_type == "SIMULATOR"
-    assert device.num_qubits == 64
-    assert device.pricing.perTask == Decimal("0.005")
-    assert device.pricing.perShot == Decimal("0")
-    assert device.pricing.perMinute == Decimal("0.075")
-    assert device.status == "ONLINE"
-    assert device.is_available is True
-
-
-def test_device_data_quera(device_data_quera):
-    """Test DeviceData class for QuEra QASM simulator."""
-    device = DeviceData(**device_data_quera)
-
-    assert device.provider == "QuEra"
-    assert device.name == "Noisey QASM simulator"
-    assert device.paradigm == "gate-based"
-    assert device.device_type == "SIMULATOR"
-    assert device.num_qubits == 30
-    assert device.pricing.perTask == Decimal("0")
-    assert device.pricing.perShot == Decimal("0")
-    assert device.pricing.perMinute == Decimal("0")
-    assert device.status == "ONLINE"
-    assert device.is_available is True
-
-
-def test_device_data_aquila(device_data_aquila):
-    """Test DeviceData class for QuEra Aquila QPU."""
-    device = DeviceData(**device_data_aquila)
-
-    assert device.provider == "QuEra"
-    assert device.name == "Aquila"
-    assert device.paradigm == "AHS"
-    assert device.device_type == "QPU"
-    assert device.num_qubits == 256
-    assert device.pricing.perTask == Decimal("0.3")
-    assert device.pricing.perShot == Decimal("0.01")
-    assert device.pricing.perMinute == Decimal("0")
-    assert device.status == "OFFLINE"
-    assert device.is_available is False
 
 
 def test_usd_json_schema():
@@ -495,22 +446,6 @@ def test_qubo_solve_params_beta_list_none():
     """Test QuboSolveParams beta_list set to None."""
     params = QuboSolveParams(offset=0.5, beta_list=None)
     assert params.beta_list is None
-
-
-def test_device_pricing():
-    """Test DevicePricing class."""
-    pricing = DevicePricing(
-        perTask=USD(0.5),
-        perShot=USD(0.01),
-        perMinute=USD(0.075),
-    )
-    assert pricing.perTask == USD(0.5)
-    assert pricing.perShot == USD(0.01)
-    assert pricing.perMinute == USD(0.075)
-
-    pricing_credits = pricing.serialize_credits(pricing.perTask)
-    assert isinstance(pricing_credits, Credits)
-    assert pricing_credits == Credits(50)
 
 
 @pytest.mark.parametrize(

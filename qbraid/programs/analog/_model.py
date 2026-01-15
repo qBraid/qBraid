@@ -22,6 +22,8 @@ import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
 
+from qbraid_core.services.runtime.schemas import Program
+
 from qbraid.programs.program import QuantumProgram
 
 if TYPE_CHECKING:
@@ -59,9 +61,12 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
     def to_dict(self) -> dict:
         """Return the dictionary representation of the program."""
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        return {"ahs": json.dumps(self, cls=AHSEncoder)}
+        return Program(
+            format="analog",
+            data=json.dumps(self, cls=AHSEncoder),
+        )
 
     def __eq__(self, other: Any) -> bool:
         """Check if two programs are equal."""
@@ -78,7 +83,7 @@ class AHSEncoder(json.JSONEncoder):
     .. code-block:: python
 
         >>> import json
-        >>> from qbraid.programs.ahs import AHSEncoder
+        >>> from qbraid.programs.analog import AHSEncoder
         >>> json_str = json.dumps(ahs_program, cls=AHSEncoder)
 
     """
