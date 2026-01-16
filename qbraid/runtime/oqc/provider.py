@@ -20,6 +20,7 @@ import json
 import os
 from typing import Any, Optional, Union
 
+from qbraid_core.decimal import USD
 from qcaas_client.client import OQCClient
 
 from qbraid._caching import cached_method
@@ -28,7 +29,6 @@ from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
-from qbraid.runtime.schemas.base import USD
 
 from .device import OQCDevice
 

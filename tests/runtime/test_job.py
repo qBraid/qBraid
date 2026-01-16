@@ -283,6 +283,6 @@ def test_job_status_enum_call_method():
 def test_job_get_result_cls_raises_for_mismatch_expt_type():
     """Test that get_result_data_cls raises a ValueError for unsupported experiment type."""
     with pytest.raises(
-        ValueError, match="Unsupported device_id 'aws_sv1' or experiment_type 'PHOTONIC'"
+        ValueError, match="Unsupported device_id 'aws_sv1' or experiment_type 'OTHER'"
     ):
-        QbraidJob.get_result_data_cls("aws_sv1", ExperimentType.PHOTONIC)
+        QbraidJob._get_result_data_cls("aws_sv1", ExperimentType.OTHER)

@@ -48,7 +48,7 @@ def test_qiskit_ionq_workflow():
             qiskit_circuit_transpiled = qiskit.transpile(qiskit_circuit, qiskit_ionq_backend)
 
         provider = QbraidProvider()
-        device = provider.get_device("ionq_simulator")
+        device = provider.get_device("azure:ionq:sim:simulator")
 
         shots = 10
         job: QbraidJob = device.run(qiskit_circuit_transpiled, shots=shots)

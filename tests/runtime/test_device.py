@@ -43,11 +43,9 @@ from qbraid.runtime import DeviceStatus, JobStatus, Result, TargetProfile, Valid
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.provider import _serialize_sequence, get_program_spec_lambdas
-from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
-from qbraid.runtime.schemas.experiment import QuboSolveParams
-from qbraid.runtime.schemas.job import RuntimeJobModel
+from qbraid.runtime.result_data import AnalogResultData, AnnealingResultData, GateModelResultData
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
 from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
@@ -159,8 +157,8 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
 
     result = job.result()
     assert isinstance(result, Result)
-    assert isinstance(result.data, QbraidQirSimulatorResultData)
-    assert repr(result.data).startswith("QbraidQirSimulatorResultData")
+    assert isinstance(result.data, GateModelResultData)
+    assert repr(result.data).startswith("GateModelResultData")
     assert result.success
     assert result.job_id == JOB_DATA_QIR["qbraidJobId"]
     assert result.device_id == JOB_DATA_QIR["qbraidDeviceId"]
@@ -195,7 +193,7 @@ def test_nec_vector_annealer_workflow(mock_provider):
 
     result = job.result()
     assert isinstance(result, Result)
-    assert isinstance(result.data, NECVectorAnnealerResultData)
+    assert isinstance(result.data, AnnealingResultData)
     assert result.success
     assert result.job_id == JOB_DATA_NEC["qbraidJobId"]
     assert result.device_id == JOB_DATA_NEC["qbraidDeviceId"]
@@ -583,22 +581,6 @@ def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
         mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
 
 
-@pytest.mark.parametrize(
-    "status, status_text",
-    [("FAILED", "Custom status text"), (JobStatus.FAILED, "Different custom status text")],
-)
-def test_runtime_job_model_from_dict_custom_status(status, status_text):
-    """Test creating a RuntimeJobModel with custom status."""
-    job_data = JOB_DATA_QIR.copy()
-    job_data["status"] = status
-    job_data["statusText"] = status_text
-
-    model = RuntimeJobModel.from_dict(job_data)
-
-    assert model.status == JobStatus.FAILED
-    assert model.status_text == status_text
-
-
 @pytest.mark.skipif(importlib.util.find_spec("pyqubo") is None, reason="pyqubo is not installed")
 def test_construct_aux_payload_annealing(mock_nec_va_device):
     """Test constructing auxiliary payload with an annealing program."""
@@ -686,45 +668,6 @@ def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
     with pytest.raises(ValueError) as excinfo:
         mock_qbraid_device._resolve_noise_model(10)
     assert "Invalid type for noise model" in str(excinfo)
-
-
-def test_validate_run_input_payload_valid_dict():
-    """Test when the payload is a valid dictionary."""
-    payload = {"key": "value"}
-    target_spec = ProgramSpec(str, "qasm2")
-
-    assert QbraidDevice._validate_run_input_payload(payload, None) is None
-    assert QbraidDevice._validate_run_input_payload(payload, target_spec) is None
-
-
-def test_validate_run_input_payload_invalid_payload_none_target_spec():
-    """Test when the payload is not a dictionary and target_spec is None."""
-    payload = "invalid_payload"
-    target_spec = None
-
-    with pytest.raises(QbraidRuntimeError) as excinfo:
-        QbraidDevice._validate_run_input_payload(payload, target_spec)
-
-    assert "Run input transform failed due to missing target ProgramSpec" in str(excinfo.value)
-    assert "Ensure all required dependency extras for this device are installed" in str(
-        excinfo.value
-    )
-
-
-def test_validate_run_input_payload_invalid_payload_with_target_spec():
-    """Test when the payload is not a dictionary and target_spec is provided."""
-    payload = "invalid_payload"
-    target_spec = ProgramSpec(str, "qasm2")
-
-    with pytest.raises(QbraidRuntimeError) as excinfo:
-        QbraidDevice._validate_run_input_payload(payload, target_spec)
-
-    assert "Run input transform failed, likely due to corrupted target ProgramSpec" in str(
-        excinfo.value
-    )
-    assert "Use QbraidProvider.get_device() to re-instantiate the device object" in str(
-        excinfo.value
-    )
 
 
 def test_get_program_spec_not_registered_warning():
@@ -858,108 +801,6 @@ def test_device_transpile_program_conversion_error():
     with pytest.raises(ProgramConversionError) as excinfo:
         device.transpile(circuit, ProgramSpec(IonQDict, "ionq"))
     assert "Transpile step failed after multiple attempts." in str(excinfo.value)
-
-
-@pytest.fixture
-def mock_qubo_solve_params() -> dict[str, Any]:
-    """Return a minimal set of QUBO solve parameters."""
-    return {"offset": 0.5}
-
-
-@pytest.fixture
-def mock_qubo_params_with_defaults(mock_qubo_solve_params) -> dict[str, Any]:
-    """Return a comprehensive set of all possible QUBO solve parameters."""
-    return {
-        "offset": mock_qubo_solve_params["offset"],
-        "num_reads": 1,
-        "num_results": 1,
-        "num_sweeps": 500,
-        "beta_range": (10.0, 100.0, 200),
-        "vector_mode": "accuracy",
-        "timeout": 1800,
-    }
-
-
-@pytest.mark.parametrize(
-    "params",
-    [
-        {"offset": 0.5, "num_reads": 2},
-        {"offset": 0.7, "num_results": 3},
-    ],
-)
-def test_device_resolve_qubo_params(mock_nec_va_device: QbraidDevice, params: dict[str, Any]):
-    """Test that resolve_qubo_params method returns the correct parameters from dict or model."""
-    params_input = params.copy()
-    resolved_params = mock_nec_va_device._resolve_qubo_params(params_input)
-    assert resolved_params == params
-
-
-def test_device_resolve_qubo_params_with_all_params(
-    mock_nec_va_device: QbraidDevice,
-    mock_qubo_solve_params,
-    mock_qubo_params_with_defaults: dict[str, Any],
-):
-    """Test that the resolve_qubo_params method returns all parameters correctly."""
-    params_model = QuboSolveParams(**mock_qubo_solve_params)
-    resolved_params = mock_nec_va_device._resolve_qubo_params(params_model)
-    filtered_params = {k: v for k, v in resolved_params.items() if v is not None}
-    assert filtered_params == mock_qubo_params_with_defaults
-
-
-@pytest.mark.parametrize(
-    "device, params, expected_message",
-    [
-        (
-            "mock_qbraid_device",
-            {"offset": 0.5},
-            "QUBO solve parameters are only supported for annealing devices.",
-        ),
-        ("mock_nec_va_device", "invalid_params", "Invalid type for QUBO solve parameters"),
-    ],
-)
-def test_device_resolve_qubo_params_raises_exceptions(
-    request: pytest.FixtureRequest,
-    device: QbraidDevice,
-    params: dict[str, Any],
-    expected_message: str,
-):
-    """Test that the resolve_qubo_params method raises expected exceptions
-    for invalid devices or parameter types."""
-    device = request.getfixturevalue(device)
-    with pytest.raises(ValueError) as excinfo:
-        device._resolve_qubo_params(params)
-    assert expected_message in str(excinfo.value)
-
-
-@pytest.fixture
-def qubo_coefficients() -> QuboCoefficientsDict:
-    """Return a mock set of QUBO coefficients."""
-    return {
-        ("s1", "s1"): -160.0,
-        ("s4", "s2"): 16.0,
-        ("s3", "s1"): 224.0,
-        ("s2", "s2"): -96.0,
-        ("s4", "s1"): 32.0,
-        ("s1", "s2"): 64.0,
-        ("s3", "s2"): 112.0,
-        ("s3", "s3"): -196.0,
-        ("s4", "s4"): -52.0,
-        ("s4", "s3"): 56.0,
-    }
-
-
-def test_device_call_resolve_params_from_run_method(
-    mock_nec_va_device, qubo_coefficients, mock_qubo_solve_params
-):
-    """Test that the run method calls the resolve_qubo_params method
-    with the provided parameters."""
-    with (
-        patch.object(mock_nec_va_device, "_resolve_qubo_params") as mock_resolve_qubo_params,
-        patch.object(mock_nec_va_device, "submit") as mock_submit,
-    ):
-        mock_nec_va_device.run(qubo_coefficients, params=mock_qubo_solve_params)
-        mock_resolve_qubo_params.assert_called_once_with(mock_qubo_solve_params)
-        mock_submit.assert_called_once()
 
 
 @pytest.fixture

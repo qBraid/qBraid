@@ -123,7 +123,8 @@ class QbraidProvider(QuantumProvider):
     authentications with qBraid Quantum services.
 
     Attributes:
-        client (qbraid_core.services.runtime.QuantumRuntimeClient): qBraid QuantumRuntimeClient object
+        client (qbraid_core.services.runtime.QuantumRuntimeClient):
+            qBraid QuantumRuntimeClient object
     """
 
     def __init__(
@@ -215,7 +216,7 @@ class QbraidProvider(QuantumProvider):
         )
 
     @cached_method(ttl=120)
-    def get_devices(self, **kwargs) -> list[QbraidDevice]:
+    def get_devices(self) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         # query = kwargs or None
 

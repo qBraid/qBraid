@@ -256,7 +256,8 @@ def test_non_supported_type_encoding():
 
 
 def test_fallback_to_superclass():
-    """Test that types not handled by AnalogHamiltonianEncoder but supported by JSONEncoder are encoded."""
+    """Test that types not handled by AnalogHamiltonianEncoder but supported by
+    JSONEncoder are encoded."""
     data = {"key": [1, 2, 3]}
     encoded_json = json.dumps(data, cls=AnalogHamiltonianEncoder)
     assert json.loads(encoded_json) == data

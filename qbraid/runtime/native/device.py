@@ -85,6 +85,7 @@ class QbraidDevice(QuantumDevice):
 
         return self.profile.noise_models.get(noise_model).name
 
+    # pylint: disable-next=too-many-arguments
     def submit(
         self,
         program: Program,
