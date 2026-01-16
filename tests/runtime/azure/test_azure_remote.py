@@ -112,6 +112,7 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
     import pyquil
+    import pyquil.gates
 
     p = pyquil.Program()
     ro = p.declare("ro", "BIT", 2)

@@ -20,9 +20,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pyquil import Program
+import pyquil
 from pyquil.quilbase import Declare, Measurement
 from pyquil.simulation.tools import program_unitary
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -30,7 +31,6 @@ from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import numpy as np
-    import pyquil
 
 
 class PyQuilProgram(GateModelProgram):
@@ -38,7 +38,7 @@ class PyQuilProgram(GateModelProgram):
 
     def __init__(self, program: pyquil.Program):
         super().__init__(program)
-        if not isinstance(program, Program):
+        if not isinstance(program, pyquil.Program):
             raise ProgramTypeError(
                 message=f"Expected 'pyquil.Program' object, got '{type(program)}'."
             )
@@ -61,7 +61,7 @@ class PyQuilProgram(GateModelProgram):
     @staticmethod
     def remove_measurements(original_program):
         """Remove MEASURE and DECLARE instructions from a pyQuil program."""
-        program = Program()
+        program = pyquil.Program()
         for instruction in original_program:
             if not isinstance(instruction, Measurement) and not isinstance(instruction, Declare):
                 program += instruction
@@ -71,3 +71,11 @@ class PyQuilProgram(GateModelProgram):
         """Return the unitary of a pyQuil program."""
         program_copy = self.remove_measurements(self.program)
         return program_unitary(program_copy, n_qubits=self.num_qubits)
+
+    def serialize(self) -> Program:
+        """Serialize the pyQuil program to a Quil string."""
+        program: pyquil.Program = self.program
+        return Program(
+            format="quil",
+            data=program.out(),
+        )

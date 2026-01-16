@@ -1,7 +1,7 @@
 # optional program types
 amazon-braket-sdk>=1.83.0,<1.108.0
 cirq-core>=1.3,<1.7
-cudaq>=0.9.0; python_version < "3.13"
+# cudaq>=0.9.0; python_version < "3.13"
 pennylane>=0.42.3,<0.43
 pyquil>=4.4; python_version < "3.13"
 qcs-sdk-python>=0.21.12,<0.21.23; python_version < "3.13"
@@ -33,8 +33,6 @@ pulser-simulation>=1.4.0; python_version < "3.13"
 # visualization
 ipython
 matplotlib>=3.3,<3.11
-flair-visual>=0.5.3; python_version < "3.13"
-pandas
 
 # testing dependencies
 sympy

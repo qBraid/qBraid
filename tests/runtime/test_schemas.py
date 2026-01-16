@@ -154,7 +154,7 @@ def test_execution_duration_auto_calculation():
     assert ts.executionDuration == 1000  # 1 second in milliseconds
 
 
-def test_execution_duration_none_if_endedAt_missing():
+def test_execution_duration_none_if_ended_at_missing():
     """Test execution duration is None if endedAt is missing."""
     created = datetime(2025, 5, 22, 15, 8, 57)
     ts = TimeStamps(createdAt=created)

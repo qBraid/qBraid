@@ -26,13 +26,13 @@ import numpy as np
 
 from qbraid.programs import ExperimentType
 
-from .postprocess import counts_to_probabilities, normalize_data
-from .schemas.experiment import (
+from .experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
 )
+from .postprocess import counts_to_probabilities, normalize_data
 
 ResultDataType = TypeVar("ResultDataType", bound="ResultData")
 

@@ -18,6 +18,7 @@ Module defining QbraidProvider class.
 """
 from __future__ import annotations
 
+import base64
 import json
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, Optional
@@ -50,9 +51,11 @@ def _serialize_program(program) -> Program:
 
 
 def _serialize_pyqir(program: pyqir.Module) -> Program:
+    # Base64 encode the bitcode so it can be JSON-serialized for API requests
+    bitcode_b64 = base64.b64encode(program.bitcode).decode("utf-8")
     return Program(
         format="qir.bc",
-        data=program.bitcode,
+        data=bitcode_b64,
     )
 
 
