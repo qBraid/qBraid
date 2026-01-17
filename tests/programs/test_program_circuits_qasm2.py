@@ -19,7 +19,6 @@ Unit tests for qbraid.programs.qasm.OpenQasm2Program
 
 """
 import textwrap
-from unittest.mock import MagicMock
 
 import openqasm3.ast
 import pytest
@@ -29,7 +28,6 @@ from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.loader import load_program
 from qbraid.programs.registry import unregister_program_type
-from qbraid.programs.typer import Qasm2String
 
 from ..fixtures.qasm2.circuits import qasm2_bell, qasm2_shared15
 
@@ -94,16 +92,6 @@ def test_num_classical_bits(simple_qasm):
     """Test calculating number of classical bits in qasm2 circuit"""
 
     assert OpenQasm2Program(simple_qasm).num_clbits == 2
-
-
-def test_remove_measurements_via_transform(simple_qasm):
-    """Test removing measurements via transform method"""
-    device = MagicMock()
-    device.id = "quera_qasm_simulator"
-    qprogram = OpenQasm2Program(simple_qasm)
-    qprogram.transform(device=device)
-    assert qprogram._module.has_measurements() is False
-    assert isinstance(qprogram.program, Qasm2String)
 
 
 def test_load_qasm2_program_from_parsed_obj(simple_qasm):

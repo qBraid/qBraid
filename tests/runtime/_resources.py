@@ -53,7 +53,7 @@ DEVICE_DATA_QIR = {
         "name": "QIR sparse simulator",
         "paradigm": "gate_model",
         "pricing": {"perTask": 0, "perShot": 0, "perMinute": 0},
-        "status": "OFFLINE",
+        "status": "ONLINE",
         "updatedAt": "2025-08-15T21:37:29.555Z",
         "vendor": "qbraid",
         "image": None,
@@ -433,7 +433,46 @@ class MockClient:
     @property
     def _user_metadata(self):
         """Mock user metadata property."""
-        return {"organization": "qbraid", "role": "guest"}
+        return {
+            "valid": True,
+            "userId": "6229769a21fff74352121c46",
+            "userName": "jovyan",
+            "userEmail": "jovyan@example.com",
+            "metadata": {
+                "acknowledgedTerms": "accepted",
+                "tourUser": "completed",
+                "acceptedIntelTerms": "accepted",
+                "miningDetected": "not_detected",
+            },
+            "userRoles": ["organization_admin"],
+            "userPermissions": [
+                "global|organization|organization|manage",
+                "global|organization|members|manage",
+                "global|organization|billing|manage",
+                "global|organization|device|manage",
+                "global|organization|jobs|manage",
+                "global|organization|projects|manage",
+                "global|organization|users|view",
+                "global|organization|users|create",
+                "global|organization|users|update",
+                "global|organization|users|delete",
+                "global|organization|*|*",
+                "global|organization|members|view",
+                "global|organization|billing|view",
+                "global|organization|resources|access",
+                "global|organization|projects|view",
+                "global|organization|jobs|submit",
+                "global|labs|environments|install",
+                "global|labs|environments|create",
+                "global|organization|self|*",
+                "global|*|provider|view",
+                "custom|qbraid|organizations|create",
+                "custom|qbraid|organizations|delete",
+                "global|*|organization|update",
+            ],
+            "organizationId": "507f1f77bcf86cd799439011",
+            "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+        }
 
     # New Runtime API methods
     def list_devices(self) -> list[RuntimeDevice]:

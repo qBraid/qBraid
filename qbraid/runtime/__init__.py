@@ -41,7 +41,6 @@ Functions
     load_job
     get_providers
     load_provider
-    display_jobs_from_data
 
 Classes
 --------
@@ -79,7 +78,6 @@ Exceptions
 import importlib
 from typing import TYPE_CHECKING
 
-from ._display import display_jobs_from_data
 from .device import QuantumDevice
 from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
@@ -110,7 +108,6 @@ __all__ = [
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
-    "display_jobs_from_data",
     "load_job",
     "get_providers",
     "load_provider",

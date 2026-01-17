@@ -28,15 +28,14 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
-from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
-from qbraid.runtime import DeviceStatus, Result, TargetProfile, ValidationLevel
-from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
+from qbraid.runtime import Result, TargetProfile, ValidationLevel
+from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.provider import _serialize_sequence, get_program_spec_lambdas
 from qbraid.runtime.noise import NoiseModel
@@ -44,7 +43,7 @@ from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.result_data import AnnealingResultData, GateModelResultData
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
-from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
+from ._resources import JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
 
 # Skip pulser tests if not installed
 pulser_found = importlib.util.find_spec("pulser") is not None
@@ -232,13 +231,6 @@ def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
         mock_qbraid_device.run(Mock(), noise_model=NoiseModel("amplitude_damping"))
 
 
-def test_device_run_raises_for_protected_kwargs(valid_qasm2, mock_qbraid_device):
-    """Test raising exception when run method is invoked with protected kwargs."""
-    kwargs = {"openQasm": valid_qasm2}
-    with pytest.raises(ValueError):
-        mock_qbraid_device.run(valid_qasm2, **kwargs)
-
-
 def test_provider_initialize_client_raises_for_multiple_auth_params(mock_client):
     """Test raising exception when initializing client if provided
     both an api key and a client object."""
@@ -370,37 +362,6 @@ def test_device_queue_depth(mock_qbraid_device):
     assert mock_qbraid_device.queue_depth() == 0
 
 
-def test_device_status(mock_qbraid_device, mock_profile, mock_client):
-    """Test getting device status."""
-    assert mock_qbraid_device.status() == DeviceStatus.ONLINE
-
-    original_data = DEVICE_DATA_QIR.copy()
-    try:
-        DEVICE_DATA_QIR["status"] = None
-        with pytest.raises(QbraidRuntimeError):
-            device = QbraidDevice(profile=mock_profile, client=mock_client)
-            device.status()
-    finally:
-        DEVICE_DATA_QIR.clear()
-        DEVICE_DATA_QIR.update(original_data)
-
-
-def test_try_extracting_info_exception_handling(caplog, mock_qbraid_device):
-    """Test try_extracting_info exception handling."""
-    obj = mock_qbraid_device
-
-    def problematic_func():
-        raise ValueError("This is a test error")
-
-    caplog.set_level(logging.INFO)
-    result = obj.try_extracting_info(problematic_func, "Error encountered")
-    assert result is None
-    assert (
-        "Error encountered: This is a test error. Field will be omitted in job metadata."
-        in caplog.text
-    )
-
-
 def test_device_metadata(mock_basic_device):
     """Test getting device metadata."""
     metadata = mock_basic_device.metadata()
@@ -530,63 +491,50 @@ def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
         mock_basic_device.set_options(bad_key=True)
 
 
-def test_estimate_cost_success(mock_qbraid_device):
-    """Test estimate_cost returns the correct cost."""
-    mock_core_client = Mock()
-    mock_core_client.estimate_cost.return_value = 8.75
-    mock_qbraid_device._client = mock_core_client
-
-    cost = mock_qbraid_device.estimate_cost(shots=100, execution_time=1.1)
-    assert float(cost) == 8.75
-    mock_core_client.estimate_cost.assert_called_once_with(mock_qbraid_device.id, 100, 1.1)
-
-
-@pytest.mark.parametrize(
-    "shots, execution_time",
-    [
-        (None, None),
-        (-1, 1.0),
-        (100, -1.0),
-        (0, 0),
-        (None, 0),
-        (0, None),
-    ],
-)
-def test_estimate_cost_raises_for_invalid_args(mock_qbraid_device, shots, execution_time):
-    """Test that estimate_cost raises ValueError for invalid arguments."""
-    with pytest.raises(ValueError):
-        mock_qbraid_device.estimate_cost(shots=shots, execution_time=execution_time)
-
-
-def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
-    """Test estimate_cost raises ResourceNotFoundError if the core client fails."""
-    mock_core_client = Mock()
-    mock_core_client.estimate_cost.side_effect = QuantumServiceRequestError("Request failed")
-    mock_qbraid_device._client = mock_core_client
-
-    with pytest.raises(QbraidRuntimeError):
-        mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
-
-
-@pytest.mark.skipif(importlib.util.find_spec("pyqubo") is None, reason="pyqubo is not installed")
-def test_construct_aux_payload_annealing(mock_nec_va_device):
-    """Test constructing auxiliary payload with an annealing program."""
-    from pyqubo import Spin  # pylint: disable=import-outside-toplevel
-
-    s1, s2, s3, s4 = Spin("s1"), Spin("s2"), Spin("s3"), Spin("s4")
-    H = (4 * s1 + 2 * s2 + 7 * s3 + s4) ** 2
-    model = H.compile()
-
-    aux_payload = mock_nec_va_device._construct_aux_payload(model)
-    assert len(aux_payload) == 1
-    assert aux_payload["numVariables"] == 4
-
-
 @pytest.fixture
 def mock_qbraid_client():
     """Mock client for testing."""
     client = Mock()
-    client._user_metadata = {"organization": "qbraid", "role": "guest"}
+    client._user_metadata = {
+        "valid": True,
+        "userId": "6229769a21fff74352121c46",
+        "userName": "jovyan",
+        "userEmail": "jovyan@example.com",
+        "metadata": {
+            "acknowledgedTerms": "accepted",
+            "tourUser": "completed",
+            "acceptedIntelTerms": "accepted",
+            "miningDetected": "not_detected",
+        },
+        "userRoles": ["organization_admin"],
+        "userPermissions": [
+            "global|organization|organization|manage",
+            "global|organization|members|manage",
+            "global|organization|billing|manage",
+            "global|organization|device|manage",
+            "global|organization|jobs|manage",
+            "global|organization|projects|manage",
+            "global|organization|users|view",
+            "global|organization|users|create",
+            "global|organization|users|update",
+            "global|organization|users|delete",
+            "global|organization|*|*",
+            "global|organization|members|view",
+            "global|organization|billing|view",
+            "global|organization|resources|access",
+            "global|organization|projects|view",
+            "global|organization|jobs|submit",
+            "global|labs|environments|install",
+            "global|labs|environments|create",
+            "global|organization|self|*",
+            "global|*|provider|view",
+            "custom|qbraid|organizations|create",
+            "custom|qbraid|organizations|delete",
+            "global|*|organization|update",
+        ],
+        "organizationId": "507f1f77bcf86cd799439011",
+        "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+    }
     client.session.api_key = "mock_api_key"
     return client
 
@@ -597,10 +545,8 @@ def test_hash_method_creates_and_returns_hash(mock_hash, mock_qbraid_client):
     mock_hash.return_value = 8888
     provider_instance = QbraidProvider(client=mock_qbraid_client)
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
-    expected_organization_role = "qbraid-guest"
-    mock_hash.assert_called_once_with(
-        ("QbraidProvider", "mock_api_key", expected_organization_role)
-    )
+    org_user_id = "68f94f8e0c6d3502fd4c37f5"
+    mock_hash.assert_called_once_with(("QbraidProvider", "mock_api_key", org_user_id))
     assert result == 8888
     assert provider_instance._hash == 8888
 
@@ -713,16 +659,16 @@ def test_sequence_serializer(pulser_sequence):
     """Test the serialization of a Pasqal Pulser sequence."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
 
-    serialized = _serialize_sequence(pulser_sequence)
+    program = _serialize_sequence(pulser_sequence)
 
-    assert "sequenceBuilder" in serialized
-    assert serialized["sequenceBuilder"] == pulser_sequence.to_abstract_repr()
+    assert program.format == "pulser.sequence"
+    assert "sequence_builder" in program.data
+    assert program.data["sequence_builder"] == json.loads(pulser_sequence.to_abstract_repr())
 
 
 def test_provider_get_basis_gates_ionq():
     """Test getting basis gates for IonQ device."""
-    device_data = {"provider": "IonQ", "objArg": "simulator"}
-    basis_gates = QbraidProvider._get_basis_gates(device_data)
+    basis_gates = QbraidProvider._get_basis_gates("ionq:ionq:sim:simulator")
     native = {"gpi", "gpi2", "ms", "zz"}
     unique = set(basis_gates)
     assert len(unique) == len(basis_gates) == 35

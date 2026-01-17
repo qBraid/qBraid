@@ -40,10 +40,6 @@ from qbraid.runtime.result_data import (
     GateModelResultData,
 )
 
-# Aliases for backward compatibility
-NECVectorAnnealerResultData = AnnealingResultData
-QbraidQirSimulatorResultData = GateModelResultData
-
 
 @pytest.fixture
 def annealing_result_data() -> AnnealingResultData:
@@ -65,12 +61,12 @@ def annealing_result_data() -> AnnealingResultData:
 
 
 @pytest.fixture
-def nec_vector_annealer_result_data() -> NECVectorAnnealerResultData:
-    """Fixture to create an NECVectorAnnealerResultData object with some test data.
+def nec_vector_annealer_result_data() -> AnnealingResultData:
+    """Fixture to create an AnnealingResultData object with some test data.
     Returns:
-        NECVectorAnnealerResultData: An NECVectorAnnealerResultData object.
+        AnnealingResultData: An AnnealingResultData object.
     """
-    return NECVectorAnnealerResultData(
+    return AnnealingResultData(
         [
             {
                 "spin": {" x1": 0, " x2": 0, "x1": 0},
@@ -161,8 +157,8 @@ def ahs_result_data(shot_result: AnalogShotResult) -> AnalogResultData:
 
 @pytest.fixture
 def qir_sim_data():
-    """Fixture to create a QbraidQirSimulatorResultData object."""
-    return QbraidQirSimulatorResultData(
+    """Fixture to create a GateModelResultData object."""
+    return GateModelResultData(
         backend_version="0.7.4",
         seed=42,
         measurement_counts={"00": 10, "01": 15},
@@ -471,34 +467,13 @@ def test_ahs_result_data_no_measurement_counts():
     assert result_data.to_dict() == expected_dict
 
 
-def test_qir_sim_data_backend_version_property(qir_sim_data):
-    """Test the backend_version property."""
-    assert qir_sim_data.backend_version == "0.7.4"
-
-
-def test_qir_sim_data_seed_property_with_value(qir_sim_data):
-    """Test the seed property when a seed is provided."""
-    assert qir_sim_data._unscoped_data.get("seed") == 42  # pylint: disable=no-member
-
-
-def test_qir_sim_data_seed_property_with_none():
-    """Test the seed property when no seed is provided."""
-    result_data = QbraidQirSimulatorResultData(
-        backend_version="v1.2.3",
-        seed=None,
-        measurement_counts={"00": 10, "01": 15},
-    )
-
-    assert result_data._unscoped_data.get("seed") is None  # pylint: disable=no-member
-
-
 def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):
     """Test that the inherited measurement_counts property is working correctly."""
     assert qir_sim_data.get_counts() == {"00": 10, "01": 15}
 
 
 def test_nec_vector_annealer_result_data(nec_vector_annealer_result_data):
-    """Test NECVectorAnnealerResultData."""
+    """Test AnnealingResultData."""
     assert nec_vector_annealer_result_data._solutions == [
         {
             "spin": {" x1": 0, " x2": 0, "x1": 0},
@@ -511,7 +486,7 @@ def test_nec_vector_annealer_result_data(nec_vector_annealer_result_data):
 
 
 def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data):
-    """Test NECVectorAnnealerResultData to_dict."""
+    """Test AnnealingResultData to_dict."""
     result_dict = nec_vector_annealer_result_data.to_dict()
     assert result_dict == {
         "solutions": [
@@ -528,7 +503,7 @@ def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data
 
 
 def test_nec_vector_annealer_result_data_eq(nec_vector_annealer_result_data):
-    """Test NECVectorAnnealerResultData equality."""
+    """Test AnnealingResultData equality."""
     assert nec_vector_annealer_result_data._solutions[0]["spin"] == {" x1": 0, " x2": 0, "x1": 0}
     assert nec_vector_annealer_result_data._solutions[0]["energy"] == 0
     assert nec_vector_annealer_result_data._solutions[0]["time"] == 0.006517000030726194

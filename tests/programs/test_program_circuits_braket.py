@@ -25,6 +25,7 @@ from braket.circuits import Circuit, Instruction, gates
 
 from qbraid.programs import ProgramTypeError
 from qbraid.programs.gate_model.braket import BraketCircuit
+from qbraid.runtime.profile import TargetProfile
 
 
 def get_subsets(nqubits):
@@ -216,7 +217,11 @@ def test_transform_with_ionq_device():
     # Mock device with IonQ provider
     mock_device = Mock()
     mock_device.simulator = False
-    mock_device._provider_name = "IonQ"
+    mock_device.profile = TargetProfile(
+        device_id="test_device",
+        simulator=False,
+        provider_name="IonQ",
+    )
 
     qprogram.transform(mock_device)
 
@@ -239,7 +244,11 @@ def test_transform_with_amazon_braket_device():
     # Mock device with Amazon Braket provider
     mock_device = Mock()
     mock_device.simulator = False
-    mock_device._provider_name = "Amazon Braket"
+    mock_device.profile = TargetProfile(
+        device_id="test_device",
+        simulator=False,
+        provider_name="Amazon Braket",
+    )
 
     qprogram.transform(mock_device)
 
@@ -262,7 +271,11 @@ def test_transform_with_other_provider():
     # Mock device with other provider
     mock_device = Mock()
     mock_device.simulator = False
-    mock_device._provider_name = "Other Provider"
+    mock_device.profile = TargetProfile(
+        device_id="test_device",
+        simulator=False,
+        provider_name="Other Provider",
+    )
 
     qprogram.transform(mock_device)
 
