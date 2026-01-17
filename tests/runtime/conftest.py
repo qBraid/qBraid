@@ -35,7 +35,6 @@ from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 from ._resources import (
     DEVICE_DATA_AQUILA,
     DEVICE_DATA_QIR,
-    DEVICE_DATA_QUERA_QASM,
     MockClient,
     MockDevice,
 )
@@ -157,12 +156,6 @@ def device_data_qir():
 
 
 @pytest.fixture
-def device_data_quera():
-    """Return a dictionary of device data for the QuEra QASM simulator."""
-    return DEVICE_DATA_QUERA_QASM
-
-
-@pytest.fixture
 def device_data_aquila():
     """Return a dictionary of device data for the QuEra Aquila QPU."""
     return DEVICE_DATA_AQUILA
@@ -213,11 +206,11 @@ def mock_provider(mock_client):
 def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
-        device_id="qbraid_qir_simulator",
+        device_id="qbraid:qbraid:sim:qir-sv",
         simulator=True,
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
-        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
+        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid:qbraid:sim:qir-sv"),
         noise_models=NoiseModelSet.from_iterable(["ideal"]),
     )
 

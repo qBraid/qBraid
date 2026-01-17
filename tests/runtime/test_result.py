@@ -25,7 +25,6 @@ import numpy as np
 import pytest
 
 from qbraid.programs import ExperimentType
-from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.postprocess import (
     distribute_counts,
     format_data,
@@ -40,6 +39,10 @@ from qbraid.runtime.result_data import (
     AnnealingResultData,
     GateModelResultData,
 )
+
+# Aliases for backward compatibility
+NECVectorAnnealerResultData = AnnealingResultData
+QbraidQirSimulatorResultData = GateModelResultData
 
 
 @pytest.fixture
@@ -475,7 +478,7 @@ def test_qir_sim_data_backend_version_property(qir_sim_data):
 
 def test_qir_sim_data_seed_property_with_value(qir_sim_data):
     """Test the seed property when a seed is provided."""
-    assert qir_sim_data.seed == 42
+    assert qir_sim_data._unscoped_data.get("seed") == 42  # pylint: disable=no-member
 
 
 def test_qir_sim_data_seed_property_with_none():
@@ -486,7 +489,7 @@ def test_qir_sim_data_seed_property_with_none():
         measurement_counts={"00": 10, "01": 15},
     )
 
-    assert result_data.seed is None
+    assert result_data._unscoped_data.get("seed") is None  # pylint: disable=no-member
 
 
 def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):

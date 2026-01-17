@@ -35,7 +35,7 @@ from ._resources import JOB_DATA_QIR
 @pytest.fixture
 def job_id():
     """Mock job data for testing"""
-    return JOB_DATA_QIR["qbraidJobId"]
+    return JOB_DATA_QIR["jobQrn"]
 
 
 def test_load_job(mock_client, job_id):

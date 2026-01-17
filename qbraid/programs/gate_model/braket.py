@@ -32,8 +32,6 @@ if TYPE_CHECKING:
     import braket.circuits
     import numpy as np
 
-    import qbraid.runtime.aws
-
 
 class BraketCircuit(GateModelProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""

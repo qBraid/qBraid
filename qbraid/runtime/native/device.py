@@ -88,12 +88,12 @@ class QbraidDevice(QuantumDevice):
     # pylint: disable-next=too-many-arguments
     def submit(
         self,
-        program: Program,
+        run_input: Program | list[Program],
         shots: int,
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
-    ) -> QbraidJob:
+    ) -> QbraidJob | list[QbraidJob]:
         """Submit a program to the device."""
         tags = tags or {}
         runtime_options = runtime_options or {}
@@ -102,13 +102,21 @@ class QbraidDevice(QuantumDevice):
         if noise_model:
             runtime_options["noiseModel"] = self._resolve_noise_model(noise_model)
 
-        job_request = JobRequest(
-            deviceQrn=self.id,
-            program=program,
-            shots=shots,
-            name=name,
-            tags=tags,
-            runtime_options=runtime_options,
-        )
-        job_data = self.client.create_job(job_request)
-        return QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client)
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
+
+        jobs = []
+
+        for program in run_input:
+            job_request = JobRequest(
+                deviceQrn=self.id,
+                program=program,
+                shots=shots,
+                name=name,
+                tags=tags,
+                runtime_options=runtime_options,
+            )
+            job_data = self.client.create_job(job_request)
+            jobs.append(QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client))
+
+        return jobs[0] if is_single_input else jobs

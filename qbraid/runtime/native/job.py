@@ -18,7 +18,7 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Type, Union
+from typing import TYPE_CHECKING, Any, Optional, Type, Union
 
 from qbraid_core.services.runtime import QuantumRuntimeClient
 
@@ -85,6 +85,13 @@ class QbraidJob(QuantumJob):
                 status.set_status_message(job_model.statusMsg)
             self._cache_metadata.update({**job_data, "status": status})
         return self._cache_metadata["status"]
+
+    def metadata(self) -> dict[str, Any]:
+        """Return the metadata regarding the job."""
+        self._cache_metadata.pop("job_id", None)
+        if self._cache_metadata.get("program") is None:
+            self._cache_metadata["program"] = self.client.get_job_program(self.id)
+        return super().metadata()
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
