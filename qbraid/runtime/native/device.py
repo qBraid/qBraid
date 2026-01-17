@@ -114,7 +114,7 @@ class QbraidDevice(QuantumDevice):
                 shots=shots,
                 name=name,
                 tags=tags,
-                runtime_options=runtime_options,
+                runtimeOptions=runtime_options,
             )
             job_data = self.client.create_job(job_request)
             jobs.append(QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client))

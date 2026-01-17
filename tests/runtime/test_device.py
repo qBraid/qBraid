@@ -35,15 +35,19 @@ from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
 from qbraid.runtime import Result, TargetProfile, ValidationLevel
-from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.exceptions import ProgramValidationError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.provider import _serialize_sequence, get_program_spec_lambdas
+from qbraid.runtime.native.provider import (
+    _serialize_sequence,
+    get_program_spec_lambdas,
+    validate_qasm_no_measurements,
+)
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.result_data import AnnealingResultData, GateModelResultData
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
-from ._resources import JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
+from ._resources import DEVICE_DATA_QIR, JOB_DATA_NEC, JOB_DATA_QIR, RESULTS_DATA_NEC, MockDevice
 
 # Skip pulser tests if not installed
 pulser_found = importlib.util.find_spec("pulser") is not None
@@ -829,3 +833,169 @@ def test_set_target_spec_raises_if_none(mock_device_program_spec_none: QbraidDev
     """Test setting target spec raises ValueError if program_spec is None."""
     with pytest.raises(ValueError):
         mock_device_program_spec_none.set_target_program_type("qasm2")
+
+
+def test_device_validate_warns_for_too_many_qubits(mock_basic_device, cirq_uniform):
+    """Test that validate warns when circuit has too many qubits with ValidationLevel.WARN."""
+    circuit = cirq_uniform(num_qubits=100)  # More than device capacity
+    mock_basic_device.set_options(validate=ValidationLevel.WARN)
+    # Set target_spec to None to skip program spec validation
+    mock_basic_device._target_spec = None
+
+    with pytest.warns(
+        UserWarning, match="Number of qubits in the circuit.*exceeds.*device's capacity"
+    ):
+        mock_basic_device.validate([circuit])
+
+
+def test_device_validate_warns_for_invalid_program_spec(mock_qbraid_device, cirq_uniform):
+    """Test that validate warns when program spec validation fails with ValidationLevel.WARN."""
+    circuit = cirq_uniform(num_qubits=3)
+    mock_qbraid_device.set_options(validate=ValidationLevel.WARN)
+
+    # Mock a program spec that matches cirq but will fail validation
+    # Set target_spec to match cirq so _get_target_spec doesn't raise
+    mock_qbraid_device._target_spec = ProgramSpec(cirq.Circuit, alias="cirq")
+
+    # Mock validate to raise ValueError to trigger warning
+    with patch.object(
+        mock_qbraid_device._target_spec, "validate", side_effect=ValueError("Invalid circuit")
+    ):
+        with pytest.warns(UserWarning, match="Invalid circuit"):
+            mock_qbraid_device.validate([circuit])
+
+
+def test_device_validate_raises_for_invalid_program_spec(mock_qbraid_device, cirq_uniform):
+    """Test that validate raises ProgramValidationError when validation fails with RAISE level."""
+    circuit = cirq_uniform(num_qubits=3)
+    mock_qbraid_device.set_options(validate=ValidationLevel.RAISE)
+
+    # Mock a program spec that matches cirq but will fail validation
+    mock_qbraid_device._target_spec = ProgramSpec(cirq.Circuit, alias="cirq")
+
+    # Mock validate to raise ValueError which should be wrapped in ProgramValidationError
+    with patch.object(
+        mock_qbraid_device._target_spec, "validate", side_effect=ValueError("Invalid circuit")
+    ):
+        with pytest.raises(ProgramValidationError, match="Invalid circuit"):
+            mock_qbraid_device.validate([circuit])
+
+
+def test_resolve_noise_model_raises_when_noise_models_not_supported(mock_client):
+    """Test that _resolve_noise_model raises when device doesn't support noise models."""
+    profile_no_noise = TargetProfile(
+        device_id="test_device",
+        simulator=True,
+        noise_models=None,  # No noise models supported
+    )
+    device = QbraidDevice(profile=profile_no_noise, client=mock_client)
+
+    with pytest.raises(ValueError, match="Noise models are not supported by this device"):
+        device._resolve_noise_model("ideal")
+
+
+def test_resolve_noise_model_with_noise_model_instance(mock_qbraid_device):
+    """Test that _resolve_noise_model works with NoiseModel instance."""
+    noise_model_str = mock_qbraid_device._resolve_noise_model(NoiseModel("ideal"))
+    assert isinstance(noise_model_str, str)
+
+
+def test_resolve_noise_model_raises_for_unsupported_model(mock_qbraid_device):
+    """Test that _resolve_noise_model raises when noise model not in device's supported models."""
+    with pytest.raises(ValueError, match="Noise model 'depolarizing' not supported by device"):
+        mock_qbraid_device._resolve_noise_model("depolarizing")
+
+
+def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client):
+    """Test that get_devices raises ResourceNotFoundError when no directAccess devices found."""
+    provider = QbraidProvider(client=mock_client)
+    # Mock client to return devices without directAccess
+    device_data_no_direct = DEVICE_DATA_QIR.copy()
+    device_data_no_direct["data"]["directAccess"] = False
+    mock_client.list_devices = Mock()
+    mock_client.list_devices.return_value = [
+        RuntimeDevice.model_validate(device_data_no_direct["data"])
+    ]
+
+    with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria"):
+        provider.get_devices()
+
+
+def test_provider_get_device_raises_when_no_direct_access(mock_client):
+    """Test that get_device raises ValueError when device doesn't support direct access."""
+    provider = QbraidProvider(client=mock_client)
+    # Mock client to return device without directAccess
+    device_data_no_direct = DEVICE_DATA_QIR.copy()
+    device_data_no_direct["data"]["directAccess"] = False
+    mock_client.get_device = Mock()
+    mock_client.get_device.return_value = RuntimeDevice.model_validate(
+        device_data_no_direct["data"]
+    )
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "qBraid does not currently support direct access to device 'qbraid:qbraid:sim:qir-sv'"
+        ),
+    ):
+        provider.get_device("qbraid:qbraid:sim:qir-sv")
+
+
+def test_qbraid_device_submit_with_noise_model(mock_qbraid_device):
+    """Test that submit calls _resolve_noise_model when noise_model is provided."""
+    test_program = Program(format="qasm3", data="OPENQASM 3.0; qubit[1] q; h q[0];")
+
+    # Mock the client's create_job to return a job
+    job_data_mock = Mock()
+    job_data_mock.jobQrn = "test:job:qrn"
+    mock_qbraid_device.client.create_job = Mock(return_value=job_data_mock)
+
+    # Resolve noise model to get expected name
+    expected_noise_model_name = mock_qbraid_device._resolve_noise_model(NoiseModel("ideal"))
+
+    # Create runtime_options dict that will be modified in submit
+    runtime_options_dict = {"noise_model": NoiseModel("ideal")}
+
+    # Submit with noise_model in runtime_options
+    job = mock_qbraid_device.submit(test_program, shots=100, runtime_options=runtime_options_dict)
+
+    # Verify create_job was called and _resolve_noise_model path was executed
+    assert mock_qbraid_device.client.create_job.called
+    # Verify runtime_options dict was modified (noise_model popped, noiseModel added)
+    assert "noise_model" not in runtime_options_dict
+    assert runtime_options_dict.get("noiseModel") == expected_noise_model_name
+    assert isinstance(job, QbraidJob)
+
+
+def test_validate_qasm_no_measurements_with_measurements():
+    """Test that validate_qasm_no_measurements raises ValueError when QASM has measurements."""
+    qasm_with_measurements = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c[2];
+    h q[0];
+    measure q[0] -> c[0];
+    """
+
+    device_id = "quera_device"
+    with pytest.raises(
+        ValueError,
+        match=f"OpenQASM programs submitted to the {device_id} cannot contain measurement gates",
+    ):
+        validate_qasm_no_measurements(qasm_with_measurements, device_id)
+
+
+def test_validate_qasm_no_measurements_without_measurements():
+    """Test that validate_qasm_no_measurements passes when QASM has no measurements."""
+    qasm_no_measurements = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    h q[0];
+    cx q[0], q[1];
+    """
+
+    device_id = "quera_device"
+    # Should not raise
+    validate_qasm_no_measurements(qasm_no_measurements, device_id)

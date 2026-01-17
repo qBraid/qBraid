@@ -23,6 +23,7 @@ import textwrap
 import openqasm3.ast
 import pytest
 from openqasm3.parser import parse
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
@@ -101,3 +102,14 @@ def test_load_qasm2_program_from_parsed_obj(simple_qasm):
 
     qbraid_program = load_program(parsed_program)
     assert isinstance(qbraid_program, OpenQasm2Program)
+
+
+def test_qasm2_program_serialize(simple_qasm):
+    """Test serialize method of OpenQasm2Program"""
+    qbraid_program = OpenQasm2Program(simple_qasm)
+    serialized = qbraid_program.serialize()
+
+    assert isinstance(serialized, Program)
+    assert serialized.format == "qasm2"
+    assert "OPENQASM 2.0" in serialized.data
+    assert "h q[0]" in serialized.data

@@ -34,6 +34,7 @@ try:
     )
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
     from qbraid.programs.annealing.qubo import QuboProgram
+    from qbraid.programs.typer import QuboCoefficientsDict
     from qbraid.runtime.native.provider import _serialize_program
 
     pyqubo_not_installed = False
@@ -146,6 +147,19 @@ def test_pyqubo_model_to_problem(pyqubo_model):
     assert isinstance(problem, QuboProblem)
     assert problem.num_variables() == 4
     assert pyqubo_model_instance.num_qubits == 4
+
+
+def test_qubo_program_to_problem():
+    """Tests the conversion of a QuboProgram instance to a QuboProblem."""
+    coefficients = {("x1", "x2"): 0.5, ("x2", "x3"): -1.0}
+    qubo_dict: QuboCoefficientsDict = coefficients  # type: ignore
+
+    qubo_program = QuboProgram(qubo_dict)
+    problem = qubo_program.to_problem()
+
+    assert isinstance(problem, QuboProblem)
+    assert problem.quadratic == coefficients
+    assert problem.num_variables() == 3
 
 
 def test_problem_encoder(mock_annealing_program):

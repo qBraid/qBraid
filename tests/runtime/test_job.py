@@ -31,6 +31,7 @@ from qbraid.runtime.exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
+from qbraid.runtime.experiment import ExperimentMetadata
 from qbraid.runtime.native.job import QbraidJob
 
 from ._resources import JOB_DATA_QIR
@@ -286,3 +287,11 @@ def test_job_get_result_cls_raises_for_mismatch_expt_type():
     """Test that get_result_data_cls raises a ValueError for unsupported experiment type."""
     with pytest.raises(ValueError, match="Unsupported experiment_type 'OTHER'"):
         QbraidJob._get_result_data_cls(ExperimentType.OTHER)
+
+
+def test_job_get_metadata_model_default_case():
+    """Test that _get_metadata_model returns ExperimentMetadata for unsupported experiment type."""
+    # Use a hypothetical unsupported experiment type
+    # This tests the default return case in _get_metadata_model
+    metadata_model = QbraidJob._get_metadata_model(ExperimentType.OTHER)
+    assert metadata_model == ExperimentMetadata
