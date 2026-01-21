@@ -20,7 +20,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional
 
-import boto3
 from braket.aws import AwsQuantumTask
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
     AnalogHamiltonianSimulationQuantumTaskResult,
@@ -110,20 +109,23 @@ class BraketQuantumTask(QuantumJob):
             raise ValueError(f"Unsupported result type: {type(bk_result).__name__}")
 
         # Retrieve partial measurement qubit information from job tags
-        partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
-            bk_result.measured_qubits
-        )
+        if isinstance(bk_result, GateModelQuantumTaskResult) and hasattr(
+            bk_result, "measured_qubits"
+        ):
+            partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
+                bk_result.measured_qubits
+            )
+            builder: BraketGateModelResultBuilder = builder_class(
+                bk_result, partial_measurement_qubits
+            )
+        else:
+            builder: BraketGateModelResultBuilder | BraketAhsResultBuilder = builder_class(
+                bk_result
+            )
+
         result_data = {
-            "measurement_counts": (
-                builder_class(bk_result, partial_measurement_qubits).get_counts()
-                if success
-                else None
-            ),
-            "measurements": (
-                builder_class(bk_result, partial_measurement_qubits).measurements()
-                if success
-                else None
-            ),
+            "measurement_counts": builder.get_counts() if success else None,
+            "measurements": builder.measurements() if success else None,
         }
 
         data = data_class(**result_data)
@@ -170,7 +172,7 @@ class BraketQuantumTask(QuantumJob):
             List of indices corresponding to the positions of partial measurement qubits
             in the measurement results array, or None if no partial measurements were used.
         """
-        braket_client = boto3.client("braket", region_name=self._task._aws_session.region)
+        braket_client = self._task._aws_session.braket_client
         response = braket_client.get_quantum_task(quantumTaskArn=self._task.id)
 
         if "partial_measurement_qubits" not in response["tags"]:

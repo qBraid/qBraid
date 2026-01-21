@@ -24,6 +24,7 @@ import json
 import warnings
 from unittest.mock import MagicMock, Mock, patch
 
+import boto3
 import numpy as np
 import pytest
 from botocore.exceptions import NoCredentialsError
@@ -82,6 +83,11 @@ class TestAwsSession:
 
     def __init__(self):
         self.region = "us-east-1"
+
+    @property
+    def braket_client(self):
+        """Return a braket client."""
+        return boto3.client("braket", region_name=self.region)
 
     def get_device(self, arn):  # pylint: disable=unused-argument
         """Returns metadata for a device."""
@@ -368,7 +374,8 @@ def test_batch_run(mock_aws_device, sv1_profile):
 def test_availability_future_utc_datetime(available_time, expected):
     """Test calculating future utc datetime"""
     current_utc_datime = datetime.datetime(2024, 1, 1, 0, 0, 0)
-    _, datetime_str = _calculate_future_time(available_time, current_utc_datime)
+    _, datetime_obj = _calculate_future_time(available_time, current_utc_datime)
+    datetime_str = datetime_obj.strftime("%Y-%m-%dT%H:%M:%SZ")
     assert datetime_str == expected
 
 
@@ -383,13 +390,9 @@ def test_device_availability_window(braket_provider, mock_sv1):
         mock_aws_device.return_value = mock_device
         mock_aws_device_2.return_value = mock_device
         device = braket_provider.get_device(SV1_ARN)
-        _, is_available_time, iso_str = device.availability_window()
+        _, is_available_time, datetime_obj = device.availability_window()
         assert len(is_available_time.split(":")) == 3
-        assert isinstance(iso_str, str)
-        try:
-            datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
-        except ValueError:
-            pytest.fail("iso_str not in expected format")
+        assert isinstance(datetime_obj, datetime.datetime)
 
 
 @patch("qbraid.runtime.aws.BraketProvider")
@@ -573,7 +576,7 @@ def test_device_submit_without_partial_measurement_tags(mock_aws_device, sv1_pro
     result = device.submit(circuit, shots=100)
 
     # Verify that run_batch was called with empty tags
-    mock_device_instance.run_batch.assert_called_once_with([circuit], shots=100)
+    mock_device_instance.run_batch.assert_called_once_with([circuit], tags=None, shots=100)
 
     # Verify the returned task
     assert isinstance(result, BraketQuantumTask)

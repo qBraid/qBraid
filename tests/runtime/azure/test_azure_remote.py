@@ -49,7 +49,7 @@ if TYPE_CHECKING:
 @pytest.mark.skip(reason="The Free Credits plan has been discontinued in Azure Quantum")
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
-    device = provider.get_device("quantinuum.sim.h1-1sc")
+    device = provider.get_device("quantinuum.sim.h2-1e")
     status = device.status()
 
     if status != DeviceStatus.ONLINE:
@@ -182,7 +182,7 @@ def test_submit_quil_to_rigetti(
     if direct:
         job = device.submit(quil_string, shots=shots, input_params=input_params)
     else:
-        job = device.run(pyquil_program, shots=100, input_params=input_params)
+        job = device.run(pyquil_program, shots=shots, input_params=input_params)
 
     job.wait_for_final_state()
     assert job.status() == JobStatus.COMPLETED

@@ -98,9 +98,11 @@ class IonQDevice(QuantumDevice):
         raise ValueError(f"Unrecognized device status: {status}")
 
     def avg_queue_time(self) -> int:
-        """Return the average queue time for the IonQ device."""
+        """Return the average queue time for the IonQ device (in minutes)."""
         device_data = self.session.get_device(self.id)
-        return device_data["average_queue_time"]
+        milliseconds = device_data["average_queue_time"]
+        minutes = milliseconds / 60000
+        return int(minutes)
 
     def transform(self, run_input: QasmStringType) -> QasmStringType:
         """Transform the input to the IonQ device."""

@@ -586,6 +586,15 @@ def test_azure_device_submit_batch_job(azure_device, mock_target):
     assert mock_target.submit.call_count == len(run_input)
 
 
+def test_azure_device_avg_queue_time(azure_device, mock_target):
+    """Test getting the average queue time of an AzureQuantumDevice."""
+    mock_target.average_queue_time = 120
+    assert azure_device.avg_queue_time() == 2
+
+    mock_target.average_queue_time = None
+    assert azure_device.avg_queue_time() is None
+
+
 def test_azure_device_str_representation(azure_device):
     """Test the string representation of an AzureQuantumDevice."""
     assert str(azure_device) == "AzureQuantumDevice('test.qpu.test')"

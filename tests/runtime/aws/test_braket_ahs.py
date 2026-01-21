@@ -45,7 +45,7 @@ from braket.tasks import AnalogHamiltonianSimulationQuantumTaskResult
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ExperimentType, ProgramSpec
-from qbraid.runtime import DeviceStatus, TargetProfile
+from qbraid.runtime import AhsResultData, DeviceStatus, Result, TargetProfile
 from qbraid.runtime.aws.device import BraketDevice
 from qbraid.runtime.aws.job import BraketQuantumTask
 from qbraid.runtime.aws.provider import BraketProvider
@@ -536,3 +536,23 @@ def test_get_counts_error():
 
         with pytest.raises(ResultDecodingError):
             result.get_counts()
+
+
+def test_ahs_task_result(ahs_result):
+    """Test result method for an AHS task."""
+    mock_task = Mock(spec=AwsQuantumTask)
+    mock_task.result.return_value = ahs_result
+    mock_task.metadata.return_value = {
+        "status": "COMPLETED",
+        "deviceArn": AQUILA_ARN,
+        "quantumTaskArn": TASK_ARN,
+    }
+
+    task = BraketQuantumTask(TASK_ARN, task=mock_task)
+    result = task.result()
+
+    assert isinstance(result, Result)
+    assert result.success is True
+    assert result.device_id == AQUILA_ARN
+    assert result.job_id == TASK_ARN
+    assert isinstance(result.data, AhsResultData)

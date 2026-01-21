@@ -162,8 +162,8 @@ TOSHIKO_EXEC_ESTIMATE = {
 def online_window() -> str:
     """Return a window start time for an online QPU."""
     now = datetime.datetime.now()
-    start_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:00:00"
-    end_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:59:59"
+    start_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:00:00"
+    end_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:59:59"
     return start_time, end_time
 
 
@@ -449,8 +449,7 @@ def test_oqc_device_status_from_window_unavailable(lucy_sim_data, toshiko_data):
         provider = OQCProvider(token="fake_token")
 
         now = datetime.datetime.now()
-        year, month, day = now.year, now.month, now.day
-        window = f"{year + 1}-{month}-{day} 00:50:00"
+        window = f"{now.year + 1}-{now.month:02d}-{now.day:02d} 00:50:00"
         mock_client.return_value.get_next_window.return_value = window
         unavailable_device = provider.get_device(lucy_sim_data["id"])
         assert unavailable_device.status() == DeviceStatus.UNAVAILABLE

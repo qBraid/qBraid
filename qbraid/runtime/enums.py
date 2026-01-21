@@ -31,10 +31,10 @@ class DeviceStatus(Enum):
         RETIRED (str): Device has been retired and is no longer operational.
     """
 
-    ONLINE = "online"
-    UNAVAILABLE = "unavailable"
-    OFFLINE = "offline"
-    RETIRED = "retired"
+    ONLINE = "ONLINE"
+    UNAVAILABLE = "UNAVAILABLE"
+    OFFLINE = "OFFLINE"
+    RETIRED = "RETIRED"
 
 
 class JobStatus(Enum):
