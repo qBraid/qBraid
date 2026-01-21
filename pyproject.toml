@@ -57,6 +57,7 @@ qir = ["qbraid-qir>=0.2.0,<=0.5.0"]
 qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.39.0,<0.42", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
 quera = ["flair-visual[vis]>=0.5.3", "pandas"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
+openfermion = ["openfermion"]
 
 [project.entry-points."qbraid.programs"]
 qubo = "qbraid.programs.annealing.qubo:QuboProgram"
