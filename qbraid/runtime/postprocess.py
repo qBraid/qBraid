@@ -134,8 +134,18 @@ def format_data(
             }
             normalized_data = normalize_bit_lengths(key_str_data)
             num_bits = max(len(key) for key in normalized_data)
-            all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
-            data = {key: normalized_data.get(key, 0) for key in all_keys}
+
+            if include_zero_values:
+                # Warn if generating a very large state space
+                if num_bits > 20:
+                    warnings.warn(
+                        f"Generating all {2**num_bits:,} possible states for {num_bits} qubits. "
+                        f"This may consume significant memory. Consider using include_zero_values=False."
+                    )
+                all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
+                data = {key: normalized_data.get(key, 0) for key in all_keys}
+            else:
+                data = normalized_data
             input_is_bin = True
         elif all(key.isdigit() for key in data.keys()):
             data = {int(key): value for key, value in data.items()}
