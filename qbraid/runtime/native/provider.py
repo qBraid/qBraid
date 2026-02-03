@@ -16,9 +16,14 @@
 Module defining QbraidProvider class.
 
 """
+
 from __future__ import annotations
 
+import json
+import os
+import urllib.request
 import warnings
+import zipfile
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import pyqasm
@@ -293,6 +298,209 @@ class QbraidProvider(QuantumProvider):
 
         job_data, msg = process_job_data(jobs, query)
         return display_jobs_from_data(job_data, msg)
+
+    def download_legacy_jobs(self, dest_path: Optional[str] = None) -> str:
+        """Download legacy jobs archive from qBraid storage.
+
+        Retrieves a signed download URL for the user's legacy jobs archive
+        (.old_jobs.json.zip), downloads it, extracts the JSON file, and
+        removes the zip archive.
+
+        Args:
+            dest_path: Destination path for the extracted JSON file. If not provided,
+                downloads to the current directory as '.old_jobs.json'.
+
+        Returns:
+            The path to the extracted JSON file.
+
+        Raises:
+            ResourceNotFoundError: If the legacy jobs file does not exist or
+                the download URL cannot be retrieved.
+        """
+        warnings.warn(
+            "download_legacy_jobs is a temporary method for retrieving legacy job "
+            "data through the qBraid SDK. It will be removed in 6 months.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if dest_path is None:
+            dest_path = os.path.join(os.getcwd(), ".old_jobs.json")
+
+        if os.path.exists(dest_path):
+            raise FileExistsError(f"File already exists at '{dest_path}'.")
+
+        legacy_file_path = ".old_jobs.json.zip"
+        endpoint = f"/files/download/{legacy_file_path}"
+
+        try:
+            response = self.client.session.get(endpoint)
+            response_data = response.json()
+        except (ValueError, QuantumServiceRequestError) as err:
+            raise ResourceNotFoundError(
+                "Failed to retrieve legacy jobs download URL. "
+                "The file may not exist or you may not have access."
+            ) from err
+
+        if not response_data.get("success"):
+            raise ResourceNotFoundError(
+                "Failed to retrieve legacy jobs download URL. "
+                "The file may not exist or you may not have access."
+            )
+
+        download_url = response_data.get("data", {}).get("url")
+        if not download_url:
+            raise ResourceNotFoundError("Download URL not found in response.")
+
+        zip_path = dest_path + ".zip"
+        urllib.request.urlretrieve(download_url, zip_path)
+
+        with zipfile.ZipFile(zip_path, "r") as zf:
+            with zf.open(".old_jobs.json") as src, open(dest_path, "wb") as dst:
+                dst.write(src.read())
+
+        os.remove(zip_path)
+
+        return dest_path
+
+    def _load_legacy_jobs(self, path: str) -> list[dict[str, Any]]:
+        """Load legacy jobs from a JSON file.
+
+        Args:
+            path: Path to the legacy jobs JSON file.
+
+        Returns:
+            List of legacy job dictionaries.
+
+        Raises:
+            FileNotFoundError: If the file does not exist.
+        """
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Legacy jobs file not found at '{path}'.")
+
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    # pylint: disable=too-many-arguments
+    def _process_legacy_job_data(
+        self,
+        jobs: list[dict[str, Any]],
+        device_id: Optional[str] = None,
+        provider: Optional[str] = None,
+        status: Optional[str] = None,
+        tags: Optional[dict] = None,
+        max_results: int = 10,
+    ) -> tuple[list[list[str]], str]:
+        """Process and filter legacy job data for display.
+
+        Args:
+            jobs: List of legacy job dictionaries.
+            device_id: Filter by device ID.
+            provider: Filter by provider name.
+            status: Filter by job status.
+            tags: Filter by job tags.
+            max_results: Maximum number of results to return.
+
+        Returns:
+            Tuple of (job_data, message) where job_data is a list of
+            [job_id, timestamp, status] lists.
+        """
+        filtered_jobs = jobs
+
+        if device_id:
+            filtered_jobs = [j for j in filtered_jobs if j.get("qbraidDeviceId") == device_id]
+
+        if provider:
+            filtered_jobs = [
+                j for j in filtered_jobs if j.get("provider", "").lower() == provider.lower()
+            ]
+
+        if status:
+            filtered_jobs = [
+                j for j in filtered_jobs if j.get("qbraidStatus", "").upper() == status.upper()
+            ]
+
+        if tags:
+            for key, value in tags.items():
+                filtered_jobs = [j for j in filtered_jobs if j.get("tags", {}).get(key) == value]
+
+        filtered_jobs = sorted(filtered_jobs, key=lambda j: j.get("createdAt", ""), reverse=True)
+
+        if max_results:
+            filtered_jobs = filtered_jobs[:max_results]
+
+        job_data = []
+        for job in filtered_jobs:
+            job_id = job.get("qbraidJobId", "N/A")
+            timestamps = job.get("timeStamps", {})
+            created_at = timestamps.get("createdAt") or job.get("createdAt", "N/A")
+            if created_at and created_at != "N/A":
+                created_at = created_at.replace("T", " ").replace("Z", "").split(".")[0]
+            job_status = job.get("qbraidStatus", job.get("status", "UNKNOWN"))
+            job_data.append([job_id, created_at, job_status])
+
+        num_jobs = len(job_data)
+        total_jobs = len(jobs)
+        if num_jobs == 0:
+            message = "No legacy jobs found matching criteria."
+        else:
+            plural = "s" if total_jobs > 1 else ""
+            message = f"Displaying {num_jobs} of {total_jobs} legacy job{plural}."
+
+        return job_data, message
+
+    # pylint: disable=too-many-arguments
+    def display_legacy_jobs(
+        self,
+        path: Optional[str] = None,
+        device_id: Optional[str] = None,
+        provider: Optional[str] = None,
+        status: Optional[str] = None,
+        tags: Optional[dict] = None,
+        max_results: int = 10,
+    ):
+        """Displays a list of qBraid legacy quantum jobs from a local file.
+
+        Reads qBraid legacy job data from a local JSON file and displays them
+        in a table format. If the file is not found at the specified path,
+        attempts to download it first.
+
+        Args:
+            path: Path to the qBraid legacy jobs JSON file.
+                If not provided, defaults to '.old_jobs.json' in
+                the current directory.
+            device_id: Filter by qBraid device ID.
+            provider: Filter by provider name.
+            status: Filter by job status.
+            tags: Filter by job tags.
+            max_results: Maximum number of results to display. Defaults to 10.
+
+        Returns:
+            Display output (HTML table in Jupyter, text table otherwise).
+        """
+        warnings.warn(
+            "display_legacy_jobs is a temporary method for retrieving legacy job "
+            "data through the qBraid SDK. It will be removed in 6 months.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        if path is None:
+            path = os.path.join(os.getcwd(), ".old_jobs.json")
+
+        if not os.path.exists(path):
+            self.download_legacy_jobs(dest_path=path)
+
+        jobs = self._load_legacy_jobs(path)
+
+        job_data, message = self._process_legacy_job_data(
+            jobs,
+            device_id=device_id,
+            provider=provider,
+            status=status,
+            tags=tags,
+            max_results=max_results,
+        )
+
+        return display_jobs_from_data(job_data, message)
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
