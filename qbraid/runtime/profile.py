@@ -17,6 +17,7 @@ Module defining the Configuration class for quantum devices, providing necessary
 parameters for integration with the qBraid runtime.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union

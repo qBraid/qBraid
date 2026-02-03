@@ -18,6 +18,7 @@
 Unit tests for submitting a Braket AHS job.
 
 """
+
 import json
 import uuid
 from typing import Any, Optional, Union

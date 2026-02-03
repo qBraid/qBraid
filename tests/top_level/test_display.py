@@ -16,6 +16,7 @@
 Unit tests for ipython and other display functions.
 
 """
+
 import logging
 import sys
 from unittest.mock import MagicMock, Mock, patch

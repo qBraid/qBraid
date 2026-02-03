@@ -16,6 +16,7 @@
 Module defining qBraid runtime job schemas.
 
 """
+
 from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer

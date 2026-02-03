@@ -17,6 +17,7 @@ Module defining :py:class:`ResultData` subclasses for runtime jobs that are
 managed natively through qBraid.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional

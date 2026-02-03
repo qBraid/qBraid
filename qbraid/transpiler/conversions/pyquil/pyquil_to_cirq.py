@@ -17,6 +17,7 @@ Module containing functions to convert from pyQuil's circuit
 representation (Quil programs) to Cirq's circuit representation.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

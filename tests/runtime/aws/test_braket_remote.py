@@ -18,6 +18,7 @@
 Unit tests for BraketProvider (remote)
 
 """
+
 from decimal import Decimal
 
 import pytest

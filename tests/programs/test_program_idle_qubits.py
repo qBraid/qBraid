@@ -16,6 +16,7 @@
 Unit tests for transpiling ciruits with idle qubits
 
 """
+
 import braket.circuits
 import cirq
 import pytest

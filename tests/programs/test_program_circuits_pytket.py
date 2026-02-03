@@ -18,6 +18,7 @@
 Unit tests for qbraid.programs.pytket.PytketCircuit
 
 """
+
 from unittest.mock import patch
 
 import numpy as np

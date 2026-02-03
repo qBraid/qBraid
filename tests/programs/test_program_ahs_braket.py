@@ -18,6 +18,7 @@
 Unit tests for loading, encoding, and decoding AHS programs using Amazon Braket.
 
 """
+
 import json
 
 import numpy as np

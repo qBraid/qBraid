@@ -16,6 +16,7 @@
 Module defining IonQ device class
 
 """
+
 from __future__ import annotations
 
 import importlib.util

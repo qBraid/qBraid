@@ -16,6 +16,7 @@
 Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
+
 from __future__ import annotations
 
 from enum import Enum, IntEnum

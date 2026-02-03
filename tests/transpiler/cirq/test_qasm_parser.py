@@ -81,16 +81,14 @@ def test_error_not_starting_with_format(qasm: str):
 def test_comments():
     parser = QasmParser()
 
-    parsed_qasm = parser.parse(
-        """
+    parsed_qasm = parser.parse("""
     //this is the format
     OPENQASM 2.0;
     // this is some other comment
     include "qelib1.inc";
     // and something at the end of the file
     // multiline
-    """
-    )
+    """)
 
     assert parsed_qasm.supportedFormat
     assert parsed_qasm.qelib1Include

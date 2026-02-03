@@ -16,6 +16,7 @@
 Module for animating QuEra simulation results using Flair Visual.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Union

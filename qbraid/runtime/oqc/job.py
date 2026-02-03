@@ -16,6 +16,7 @@
 Module for OQC job class.
 
 """
+
 from __future__ import annotations
 
 import json

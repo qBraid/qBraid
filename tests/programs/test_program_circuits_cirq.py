@@ -16,6 +16,7 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
+
 from typing import Any
 from unittest.mock import Mock
 

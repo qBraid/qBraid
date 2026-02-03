@@ -18,6 +18,7 @@
 Unit test for quantum program registry
 
 """
+
 import random
 import string
 import sys

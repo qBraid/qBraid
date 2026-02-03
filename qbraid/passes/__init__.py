@@ -27,6 +27,7 @@ Exceptions
    QasmDecompositionError
 
 """
+
 from .exceptions import CompilationError, QasmDecompositionError
 
 __all__ = ["CompilationError", "QasmDecompositionError"]

@@ -16,6 +16,7 @@
 Module defining QuboProgram Class
 
 """
+
 from __future__ import annotations
 
 from qbraid.programs.exceptions import ProgramTypeError

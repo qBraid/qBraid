@@ -15,6 +15,7 @@
 """
 Module containing AutoQASM programs used for testing
 """
+
 import autoqasm as aq
 import numpy as np
 from autoqasm.instructions import (

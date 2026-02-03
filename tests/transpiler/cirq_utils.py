@@ -16,6 +16,7 @@
 Module containing function to test Cirq circuit equality
 
 """
+
 from copy import deepcopy
 
 import cirq

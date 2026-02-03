@@ -16,6 +16,7 @@
 Module for calculating unitary of quantum circuit/program
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

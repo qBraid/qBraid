@@ -16,6 +16,7 @@
 Module defining Qiskit conversion extras.
 
 """
+
 from __future__ import annotations
 
 import warnings

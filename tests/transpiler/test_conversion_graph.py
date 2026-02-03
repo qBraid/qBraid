@@ -19,6 +19,7 @@ Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
 
 """
+
 import importlib.util
 from unittest.mock import Mock, PropertyMock, patch
 

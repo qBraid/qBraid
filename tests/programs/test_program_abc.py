@@ -18,6 +18,7 @@
 Unit tests for equivalence of interfacing quantum programs
 
 """
+
 from __future__ import annotations
 
 from unittest.mock import Mock

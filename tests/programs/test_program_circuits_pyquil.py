@@ -16,6 +16,7 @@
 Unit tests for qbraid.programs.pyquil.PyQuilProgram
 
 """
+
 import pytest
 
 try:

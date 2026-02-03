@@ -16,6 +16,7 @@
 Module for generating random IonQ programs
 
 """
+
 from typing import Optional
 
 import numpy as np

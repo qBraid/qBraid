@@ -21,6 +21,7 @@
 Module for testing qBraid quil input.
 
 """
+
 import numpy as np
 import pytest
 from cirq import Circuit, LineQubit

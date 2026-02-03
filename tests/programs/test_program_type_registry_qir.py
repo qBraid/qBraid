@@ -16,6 +16,7 @@
 Unit test for quantum program registry for QIR
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

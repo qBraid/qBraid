@@ -16,6 +16,7 @@
 Module containing models for schema-conformant ResultData classes.
 
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

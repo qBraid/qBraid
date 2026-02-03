@@ -32,6 +32,7 @@ Functions
     normalize_qasm_gate_params
 
 """
+
 from .compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,

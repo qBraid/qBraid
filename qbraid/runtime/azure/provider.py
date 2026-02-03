@@ -16,6 +16,7 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
+
 from __future__ import annotations
 
 import json

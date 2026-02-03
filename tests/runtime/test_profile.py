@@ -18,6 +18,7 @@
 Unit tests for TargetProfile class
 
 """
+
 import pytest
 from pydantic import ValidationError
 

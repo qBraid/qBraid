@@ -18,6 +18,7 @@
 Unit tests for BraketProvider class
 
 """
+
 import datetime
 import importlib.util
 import json

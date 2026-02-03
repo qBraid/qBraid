@@ -16,6 +16,7 @@
 Module for generating random Cirq circuits
 
 """
+
 import numpy as np
 from cirq import Circuit
 from cirq.testing import random_circuit

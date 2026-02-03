@@ -16,6 +16,7 @@
 Unit tests for QASM preprocessing functions
 
 """
+
 import re
 import textwrap
 

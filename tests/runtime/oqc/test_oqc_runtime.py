@@ -18,6 +18,7 @@
 Unit tests for OQCProvider class
 
 """
+
 from __future__ import annotations
 
 import datetime

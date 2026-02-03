@@ -18,6 +18,7 @@ Unit tests for circuit drawer
 # TODO: shared15 draw testcase, after fixing circuit decomposition problem from cirq
 
 """
+
 import importlib.util
 
 import pytest

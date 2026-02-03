@@ -16,6 +16,7 @@
 Module for post-processing of raw results data.
 
 """
+
 from __future__ import annotations
 
 import warnings

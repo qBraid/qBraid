@@ -18,6 +18,7 @@
 Unit tests for matplotlib animations using Flair Visual
 
 """
+
 import logging
 from unittest.mock import MagicMock, patch
 

@@ -16,6 +16,7 @@
 Unit tests for Equal1 simulator runtime through native provider.
 
 """
+
 import pytest
 
 from qbraid.programs import ExperimentType

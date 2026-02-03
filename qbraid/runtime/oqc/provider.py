@@ -16,6 +16,7 @@
 Module defining Oxford Quantum Circuits (OQC) provider class
 
 """
+
 import json
 import os
 from typing import Any, Optional, Union

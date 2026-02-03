@@ -16,6 +16,7 @@
 Module containing Braket circuits used for testing
 
 """
+
 import numpy as np
 from braket.circuits import Circuit as BKCircuit
 

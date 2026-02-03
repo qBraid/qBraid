@@ -16,6 +16,7 @@
 Module for exceptions raised by visualization tools.
 
 """
+
 from qbraid.exceptions import QbraidError
 
 

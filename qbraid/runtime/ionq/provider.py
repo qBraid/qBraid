@@ -16,6 +16,7 @@
 Module defining IonQ session and provider classes
 
 """
+
 import os
 from typing import Any, Optional
 

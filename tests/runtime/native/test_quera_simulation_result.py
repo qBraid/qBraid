@@ -18,6 +18,7 @@
 Unit tests for retrieving and post-processing QuEra QASM simulator results.
 
 """
+
 import json
 from pathlib import Path
 from typing import Any

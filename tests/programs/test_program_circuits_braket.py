@@ -16,6 +16,7 @@
 Unit tests for qbraid.programs.braket.BraketCircuit
 
 """
+
 from itertools import chain, combinations
 from unittest.mock import Mock
 

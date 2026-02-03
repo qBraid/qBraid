@@ -16,6 +16,7 @@
 Unit tests for lazy loading of modules, objects and entry points
 
 """
+
 from unittest.mock import MagicMock, patch
 
 import pytest

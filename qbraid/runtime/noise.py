@@ -16,6 +16,7 @@
 Module for representing various noise models for quantum simulators.
 
 """
+
 import re
 import threading
 from collections.abc import MutableMapping

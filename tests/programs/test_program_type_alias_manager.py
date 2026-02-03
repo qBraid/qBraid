@@ -16,6 +16,7 @@
 Unit tests for managing quantum program type aliases.
 
 """
+
 from unittest.mock import Mock
 
 import pytest

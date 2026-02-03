@@ -16,6 +16,7 @@
 Module containing OpenQASM to IonQ JSON conversion function
 
 """
+
 from __future__ import annotations
 
 import re

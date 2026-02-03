@@ -27,6 +27,7 @@ Functions
    assert_allclose_up_to_global_phase
 
 """
+
 from .circuit_equality import assert_allclose_up_to_global_phase, circuits_allclose
 from .random import random_circuit, random_unitary_matrix
 

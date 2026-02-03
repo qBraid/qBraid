@@ -18,6 +18,7 @@
 Benchmarking tests for pyQuil conversions
 
 """
+
 import importlib.util
 import string
 

@@ -18,6 +18,7 @@
 Unit tests for quantum jobs functions and data types
 
 """
+
 from unittest.mock import patch
 
 import pytest

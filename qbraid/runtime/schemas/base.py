@@ -17,6 +17,7 @@ Module defining qBraid runtime base schema,
 with a shared header for semantic versioning.
 
 """
+
 from __future__ import annotations
 
 from decimal import Decimal

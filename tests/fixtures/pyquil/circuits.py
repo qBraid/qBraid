@@ -16,6 +16,7 @@
 Module containing pyQuil programs used for testing
 
 """
+
 import numpy as np
 from pyquil import Program
 from pyquil.gates import CNOT, CPHASE, ISWAP, RX, RY, RZ, SWAP, H, X, Y, Z

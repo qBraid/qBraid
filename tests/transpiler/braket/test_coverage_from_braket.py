@@ -16,6 +16,7 @@
 Benchmarking tests for Amazon Braket conversions
 
 """
+
 import importlib.util
 
 import braket.circuits

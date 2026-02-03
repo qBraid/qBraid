@@ -21,6 +21,7 @@
 Module for testing qBraid QuilOutput.
 
 """
+
 import os
 
 import cirq
@@ -58,24 +59,18 @@ def test_single_gate_no_parameter():
     """Test that a single gate with no parameter is correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.X(q0),), (q0,))
-    assert (
-        str(output)
-        == """# Created using qBraid.
+    assert str(output) == """# Created using qBraid.
 
 X 0\n"""
-    )
 
 
 def test_single_gate_with_parameter():
     """Test that a single gate with a parameter is correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.X(q0) ** 0.5,), (q0,))
-    assert (
-        str(output)
-        == f"""# Created using qBraid.
+    assert str(output) == f"""# Created using qBraid.
 
 RX({np.pi / 2}) 0\n"""
-    )
 
 
 def test_single_gate_named_qubit():
@@ -83,26 +78,20 @@ def test_single_gate_named_qubit():
     q = cirq.NamedQubit("qTest")
     output = QuilOutput((cirq.X(q),), (q,))
 
-    assert (
-        str(output)
-        == """# Created using qBraid.
+    assert str(output) == """# Created using qBraid.
 
 X 0\n"""
-    )
 
 
 def test_h_gate_with_parameter():
     """Test that a Hadamard gate with a parameter is correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.H(q0) ** 0.25,), (q0,))
-    assert (
-        str(output)
-        == f"""# Created using qBraid.
+    assert str(output) == f"""# Created using qBraid.
 
 RY({np.pi / 4}) 0
 RX({np.pi / 4}) 0
 RY({-np.pi / 4}) 0\n"""
-    )
 
 
 def test_save_to_file(tmpdir):
@@ -113,36 +102,29 @@ def test_save_to_file(tmpdir):
     output.save_to_file(file_path)
     with open(file_path, "r", encoding="utf-8") as f:
         file_content = f.read()
-    assert (
-        file_content
-        == """# Created using qBraid.
+    assert file_content == """# Created using qBraid.
 
 X 0\n"""
-    )
 
 
 def test_quil_one_qubit_gate_repr():
     """Test that the QuilOneQubitGate __repr__ method works as expected."""
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
-    assert repr(gate) == (
-        """cirq.circuits.quil_output.QuilOneQubitGate(matrix=
+    assert repr(gate) == ("""cirq.circuits.quil_output.QuilOneQubitGate(matrix=
 [[1 0]
  [0 1]]
-)"""
-    )
+)""")
 
 
 def test_quil_two_qubit_gate_repr():
     """Test that the QuilTwoQubitGate __repr__ method works as expected."""
     gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
-    assert repr(gate) == (
-        """cirq.circuits.quil_output.QuilTwoQubitGate(matrix=
+    assert repr(gate) == ("""cirq.circuits.quil_output.QuilTwoQubitGate(matrix=
 [[1 0 0 0]
  [0 1 0 0]
  [0 0 1 0]
  [0 0 0 1]]
-)"""
-    )
+)""")
 
 
 def test_quil_one_qubit_gate_eq():
@@ -170,16 +152,13 @@ def test_quil_one_qubit_gate_output():
     (q0,) = _make_qubits(1)
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     output = QuilOutput((gate.on(q0),), (q0,))
-    assert (
-        str(output)
-        == """# Created using qBraid.
+    assert str(output) == """# Created using qBraid.
 
 DEFGATE USERGATE1:
     1.0+0.0i, 0.0+0.0i
     0.0+0.0i, 1.0+0.0i
 USERGATE1 0
 """
-    )
 
 
 def test_two_quil_one_qubit_gate_output():
@@ -188,9 +167,7 @@ def test_two_quil_one_qubit_gate_output():
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     gate1 = QuilOneQubitGate(np.array([[2, 0], [0, 3]]))
     output = QuilOutput((gate.on(q0), gate1.on(q0)), (q0,))
-    assert (
-        str(output)
-        == """# Created using qBraid.
+    assert str(output) == """# Created using qBraid.
 
 DEFGATE USERGATE1:
     1.0+0.0i, 0.0+0.0i
@@ -201,17 +178,14 @@ DEFGATE USERGATE2:
     0.0+0.0i, 3.0+0.0i
 USERGATE2 0
 """
-    )
 
 
 def test_quil_two_qubit_gate_output():
     """Test that a QuilTwoQubitGate can be correctly converted to Quil."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     output = QuilOutput((gate.on(q0, q1),), (q0, q1))
-    assert (
-        str(output)
-        == """# Created using qBraid.
+    assert str(output) == """# Created using qBraid.
 
 DEFGATE USERGATE1:
     1.0+0.0i, 0.0+0.0i, 0.0+0.0i, 0.0+0.0i
@@ -220,7 +194,6 @@ DEFGATE USERGATE1:
     0.0+0.0i, 0.0+0.0i, 0.0+0.0i, 1.0+0.0i
 USERGATE1 0 1
 """
-    )
 
 
 def test_unsupported_operation():
@@ -243,13 +216,10 @@ def test_i_swap_with_power():
     q0, q1 = _make_qubits(2)
 
     output = QuilOutput((cirq.ISWAP(q0, q1) ** 0.25,), (q0, q1))
-    assert (
-        str(output)
-        == f"""# Created using qBraid.
+    assert str(output) == f"""# Created using qBraid.
 
 XY({np.pi / 4}) 0 1
 """
-    )
 
 
 # pylint: disable-next=unused-argument
@@ -302,9 +272,7 @@ def test_all_operations():
     operations = _all_operations(*qubits)
     output = QuilOutput(operations, qubits)
 
-    assert (
-        str(output)
-        == f"""# Created using qBraid.
+    assert str(output) == f"""# Created using qBraid.
 
 DECLARE m0 BIT[1]
 DECLARE m1 BIT[1]
@@ -400,7 +368,6 @@ X 2 # Inverting for following measurement
 MEASURE 2 m3[1]
 MEASURE 3 m3[2]
 """
-    )
 
 
 def test_fails_on_big_unknowns():
@@ -417,15 +384,12 @@ def test_fails_on_big_unknowns():
 
 def test_pauli_interaction_gate():
     """Test that a PauliInteractionGate is correctly converted to Quil."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     output = QuilOutput(PauliInteractionGate.CZ.on(q0, q1), (q0, q1))
-    assert (
-        str(output)
-        == """# Created using qBraid.
+    assert str(output) == """# Created using qBraid.
 
 CZ 0 1
 """
-    )
 
 
 def test_equivalent_unitaries():
@@ -551,7 +515,7 @@ def test_exponent_to_pi_string(input_exp, expected):
 
 def test_two_qubit_diagonal_gate_none():
     """ "Test that _twoqubitdiagonal_gate returns None for non-diagonal gates."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     gate = cirq.TwoQubitDiagonalGate(np.array([0, 0, 0, 0]))
     formatter = QuilFormatter({q0: "q0", q1: "q1"}, {})
     circuit = cirq.Circuit()
@@ -562,7 +526,7 @@ def test_two_qubit_diagonal_gate_none():
 
 def test_rzz_rads_0_to_identity():
     """ "Test that RZZ gate with rads=0 maps to pyquil Identity gate."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     gate = RZZGate(rads=0)
     formatter = QuilFormatter({q0: "0", q1: "1"}, {})
     circuit = cirq.Circuit()

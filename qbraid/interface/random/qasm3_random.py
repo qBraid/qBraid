@@ -16,6 +16,7 @@
 Module for generating random OpenQASM 3 programs
 
 """
+
 from typing import Callable, Optional
 
 import numpy as np

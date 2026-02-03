@@ -16,6 +16,7 @@
 Unit tests for converting Bloqade programs to Amazon Braket AHS
 
 """
+
 from __future__ import annotations
 
 import importlib.util

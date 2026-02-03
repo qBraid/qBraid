@@ -16,6 +16,7 @@
 Module used for loading entry points and other dynamic imports.
 
 """
+
 import importlib.metadata
 from typing import Optional, Type
 

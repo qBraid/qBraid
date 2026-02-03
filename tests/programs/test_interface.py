@@ -16,6 +16,7 @@
 Unit tests for interfacing quantum programs
 
 """
+
 from unittest.mock import patch
 
 import pytest

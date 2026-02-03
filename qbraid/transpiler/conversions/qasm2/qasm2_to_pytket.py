@@ -16,6 +16,7 @@
 Module containing functions to convert between OpenQASM 2 and PyTKET.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

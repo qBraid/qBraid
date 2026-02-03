@@ -18,6 +18,7 @@
 Unit tests for QuEra QASM simulator device.
 
 """
+
 import importlib.util
 from unittest.mock import PropertyMock, patch
 

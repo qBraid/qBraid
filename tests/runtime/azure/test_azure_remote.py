@@ -17,6 +17,7 @@
 Unit tests for Azure Quantum runtime (remote)
 
 """
+
 from __future__ import annotations
 
 import importlib.util

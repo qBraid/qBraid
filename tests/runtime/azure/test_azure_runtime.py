@@ -18,6 +18,7 @@
 Unit tests for the Azure Quantum runtime module.
 
 """
+
 import json
 import os
 import re

@@ -17,6 +17,7 @@ Module providing granular type checking for quantum programs
 that use Python's built-in types.
 
 """
+
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Type, TypeVar
 

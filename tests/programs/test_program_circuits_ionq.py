@@ -18,6 +18,7 @@
 Unit tests for qbraid.programs.ionq.IonQProgram
 
 """
+
 import json
 
 import numpy as np

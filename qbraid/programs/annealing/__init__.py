@@ -40,6 +40,7 @@ Submodules
     qubo
 
 """
+
 import importlib
 
 from ._model import AnnealingProgram, Problem, ProblemEncoder, ProblemType, QuboProblem

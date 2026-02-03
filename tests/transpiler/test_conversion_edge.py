@@ -18,6 +18,7 @@
 Unit tests for defining custom conversions
 
 """
+
 from unittest.mock import Mock
 
 import cirq

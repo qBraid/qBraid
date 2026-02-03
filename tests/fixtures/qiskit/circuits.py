@@ -16,6 +16,7 @@
 Module containing Qiskit quantum circuits used for testing
 
 """
+
 import numpy as np
 from qiskit import QuantumCircuit
 

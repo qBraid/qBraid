@@ -16,6 +16,7 @@
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
 """
+
 from __future__ import annotations
 
 import math

@@ -18,6 +18,7 @@
 Module defining abstract QuantumDevice Class
 
 """
+
 from __future__ import annotations
 
 import warnings

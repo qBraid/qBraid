@@ -16,6 +16,7 @@
 Unit tests for remote job submissions to the NEC Vector Annealer using the QbraidProvider.
 
 """
+
 import pytest
 from qbraid_core import QbraidSession
 

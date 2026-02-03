@@ -16,6 +16,7 @@
 Module defining exceptions for errors raised by qBraid.
 
 """
+
 from typing import Any, Optional
 
 from qbraid_core._import import LazyLoader

@@ -16,6 +16,7 @@
 Module for registering custom program types and aliases
 
 """
+
 import sys
 from typing import Any, Optional, Type, TypeVar, Union
 

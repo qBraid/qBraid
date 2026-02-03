@@ -16,6 +16,7 @@
 Module containing pytket programs used for testing
 
 """
+
 from pytket.circuit import Circuit as TKCircuit
 
 

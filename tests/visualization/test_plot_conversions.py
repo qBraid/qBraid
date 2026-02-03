@@ -17,6 +17,7 @@
 Unit tests for plotting conversion graphs
 
 """
+
 import warnings
 from unittest.mock import MagicMock, Mock, patch
 

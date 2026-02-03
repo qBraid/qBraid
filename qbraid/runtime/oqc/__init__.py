@@ -28,6 +28,7 @@ Classes
     OQCJob
 
 """
+
 from .device import OQCDevice
 from .job import OQCJob
 from .provider import OQCProvider

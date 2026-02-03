@@ -18,6 +18,7 @@
 Unit tests for QiskitProvider class
 
 """
+
 import random
 import warnings
 from collections import OrderedDict

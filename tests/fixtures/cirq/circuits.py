@@ -16,6 +16,7 @@
 Module containing Cirq circuits used for testing
 
 """
+
 import random
 from typing import Optional
 

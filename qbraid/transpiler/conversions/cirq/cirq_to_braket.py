@@ -19,6 +19,7 @@
 Module for converting Braket circuits to Cirq circuits
 
 """
+
 from __future__ import annotations
 
 from copy import deepcopy

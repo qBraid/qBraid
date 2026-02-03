@@ -19,6 +19,7 @@
 Module for converting Braket circuits to Cirq circuits
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -140,10 +141,8 @@ def _from_braket_instruction(
                 ) from err
 
         # Unknown instructions.
-        raise ProgramConversionError(
-            f"Unable to convert to Cirq due to unrecognized \
-            instruction: {instr}."
-        )
+        raise ProgramConversionError(f"Unable to convert to Cirq due to unrecognized \
+            instruction: {instr}.")
 
     except Exception as err:
         raise ProgramConversionError(

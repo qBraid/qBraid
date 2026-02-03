@@ -16,6 +16,7 @@
 Module for conversions from QASM 2 to Cirq Circuits
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

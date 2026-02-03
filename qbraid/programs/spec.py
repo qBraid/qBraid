@@ -16,6 +16,7 @@
 Module defining base program type specification
 
 """
+
 from typing import Any, Callable, Optional, Type
 
 from .experiment import ExperimentType

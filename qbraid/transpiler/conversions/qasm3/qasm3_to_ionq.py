@@ -16,6 +16,7 @@
 Module containing functions to convert between OpenQASM 3 and IonQ JSON format.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

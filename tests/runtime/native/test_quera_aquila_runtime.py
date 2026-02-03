@@ -18,6 +18,7 @@
 Unit tests for submissions to QuEra Aquila device through qBraid native runtime.
 
 """
+
 import json
 from typing import Any
 from unittest.mock import patch

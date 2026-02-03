@@ -18,6 +18,7 @@
 Plot atomic register of AHS program.
 
 """
+
 from typing import Optional
 
 

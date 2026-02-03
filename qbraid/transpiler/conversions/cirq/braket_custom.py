@@ -16,6 +16,7 @@
 Module for defining custom Amazon Braket control gate
 
 """
+
 import itertools
 from typing import Any
 

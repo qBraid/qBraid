@@ -18,6 +18,7 @@
 Unit tests for runtime display functions.
 
 """
+
 from unittest.mock import patch
 
 from qbraid.runtime._display import display_jobs_from_data

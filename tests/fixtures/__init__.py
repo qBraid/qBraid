@@ -16,6 +16,7 @@
 Module containing fixtures for testing
 
 """
+
 import importlib.util
 
 import numpy as np

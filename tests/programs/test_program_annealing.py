@@ -16,6 +16,7 @@
 Unit tests for qbraid.programs.annealing module.
 
 """
+
 import json
 from unittest.mock import Mock
 

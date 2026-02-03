@@ -16,6 +16,7 @@
 Module defining abstract QuantumJob Class
 
 """
+
 from __future__ import annotations
 
 import asyncio

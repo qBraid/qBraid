@@ -16,6 +16,7 @@
 Unit tests for OpenQASM 3 conversions
 
 """
+
 import braket.circuits
 import numpy as np
 import qiskit

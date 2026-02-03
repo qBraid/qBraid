@@ -16,6 +16,7 @@
 Unit tests for OpenQASM 3.0 to CUDA-Q kernel transpilation.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

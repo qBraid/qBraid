@@ -16,6 +16,7 @@
 Module defining Azure Quantum device class for all devices managed by Azure Quantum.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

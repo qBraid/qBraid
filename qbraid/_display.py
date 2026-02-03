@@ -16,6 +16,7 @@
 Configures display options based on environment context.
 
 """
+
 import sys
 
 from ._logging import logger

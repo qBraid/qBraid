@@ -16,6 +16,7 @@
 Benchmarking tests for Qiskit conversions
 
 """
+
 import importlib.util
 
 import pytest

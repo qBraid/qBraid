@@ -16,6 +16,7 @@
 Module for Cirq gate dictionary used for testing
 
 """
+
 import numpy as np
 from cirq.ops.common_gates import (
     CXPowGate,

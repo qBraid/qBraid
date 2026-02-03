@@ -16,6 +16,7 @@
 Module defining QiskitJob Class
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional

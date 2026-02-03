@@ -18,6 +18,7 @@
 Benchmarking tests for PyTKET conversions
 
 """
+
 import importlib.util
 import string
 

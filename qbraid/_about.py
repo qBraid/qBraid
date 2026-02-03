@@ -16,6 +16,7 @@
 Information about qBraid and dependencies.
 
 """
+
 import datetime
 import importlib.metadata
 import platform

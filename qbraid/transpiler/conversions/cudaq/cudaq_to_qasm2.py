@@ -16,6 +16,7 @@
 Module defining function to convert a CUDA-Q kernel to a QASM2 string.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

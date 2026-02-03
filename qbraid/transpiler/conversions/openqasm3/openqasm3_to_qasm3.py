@@ -16,6 +16,7 @@
 Module containing OpenQASM to QASM 3 conversion function
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

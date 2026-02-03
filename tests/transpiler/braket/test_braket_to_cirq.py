@@ -19,6 +19,7 @@
 Unit tests for converting Braket circuits to Cirq circuits
 
 """
+
 import cirq
 import numpy as np
 import pytest

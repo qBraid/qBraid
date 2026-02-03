@@ -16,6 +16,7 @@
 Script to bump the major, minor, or patch version in _version.py
 
 """
+
 import pathlib
 import sys
 

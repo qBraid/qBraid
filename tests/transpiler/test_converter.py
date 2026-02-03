@@ -16,6 +16,7 @@
 Unit test for the graph-based transpiler
 
 """
+
 import unittest.mock
 
 import braket.circuits

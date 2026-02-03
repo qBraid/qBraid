@@ -16,6 +16,7 @@
 Module defining PyQuboModel Class
 
 """
+
 from __future__ import annotations
 
 from pyqubo import Model

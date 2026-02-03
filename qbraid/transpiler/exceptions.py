@@ -16,6 +16,7 @@
 Module defining exceptions for errors raised during conversions
 
 """
+
 from typing import Optional
 
 from qbraid.exceptions import QbraidError

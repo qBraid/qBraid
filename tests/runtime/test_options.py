@@ -16,6 +16,7 @@
 Unit tests for the qBraid runtime Options dataclass.
 
 """
+
 import copy
 
 import pytest

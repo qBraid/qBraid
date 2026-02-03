@@ -18,6 +18,7 @@
 Unit tests native runtime job schemas.
 
 """
+
 from collections import Counter
 from datetime import datetime
 from decimal import Decimal

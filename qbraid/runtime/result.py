@@ -16,6 +16,7 @@
 Module containing models for schema-conformant Results.
 
 """
+
 from __future__ import annotations
 
 import copy

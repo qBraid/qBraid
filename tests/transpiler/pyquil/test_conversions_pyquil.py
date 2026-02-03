@@ -16,6 +16,7 @@
 Unt tests for conversions to/from pyQuil circuits.
 
 """
+
 import numpy as np
 import pytest
 from cirq import Circuit, LineQubit

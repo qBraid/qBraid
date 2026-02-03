@@ -18,6 +18,7 @@
 Unit tests for qbraid.programs.qasm.OpenQasm2Program
 
 """
+
 import textwrap
 from unittest.mock import MagicMock
 
