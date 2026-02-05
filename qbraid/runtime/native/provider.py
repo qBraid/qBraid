@@ -39,6 +39,7 @@ from qbraid.runtime.provider import QuantumProvider
 from qbraid.transpiler import transpile
 
 from .device import QbraidDevice
+from .job import QbraidJob
 
 if TYPE_CHECKING:
     import pulser
@@ -128,17 +129,18 @@ class QbraidProvider(QuantumProvider):
     """
 
     def __init__(
-        self, api_key: Optional[str] = None, client: Optional[QuantumRuntimeClient] = None
+        self,
+        api_key: Optional[str] = None,
+        client: Optional[QuantumRuntimeClient] = None,
+        legacy_jobs_path: Optional[str] = None,
     ):
-        """
-        Initializes the QbraidProvider object
-
-        """
+        """Initializes the QbraidProvider object."""
         if api_key and client:
             raise ValueError("Provide either api_key or client, not both.")
 
         self._api_key = api_key
         self._client = client
+        self._legacy_jobs_path = legacy_jobs_path
 
     def save_config(self, **kwargs):
         """Save the current configuration."""
@@ -155,6 +157,35 @@ class QbraidProvider(QuantumProvider):
                     "Failed to authenticate with the Quantum Runtime service."
                 ) from err
         return self._client
+
+    def download_legacy_jobs(self) -> str:
+        """Download legacy jobs archive from qBraid storage."""
+        return self.client.download_legacy_jobs(self._legacy_jobs_path)
+
+    # pylint: disable=too-many-arguments
+    def get_jobs(
+        self,
+        vendor: Optional[str] = None,
+        provider: Optional[str] = None,
+        status: Optional[str] = None,
+        tags: Optional[dict[str, Any]] = None,
+        page: Optional[int] = None,
+        limit: Optional[int] = None,
+    ) -> list[QbraidJob]:
+        """Return a list of jobs matching the given filters."""
+        runtime_jobs = self.client.list_jobs(
+            vendor=vendor,
+            provider=provider,
+            status=status,
+            tags=tags,
+            page=page,
+            limit=limit,
+            legacy_jobs_path=self._legacy_jobs_path,
+        )
+        return [
+            QbraidJob(job.jobQrn, client=self.client, legacy_jobs_path=self._legacy_jobs_path)
+            for job in runtime_jobs
+        ]
 
     @staticmethod
     def _get_program_spec(run_package: Optional[str], device_id: str) -> Optional[ProgramSpec]:

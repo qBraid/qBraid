@@ -140,7 +140,8 @@ def format_data(
                 if num_bits > 20:
                     warnings.warn(
                         f"Generating all {2**num_bits:,} possible states for {num_bits} qubits. "
-                        f"This may consume significant memory. Consider using include_zero_values=False."
+                        "This may consume significant memory. "
+                        "Consider using include_zero_values=False."
                     )
                 all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
                 data = {key: normalized_data.get(key, 0) for key in all_keys}

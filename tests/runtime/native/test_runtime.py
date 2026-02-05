@@ -17299,7 +17299,9 @@ class MockQuantumRuntimeClient(QuantumRuntimeClient):
         # Default to SV1 if device not found
         return SV1_CREATE_JOB
 
-    def get_job(self, job_qrn: str) -> RuntimeJob:
+    def get_job(
+        self, job_qrn: str, legacy_jobs_path=None
+    ) -> RuntimeJob:  # pylint: disable=unused-argument
         """Returns the metadata for a specific quantum job.
 
         For the AQUILA job "aws:quera:qpu:aquila-37f5-qjob-696aae286a18e4f726abf2af",
@@ -17332,7 +17334,9 @@ class MockQuantumRuntimeClient(QuantumRuntimeClient):
         """Cancels a specific quantum job."""
         # Mock implementation - no-op for testing
 
-    def get_job_result(self, job_qrn: str) -> Result:
+    def get_job_result(
+        self, job_qrn: str, legacy_jobs_path=None
+    ) -> Result:  # pylint: disable=unused-argument
         """Returns the results for a specific quantum job."""
         result_map = {
             SV1_GET_JOB.jobQrn: SV1_JOB_RESULT,
@@ -17344,7 +17348,9 @@ class MockQuantumRuntimeClient(QuantumRuntimeClient):
             return result_map[job_qrn]
         raise ValueError(f"Job result for {job_qrn} not found in mock data")
 
-    def get_job_program(self, job_qrn: str) -> Program:
+    def get_job_program(
+        self, job_qrn: str, legacy_jobs_path=None
+    ) -> Program:  # pylint: disable=unused-argument
         """Returns the program data for a specific quantum job."""
         program_map = {
             SV1_GET_JOB.jobQrn: SV1_PROGRAM,
@@ -17355,6 +17361,67 @@ class MockQuantumRuntimeClient(QuantumRuntimeClient):
         if job_qrn in program_map:
             return program_map[job_qrn]
         raise ValueError(f"Job program for {job_qrn} not found in mock data")
+
+    def download_legacy_jobs(self, dest_path: str = None) -> str:
+        """Mock download: writes a legacy jobs JSON file and returns the path."""
+        import json as _json  # pylint: disable=import-outside-toplevel
+
+        path = dest_path or ".old_jobs.json"
+        legacy_data = [
+            {
+                "qbraidJobId": "legacy-job-001",
+                "qbraidDeviceId": "aws_sv1",
+                "vendorDeviceId": "arn:aws:braket:::device/quantum-simulator/amazon/sv1",
+                "vendorJobId": "arn:aws:braket:us-east-1:000000000000:quantum-task/abc-123",
+                "qbraidStatus": "COMPLETED",
+                "status": "COMPLETED",
+                "vendor": "aws",
+                "provider": "aws",
+                "experimentType": "gate_model",
+                "shots": 100,
+                "escrow": 10,
+                "circuitNumQubits": 2,
+                "circuitDepth": 3,
+                "openQasm": "OPENQASM 3.0;\nqubit[2] q;\nh q[0];\n",
+                "timeStamps": {
+                    "createdAt": "2025-06-26T11:13:33.000Z",
+                    "endedAt": "2025-06-26T11:13:35.000Z",
+                    "executionDuration": 2000,
+                },
+                "measurementCounts": {"00": 60, "11": 40},
+                "measurements": [],
+                "tags": {"experiment": "bell"},
+                "queuePosition": None,
+            },
+            {
+                "qbraidJobId": "legacy-job-002",
+                "qbraidDeviceId": "ibm_kyiv",
+                "vendorDeviceId": "ibmq_kyiv",
+                "vendorJobId": "ibm-job-xyz",
+                "qbraidStatus": "FAILED",
+                "status": "FAILED",
+                "vendor": "ibm",
+                "provider": "ibm",
+                "experimentType": "gate_model",
+                "shots": 50,
+                "escrow": 5,
+                "circuitNumQubits": 3,
+                "circuitDepth": 5,
+                "openQasm": "OPENQASM 3.0;\nqubit[3] q;\nh q[0];\n",
+                "timeStamps": {
+                    "createdAt": "2025-06-27T10:00:00.000Z",
+                    "endedAt": "2025-06-27T10:00:05.000Z",
+                    "executionDuration": 5000,
+                },
+                "measurementCounts": {},
+                "measurements": [],
+                "tags": {},
+                "queuePosition": None,
+            },
+        ]
+        with open(path, "w", encoding="utf-8") as f:
+            _json.dump(legacy_data, f)
+        return path
 
 
 # ============================================================================
@@ -17446,6 +17513,36 @@ def test_provider_get_device_not_found(provider):
     """Test getting non-existent device raises error."""
     with pytest.raises(ResourceNotFoundError):
         provider.get_device("nonexistent:device:qrn")
+
+
+def test_provider_download_legacy_jobs(mock_client, tmp_path):
+    """Test download_legacy_jobs delegates to client and returns file path."""
+    dest = str(tmp_path / ".old_jobs.json")
+    provider = QbraidProvider(client=mock_client, legacy_jobs_path=dest)
+    result_path = provider.download_legacy_jobs()
+    assert result_path == dest
+    assert result_path == dest
+
+
+def test_provider_get_jobs_from_legacy_file(mock_client, tmp_path):
+    """Test get_jobs reads from legacy file and returns QbraidJob instances."""
+    dest = str(tmp_path / ".old_jobs.json")
+    mock_client.download_legacy_jobs(dest)
+    provider = QbraidProvider(client=mock_client, legacy_jobs_path=dest)
+
+    jobs = provider.get_jobs()
+    assert len(jobs) == 2
+    assert all(isinstance(j, QbraidJob) for j in jobs)
+    assert jobs[0].id == "legacy-job-001"
+    assert jobs[1].id == "legacy-job-002"
+
+    aws_jobs = provider.get_jobs(vendor="aws")
+    assert len(aws_jobs) == 1
+    assert aws_jobs[0].id == "legacy-job-001"
+
+    failed_jobs = provider.get_jobs(status="FAILED")
+    assert len(failed_jobs) == 1
+    assert failed_jobs[0].id == "legacy-job-002"
 
 
 # ============================================================================

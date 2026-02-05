@@ -50,11 +50,13 @@ class QbraidJob(QuantumJob):
         job_id: str,
         device: Optional[qbraid.runtime.QbraidDevice] = None,
         client: Optional[qbraid_core.services.runtime.QuantumRuntimeClient] = None,
+        legacy_jobs_path: Optional[str] = None,
         **kwargs,
     ):
         super().__init__(job_id, device, **kwargs)
         self._device = device
         self._client = client
+        self._legacy_jobs_path = legacy_jobs_path
 
     @property
     def client(self) -> qbraid_core.services.runtime.QuantumRuntimeClient:
@@ -78,7 +80,7 @@ class QbraidJob(QuantumJob):
         """Return the status of the job / task , among the values of ``JobStatus``."""
         terminal_states = JobStatus.terminal_states()
         if self._cache_metadata.get("status") not in terminal_states:
-            job_model = self.client.get_job(self.id)
+            job_model = self.client.get_job(self.id, legacy_jobs_path=self._legacy_jobs_path)
             status = job_model.status
             job_data = job_model.model_dump(exclude={"statusMsg"})
             if job_model.statusMsg is not None:
@@ -90,11 +92,15 @@ class QbraidJob(QuantumJob):
         """Return the metadata regarding the job."""
         self._cache_metadata.pop("job_id", None)
         if self._cache_metadata.get("program") is None:
-            self._cache_metadata["program"] = self.client.get_job_program(self.id)
+            self._cache_metadata["program"] = self.client.get_job_program(
+                self.id, legacy_jobs_path=self._legacy_jobs_path
+            )
         return super().metadata()
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
+        if self._legacy_jobs_path is not None:
+            raise JobStateError("Cannot cancel a legacy job.")
         if self.is_terminal_state():
             raise JobStateError("Cannot cancel job in a terminal state.")
 
@@ -145,9 +151,13 @@ class QbraidJob(QuantumJob):
     def result(self, timeout: Optional[int] = None) -> Result[ResultDataType]:
         """Return the results of the job."""
         self.wait_for_final_state(timeout=timeout)
-        job_data = self.client.get_job(self.id)
+        job_data = self.client.get_job(self.id, legacy_jobs_path=self._legacy_jobs_path)
         success = job_data.status == JobStatus.COMPLETED
-        job_result = self.client.get_job_result(self.id) if success else None
+        job_result = (
+            self.client.get_job_result(self.id, legacy_jobs_path=self._legacy_jobs_path)
+            if success
+            else None
+        )
         result_data_raw = job_result.resultData if job_result else {}
         metadata_cls = QbraidJob._get_metadata_model(job_data.experimentType)
         metadata = metadata_cls(**result_data_raw)

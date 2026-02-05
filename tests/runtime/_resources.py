@@ -540,7 +540,9 @@ class MockClient:
         }
         return RuntimeJob.model_validate(job_response)
 
-    def get_job(self, job_qrn: str) -> RuntimeJob:
+    def get_job(
+        self, job_qrn: str, legacy_jobs_path=None
+    ) -> RuntimeJob:  # pylint: disable=unused-argument
         """Returns the metadata for a specific quantum job."""
         # Try job QRN mapping first
         device_qrn = self.JOB_QRN_TO_DEVICE.get(job_qrn)
@@ -565,7 +567,9 @@ class MockClient:
 
         return RuntimeJob.model_validate(job_data_copy)
 
-    def get_job_result(self, job_qrn: str) -> Result:
+    def get_job_result(
+        self, job_qrn: str, legacy_jobs_path=None
+    ) -> Result:  # pylint: disable=unused-argument
         """Returns the results for a specific quantum job."""
         # Try job QRN mapping first
         device_qrn = self.JOB_QRN_TO_DEVICE.get(job_qrn)
@@ -598,7 +602,9 @@ class MockClient:
         }
         return Result.model_validate(result_response)
 
-    def get_job_program(self, job_qrn: str) -> Program:
+    def get_job_program(
+        self, job_qrn: str, legacy_jobs_path=None
+    ) -> Program:  # pylint: disable=unused-argument
         """Returns the program data for a specific quantum job."""
         # Return a mock program for AQUILA
         if "aquila" in job_qrn.lower() or "quera" in job_qrn.lower():
