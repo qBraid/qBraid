@@ -117,7 +117,12 @@ class QbraidProvider(QuantumProvider):
         client (qbraid_core.services.quantum.QuantumClient): qBraid QuantumClient object
     """
 
-    def __init__(self, api_key: Optional[str] = None, client: Optional[QuantumClient] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        client: Optional[QuantumClient] = None,
+        legacy_jobs_path: Optional[str] = None,
+    ):
         """
         Initializes the QbraidProvider object
 
@@ -127,6 +132,7 @@ class QbraidProvider(QuantumProvider):
 
         self._api_key = api_key
         self._client = client
+        self._legacy_jobs_path = legacy_jobs_path
 
     def save_config(self, **kwargs):
         """Save the current configuration."""
@@ -137,7 +143,9 @@ class QbraidProvider(QuantumProvider):
         """Return the QuantumClient object."""
         if self._client is None:
             try:
-                self._client = QuantumClient(api_key=self._api_key)
+                self._client = QuantumClient(
+                    api_key=self._api_key, legacy_jobs_path=self._legacy_jobs_path
+                )
             except AuthError as err:
                 raise ResourceNotFoundError(
                     "Failed to authenticate with the Quantum service."
@@ -207,6 +215,11 @@ class QbraidProvider(QuantumProvider):
     @cached_method(ttl=120)
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
+        if self._legacy_jobs_path is not None:
+            raise ResourceNotFoundError(
+                "Device information is not available when using a legacy jobs file."
+            )
+
         query = kwargs or None
 
         try:
@@ -244,6 +257,11 @@ class QbraidProvider(QuantumProvider):
         Raises:
             ResourceNotFoundError: if device cannot be loaded from quantum service data
         """
+        if self._legacy_jobs_path is not None:
+            raise ResourceNotFoundError(
+                "Device information is not available when using a legacy jobs file."
+            )
+
         try:
             device_data = self.client.get_device(qbraid_id=device_id)
         except (ValueError, QuantumServiceRequestError) as err:
@@ -296,10 +314,15 @@ class QbraidProvider(QuantumProvider):
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
-            user_metadata = self.client._user_metadata
-            organization_role = f'{user_metadata["organization"]}-{user_metadata["role"]}'
-            hash_value = hash(
-                (self.__class__.__name__, self.client.session.api_key, organization_role)
-            )
+            if self._legacy_jobs_path is not None:
+                # Hash based on file path when using legacy jobs
+                hash_value = hash((self.__class__.__name__, self._legacy_jobs_path))
+            else:
+                # Hash based on API credentials
+                user_metadata = self.client._user_metadata
+                organization_role = f'{user_metadata["organization"]}-{user_metadata["role"]}'
+                hash_value = hash(
+                    (self.__class__.__name__, self.client.session.api_key, organization_role)
+                )
             object.__setattr__(self, "_hash", hash_value)
         return self._hash  # pylint: disable=no-member
