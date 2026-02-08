@@ -12,6 +12,6 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   ahs
+   analog
    annealing
    gate_model
