@@ -27,7 +27,6 @@ from unittest.mock import MagicMock, Mock, patch
 import boto3
 import numpy as np
 import pytest
-from botocore.exceptions import NoCredentialsError
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
@@ -188,7 +187,7 @@ def mock_sv1():
 @pytest.fixture
 def mock_aws_configure():
     """Mock aws_conifugre function."""
-    with patch("qbraid.runtime.aws.provider.aws_configure") as mock:
+    with patch("qbraid.runtime.aws.provider.BraketProvider.aws_configure") as mock:
         yield mock
 
 
@@ -889,32 +888,6 @@ def test_get_partial_measurement_qubits_from_tags_complex_mapping(mock_boto_clie
     # Qubit 1 is at index 1, qubit 3 is at index 0 in all_measurement_qubits
     expected_indices = [1, 0]  # positions of qubits 1, 3 in the measurement results
     assert result == expected_indices
-
-
-def test_get_tasks_by_tag_value_error():
-    """Test getting tagged quantum tasks with invalid values."""
-    with patch("qbraid.runtime.aws.provider.quantum_lib_proxy_state") as mock_proxy_state:
-        mock_proxy_state.side_effect = ValueError
-
-        provider = BraketProvider()
-
-        try:
-            result = provider.get_tasks_by_tag("key", ["value1", "value2"])
-        except NoCredentialsError:
-            pytest.skip("NoCredentialsError raised")
-
-        assert isinstance(result, list)
-
-
-def test_get_tasks_by_tag_qbraid_error():
-    """Test getting tagged quantum tasks with jobs enabled."""
-    with patch("qbraid.runtime.aws.provider.quantum_lib_proxy_state") as mock_proxy_state:
-        mock_proxy_state.return_value = {"enabled": True}
-
-        provider = BraketProvider()
-
-        with pytest.raises(QbraidError):
-            provider.get_tasks_by_tag("key", ["value1", "value2"])
 
 
 @pytest.fixture

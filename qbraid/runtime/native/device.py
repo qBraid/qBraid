@@ -89,7 +89,7 @@ class QbraidDevice(QuantumDevice):
     def submit(
         self,
         run_input: Program | list[Program],
-        shots: int,
+        shots: int | None = None,
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,

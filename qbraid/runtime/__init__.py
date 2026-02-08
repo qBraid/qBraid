@@ -159,8 +159,8 @@ _lazy = {
     ],
     "native": [
         "Session",
-        "QbraidSession",
-        "QbraidClient",
+        "QbraidSessionV1",
+        "QbraidClientV1",
         "QbraidProvider",
         "QbraidDevice",
         "QbraidJob",
@@ -183,11 +183,11 @@ if TYPE_CHECKING:
     from .ionq import IonQJob as IonQJob
     from .ionq import IonQProvider as IonQProvider
     from .ionq import IonQSession as IonQSession
-    from .native import QbraidClient as QbraidClient
+    from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
-    from .native import QbraidJob as QbraidJob
-    from .native import QbraidProvider as QbraidProvider
-    from .native import QbraidSession as QbraidSession
+    from .native import QbraidJobV1 as QbraidJobV1
+    from .native import QbraidProviderV1 as QbraidProviderV1
+    from .native import QbraidSessionV1 as QbraidSessionV1
     from .native import QirRunner as QirRunner
     from .native import Session as Session
     from .oqc import OQCDevice as OQCDevice

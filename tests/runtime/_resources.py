@@ -19,7 +19,7 @@ Module defining mock data and classes for testing the runtime module.
 from typing import Any, Optional
 from unittest.mock import MagicMock
 
-from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
+from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import (
     JobRequest,
     Program,
@@ -630,7 +630,7 @@ class MockClient:
         if "status" in query:
             valid_status_values = {status.name for status in DeviceStatus}
             if query["status"] not in valid_status_values:
-                raise QuantumServiceRequestError("No devices found matching given criteria")
+                raise QuantumRuntimeServiceRequestError("No devices found matching given criteria")
 
         devices = [
             device
@@ -647,7 +647,7 @@ class MockClient:
         try:
             return data_map[identifier].copy()
         except KeyError as err:
-            raise QuantumServiceRequestError(error_message) from err
+            raise QuantumRuntimeServiceRequestError(error_message) from err
 
     @staticmethod
     def _extract_device_id(job_id: str) -> str:
