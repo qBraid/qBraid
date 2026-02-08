@@ -29,6 +29,14 @@ Types of changes:
 
 ## [0.11.0] - 2026-02-08
 
+## Improved / Modified
+
+Introduced several changes primarily focused on standardizing program serialization using the new `Program` schema from `qbraid-core`, refactoring the analog/ahs program modules, and updating dependencies for compatibility with qBraid Platform V2:
+
+- All `serialize` methods in program classes (`analog`, `annealing`, `gate_model`, etc.) now return a `Program` object from `qbraid_core.services.runtime.schemas`, replacing custom dictionary formats. This ensures a consistent API for program submission across all quantum program types.
+- The `ahs` module has been renamed to `analog`, with all relevant class and import names updated (e.g., `AHSEncoder` → `AnalogHamiltonianEncoder`). This includes file renames and updates to `__init__.py`, ensuring clarity and alignment with terminology.
+- The `ExperimentType`, `JobStatus`, and `DeviceStatus` enums are now imported directly from `qbraid_core`, removing the local definition and reducing duplication.
+
 ### Dependencies
 - Upgraded to `qbraid-core>=0.2.0` to support qBraid Platform migration to V2 endpoints. See [migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
 
