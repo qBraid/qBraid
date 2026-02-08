@@ -26,13 +26,13 @@ import numpy as np
 
 from qbraid.programs import ExperimentType
 
-from .postprocess import counts_to_probabilities, normalize_data
-from .schemas.experiment import (
+from .experiment import (
     AhsExperimentMetadata,
     AnnealingExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
 )
+from .postprocess import counts_to_probabilities, normalize_data
 
 ResultDataType = TypeVar("ResultDataType", bound="ResultData")
 
@@ -72,7 +72,7 @@ class ResultData(ABC):
 
     @classmethod
     @overload
-    def from_object(cls, model: AhsExperimentMetadata, **kwargs) -> AhsResultData: ...
+    def from_object(cls, model: AhsExperimentMetadata, **kwargs) -> AnalogResultData: ...
 
     @classmethod
     def from_object(
@@ -257,7 +257,7 @@ class GateModelResultData(ResultData):
 
 
 @dataclass
-class AhsShotResult:
+class AnalogShotResult:
     """Class for storing the results of a single shot in an analog Hamiltonian simulation job."""
 
     success: bool
@@ -272,7 +272,7 @@ class AhsShotResult:
         )
 
     def __eq__(self, other):
-        if not isinstance(other, AhsShotResult):
+        if not isinstance(other, AnalogShotResult):
             return False
         return (
             self.success == other.success
@@ -291,7 +291,7 @@ class AhsShotResult:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Union[bool, Optional[list[int]]]]) -> AhsShotResult:
+    def from_dict(cls, data: dict[str, Union[bool, Optional[list[int]]]]) -> AnalogShotResult:
         """Create an instance from a dictionary, converting lists to numpy arrays."""
         return cls(
             success=data["success"],
@@ -304,13 +304,13 @@ class AhsShotResult:
         )
 
 
-class AhsResultData(ResultData):
+class AnalogResultData(ResultData):
     """Class for storing and accessing the results of an analog Hamiltonian simulation job."""
 
     def __init__(
         self,
         measurement_counts: Optional[dict[str, int]] = None,
-        measurements: Optional[list[AhsShotResult]] = None,
+        measurements: Optional[list[AnalogShotResult]] = None,
     ):
         self._measurement_counts = measurement_counts
         self._measurements = measurements
@@ -318,10 +318,10 @@ class AhsResultData(ResultData):
     @property
     def experiment_type(self) -> ExperimentType:
         """Returns the experiment type."""
-        return ExperimentType.AHS
+        return ExperimentType.ANALOG
 
     @property
-    def measurements(self) -> Optional[list[AhsShotResult]]:
+    def measurements(self) -> Optional[list[AnalogShotResult]]:
         """Returns the measurements data of the run."""
         return self._measurements
 
@@ -330,15 +330,15 @@ class AhsResultData(ResultData):
         return self._measurement_counts
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> AhsResultData:
-        """Creates a new AhsResultData instance from a dictionary."""
+    def from_dict(cls, data: dict[str, Any]) -> AnalogResultData:
+        """Creates a new AnalogResultData instance from a dictionary."""
         measurements = data.get("measurements")
         if measurements is not None:
             if not isinstance(measurements, list):
                 raise ValueError("'measurements' must be a list or None.")
             if not all(isinstance(shot, dict) for shot in measurements):
                 raise ValueError("Each item in 'measurements' must be a dictionary.")
-            measurements = [AhsShotResult.from_dict(shot) for shot in measurements]
+            measurements = [AnalogShotResult.from_dict(shot) for shot in measurements]
 
         return cls(
             measurements=measurements,
@@ -346,14 +346,14 @@ class AhsResultData(ResultData):
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """Converts the AhsResultData instance to a dictionary."""
+        """Converts the AnalogResultData instance to a dictionary."""
         return {
             "measurement_counts": self._measurement_counts,
             "measurements": self._measurements,
         }
 
     def __eq__(self, other):
-        if not isinstance(other, AhsResultData):
+        if not isinstance(other, AnalogResultData):
             return False
 
         if self._measurement_counts != other._measurement_counts:
@@ -369,7 +369,7 @@ class AhsResultData(ResultData):
         return all(s1 == s2 for s1, s2 in zip(self._measurements, other._measurements))
 
     def __repr__(self) -> str:
-        """Return a string representation of the AhsResultData instance."""
+        """Return a string representation of the AnalogResultData instance."""
         return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={self._measurements})"  # pylint: disable=line-too-long
 
 

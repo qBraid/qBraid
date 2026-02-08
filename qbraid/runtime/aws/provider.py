@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import boto3
@@ -27,8 +28,6 @@ from boto3.session import Session
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice, AwsSession
 from braket.circuits import Circuit
-from qbraid_core.services.quantum import quantum_lib_proxy_state
-from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid._caching import cached_method
 from qbraid.exceptions import QbraidError
@@ -75,6 +74,41 @@ class BraketProvider(QuantumProvider):
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
         self.aws_session_token = aws_session_token
 
+    @staticmethod
+    def aws_configure(
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        region: str | None = None,
+    ) -> None:
+        """
+        Initializes and populates AWS configuration and credentials files.
+
+        Args:
+            aws_access_key_id (str, optional): AWS access key ID. Defaults to None.
+            aws_secret_access_key (str, optional): AWS secret access key. Defaults to None.
+            region (str, optional): AWS region. Defaults to None.
+        """
+        aws_dir = Path.home() / ".aws"
+        config_path = aws_dir / "config"
+        credentials_path = aws_dir / "credentials"
+        aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID", "MYACCESSKEY")
+        aws_secret_access_key = aws_secret_access_key or os.getenv(
+            "AWS_SECRET_ACCESS_KEY", "MYSECRETKEY"
+        )
+        region = region or os.getenv("AWS_REGION", "us-east-1")
+
+        aws_dir.mkdir(exist_ok=True)
+        if not config_path.exists():
+            config_content = f"[default]\nregion = {region}\noutput = json\n"
+            config_path.write_text(config_content)
+        if not credentials_path.exists():
+            credentials_content = (
+                f"[default]\n"
+                f"aws_access_key_id = {aws_access_key_id}\n"
+                f"aws_secret_access_key = {aws_secret_access_key}\n"
+            )
+            credentials_path.write_text(credentials_content)
+
     def save_config(
         self,
         aws_access_key_id: Optional[str] = None,
@@ -84,7 +118,7 @@ class BraketProvider(QuantumProvider):
         """Save the current configuration."""
         aws_access_key_id = aws_access_key_id or self.aws_access_key_id
         aws_secret_access_key = aws_secret_access_key or self.aws_secret_access_key
-        aws_configure(
+        BraketProvider.aws_configure(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             **kwargs,
@@ -144,7 +178,7 @@ class BraketProvider(QuantumProvider):
             experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:
-            experiment_type = ExperimentType.AHS
+            experiment_type = ExperimentType.ANALOG
             program_spec = program_spec or ProgramSpec(
                 AnalogHamiltonianSimulation, alias="braket_ahs"
             )
@@ -239,15 +273,6 @@ class BraketProvider(QuantumProvider):
             QbraidError: If the function is called within a qBraid quantum job environment
                          where AWS S3 requests are not supported.
         """
-        try:
-            jobs_state = quantum_lib_proxy_state("braket")
-            jobs_enabled = jobs_state.get("enabled", False)
-        except ValueError:
-            jobs_enabled = False
-
-        if jobs_enabled:
-            raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
-
         region_names = (
             region_names
             if region_names is not None and len(region_names) > 0

@@ -25,9 +25,10 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs import ExperimentType
-from qbraid.runtime import AhsResultData, Result, TargetProfile
+from qbraid.runtime import AnalogResultData, Result, TargetProfile
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 
 from .._resources import JOB_DATA_AQUILA, RESULTS_DATA_AQUILA
@@ -48,13 +49,13 @@ def result_data() -> dict[str, Any]:
 @pytest.fixture
 def device_id(device_data_aquila) -> str:
     """qBraid ID for QuEra Aquila device."""
-    return device_data_aquila["qbraid_id"]
+    return device_data_aquila["data"]["qrn"]
 
 
 @pytest.fixture
 def mock_job_id(job_data) -> str:
     """Mock qBraid ID for QuEra Aquila job."""
-    return job_data["qbraidJobId"]
+    return job_data["jobQrn"]
 
 
 @pytest.fixture
@@ -63,8 +64,8 @@ def mock_profile(device_id, device_data_aquila) -> TargetProfile:
     return TargetProfile(
         device_id=device_id,
         simulator=False,
-        experiment_type=ExperimentType.AHS,
-        num_qubits=device_data_aquila["numberQubits"],
+        experiment_type=ExperimentType.ANALOG,
+        num_qubits=device_data_aquila["data"]["numberQubits"],
         program_spec=QbraidProvider._get_program_spec("braket_ahs", device_id),
     )
 
@@ -82,9 +83,9 @@ def mock_job(mock_job_id, mock_device, mock_client) -> QbraidJob:
 
 
 @pytest.fixture
-def mock_result_data(result_data) -> AhsResultData:
-    """Mock QuEra Aquila AhsResultData for testing."""
-    return AhsResultData.from_dict(result_data)
+def mock_result_data(result_data) -> AnalogResultData:
+    """Mock QuEra Aquila AnalogResultData for testing."""
+    return AnalogResultData.from_dict(result_data)
 
 
 @pytest.fixture
@@ -101,13 +102,18 @@ def test_get_aquila_device(device_id, mock_provider):
 
 def test_prepare_ahs_program(mock_device, braket_ahs, ahs_dict):
     """Test conversion of AHS program to IR."""
-    assert mock_device.prepare(braket_ahs) == {"ahs": json.dumps(ahs_dict)}
+    program = mock_device.prepare(braket_ahs)
+    assert isinstance(program, Program)
+    assert program.format == "analog"
+    # The program data should match the expected AHS dictionary structure
+    program_data = json.loads(program.data) if isinstance(program.data, str) else program.data
+    assert program_data == ahs_dict
 
 
 @pytest.mark.filterwarnings("ignore:Device is not online*:UserWarning")
 def test_submit_ahs_job_to_aquila(braket_ahs, mock_device, mock_job_id):
     """Test submitting AHS job to QuEra Aquila device."""
-    job = mock_device.run(braket_ahs)
+    job = mock_device.run(braket_ahs, shots=100)
     assert job.id == mock_job_id
 
 

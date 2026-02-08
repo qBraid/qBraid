@@ -21,6 +21,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
+from qbraid_core.services.runtime.schemas import Program
+
 from qbraid._logging import logger
 
 from .alias_manager import get_program_type_alias
@@ -87,5 +89,5 @@ class QuantumProgram(ABC):
         """Transform program to according to device target profile."""
 
     @abstractmethod
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""

@@ -16,7 +16,7 @@
 Module containing sub-modules for interfacing with
 various quantum software libraries and program types.
 
-.. currentmodule:: qbraid.programs.ahs
+.. currentmodule:: qbraid.programs.analog
 
 Classes
 --------
@@ -25,7 +25,7 @@ Classes
    :toctree: ../stubs/
 
    AnalogHamiltonianProgram
-   AHSEncoder
+   AnalogHamiltonianEncoder
 
 Submodules
 ------------
@@ -38,13 +38,13 @@ Submodules
 """
 import importlib
 
-from ._model import AHSEncoder, AnalogHamiltonianProgram
+from ._model import AnalogHamiltonianEncoder, AnalogHamiltonianProgram
 
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 
 submodules = []
-base_path = "qbraid.programs.ahs."
+base_path = "qbraid.programs.analog."
 
 for lib in NATIVE_REGISTRY:
     try:
@@ -56,6 +56,6 @@ for lib in NATIVE_REGISTRY:
         pass
 
 
-__all__ = ["AnalogHamiltonianProgram", "AHSEncoder"]
+__all__ = ["AnalogHamiltonianProgram", "AnalogHamiltonianEncoder"]
 
 __all__.extend(submodules)

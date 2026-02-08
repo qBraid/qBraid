@@ -28,7 +28,7 @@ import pytest
 from azure.quantum import Workspace
 
 from qbraid.runtime import (
-    AhsResultData,
+    AnalogResultData,
     AzureQuantumProvider,
     DeviceStatus,
     GateModelResultData,
@@ -112,6 +112,7 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
     import pyquil
+    import pyquil.gates
 
     p = pyquil.Program()
     ro = p.declare("ro", "BIT", 2)
@@ -219,7 +220,7 @@ def test_submit_sequence_to_pasqal(
 
     result = job.result()
     assert isinstance(result, Result)
-    assert isinstance(result.data, AhsResultData)
+    assert isinstance(result.data, AnalogResultData)
     assert result.data.get_counts() == {"00": 60, "11": 40}
 
 

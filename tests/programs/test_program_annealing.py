@@ -34,6 +34,7 @@ try:
     )
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
     from qbraid.programs.annealing.qubo import QuboProgram
+    from qbraid.programs.typer import QuboCoefficientsDict
     from qbraid.runtime.native.provider import _serialize_program
 
     pyqubo_not_installed = False
@@ -146,6 +147,19 @@ def test_pyqubo_model_to_problem(pyqubo_model):
     assert isinstance(problem, QuboProblem)
     assert problem.num_variables() == 4
     assert pyqubo_model_instance.num_qubits == 4
+
+
+def test_qubo_program_to_problem():
+    """Tests the conversion of a QuboProgram instance to a QuboProblem."""
+    coefficients = {("x1", "x2"): 0.5, ("x2", "x3"): -1.0}
+    qubo_dict: QuboCoefficientsDict = coefficients  # type: ignore
+
+    qubo_program = QuboProgram(qubo_dict)
+    problem = qubo_program.to_problem()
+
+    assert isinstance(problem, QuboProblem)
+    assert problem.quadratic == coefficients
+    assert problem.num_variables() == 3
 
 
 def test_problem_encoder(mock_annealing_program):
@@ -262,25 +276,23 @@ def test_annealing_program_eq_different_type(mock_annealing_program):
 
 def test_runtime_serliaze_qubo(pyqubo_model):
     """Test that the _pyqubo_to_json function returns the expected JSON string."""
-    pyqubo_json = _serialize_program(pyqubo_model)
-    pyqubo_dict = {"problem": json.loads(pyqubo_json["problem"])}
+    program = _serialize_program(pyqubo_model)
+    pyqubo_dict = json.loads(program.data)
 
     expected_dict = {
-        "problem": {
-            "problem_type": "qubo",
-            "quadratic": {
-                '["s1", "s1"]': -160.0,
-                '["s4", "s2"]': 16.0,
-                '["s3", "s1"]': 224.0,
-                '["s2", "s2"]': -96.0,
-                '["s4", "s1"]': 32.0,
-                '["s1", "s2"]': 64.0,
-                '["s3", "s2"]': 112.0,
-                '["s3", "s3"]': -196.0,
-                '["s4", "s4"]': -52.0,
-                '["s4", "s3"]': 56.0,
-            },
-        }
+        "problem_type": "qubo",
+        "quadratic": {
+            '["s1", "s1"]': -160.0,
+            '["s4", "s2"]': 16.0,
+            '["s3", "s1"]': 224.0,
+            '["s2", "s2"]': -96.0,
+            '["s4", "s1"]': 32.0,
+            '["s1", "s2"]': 64.0,
+            '["s3", "s2"]': 112.0,
+            '["s3", "s3"]': -196.0,
+            '["s4", "s4"]': -52.0,
+            '["s4", "s3"]': 56.0,
+        },
     }
 
     assert pyqubo_dict == expected_dict

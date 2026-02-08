@@ -20,31 +20,20 @@ Module defining QbraidDevice class
 """
 from __future__ import annotations
 
-import json
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
-from qbraid_core.decimal import Credits
-from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
+from qbraid_core.services.runtime import QuantumRuntimeClient
+from qbraid_core.services.runtime.schemas import JobRequest, Program
 
-from qbraid._entrypoints import get_entrypoints
-from qbraid._logging import logger
-from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.noise import NoiseModel
-from qbraid.runtime.schemas.experiment import QuboSolveParams
-from qbraid.runtime.schemas.job import RuntimeJobModel
-from qbraid.transpiler import ConversionGraph, transpile
 
 from .job import QbraidJob
 
 if TYPE_CHECKING:
-    import qbraid_core.services.quantum
+    import qbraid_core.services.runtime
 
-    import qbraid.programs
     import qbraid.runtime
-    import qbraid.transpiler
 
 
 class QbraidDevice(QuantumDevice):
@@ -53,15 +42,15 @@ class QbraidDevice(QuantumDevice):
     def __init__(
         self,
         profile: qbraid.runtime.TargetProfile,
-        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
+        client: qbraid_core.services.runtime.QuantumRuntimeClient | None = None,
         **kwargs,
     ):
         """Create a new QbraidDevice object."""
         super().__init__(profile=profile, **kwargs)
-        self._client = client or QuantumClient()
+        self._client = client or QuantumRuntimeClient()
 
     @property
-    def client(self) -> QuantumClient:
+    def client(self) -> QuantumRuntimeClient:
         """Return the QuantumClient object."""
         return self._client
 
@@ -72,176 +61,14 @@ class QbraidDevice(QuantumDevice):
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
-        status: Optional[str] = device_data.get("status")
-        if not status:
-            raise QbraidRuntimeError("Failed to retrieve device status")
-        return DeviceStatus(status)
+        return device_data.status
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the backend"""
         device_data = self.client.get_device(self.id)
-        pending_jobs = device_data.get("pendingJobs", 0)
-        return int(pending_jobs)
+        return device_data.queueDepth or 0
 
-    def submit(  # pylint: disable=too-many-arguments
-        self,
-        run_input: dict[str, Union[bytes, str]],
-        memory: bool = False,
-        preflight: bool = False,
-        shots: Optional[int] = None,
-        tags: Optional[dict[str, str]] = None,
-        entrypoint: Optional[str] = None,
-        noise_model: Optional[str] = None,
-        seed: Optional[int] = None,
-        timeout: Optional[int] = None,
-        backend: Optional[str] = None,
-        params: Optional[dict[str, Any]] = None,
-        error_mitigation: Optional[dict[str, Any]] = None,
-        runtime_options: Optional[dict[str, Any]] = None,
-    ) -> qbraid.runtime.QbraidJob:
-        """
-        Creates a qBraid Quantum Job.
-
-        Args:
-            run_input (dict[str, Union[bytes, str]]): Dictionary containing
-                QIR bytecode or OpenQASM string to be run on the device.
-            memory (bool, optional): Whether to retain the individual shot results.
-                Only applicable for certain devices. Defaults to False.
-            preflight (bool, optional): Whether to run the job in preflight mode.
-                Only applicable for certain devices. Defaults to False.
-            shots (int, optional): The number of times to repeat the execution of the
-                program. Default value varies by device.
-            tags (dict, optional): A dictionary of tags to associate with the job.
-            entrypoint (str, optional): Name of the entrypoint function to execute.
-                Only applicable if run_input is a QIR module. Defaults to None.
-            noise_model (str, optional): The noise model to apply to the job.
-                Only applicable if device supports noisey simulation. Defaults to None.
-            seed (int, optional): The seed to use for the random number generator.
-                Only applicable for certain devices. Defaults to None.
-            timeout (int, optional): The maximum time in seconds to wait for the job
-                to complete after execution has started. Defaults to None.
-            backend (str, optional): The backend to use for the job. Only applicable for
-                simulator devices that support multiple backend executables. Defaults to None.
-            params (dict, optional): Additional parameters to include in the job payload.
-            error_mitigation (dict, optional): Dictionary containing error mitigation
-                parameters. Only applicable for certain devices. Defaults to None.
-            runtime_options (dict, optional): Additional runtime options to include in the
-                job payload. Only applicable for certain devices. Defaults to None.
-
-        Returns:
-            QbraidJob: The job objects representing the submitted job.
-
-        See Also: https://docs.qbraid.com/api-reference/api-reference/post-quantum-jobs
-
-        """
-        tags = tags or {}
-        tags_json = json.dumps(tags)
-        error_mitig_json = json.dumps(error_mitigation) if error_mitigation else None
-        params_json = QuboSolveParams(**params).model_dump_json() if params else None
-        runtime_options_json = json.dumps(runtime_options) if runtime_options else None
-
-        payload = {
-            "qbraidDeviceId": self.id,
-            "tags": tags_json,
-            "shots": shots,
-            "seed": seed,
-            "entrypoint": entrypoint,
-            "timeout": timeout,
-            "noiseModel": noise_model,
-            "memory": memory,
-            "preflight": preflight,
-            "backend": backend,
-            "params": params_json,
-            "errorMitigation": error_mitig_json,
-            **run_input,
-        }
-
-        # TODO: Move runtimeOptions to initial payload declaration once supported by qBraid API
-        if runtime_options_json:
-            payload["runtimeOptions"] = runtime_options_json  # pragma: no cover
-
-        job_data = self.client.create_job(data=payload)
-
-        payload.update(job_data)
-        payload["tags"] = tags
-        payload["params"] = params
-        payload["errorMitigation"] = error_mitigation
-        payload["runtimeOptions"] = runtime_options
-        job_model = RuntimeJobModel.from_dict(payload)
-        model_dump = job_model.model_dump(exclude={"metadata", "cost"})
-        return QbraidJob(**model_dump, device=self, client=self.client)
-
-    def try_extracting_info(self, func, error_message):
-        """Try to extract information from a function/attribute,
-        logging an error if it fails."""
-        try:
-            return func()
-        except Exception as err:  # pylint: disable=broad-exception-caught
-            logger.info("%s: %s. Field will be omitted in job metadata.", error_message, str(err))
-            return None
-
-    def _extract_qasm_rep(
-        self, program: qbraid.programs.QPROGRAM, program_spec: ProgramSpec
-    ) -> Optional[str]:
-        """Populate the qasm info in the payload."""
-        if program_spec.alias in ["qasm2", "qasm3"]:
-            return program
-
-        aux_graph = ConversionGraph()
-
-        closest_qasm = aux_graph.closest_target(program_spec.alias, ["qasm2", "qasm3"])
-
-        if closest_qasm is None:
-            return None
-
-        return transpile(program, closest_qasm, conversion_graph=aux_graph)
-
-    def _construct_aux_payload(
-        self, program: qbraid.programs.QPROGRAM, program_spec: Optional[ProgramSpec] = None
-    ) -> dict[str, Union[int, str]]:
-        """Construct auxiliary payload for the job submission."""
-        aux_payload = {}
-
-        if program_spec is None:
-            program_alias = get_program_type_alias(program, safe=True)
-            program_spec = ProgramSpec(type(program), alias=program_alias)
-
-        if program_spec.native is False:
-            return aux_payload
-
-        qbraid_program = load_program(program)
-
-        payload_key = {
-            ExperimentType.GATE_MODEL: "circuitNumQubits",
-            ExperimentType.ANNEALING: "numVariables",
-            ExperimentType.AHS: "numAtoms",
-        }
-
-        num_required_qubits = self.try_extracting_info(
-            lambda program=qbraid_program: program.num_qubits,
-            "Error calculating circuit number of qubits.",
-        )
-
-        key = payload_key.get(program_spec.experiment_type)
-        if num_required_qubits is not None and key:
-            aux_payload[key] = num_required_qubits
-
-        if program_spec.experiment_type != ExperimentType.GATE_MODEL:
-            return aux_payload
-
-        aux_payload["circuitDepth"] = self.try_extracting_info(
-            lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
-        )
-        aux_payload["openQasm"] = self.try_extracting_info(
-            lambda program=program, program_spec=program_spec: self._extract_qasm_rep(
-                program, program_spec
-            ),
-            "Error extracting OpenQASM string representation.",
-        )
-
-        return aux_payload
-
-    def _resolve_noise_model(self, noise_model: Union[NoiseModel, str]) -> str:
+    def _resolve_noise_model(self, noise_model: NoiseModel | str) -> str:
         """Verify given noise model is supported by device and map to string representation."""
         if self.profile.noise_models is None:
             raise ValueError("Noise models are not supported by this device.")
@@ -258,188 +85,38 @@ class QbraidDevice(QuantumDevice):
 
         return self.profile.noise_models.get(noise_model).name
 
-    def _resolve_qubo_params(self, params: Union[QuboSolveParams, dict]) -> dict[str, Any]:
-        """Resolve QUBO solve parameters to a dictionary."""
-        if self.profile.experiment_type != ExperimentType.ANNEALING:
-            raise ValueError("QUBO solve parameters are only supported for annealing devices.")
-
-        if isinstance(params, QuboSolveParams):
-            params = params.model_dump()
-        elif not isinstance(params, dict):
-            raise ValueError(
-                f"Invalid type for QUBO solve parameters: {type(params)}. "
-                "Expected dict or QuboSolveParams."
-            )
-
-        return params
-
-    @staticmethod
-    def _validate_run_input_payload(
-        payload: Union[dict[str, Any], Any], target_spec: Optional[ProgramSpec]
-    ) -> None:
-        """Raises an exception if the transformed run input is not a dictionary."""
-        if not isinstance(payload, dict):
-            error_message = (
-                "Run input transform failed{}. If the issue persists, "
-                "please submit a bug report at https://github.com/qBraid/qBraid/issues."
-            )
-
-            if target_spec is None:
-                error_message = error_message.format(
-                    " due to missing target ProgramSpec. Ensure all required "
-                    "dependency extras for this device are installed, and try again"
-                )
-            else:
-                error_message = error_message.format(
-                    ", likely due to corrupted target ProgramSpec. Use QbraidProvider.get_device() "
-                    "to re-instantiate the device object, and try again"
-                )
-
-            raise QbraidRuntimeError(error_message)
-
-    @staticmethod
-    def _all_target_specs_native(program_spec: ProgramSpec | list[ProgramSpec] | None) -> bool:
-        """Returns True if all of the given ProgramSpec's are natively supported by qBraid."""
-        entrypoints = get_entrypoints("programs")
-        specs = [program_spec] if isinstance(program_spec, ProgramSpec) else program_spec or []
-        return all(spec.native and spec.alias in entrypoints for spec in specs)
-
-    def run(
+    # pylint: disable-next=too-many-arguments
+    def submit(
         self,
-        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
-        shots: Optional[int] = None,
-        tags: Optional[dict[str, str]] = None,
-        **kwargs,
-    ) -> Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]:
-        """
-        Run a quantum job or a list of quantum jobs on this quantum device.
-
-        Args:
-            run_input (Union[QPROGRAM, list[QPROGRAM]]): A single quantum program
-                or a list of quantum programs to run on the device.
-            shots (optional, int): The number of times to repeat the execution of the
-                program. Default value varies by device.
-            tags (optional, dict): A dictionary of tags to associate with the job.
-            **kwargs: Additional json data to include in the job submission payload.
-
-        Returns:
-            A QuantumJob object or a list of QuantumJob objects corresponding to the input.
-
-        Raises:
-            ValueError: If any protected dynamic parameters are specified in the kwargs.
-        """
-        dynamic_params = {
-            "openQasm": None,
-            "ionqCircuit": None,
-            "bitcode": None,
-            "problem": None,
-            "numVariables": None,
-            "numAtoms": None,
-            "circuitNumQubits": None,
-            "circuitDepth": None,
-        }
-        forbidden_keys = set(dynamic_params.keys())
-
-        if any(key in kwargs for key in forbidden_keys):
-            raise ValueError(
-                f"You cannot specify {', '.join(forbidden_keys)} "
-                "as they are dynamically determined."
-            )
-
-        if not isinstance(run_input, list):
-            run_input_list = [run_input]
-            is_single_input = True
-        else:
-            run_input_list = run_input
-            is_single_input = False
-
-        noise_model: Optional[Union[NoiseModel, str]] = kwargs.get("noise_model")
+        run_input: Program | list[Program],
+        shots: int | None = None,
+        name: str | None = None,
+        tags: dict[str, str | int | bool] | None = None,
+        runtime_options: dict[str, Any] | None = None,
+    ) -> QbraidJob | list[QbraidJob]:
+        """Submit a program to the device."""
+        tags = tags or {}
+        runtime_options = runtime_options or {}
+        noise_model: NoiseModel | str | None = runtime_options.pop("noise_model", None)
 
         if noise_model:
-            kwargs["noise_model"] = self._resolve_noise_model(noise_model)
+            runtime_options["noiseModel"] = self._resolve_noise_model(noise_model)
 
-        params: Optional[Union[QuboSolveParams, dict]] = kwargs.get("params")
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
 
-        if params:
-            kwargs["params"] = self._resolve_qubo_params(params)
+        jobs = []
 
-        jobs: list[qbraid.runtime.QbraidJob] = []
-        native_target = self._all_target_specs_native(self._target_spec)
-        transpile_option = self._target_spec is not None and self._options.get("transpile") is True
-
-        for i, program in enumerate(run_input_list):
-            aux_payload = {}
-            program_spec = None
-            if transpile_option or not native_target:
-                program_alias = get_program_type_alias(program, safe=True)
-                program_spec = ProgramSpec(type(program), alias=program_alias)
-            if not native_target:
-                aux_payload = self._construct_aux_payload(program, program_spec)
-            if transpile_option:
-                program = self.transpile(program, program_spec)
-            is_batched_output = is_single_input and isinstance(program, list)
-            program_batch = program if is_batched_output else [program]
-            self.validate(program_batch, suppress_device_warning=i != 0)
-            for program in program_batch:
-                if native_target:
-                    aux_payload = self._construct_aux_payload(program, program_spec)
-                run_input_json = self.prepare(program)
-                self._validate_run_input_payload(run_input_json, self._target_spec)
-                runtime_payload = {**aux_payload, **run_input_json}
-                job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
-                jobs.append(job)
-        return jobs[0] if (len(jobs) == 1 and is_single_input) else jobs
-
-    def estimate_cost(
-        self, shots: Optional[int], execution_time: Optional[Union[float, int]]
-    ) -> Credits:
-        """Estimate the cost of running a quantum job on this device in qBraid credits,
-        where 1 credit equals $0.01 USD.
-
-        The estimated cost is based on the device's pricing model, which may include charges per
-        task, per shot, and/or per minute. *Note*: The actual price charged may differ from this
-        calculation. Visit https://docs.qbraid.com/home/pricing for the latest pricing information
-        and details about qBraid credits.
-
-        Args:
-            shots (int, optional): The number of quantum circuit executions in the quantum job.
-            execution_time (Union[float, int], optional): The estimated time (in minutes) to
-                complete the quantum job.
-
-        Returns:
-            Credits: The estimated cost for the quantum job in qBraid credits.
-
-        Raises:
-            ValueError: If `shots` and `execution_time` are None or 0, or if either is negative.
-            QbraidRuntimeError: If unable to retrieve the cost estimate from the qBraid API.
-        """
-        if not shots:
-            shots = None
-        if not execution_time:
-            execution_time = None
-
-        if shots is None and execution_time is None:
-            raise ValueError(
-                "At least one of 'shots' or 'execution_time' must be provided to estimate cost."
+        for program in run_input:
+            job_request = JobRequest(
+                deviceQrn=self.id,
+                program=program,
+                shots=shots,
+                name=name,
+                tags=tags,
+                runtimeOptions=runtime_options,
             )
+            job_data = self.client.create_job(job_request)
+            jobs.append(QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client))
 
-        if shots is not None:
-            if not isinstance(shots, int) or shots < 0:
-                raise ValueError("'shots' must be a non-negative integer.")
-
-        if execution_time is not None:
-            if not isinstance(execution_time, (int, float)) or execution_time < 0:
-                raise ValueError("'execution_time' must be a non-negative number.")
-
-        try:
-            cost = self.client.estimate_cost(self.id, shots, execution_time)
-        except QuantumServiceRequestError as err:
-            if self.profile.provider_name == "IonQ" and not self.profile.simulator:
-                raise NotImplementedError(
-                    "Cost estimation is not yet supported for IonQ QPUs."
-                ) from err
-            raise QbraidRuntimeError(
-                "Failed to estimate cost due to a service request error."
-            ) from err
-
-        return Credits(cost)
+        return jobs[0] if is_single_input else jobs

@@ -20,6 +20,7 @@ import pytest
 
 try:
     from pyquil import Program
+    from qbraid_core.services.runtime.schemas import Program as RuntimeProgram
 
     from qbraid.programs.exceptions import ProgramTypeError
     from qbraid.programs.gate_model.pyquil import PyQuilProgram
@@ -27,6 +28,7 @@ try:
     pyquil_not_installed = False
 except ImportError:
     pyquil_not_installed = True
+    RuntimeProgram = None
 
 
 pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
@@ -43,3 +45,18 @@ def test_program_properties():
     program = PyQuilProgram(Program())
     assert program.num_clbits == 0
     assert program.depth == 0
+
+
+def test_pyquil_program_serialize():
+    """Test serialize method of PyQuilProgram"""
+    pyquil_program = Program()
+    pyquil_program += "H 0"
+    pyquil_program += "CNOT 0 1"
+
+    qbraid_program = PyQuilProgram(pyquil_program)
+    serialized = qbraid_program.serialize()
+
+    assert isinstance(serialized, RuntimeProgram)
+    assert serialized.format == "quil"
+    assert "H 0" in serialized.data
+    assert "CNOT 0 1" in serialized.data

@@ -33,7 +33,7 @@ from azure.quantum.target.target import Target
 
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
 from qbraid.runtime import (
-    AhsResultData,
+    AnalogResultData,
     DeviceStatus,
     GateModelResultData,
     JobStateError,
@@ -843,7 +843,7 @@ def test_azure_job_result_pasqal(mock_azure_pasqal_job, mock_pasqal_result_data)
     assert result.device_id == "pasqal.sim.emu-tn"
     assert result.job_id == mock_azure_pasqal_job.id
     assert result.success is True
-    assert isinstance(result.data, AhsResultData)
+    assert isinstance(result.data, AnalogResultData)
     assert result.data.to_dict() == {
         "measurement_counts": {"001010": 50, "001011": 50},
         "measurements": None,
@@ -1505,5 +1505,5 @@ def test_build_profile_pasqal(mock_workspace):
     profile = provider._build_profile(mock_target)
 
     assert profile.program_spec.alias == "pulser"
-    assert profile.experiment_type == ExperimentType.AHS
+    assert profile.experiment_type == ExperimentType.ANALOG
     assert profile.num_qubits == 100

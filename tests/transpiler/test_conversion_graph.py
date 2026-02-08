@@ -33,7 +33,7 @@ except ImportError:
     pyqir_installed = False
 
 from qbraid.programs import ExperimentType, register_program_type, unregister_program_type
-from qbraid.programs.ahs import submodules as ahs_submodules
+from qbraid.programs.analog import submodules as ahs_submodules
 from qbraid.programs.annealing import submodules as annealing_submodules
 from qbraid.programs.gate_model import submodules as gate_model_submodules
 from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
@@ -365,7 +365,7 @@ def test_closest_target_no_targets(basic_conversion_graph: ConversionGraph):
     "submodules, expected_type",
     [
         (gate_model_submodules, ExperimentType.GATE_MODEL),
-        (ahs_submodules, ExperimentType.AHS),
+        (ahs_submodules, ExperimentType.ANALOG),
         (annealing_submodules, ExperimentType.ANNEALING),
     ],
 )

@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pyqasm
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
@@ -120,6 +121,9 @@ class OpenQasm3Program(GateModelProgram):
             self._program = normalize_qasm_gate_params(transformed_qasm)
             self._module.validate()
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        return {"openQasm": pyqasm.dumps(self.module)}
+        return Program(
+            format="qasm3",
+            data=pyqasm.dumps(self.module),
+        )

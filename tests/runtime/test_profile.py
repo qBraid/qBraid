@@ -59,7 +59,7 @@ def target_profile_openqasm(valid_program_spec) -> TargetProfile:
 def target_profile_ahs(valid_program_spec) -> list[TargetProfile]:
     """Fixture to provide a valid TargetProfile instance with AHS action type."""
     return create_target_profile(
-        experiment_type=ExperimentType.AHS, basis_gates=None, program_spec=valid_program_spec
+        experiment_type=ExperimentType.ANALOG, basis_gates=None, program_spec=valid_program_spec
     )
 
 
@@ -141,7 +141,7 @@ def test_target_profile_ahs_len(target_profile_ahs):
 
 def test_target_profile_bad_basis_gates_raises(valid_program_spec):
     """Test raising ValueError when giving basis_gates with non-OPENQASM action type."""
-    for experiment_type in [ExperimentType.AHS, None]:
+    for experiment_type in [ExperimentType.ANALOG, None]:
         with pytest.raises(ValidationError):
             create_target_profile(
                 experiment_type=experiment_type,

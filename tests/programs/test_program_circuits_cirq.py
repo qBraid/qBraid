@@ -336,3 +336,13 @@ def test_transform_no_effect():
     device = Mock()
     program.transform(device)
     assert program.program == circuit
+
+
+def test_cirq_circuit_depth():
+    """Test that depth property returns the length of circuit with operations."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    program = CirqCircuit(circuit)
+
+    # The depth should be the number of moments in a circuit created from all operations
+    assert program.depth == len(cirq.Circuit(circuit.all_operations()))

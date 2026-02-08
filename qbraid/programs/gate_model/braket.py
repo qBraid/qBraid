@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
 from braket.circuits.measure import Measure
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -177,7 +178,7 @@ class BraketCircuit(GateModelProgram):
         This transformation is useful for IonQ devices that may not support
         the identity gate directly but can handle rz gates with zero angle.
         """
-        circuit = self.program.copy()
+        circuit: Circuit = self.program.copy()
         new_circuit = Circuit()
 
         for instruction in circuit.instructions:
@@ -194,15 +195,16 @@ class BraketCircuit(GateModelProgram):
         if device.simulator:
             self.remove_idle_qubits()
 
-        # For IonQ devices, replace identity gates with rz(0) gates
-        if device._provider_name == "IonQ":
-            self.replace_i_with_rz_zero()
+        if device.profile.provider_name is not None:
+            # For IonQ devices, replace identity gates with rz(0) gates
+            if device.profile.provider_name.lower() == "ionq":
+                self.replace_i_with_rz_zero()
 
-        # For IonQ and Amazon Braket simulators, pad measurements to support partial measurement
-        if device._provider_name in ["IonQ", "Amazon Braket"]:
-            self.pad_measurements()
+            # For IonQ and Amazon Braket simulators, pad measurements to support partial measurement
+            if device.profile.provider_name.lower() in {"ionq", "amazon braket"}:
+                self.pad_measurements()
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
         # pylint: disable=import-outside-toplevel
         from qbraid.programs.gate_model.qasm3 import OpenQasm3Program

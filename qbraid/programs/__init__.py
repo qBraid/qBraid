@@ -141,13 +141,13 @@ __all__ = [
 
 _lazy = {
     "gate_model": ["GateModelProgram"],
-    "ahs": ["AnalogHamiltonianProgram", "AHSEncoder"],
+    "analog": ["AnalogHamiltonianProgram", "AnalogHamiltonianEncoder"],
     "annealing": ["AnnealingProgram", "ProblemEncoder", "ProblemType", "Problem", "QuboProblem"],
 }
 
 if TYPE_CHECKING:
-    from .ahs import AHSEncoder as AHSEncoder
-    from .ahs import AnalogHamiltonianProgram as AnalogHamiltonianProgram
+    from .analog import AnalogHamiltonianEncoder as AnalogHamiltonianEncoder
+    from .analog import AnalogHamiltonianProgram as AnalogHamiltonianProgram
     from .annealing import AnnealingProgram as AnnealingProgram
     from .annealing import Problem as Problem
     from .annealing import ProblemEncoder as ProblemEncoder

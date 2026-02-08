@@ -17,12 +17,14 @@ Unit tests for submissions to AWS SV1, DM1, TN1 via qBraid native runtime.
 
 """
 
+from qbraid_core.services.runtime.schemas import Program
+
 from qbraid.runtime.native.provider import _serialize_program
 
 
 def test_braket_circuit_to_json(braket_circuit, qasm3_circuit):
-    """Test conversion of Braket circuit to JSON."""
-    qasm_json = _serialize_program(braket_circuit)
-    assert len(qasm_json) == 1
-    assert qasm_json.keys() == {"openQasm"}
-    assert qasm_json["openQasm"].strip() == qasm3_circuit.strip()
+    """Test conversion of Braket circuit to Program object."""
+    program = _serialize_program(braket_circuit)
+    assert isinstance(program, Program)
+    assert program.format == "qasm3"
+    assert program.data.strip() == qasm3_circuit.strip()

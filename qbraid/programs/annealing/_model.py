@@ -24,6 +24,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Any
 
+from qbraid_core.services.runtime.schemas import Program
+
 from qbraid.programs.program import QuantumProgram
 from qbraid.programs.typer import QuboCoefficientsDict
 
@@ -116,9 +118,12 @@ class AnnealingProgram(QuantumProgram, ABC):
         """Serialize the annealing problem to a JSON string."""
         return json.dumps(self, cls=ProblemEncoder)
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        return {"problem": self.to_json()}
+        return Program(
+            format="problem",
+            data=self.to_json(),
+        )
 
     def __eq__(self, other) -> bool:
         if not isinstance(other, self.__class__):

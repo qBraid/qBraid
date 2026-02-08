@@ -33,8 +33,6 @@ pulser-simulation>=1.4.0; python_version < "3.13"
 # visualization
 ipython
 matplotlib>=3.3,<3.11
-flair-visual>=0.5.3; python_version < "3.13"
-pandas
 
 # testing dependencies
 sympy

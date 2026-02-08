@@ -55,8 +55,8 @@ DEVICE_NUM_QUBITS = {
     "quantinuum.sim.h2-1sc": 56,
     "quantinuum.sim.h2-2sc": 56,
     "quantinuum.sim.h1-1e": 20,
-    "quantinuum.sim.h2-1e": 32,
-    "quantinuum.sim.h2-2e": 32,
+    "quantinuum.sim.h2-1e": 56,
+    "quantinuum.sim.h2-2e": 56,
     "quantinuum.qpu.h1-1": 20,
     "quantinuum.qpu.h2-1": 56,
     "quantinuum.qpu.h2-2": 56,
@@ -157,7 +157,7 @@ class AzureQuantumProvider(QuantumProvider):
     def _get_experiment_type(input_data_format: InputDataFormat) -> ExperimentType:
         """Get the experiment type based on the input data format."""
         if input_data_format == InputDataFormat.PASQAL:
-            return ExperimentType.AHS
+            return ExperimentType.ANALOG
         return ExperimentType.GATE_MODEL
 
     def _build_profile(self, target: Target) -> TargetProfile:

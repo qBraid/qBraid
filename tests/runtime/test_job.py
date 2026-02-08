@@ -31,6 +31,7 @@ from qbraid.runtime.exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
+from qbraid.runtime.experiment import ExperimentMetadata
 from qbraid.runtime.native.job import QbraidJob
 
 from ._resources import JOB_DATA_QIR
@@ -109,34 +110,36 @@ class FakeQbraidClient:
 
     def __init__(
         self,
-        *args,
+        *_args,
         init_status="FAILED",
         init_status_text="Some error message",
         fail_cancel=False,
-        **kwargs,
+        **_kwargs,
     ):
-        super().__init__(*args, **kwargs)
         self._job_data = JOB_DATA_QIR.copy()
         self._job_data["status"] = init_status
-        self._job_data["statusText"] = init_status_text
+        self._job_data["statusMsg"] = init_status_text
         self._fail_cancel = fail_cancel
 
-    def get_job(self, job_id):  # pylint: disable=unused-argument
+    def get_job(self, job_qrn):  # pylint: disable=unused-argument
         """Get the job data."""
+        # pylint: disable=import-outside-toplevel
+        from qbraid_core.services.runtime.schemas import RuntimeJob
+
         status_data_copy = self._job_data.copy()
         if self._job_data["status"] == "CANCELLING":
-            self._job_data["statusText"] = ""
+            self._job_data["statusMsg"] = None
             self._job_data["status"] = "CANCELLED"
-        return status_data_copy
+        return RuntimeJob.model_validate(status_data_copy)
 
-    def cancel_job(self, qbraid_id):  # pylint: disable=unused-argument
+    def cancel_job(self, job_qrn):  # pylint: disable=unused-argument
         """Cancel a job."""
         if self._fail_cancel:
             self._job_data["status"] = "COMPLETED"
-            self._job_data["statusText"] = ""
+            self._job_data["statusMsg"] = None
         else:
             self._job_data["status"] = "CANCELLING"
-            self._job_data["statusText"] = ""
+            self._job_data["statusMsg"] = None
 
 
 @pytest.fixture
@@ -267,7 +270,7 @@ def test_set_job_status_message():
 
 
 def test_set_job_status_from_status_text(mock_job):
-    """Test that a status message is set correctly from statusText job data received from client."""
+    """Test that a status message is set correctly from statusMsg job data received from client."""
     status = mock_job.status()
     assert status == JobStatus.FAILED
     assert status.status_message == "Some error message"
@@ -282,7 +285,13 @@ def test_job_status_enum_call_method():
 
 def test_job_get_result_cls_raises_for_mismatch_expt_type():
     """Test that get_result_data_cls raises a ValueError for unsupported experiment type."""
-    with pytest.raises(
-        ValueError, match="Unsupported device_id 'aws_sv1' or experiment_type 'PHOTONIC'"
-    ):
-        QbraidJob.get_result_data_cls("aws_sv1", ExperimentType.PHOTONIC)
+    with pytest.raises(ValueError, match="Unsupported experiment_type 'OTHER'"):
+        QbraidJob._get_result_data_cls(ExperimentType.OTHER)
+
+
+def test_job_get_metadata_model_default_case():
+    """Test that _get_metadata_model returns ExperimentMetadata for unsupported experiment type."""
+    # Use a hypothetical unsupported experiment type
+    # This tests the default return case in _get_metadata_model
+    metadata_model = QbraidJob._get_metadata_model(ExperimentType.OTHER)
+    assert metadata_model == ExperimentMetadata

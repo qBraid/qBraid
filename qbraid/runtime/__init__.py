@@ -41,7 +41,6 @@ Functions
     load_job
     get_providers
     load_provider
-    display_jobs_from_data
 
 Classes
 --------
@@ -57,8 +56,8 @@ Classes
     Result
     ResultData
     GateModelResultData
-    AhsResultData
-    AhsShotResult
+    AnalogResultData
+    AnalogShotResult
     AnnealingResultData
 
 Exceptions
@@ -79,7 +78,6 @@ Exceptions
 import importlib
 from typing import TYPE_CHECKING
 
-from ._display import display_jobs_from_data
 from .device import QuantumDevice
 from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
@@ -97,8 +95,8 @@ from .profile import TargetProfile
 from .provider import QuantumProvider
 from .result import Result
 from .result_data import (
-    AhsResultData,
-    AhsShotResult,
+    AnalogResultData,
+    AnalogShotResult,
     AnnealingResultData,
     GateModelResultData,
     ResultData,
@@ -110,7 +108,6 @@ __all__ = [
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
-    "display_jobs_from_data",
     "load_job",
     "get_providers",
     "load_provider",
@@ -130,8 +127,8 @@ __all__ = [
     "Result",
     "ResultData",
     "GateModelResultData",
-    "AhsResultData",
-    "AhsShotResult",
+    "AnalogResultData",
+    "AnalogShotResult",
     "AnnealingResultData",
     "ValidationLevel",
     "PROVIDERS",
@@ -162,8 +159,8 @@ _lazy = {
     ],
     "native": [
         "Session",
-        "QbraidSession",
-        "QbraidClient",
+        "QbraidSessionV1",
+        "QbraidClientV1",
         "QbraidProvider",
         "QbraidDevice",
         "QbraidJob",
@@ -186,11 +183,11 @@ if TYPE_CHECKING:
     from .ionq import IonQJob as IonQJob
     from .ionq import IonQProvider as IonQProvider
     from .ionq import IonQSession as IonQSession
-    from .native import QbraidClient as QbraidClient
+    from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
     from .native import QbraidJob as QbraidJob
     from .native import QbraidProvider as QbraidProvider
-    from .native import QbraidSession as QbraidSession
+    from .native import QbraidSessionV1 as QbraidSessionV1
     from .native import QirRunner as QirRunner
     from .native import Session as Session
     from .oqc import OQCDevice as OQCDevice
