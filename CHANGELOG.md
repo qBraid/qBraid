@@ -27,6 +27,11 @@ Types of changes:
 
 ### Dependencies
 
+## [0.11.0] - 2026-02-08
+
+### Dependencies
+- Upgraded to `qbraid-core>=0.2.0` to support qBraid Platform migration to V2 endpoints. See [migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
+
 ## [0.10.2] - 2026-02-08
 
 ### Deprecated
