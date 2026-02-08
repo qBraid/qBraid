@@ -185,8 +185,8 @@ if TYPE_CHECKING:
     from .ionq import IonQSession as IonQSession
     from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
-    from .native import QbraidJobV1 as QbraidJobV1
-    from .native import QbraidProviderV1 as QbraidProviderV1
+    from .native import QbraidJob as QbraidJob
+    from .native import QbraidProvider as QbraidProvider
     from .native import QbraidSessionV1 as QbraidSessionV1
     from .native import QirRunner as QirRunner
     from .native import Session as Session
