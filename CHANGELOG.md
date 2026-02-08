@@ -27,6 +27,45 @@ Types of changes:
 
 ### Dependencies
 
+## [0.10.2] - 2026-02-08
+
+### Deprecated
+- Deprecated qBraid V1 quantum jobs endpoints in favor of new V2 endpoints. See the [API migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
+
+**Which SDK version do I need?**
+
+| Use case | Install |
+|----------|--------|
+| Access legacy jobs (read results from a downloaded JSON file) | `pip install qbraid==0.10.2` |
+| Submit new quantum jobs through qBraid | `pip install qbraid>=0.11.0` |
+
+**Accessing legacy jobs:** Download your jobs data from https://account-v2.qbraid.com/quantum-jobs, then use qBraid-SDK 0.10.2 to load and inspect results:
+
+```python
+from qbraid.runtime import QbraidProvider, QbraidJob
+
+provider = QbraidProvider(legacy_jobs_path="/path/to/legacy-qbraid-jobs.json")
+
+job = QbraidJob("qbraid_device_id-jovyan-qjob-123abcmel6e9scpfm1zg", client=provider.client)
+
+print(job.status())
+# <COMPLETED: 'job has successfully run'>
+
+result = job.result()
+
+print(result.details["metadata"]["openQasm"])
+# 'OPENQASM 2.0;\ninclude "qelib1.inc";\n\nqreg q[1];\ncreg c[1];\n\nmeasure q[0] -> c[0];'
+
+print(result.data.get_counts())
+# {'0': 99, '1': 1}
+```
+
+**Submitting new jobs:** As of February 8th, job submission via the native *QbraidProvider* requires qBraid-SDK 0.11.0 or later. Versions below 0.11.0 can no longer submit jobs to qBraid devices.
+
+These changes apply only to job submission and management via the qBraid API. The AWS, Azure, IonQ, and OQC runtime providers are unaffected.
+
+Read more: [qBraid V2 platform migration](https://docs.qbraid.com/home/migration).
+
 ## [0.10.1] - 2026-01-13
 
 ### Added
