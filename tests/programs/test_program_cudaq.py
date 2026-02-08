@@ -82,7 +82,7 @@ def test_cudaq_program_serialize():
     program = load_program(kernel)
 
     run_input = program.serialize()
-    encoded_qir = run_input["qir"]
+    encoded_qir = run_input.data
     decoded_qir = base64.b64decode(encoded_qir.encode("utf-8")).decode("utf-8")
 
     test_dir = pathlib.Path(__file__).parent
