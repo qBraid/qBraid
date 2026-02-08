@@ -80,3 +80,9 @@ Resources
    :hidden:
 
    pyqasm <https://qbraid.github.io/pyqasm/api/pyqasm.html>
+
+.. toctree::
+   :caption: ALGOS API Reference
+   :hidden:
+
+   qbraid_algorithms <https://qbraid.github.io/qbraid-algorithms/api/qbraid_algorithms.html>
