@@ -16,14 +16,19 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `IonQJob.cost()` method to retrieve job cost information from the IonQ API ([#1121](https://github.com/qBraid/qBraid/pull/1121))
 
 ### Improved / Modified
+- Updated IonQ provider to use v0.4 API, including support for multi-circuit jobs, updated job status mappings (`running` → `started`), and enhanced measurement probability transformations ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+- Added `degraded` status handling for IonQ devices ([#1121](https://github.com/qBraid/qBraid/pull/1121))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Fixed IonQ job submission to use updated API field names (`target` → `backend`) and proper job type specification ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+- Fixed error mitigation parameter handling for IonQ jobs, now correctly nested under `settings` ([#1121](https://github.com/qBraid/qBraid/pull/1121))
 
 ### Dependencies
 
