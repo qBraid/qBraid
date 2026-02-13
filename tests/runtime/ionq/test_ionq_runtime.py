@@ -51,7 +51,7 @@ DEVICE_DATA = [
         "average_queue_time": 1352464532,
         "last_updated": 1717253790,
         "has_access": False,
-        "characterization_url": "/characterizations/ab9ff65b-693f-417f-a07b-927b3e48f6e6",
+        "characterization_id": "ab9ff65b-693f-417f-a07b-927b3e48f6e6",
         "degraded": False,
     },
     {
@@ -61,7 +61,7 @@ DEVICE_DATA = [
         "average_queue_time": 136598879,
         "last_updated": 1717253790,
         "has_access": False,
-        "characterization_url": "/characterizations/8c04e925-76fe-4ff6-83f3-9daf643abbf0",
+        "characterization_id": "8c04e925-76fe-4ff6-83f3-9daf643abbf0",
         "degraded": False,
     },
     {
@@ -71,7 +71,7 @@ DEVICE_DATA = [
         "average_queue_time": 1449545843,
         "last_updated": 1717253790,
         "has_access": False,
-        "characterization_url": "/characterizations/b652694a-912c-47a8-8a67-f6edfd3c6bb2",
+        "characterization_id": "b652694a-912c-47a8-8a67-f6edfd3c6bb2",
         "degraded": False,
     },
     {
@@ -81,7 +81,7 @@ DEVICE_DATA = [
         "average_queue_time": 1533413000,
         "last_updated": 1717253790,
         "has_access": False,
-        "characterization_url": "/characterizations/4e8623ac-d592-4763-a3b6-ad8de775b735",
+        "characterization_id": "4e8623ac-d592-4763-a3b6-ad8de775b735",
         "degraded": False,
     },
     {
@@ -122,23 +122,32 @@ POST_JOB_RESPONSE = {
 
 GET_JOB_RESPONSE = {
     "id": "c86a043a-6aea-47cf-b3a6-70ab1e538cab",
-    "submitted_by": "e1254d93988e405e80d7842a",
+    "type": "ionq.circuit.v1",
     "status": "completed",
-    "target": "simulator",
-    "qubits": 1,
-    "circuits": 1,
-    "results_url": "/v0.3/jobs/c86a043a-6aea-47cf-b3a6-70ab1e538cab/results",
-    "gate_counts": {"1q": 1, "2q": 0},
-    "cost_usd": 0,
+    "name": None,
+    "metadata": None,
+    "backend": "simulator",
+    "submitter_id": "e1254d93988e405e80d7842a",
     "project_id": "0c2ac5b4-6078-40a0-9574-91f7aeab0b7e",
-    "request": 1717296868,
-    "start": 1717296869,
-    "response": 1717296869,
-    "execution_time": 39,
-    "predicted_execution_time": 2,
+    "parent_job_id": None,
+    "session_id": None,
+    "dry_run": False,
+    "failure": None,
     "noise": {"model": "ideal"},
-    "error_mitigation": {"debias": False},
-    "children": [],
+    "submitted_at": "2024-06-02T10:21:08Z",
+    "started_at": "2024-06-02T10:21:09Z",
+    "completed_at": "2024-06-02T10:21:09Z",
+    "execution_duration_ms": 39,
+    "predicted_execution_duration_ms": 2,
+    "predicted_wait_time_ms": None,
+    "output": {
+        "compilation": {"opt": 1, "precision": "1E-3", "gate_basis": "ZZ", "service_version": "v0.3"},
+        "error_mitigation": {"debiasing": False},
+    },
+    "child_job_ids": None,
+    "settings": {},
+    "stats": {"qubits": 1, "circuits": 1, "gate_counts": {"1q": 1, "2q": 0}, "kwh": 0},
+    "results": {"probabilities": {"url": "/v0.4/jobs/c86a043a-6aea-47cf-b3a6-70ab1e538cab/results/probabilities"}},
 }
 
 GET_JOB_RESULT_RESPONSE = {"0": 0.5, "1": 0.5}
@@ -195,7 +204,7 @@ def test_ionq_provider_get_device(program_spec):
         assert isinstance(provider, IonQProvider)
         assert isinstance(provider.session, IonQSession)
         assert provider.session.api_key == "fake_api_key"
-        assert provider.session.base_url == "https://api.ionq.co/v0.3"
+        assert provider.session.base_url == "https://api.ionq.co/v0.4"
         assert provider.session.headers["Content-Type"] == "application/json"
         assert provider.session.headers["Authorization"] == "apiKey fake_api_key"
 
@@ -455,17 +464,20 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
     """Test running a fake job."""
     monkeypatch.setattr("qbraid.runtime.ionq.device.importlib.util.find_spec", lambda _: None)
 
-    mock_get_response = Mock()
-    mock_get_response.json.side_effect = [
-        DEVICE_DATA,  # provider.get_device("simulator")
-        DEVICE_DATA,  # ionq_device.run(circuit, shots=2)
-        GET_JOB_RESPONSE,  # job.status()
-        GET_JOB_RESPONSE,  # job.metadata()
-        GET_JOB_RESPONSE,  # job.metadata()
-        GET_JOB_RESPONSE,  # job.result()
-        GET_JOB_RESULT_RESPONSE,  # job.result()
-    ]
-    mock_get.return_value = mock_get_response
+    simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
+
+    def mock_get_response_func(url):
+        """Return appropriate response based on URL."""
+        mock_resp = Mock()
+        if "probabilities" in url:
+            mock_resp.json.return_value = GET_JOB_RESULT_RESPONSE
+        elif "/backends/" in url:
+            mock_resp.json.return_value = simulator_data
+        else:  # job endpoints
+            mock_resp.json.return_value = GET_JOB_RESPONSE
+        return mock_resp
+
+    mock_get.side_effect = lambda url, **kwargs: mock_get_response_func(url)
 
     # Setup mock for post
     mock_post_response = Mock()
@@ -508,16 +520,18 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
 def test_ionq_failed_job(mock_find_spec, mock_post, mock_get, circuit):
     """Test running a fake job."""
     GET_JOB_RESPONSE["status"] = "failed"
-    mock_get_response = Mock()
-    mock_get_response.json.side_effect = [
-        DEVICE_DATA,  # provider.get_device("simulator")
-        DEVICE_DATA,  # ionq_device.run(circuit, shots=2)
-        {"status": "failed"},  # job.status()
-        GET_JOB_RESPONSE,  # job.metadata()
-        GET_JOB_RESPONSE,  # job.result()
-        GET_JOB_RESULT_RESPONSE,  # job.result()
-    ]
-    mock_get.return_value = mock_get_response
+    simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
+
+    def mock_get_response_func(url):
+        """Return appropriate response based on URL."""
+        mock_resp = Mock()
+        if "/backends/" in url:
+            mock_resp.json.return_value = simulator_data
+        else:  # job endpoints
+            mock_resp.json.return_value = GET_JOB_RESPONSE
+        return mock_resp
+
+    mock_get.side_effect = lambda url, **kwargs: mock_get_response_func(url)
 
     # Setup mock for post
     mock_post_response = Mock()
@@ -566,8 +580,9 @@ def test_ionq_average_queue_time():
         TargetProfile(device_id="simulator", simulator=False),
         IonQSession("fake_api_key"),
     )
+    simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
     with patch("qbraid_core.sessions.Session.get") as mock_get:
-        mock_get.return_value.json.return_value = DEVICE_DATA
+        mock_get.return_value.json.return_value = simulator_data
 
         assert device.avg_queue_time() == 0
 
@@ -583,8 +598,9 @@ def test_ionq_submit_fail():
         TargetProfile(device_id="simulator", simulator=False),
         IonQSession("fake_api_key"),
     )
+    simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
     with patch("qbraid_core.sessions.Session.get") as mock_get:
-        mock_get.return_value.json.return_value = DEVICE_DATA
+        mock_get.return_value.json.return_value = simulator_data
         with patch("qbraid_core.sessions.Session.post") as mock_post:
             mock_post.return_value.json.return_value = {"error": "fake_error"}
 
@@ -620,7 +636,7 @@ def test_hash_method_creates_and_returns_hash(mock_hash, mock_ionq_provider):
     mock_hash.return_value = 7777
     provider_instance = mock_ionq_provider
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
-    mock_hash.assert_called_once_with(("mock_api_key", "https://api.ionq.co/v0.3"))
+    mock_hash.assert_called_once_with(("mock_api_key", "https://api.ionq.co/v0.4"))
     assert result == 7777
     assert provider_instance._hash == 7777
 
@@ -748,21 +764,31 @@ def multicircuit_job_data():
 
     return {
         **ids,
+        "type": "ionq.circuit.v1",
         "status": "completed",
-        "target": "simulator",
-        "type": "circuit",
-        "qubits": 2,
-        "circuits": 2,
-        "results_url": f"/v0.3/jobs/{ids['id']}/results",
-        "gate_counts": {"1q": 2, "2q": 2},
-        "cost_usd": 0,
-        "request": 1731088388,
-        "start": 1731088390,
-        "response": 1731088390,
-        "execution_time": 98,
-        "predicted_execution_time": 8,
+        "backend": "simulator",
+        "name": None,
+        "metadata": None,
+        "submitter_id": "test_submitter",
+        "parent_job_id": None,
+        "session_id": None,
+        "dry_run": False,
+        "failure": None,
         "noise": {"model": "ideal"},
-        "error_mitigation": {"debias": False},
+        "submitted_at": "2024-11-09T00:00:00Z",
+        "started_at": "2024-11-09T00:00:02Z",
+        "completed_at": "2024-11-09T00:00:02Z",
+        "execution_duration_ms": 98,
+        "predicted_execution_duration_ms": 8,
+        "predicted_wait_time_ms": None,
+        "output": {
+            "compilation": {"opt": 1, "precision": "1E-3", "gate_basis": "ZZ", "service_version": "v0.3"},
+            "error_mitigation": {"debiasing": False},
+        },
+        "child_job_ids": list(ids["children"]),
+        "settings": {},
+        "stats": {"qubits": 2, "circuits": 2, "gate_counts": {"1q": 2, "2q": 2}, "kwh": 0},
+        "results": {"probabilities": {"url": f"/v0.4/jobs/{ids['id']}/results/probabilities"}},
         "probabilities": {
             ids["children"][0]: {"0": 0.65, "3": 0.35},
             ids["children"][1]: {"0": 0.5, "3": 0.5},

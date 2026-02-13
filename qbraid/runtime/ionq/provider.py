@@ -16,6 +16,7 @@
 Module defining IonQ session and provider classes
 
 """
+
 import os
 from typing import Any, Optional
 
@@ -53,7 +54,7 @@ class IonQSession(Session):
             )
 
         super().__init__(
-            base_url="https://api.ionq.co/v0.3",
+            base_url="https://api.ionq.co/v0.4",
             headers={"Content-Type": "application/json"},
             auth_headers={"Authorization": f"apiKey {api_key}"},
         )
@@ -68,10 +69,9 @@ class IonQSession(Session):
 
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific IonQ device."""
-        devices = self.get_devices()
         try:
-            return devices[device_id]
-        except KeyError as err:
+            return self.get(f"/backends/{device_id}").json()
+        except Exception as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -95,15 +95,18 @@ class IonQProvider(QuantumProvider):
 
     def _get_characterization(self, data: dict[str, Any]) -> Optional[dict[str, Any]]:
         """Return the characterization of the IonQ device."""
-        characterization_url = data.get("characterization_url")
-        if not characterization_url:
+        device_id = data.get("backend")
+        characterization_id = data.get("characterization_id")
+        if not characterization_id:
             return None
-        characterization_endpoint = f"{self.session.base_url}{characterization_url}"
-        return self.session.get(characterization_endpoint).json()
+        return self.session.get(
+            f"/backends/{device_id}/characterizations/{characterization_id}"
+        ).json()
 
     @staticmethod
     def _get_basis_gates(device_id: str) -> list[str]:
         """Return the basis gates for the IonQ device."""
+        print("Device ID is :", device_id)
         if device_id == "simulator":
             native_gates = IONQ_NATIVE_GATES.copy()
         else:
