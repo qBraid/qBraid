@@ -18,6 +18,7 @@
 Unit tests for IonQProvider class
 
 """
+
 import importlib.util
 import textwrap
 import uuid
@@ -141,13 +142,22 @@ GET_JOB_RESPONSE = {
     "predicted_execution_duration_ms": 2,
     "predicted_wait_time_ms": None,
     "output": {
-        "compilation": {"opt": 1, "precision": "1E-3", "gate_basis": "ZZ", "service_version": "v0.3"},
+        "compilation": {
+            "opt": 1,
+            "precision": "1E-3",
+            "gate_basis": "ZZ",
+            "service_version": "v0.3",
+        },
         "error_mitigation": {"debiasing": False},
     },
     "child_job_ids": None,
     "settings": {},
     "stats": {"qubits": 1, "circuits": 1, "gate_counts": {"1q": 1, "2q": 0}, "kwh": 0},
-    "results": {"probabilities": {"url": "/v0.4/jobs/c86a043a-6aea-47cf-b3a6-70ab1e538cab/results/probabilities"}},
+    "results": {
+        "probabilities": {
+            "url": "/v0.4/jobs/c86a043a-6aea-47cf-b3a6-70ab1e538cab/results/probabilities"
+        }
+    },
 }
 
 GET_JOB_RESULT_RESPONSE = {"0": 0.5, "1": 0.5}
@@ -782,7 +792,12 @@ def multicircuit_job_data():
         "predicted_execution_duration_ms": 8,
         "predicted_wait_time_ms": None,
         "output": {
-            "compilation": {"opt": 1, "precision": "1E-3", "gate_basis": "ZZ", "service_version": "v0.3"},
+            "compilation": {
+                "opt": 1,
+                "precision": "1E-3",
+                "gate_basis": "ZZ",
+                "service_version": "v0.3",
+            },
             "error_mitigation": {"debiasing": False},
         },
         "child_job_ids": list(ids["children"]),
