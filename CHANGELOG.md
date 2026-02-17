@@ -31,6 +31,7 @@ Types of changes:
 - Fixed error mitigation parameter handling for IonQ jobs, now correctly nested under `settings` ([#1121](https://github.com/qBraid/qBraid/pull/1121))
 
 ### Dependencies
+- Add upper bound on `pulser-core` and `pulser-simulation` dev dependencies to >=1.4.0,<1.7.0 ([#1122](https://github.com/qBraid/qBraid/pull/1122))
 
 ## [0.11.0] - 2026-02-08
 
