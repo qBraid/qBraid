@@ -106,7 +106,6 @@ class IonQProvider(QuantumProvider):
     @staticmethod
     def _get_basis_gates(device_id: str) -> list[str]:
         """Return the basis gates for the IonQ device."""
-        print("Device ID is :", device_id)
         if device_id == "simulator":
             native_gates = IONQ_NATIVE_GATES.copy()
         else:

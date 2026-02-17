@@ -153,7 +153,7 @@ class IonQDevice(QuantumDevice):
         self,
         run_input: Union[IonQDictType, list[IonQDictType]],
         shots: int,
-        preflight: bool = False,
+        dry_run: bool = False,
         name: Optional[str] = None,
         noise: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
@@ -167,7 +167,7 @@ class IonQDevice(QuantumDevice):
         job_data = {
             "backend": self.id,
             "shots": shots,
-            "preflight": preflight,
+            "dry_run": dry_run,
             "input": ionq_input,
             "type": "ionq.multi-circuit.v1" if isinstance(run_input, list) else "ionq.circuit.v1",
             **kwargs,
