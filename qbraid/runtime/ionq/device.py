@@ -16,6 +16,7 @@
 Module defining IonQ device class
 
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -86,7 +87,7 @@ class IonQDevice(QuantumDevice):
         if status in ["available", "running"]:
             return DeviceStatus.ONLINE
 
-        if status in ["unavailable", "reserved", "calibrating"]:
+        if status in ["unavailable", "reserved", "calibrating", "degraded"]:
             return DeviceStatus.UNAVAILABLE
 
         if status == "retired":
@@ -152,7 +153,7 @@ class IonQDevice(QuantumDevice):
         self,
         run_input: Union[IonQDictType, list[IonQDictType]],
         shots: int,
-        preflight: bool = False,
+        dry_run: bool = False,
         name: Optional[str] = None,
         noise: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
@@ -164,18 +165,20 @@ class IonQDevice(QuantumDevice):
             self._squash_multicircuit_input(run_input) if isinstance(run_input, list) else run_input
         )
         job_data = {
-            "target": self.id,
+            "backend": self.id,
             "shots": shots,
-            "preflight": preflight,
+            "dry_run": dry_run,
             "input": ionq_input,
+            "type": "ionq.multi-circuit.v1" if isinstance(run_input, list) else "ionq.circuit.v1",
             **kwargs,
         }
         optional_fields = {
             "name": name,
             "noise": noise,
             "metadata": metadata,
-            "error_mitigation": error_mitigation,
         }
+        if error_mitigation is not None:
+            job_data["settings"] = {"error_mitigation": error_mitigation}
         job_data.update({key: value for key, value in optional_fields.items() if value is not None})
         serialized_data = json.dumps(job_data)
         job_data = self.session.create_job(serialized_data)
