@@ -35,7 +35,7 @@ requires-python = ">=3.10"
 
 [project.urls]
 Homepage = "https://sdk.qbraid.com/"
-Documentation = "https://docs.qbraid.com/sdk"
+Documentation = "https://docs.qbraid.com/v2/sdk"
 "Source Code" = "https://github.com/qBraid/qBraid"
 "Bug Tracker" = "https://github.com/qBraid/qBraid/issues"
 Discord = "https://discord.gg/TPBU2sa8Et"

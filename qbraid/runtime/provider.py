@@ -41,8 +41,8 @@ class QuantumProvider(ABC):
     :py:class:`QuantumDevice` and plays a central role in defining the runtime behavior and request
     structure necessary for submitting and executing quantum programs on that device through your
     service. To learn more, check out our documentation on
-    `setting up a new provider <https://docs.qbraid.com/sdk/user-guide/runtime/new-provider>`_ and
-    the `components of qBraid Runtime <https://docs.qbraid.com/sdk/user-guide/runtime/components>`_.
+    `setting up a new provider <https://docs.qbraid.com/v2/sdk/user-guide/runtime/new-provider>`_ and
+    the `components of qBraid Runtime <https://docs.qbraid.com/v2/sdk/user-guide/runtime/components>`_.
 
     """
 

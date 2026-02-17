@@ -24,7 +24,7 @@ Installation
 
 For the best experience, install the qBraid SDK on `lab.qbraid.com <https://lab.qbraid.com>`_.
 Login (or create an account) on `account.qbraid.com <https://account.qbraid.com>`_ and then
-follow the steps to `install an environment <https://docs.qbraid.com/lab/user-guide/environments#install-environment>`_.
+follow the steps to `install an environment <https://docs.qbraid.com/v2/lab/user-guide/environments#install-environment>`_.
 
 The qBraid-SDK, and all of its dependencies, can also be installed using `pip <https://pypi.org/project/qbraid/>`_:
 
@@ -41,7 +41,7 @@ The qBraid-SDK, and all of its dependencies, can also be installed using `pip <h
 Resources
 ----------
 
-- `User Guide <https://docs.qbraid.com/sdk/user-guide>`_
+- `User Guide <https://docs.qbraid.com/v2/sdk/user-guide>`_
 - `Example Notebooks <https://github.com/qBraid/qbraid-lab-demo>`_
 - `API Reference <https://qbraid.github.io/qBraid/api/qbraid.html>`_
 - `Source Code <https://github.com/qBraid/qBraid>`_
@@ -67,6 +67,7 @@ Resources
    qbraid_qir <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.html>
    qbraid_qir.cirq <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.cirq.html>
    qbraid_qir.qasm3 <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.qasm3.html>
+   qbraid_qir.squin <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.squin.html>
 
 .. toctree::
    :caption: CORE API Reference
