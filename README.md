@@ -30,15 +30,13 @@ This Python-based tool streamlines the full lifecycle management of quantum jobs
 
 By addressing the full scope of client-side software requirements necessary for secure submission and management of quantum jobs, the qBraid-SDK vastly reduces the overhead and redundancy typically associated with the development of internal pipelines and cross-platform integrations in quantum computing.
 
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
-
 ---
 
 ![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
 
 ## Resources
 
-- [User Guide](https://docs.qbraid.com/sdk/user-guide/)
+- [User Guide](https://docs.qbraid.com/v2/sdk/user-guide/)
 - [API Reference](https://sdk.qbraid.com/qBraid/api/qbraid.html)
 - [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
 
@@ -46,7 +44,7 @@ By addressing the full scope of client-side software requirements necessary for 
 
 For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
-[install an environment](https://docs.qbraid.com/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid, AWS, IonQ, QuEra, and NEC. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) and [pricing](https://docs.qbraid.com/home/pricing) for more.
+[install an environment](https://docs.qbraid.com/v2/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/v2/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid, AWS, IonQ, QuEra, and NEC. See [qBraid Quantum Jobs](https://docs.qbraid.com/v2/lab/user-guide/quantum-jobs) and [pricing](https://docs.qbraid.com/v2/home/pricing) for more.
 
 ### Local install
 
@@ -66,7 +64,7 @@ pip install .
 
 > _Note:_ The qBraid-SDK requires Python 3.10 or greater.
 
-To use [qBraid Runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ionq), [OQCProvider](https://docs.qbraid.com/sdk/user-guide/runtime_oqc), and [AzureQuantumProvider](https://docs.qbraid.com/sdk/user-guide/providers/azure), as applicable.
+To use [qBraid Runtime](https://docs.qbraid.com/v2/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_ionq), [OQCProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_oqc), and [AzureQuantumProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/azure), as applicable.
 
 ## Quickstart
 
@@ -148,7 +146,7 @@ graph.plot(legend=True)
 
 <img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.7.png" style="width: 65%;">
 
-You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
+You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/v2/sdk/user-guide/transpiler#conversion-graph):
 
 ```python
 from unittest.mock import Mock
@@ -183,7 +181,7 @@ devices = provider.get_devices()
 Or, instantiate a known device by ID and submit quantum jobs from any supported program type:
 
 ```python
-device = provider.get_device("qbraid_qir_simulator")
+device = provider.get_device("qbraid:qbraid:sim:qir-sv")
 jobs = device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
 
 results = [job.result() for job in jobs]
@@ -216,28 +214,6 @@ plot_histogram(batch_counts)
   [Submit an issue](https://github.com/qBraid/qBraid/issues)
 - For discussions, and specific questions about the qBraid-SDK [join our discord community](https://discord.gg/TPBU2sa8Et)
 - For questions that are more suited for a forum, post to [QCSE](https://quantumcomputing.stackexchange.com/) with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
-
-## Launch on qBraid
-
-The "Launch on qBraid" button (top) can be added to any public GitHub
-repository. Clicking on it automatically opens qBraid Lab, and performs a
-`git clone` of the project repo into your account's home directory. Copy the
-code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub
-info.
-
-Use the badge in your project's `README.md`:
-
-```markdown
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git)
-```
-
-Use the badge in your project's `README.rst`:
-
-```rst
-.. image:: https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png
-    :target: https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
-    :width: 150px
-```
 
 ## License
 

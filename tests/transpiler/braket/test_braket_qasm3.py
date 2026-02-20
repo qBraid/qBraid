@@ -93,6 +93,100 @@ def test_braket_from_qasm3():
     circuit_expected = Circuit().rx(0, 0.15).rx(1, 0.3)
     assert circuit_expected == qasm3_to_braket(qasm)
 
+def test_braket_from_qasm3_physical_qubits():
+    """Test converting OpenQASM 3 string with physical qubits to a braket circuit"""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+gate prx(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_0(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(pi) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_1(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_2(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-pi) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_3(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_4(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-2*pi) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_5(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_6(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(pi/2) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_7(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_8(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-3.2994851870005952) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_9(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_10(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-7*pi/2) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+bit[2] meas;
+prx(pi/2, 0) $0;
+prx_0(pi, pi/2) $0;
+prx_1(-pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx_2(-pi, pi/2) $0;
+prx_3(-pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx_4(-2*pi, pi/2) $0;
+prx_5(-pi/2, 0) $0;
+prx(pi/2, 0) $1;
+prx_6(pi/2, pi/2) $1;
+prx_7(-pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx_8(-3.2994851870005952, pi/2) $1;
+prx_9(-pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx_10(-7*pi/2, pi/2) $1;
+barrier $0, $1;
+meas[0] = measure $0;
+meas[1] = measure $1;
+    """
+    qasm = textwrap.dedent(qasm).strip()
+    circuit = qasm3_to_braket(qasm)
+    assert isinstance(circuit, Circuit)
 
 def test_qiskit_to_qasm3_to_braket():
     """Test converting Qiskit circuit to Braket via OpenQASM 3.0 for mapped gate defs"""
