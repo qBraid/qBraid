@@ -17,10 +17,11 @@ Unit tests for Equal1 simulator runtime through native provider.
 
 """
 import pytest
+from qbraid_core.services.runtime.schemas import Result as CoreResult
 
+from qbraid.programs import ExperimentType
 from qbraid.runtime import Result
-from qbraid.runtime.experiment import GateModelExperimentMetadata
-from qbraid.runtime.result_data import GateModelResultData
+from qbraid.runtime.result_data import ResultData
 
 
 @pytest.fixture
@@ -115,32 +116,35 @@ def equal1_expected_decoded(equal1_partial_decoded_qasm):
 
 
 def test_equal1_result_with_metadata_and_data():
-    """Test getting a Result object with GateModelExperimentMetadata and GateModelResultData."""
+    """Test getting a Result object with core Result and ResultData.from_object."""
     device_id = "qbraid:equal1:sim:bell-1"
     job_id = "qbraid:equal1:sim:bell-1-37f5-qjob-2ht3zyghhxsr8gqbu8yj"
     counts = {"11": 5, "00": 5}
-    qasm = (
-        'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];'
-        "\nmeasure q[0] -> c[0];\nmeasure q[1] -> c[1];"
-    )
-
-    # Create metadata from result data (only fields supported by GateModelExperimentMetadata)
-    result_data = {
-        "measurementCounts": counts,
-        "openQasm": qasm,
+    time_stamps = {
+        "createdAt": "2026-01-16T21:33:11.230773Z",
+        "endedAt": "2026-01-16T21:33:15.516909Z",
+        "executionDuration": 1200,
     }
+    cost = "0.0"
 
-    # Create metadata object
-    metadata = GateModelExperimentMetadata(**result_data)
+    core_result = CoreResult.model_validate(
+        {
+            "status": "COMPLETED",
+            "cost": cost,
+            "timeStamps": time_stamps,
+            "resultData": {"measurementCounts": counts},
+        }
+    )
+    data = ResultData.from_object(core_result, ExperimentType.GATE_MODEL)
 
-    # Create result data from metadata
-    data = GateModelResultData.from_object(metadata)
-
-    # Create Result object
-    exclude = {"measurement_counts", "measurements"}
-    metadata_dump = metadata.model_dump(exclude=exclude)
-
-    result = Result(device_id=device_id, job_id=job_id, success=True, data=data, **metadata_dump)
+    result = Result(
+        device_id=device_id,
+        job_id=job_id,
+        success=True,
+        data=data,
+        time_stamps=time_stamps,
+        cost=cost,
+    )
 
     # Test the Result object
     assert result.device_id == device_id
@@ -150,5 +154,6 @@ def test_equal1_result_with_metadata_and_data():
     # Test that result data has counts
     assert result.data.get_counts() == counts
 
-    # Test that metadata fields are accessible via the details structure
-    assert result.details.get("qasm") == qasm or result.details.get("openQasm") == qasm
+    # Test that time_stamps and cost are passed through in details
+    assert result.details.get("time_stamps") == time_stamps
+    assert result.details.get("cost") == cost

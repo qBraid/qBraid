@@ -21,10 +21,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyqasm
+from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
-    convert_qasm_pi_to_decimal,
     remove_stdgates_include,
     replace_gate_names,
 )
@@ -59,7 +59,6 @@ def transform_notation(qasm3: str) -> str:
 
     qasm3 = remove_stdgates_include(qasm3)
     qasm3 = replace_gate_names(qasm3, replacements)
-    qasm3 = convert_qasm_pi_to_decimal(qasm3)
     return qasm3
 
 
@@ -77,14 +76,25 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         ProgramConversionError: If qasm to braket conversion fails
 
     """
-    module = pyqasm.loads(qasm)
-    module.unroll()
-    qasm = pyqasm.dumps(module)
+    prior_errors: list[tuple[str, BaseException]] = []
 
-    qasm = transform_notation(qasm)
+    try:
+        module = pyqasm.loads(qasm)
+        module.unroll()
+        qasm = pyqasm.dumps(module)
+    except ValidationError as err:
+        prior_errors.append(("PyQASM validation", err))
+
+    try:
+        qasm = transform_notation(qasm)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        prior_errors.append(("Transform", err))
 
     try:
         program = braket_openqasm.Program(source=qasm)
         return braket_circuits.Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
-        raise QasmError("Error converting qasm3 string to braket circuit") from err
+        msg = "Error converting qasm3 string to braket circuit"
+        if prior_errors:
+            msg += ". Prior errors: " + "; ".join(f"{label}: {e}" for label, e in prior_errors)
+        raise QasmError(msg) from err

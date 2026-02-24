@@ -19,10 +19,12 @@ Unit tests for converting Braket circuits to/from OpenQASM
 import textwrap
 
 import numpy as np
+import pytest
 import qiskit
 from braket.circuits import Circuit
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.conversions.braket import braket_to_qasm3
 from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
@@ -94,6 +96,102 @@ def test_braket_from_qasm3():
     assert circuit_expected == qasm3_to_braket(qasm)
 
 
+def test_braket_from_qasm3_physical_qubits():
+    """Test converting OpenQASM 3 string with physical qubits to a braket circuit"""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+gate prx(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_0(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(pi) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_1(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_2(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-pi) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_3(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_4(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-2*pi) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_5(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_6(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(pi/2) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_7(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_8(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-3.2994851870005952) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+gate prx_9(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(0) _gate_q_0;
+  rx(-pi/2) _gate_q_0;
+  rz(0) _gate_q_0;
+}
+gate prx_10(_gate_p_0, _gate_p_1) _gate_q_0 {
+  rz(pi/2) _gate_q_0;
+  rx(-7*pi/2) _gate_q_0;
+  rz(-pi/2) _gate_q_0;
+}
+bit[2] meas;
+prx(pi/2, 0) $0;
+prx_0(pi, pi/2) $0;
+prx_1(-pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx_2(-pi, pi/2) $0;
+prx_3(-pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx(pi/2, 0) $0;
+prx_4(-2*pi, pi/2) $0;
+prx_5(-pi/2, 0) $0;
+prx(pi/2, 0) $1;
+prx_6(pi/2, pi/2) $1;
+prx_7(-pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx_8(-3.2994851870005952, pi/2) $1;
+prx_9(-pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx(pi/2, 0) $1;
+prx_10(-7*pi/2, pi/2) $1;
+barrier $0, $1;
+meas[0] = measure $0;
+meas[1] = measure $1;
+    """
+    qasm = textwrap.dedent(qasm).strip()
+    circuit = qasm3_to_braket(qasm)
+    assert isinstance(circuit, Circuit)
+
+
 def test_qiskit_to_qasm3_to_braket():
     """Test converting Qiskit circuit to Braket via OpenQASM 3.0 for mapped gate defs"""
     qc = qiskit.QuantumCircuit(4)
@@ -110,3 +208,19 @@ def test_qiskit_to_qasm3_to_braket():
     qasm3_str = qiskit_to_qasm3(qc)
     circuit = qasm3_to_braket(qasm3_str)
     assert circuits_allclose(qc, circuit)
+
+
+@pytest.mark.parametrize(
+    "match_substring",
+    ["PyQASM validation", "Transform"],
+    ids=["pyqasm_validation_in_final_error", "transform_in_final_error"],
+)
+def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
+    """Coverage: prior_errors (PyQASM validation and/or Transform) are included in QasmError
+
+    Invalid QASM causes the first try (PyQASM) to raise; the second try (transform_notation
+    -> replace_gate_names -> parse) also raises. The final QasmError message includes both.
+    """
+    invalid_qasm = "not valid openqasm"
+    with pytest.raises(QasmError, match=f"Prior errors:.*{match_substring}"):
+        qasm3_to_braket(invalid_qasm)
