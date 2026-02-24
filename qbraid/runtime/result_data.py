@@ -110,7 +110,7 @@ class GateModelResultData(ResultData):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> GateModelResultData:
         """Creates a new GateModelResult instance from a dictionary."""
-        meas_keys = {
+        known = {
             "measurement_counts",
             "measurementCounts",
             "measurements",
@@ -122,7 +122,7 @@ class GateModelResultData(ResultData):
         measurement_probabilities = data.get(
             "measurement_probabilities", data.get("measurementProbabilities")
         )
-        rest = {k: v for k, v in data.items() if k not in meas_keys}
+        rest = {k: v for k, v in data.items() if k not in known}
 
         if isinstance(measurements, list):
             measurements = np.array(measurements, dtype=object)
@@ -338,7 +338,8 @@ class AnalogResultData(ResultData):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AnalogResultData:
         """Creates a new AnalogResultData instance from a dictionary."""
-        measurements = data.pop("measurements", None)
+        known = {"measurement_counts", "measurementCounts", "measurements"}
+        measurements = data.get("measurements")
         if measurements is not None:
             if not isinstance(measurements, list):
                 raise ValueError("'measurements' must be a list or None.")
@@ -346,11 +347,12 @@ class AnalogResultData(ResultData):
                 raise ValueError("Each item in 'measurements' must be a dictionary.")
             measurements = [AnalogShotResult.from_dict(shot) for shot in measurements]
 
-        measurement_counts = data.pop("measurement_counts", data.pop("measurementCounts", None))
+        measurement_counts = data.get("measurement_counts", data.get("measurementCounts"))
+        rest = {k: v for k, v in data.items() if k not in known}
         return cls(
             measurement_counts=measurement_counts,
             measurements=measurements,
-            **data,
+            **rest,
         )
 
     def to_dict(self) -> dict[str, Any]:
