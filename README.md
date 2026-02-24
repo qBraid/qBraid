@@ -44,7 +44,7 @@ By addressing the full scope of client-side software requirements necessary for 
 
 For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
-[install an environment](https://docs.qbraid.com/v2/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/v2/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid, AWS, IonQ, QuEra, and NEC. See [qBraid Quantum Jobs](https://docs.qbraid.com/v2/lab/user-guide/quantum-jobs) and [pricing](https://docs.qbraid.com/v2/home/pricing) for more.
+[install an environment](https://docs.qbraid.com/v2/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/v2/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, AQT, QuEra, Rigetti, Pasqal, and IQM, as well as on-demand simulators from qBraid, AWS, IonQ, QuEra, Quantinuum, Rigetti, and Pasqal. See [qBraid Quantum Jobs](https://docs.qbraid.com/v2/lab/user-guide/quantum-jobs) and [pricing](https://docs.qbraid.com/v2/home/pricing) for more.
 
 ### Local install
 
@@ -53,6 +53,10 @@ The qBraid-SDK, and all of its dependencies, can be installed using pip:
 ```bash
 pip install qbraid
 ```
+
+> _Warning:_ `qbraid` versions &lt;0.11 are *not* compatible with [qBraid API V2](https://docs.qbraid.com/v2/api-reference/user-guide/overview). See [migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
+>
+> To ensure compatibility with the new platform, use `qbraid>=0.11.0`.
 
 You can also [install from source](CONTRIBUTING.md#installing-from-source) by cloning this repository and running a pip install command in the root directory of the repository:
 

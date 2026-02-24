@@ -72,9 +72,6 @@ class ResultData(ABC):
         if result_data_cls is None:
             raise ValueError(f"Unsupported experiment_type: '{experiment_type.name}'")
 
-        print(type(result.resultData))
-        print(result.resultData)
-
         return result_data_cls.from_dict(result.resultData)
 
 
