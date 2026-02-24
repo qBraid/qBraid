@@ -21,10 +21,14 @@ Types of changes:
 ### Improved / Modified
 - Updated IonQ provider to use v0.4 API, including support for multi-circuit jobs, updated job status mappings (`running` → `started`), and enhanced measurement probability transformations ([#1121](https://github.com/qBraid/qBraid/pull/1121))
 - Added `degraded` status handling for IonQ devices ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+- Refactored `QbraidJob.result()` to use `qbraid_core.services.runtime.schemas.Result` directly: removed dependency on `ExperimentMetadata` classes, added single `ResultData.from_object(result, experiment_type)` that builds from the core Result’s `resultData`, and pass `time_stamps` and `cost` through as Result details instead of metadata dump ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+- Refactored `ResultData` subclasses to handle API camelCase keys (`measurementCounts`, `numSolutions`, etc.) in their `from_dict` implementations; `GateModelResultData.from_dict` now uses `.get()` and a known-keys filter instead of mutating a copy ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+- QASM3-to-Braket conversion now supports QASM3 strings with physical qubits via a try/except workaround when PyQASM validation or transform fails ([#1123](https://github.com/qBraid/qBraid/pull/1123))
 
 ### Deprecated
 
 ### Removed
+- Removed `qbraid.runtime.experiment` module (`ExperimentMetadata`, `GateModelExperimentMetadata`, `AnnealingExperimentMetadata`, `AhsExperimentMetadata`) and related tests; native job results now rely on the core Result schema and `ResultData.from_object` only ([#1123](https://github.com/qBraid/qBraid/pull/1123))
 
 ### Fixed
 - Fixed IonQ job submission to use updated API field names (`target` → `backend`) and proper job type specification ([#1121](https://github.com/qBraid/qBraid/pull/1121))
@@ -32,6 +36,7 @@ Types of changes:
 
 ### Dependencies
 - Add upper bound on `pulser-core` and `pulser-simulation` dev dependencies to >=1.4.0,<1.7.0 ([#1122](https://github.com/qBraid/qBraid/pull/1122))
+- Increased upper bound on `qbraid-qir` dependency from <=0.5.0 to <=0.5.1 ([#1123](https://github.com/qBraid/qBraid/pull/1123))
 
 ## [0.11.0] - 2026-02-08
 
