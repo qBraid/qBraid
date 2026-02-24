@@ -19,10 +19,12 @@ Unit tests for converting Braket circuits to/from OpenQASM
 import textwrap
 
 import numpy as np
+import pytest
 import qiskit
 from braket.circuits import Circuit
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.conversions.braket import braket_to_qasm3
 from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
@@ -206,3 +208,19 @@ def test_qiskit_to_qasm3_to_braket():
     qasm3_str = qiskit_to_qasm3(qc)
     circuit = qasm3_to_braket(qasm3_str)
     assert circuits_allclose(qc, circuit)
+
+
+@pytest.mark.parametrize(
+    "match_substring",
+    ["PyQASM validation", "Transform"],
+    ids=["pyqasm_validation_in_final_error", "transform_in_final_error"],
+)
+def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
+    """Coverage: prior_errors (PyQASM validation and/or Transform) are included in QasmError
+
+    Invalid QASM causes the first try (PyQASM) to raise; the second try (transform_notation
+    -> replace_gate_names -> parse) also raises. The final QasmError message includes both.
+    """
+    invalid_qasm = "not valid openqasm"
+    with pytest.raises(QasmError, match=f"Prior errors:.*{match_substring}"):
+        qasm3_to_braket(invalid_qasm)
