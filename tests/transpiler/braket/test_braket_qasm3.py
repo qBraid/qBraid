@@ -93,6 +93,7 @@ def test_braket_from_qasm3():
     circuit_expected = Circuit().rx(0, 0.15).rx(1, 0.3)
     assert circuit_expected == qasm3_to_braket(qasm)
 
+
 def test_braket_from_qasm3_physical_qubits():
     """Test converting OpenQASM 3 string with physical qubits to a braket circuit"""
     qasm = """
@@ -187,6 +188,7 @@ meas[1] = measure $1;
     qasm = textwrap.dedent(qasm).strip()
     circuit = qasm3_to_braket(qasm)
     assert isinstance(circuit, Circuit)
+
 
 def test_qiskit_to_qasm3_to_braket():
     """Test converting Qiskit circuit to Braket via OpenQASM 3.0 for mapped gate defs"""
