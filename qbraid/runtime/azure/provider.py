@@ -16,6 +16,7 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
+
 from __future__ import annotations
 
 import json
@@ -102,19 +103,23 @@ class AzureQuantumProvider(QuantumProvider):
         """
         if not workspace:
             connection_str = os.getenv("AZURE_QUANTUM_CONNECTION_STRING")
-            workspace = (
-                Workspace.from_connection_string(connection_str) if connection_str else Workspace()
-            )
-
-        if not workspace.credential:
-            if credential:
-                workspace.credential = credential
+            if connection_str:
+                workspace = Workspace.from_connection_string(connection_str)
+            elif credential:
+                workspace = Workspace(credential=credential)
             else:
                 warnings.warn(
                     "No credential provided; interactive authentication via a "
                     "web browser may be required. To avoid interactive authentication, "
                     "provide a ClientSecretCredential."
                 )
+                workspace = Workspace()
+        elif not workspace.credential:
+            warnings.warn(
+                "No credential provided; interactive authentication via a "
+                "web browser may be required. To avoid interactive authentication, "
+                "provide a ClientSecretCredential."
+            )
         workspace.append_user_agent("qbraid")
         self._workspace = workspace
 

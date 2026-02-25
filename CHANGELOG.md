@@ -24,8 +24,10 @@ Types of changes:
 - Refactored `QbraidJob.result()` to use `qbraid_core.services.runtime.schemas.Result` directly: removed dependency on `ExperimentMetadata` classes, added single `ResultData.from_object(result, experiment_type)` that builds from the core Result’s `resultData`, and pass `time_stamps` and `cost` through as Result details instead of metadata dump ([#1123](https://github.com/qBraid/qBraid/pull/1123))
 - Refactored `ResultData` subclasses to handle API camelCase keys (`measurementCounts`, `numSolutions`, etc.) in their `from_dict` implementations; `GateModelResultData.from_dict` now uses `.get()` and a known-keys filter instead of mutating a copy ([#1123](https://github.com/qBraid/qBraid/pull/1123))
 - QASM3-to-Braket conversion now supports QASM3 strings with physical qubits via a try/except workaround when PyQASM validation or transform fails ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+- Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; refactored `AzureQuantumProvider.__init__` to pass `credential` at `Workspace()` construction time rather than setting it post-init; added `AzureQuantumDevice._serialize_input` to auto-convert Pulser `Sequence` objects to their abstract JSON representation before submission ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
 
 ### Deprecated
+- `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in the next release ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
 
 ### Removed
 - Removed `qbraid.runtime.experiment` module (`ExperimentMetadata`, `GateModelExperimentMetadata`, `AnnealingExperimentMetadata`, `AhsExperimentMetadata`) and related tests; native job results now rely on the core Result schema and `ResultData.from_object` only ([#1123](https://github.com/qBraid/qBraid/pull/1123))
@@ -37,6 +39,7 @@ Types of changes:
 ### Dependencies
 - Add upper bound on `pulser-core` and `pulser-simulation` dev dependencies to >=1.4.0,<1.7.0 ([#1122](https://github.com/qBraid/qBraid/pull/1122))
 - Increased upper bound on `qbraid-qir` dependency from <=0.5.0 to <=0.5.1 ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+- Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0` ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
 
 ## [0.11.0] - 2026-02-08
 
