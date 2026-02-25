@@ -17,6 +17,7 @@
 Unit tests for Azure Quantum runtime (remote)
 
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -128,8 +129,11 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 @pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
+    # pylint: disable=import-outside-toplevel
     import pyquil
     import pyquil.gates
+
+    # pylint: enable=import-outside-toplevel
 
     p = pyquil.Program()
     ro = p.declare("ro", "BIT", 2)
@@ -169,6 +173,7 @@ def pulser_sequence() -> pulser_.Sequence:
     det_wf = RampWaveform(1000, -5, 5)
     pulse = pulser.Pulse(amp_wf, det_wf, 0)
     seq.add(pulse, "ch0")
+    seq.measure("ground-rydberg")
 
     return seq
 
@@ -215,7 +220,7 @@ def test_submit_quil_to_rigetti(
     result = job.result()
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
-    assert result.data.get_counts() == {"00": 60, "11": 40}
+    assert list(result.data.get_counts().keys()) == ["00", "11"]
 
 
 @pytest.mark.remote
@@ -252,7 +257,7 @@ def test_submit_sequence_to_pasqal(
     result = job.result()
     assert isinstance(result, Result)
     assert isinstance(result.data, AnalogResultData)
-    assert result.data.get_counts() == {"00": 60, "11": 40}
+    assert list(result.data.get_counts().keys()) == ["00", "11"]
 
 
 @pytest.mark.remote

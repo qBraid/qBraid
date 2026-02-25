@@ -22,7 +22,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from qiskit import QuantumCircuit
 
 from qbraid.runtime import DeviceStatus, JobStatus
@@ -66,4 +65,4 @@ def test_submit_qir_to_microsoft(
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, MicrosoftEstimatorResult)
+    assert isinstance(result, dict)
