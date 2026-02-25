@@ -24,6 +24,7 @@ Functions
    :toctree: ../stubs/
 
    qasm3_to_braket
+   qasm3_to_cirq
    qasm3_to_openqasm3
    qasm3_to_qiskit
    qasm3_to_pyqir
@@ -33,12 +34,14 @@ Functions
 """
 from .qasm3_extras import autoqasm_to_qasm3, qasm3_to_pyqir
 from .qasm3_to_braket import qasm3_to_braket
+from .qasm3_to_cirq import qasm3_to_cirq
 from .qasm3_to_ionq import qasm3_to_ionq
 from .qasm3_to_openqasm3 import qasm3_to_openqasm3
 from .qasm3_to_qiskit import qasm3_to_qiskit
 
 __all__ = [
     "qasm3_to_braket",
+    "qasm3_to_cirq",
     "qasm3_to_openqasm3",
     "qasm3_to_qiskit",
     "qasm3_to_pyqir",

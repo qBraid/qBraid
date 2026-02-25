@@ -236,15 +236,18 @@ def ionq_native_gates_dict() -> IonQDictType:
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="Requires Python 3.10 or higher")
-def test_qasm3_to_ionq_no_pyqasm(deutsch_jozsa_qasm3):
-    """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
+def test_qasm3_to_ionq_for_loop_succeeds_without_pyqasm_dumps(
+    deutsch_jozsa_qasm3, deutch_jozsa_ionq
+):
+    """Test that for-loop programs convert successfully even when the pyqasm.dumps
+    fallback path in the qasm3_to_ionq wrapper is broken, because openqasm3_to_ionq
+    now handles unrolling internally via module.unrolled_ast."""
     with patch(
         "qbraid.transpiler.conversions.qasm3.qasm3_to_ionq.pyqasm.dumps",
         side_effect=Exception("Mocked exception"),
     ):
-        with pytest.raises(ProgramConversionError) as excinfo:
-            qasm3_to_ionq(deutsch_jozsa_qasm3)
-        assert "Failed to parse gate data from OpenQASM string." in str(excinfo.value)
+        ionq_program = qasm3_to_ionq(deutsch_jozsa_qasm3)
+        assert ionq_program == deutch_jozsa_ionq
 
 
 def test_qasm3_to_ionq_deutch_jozsa(
@@ -689,3 +692,21 @@ def test_qasm3_to_ionq_native_controlled_gates(
     """Test transpiling QASM 3.0 program containing native controlled gates to IonQDictType."""
     ionq_program = qasm3_to_ionq(controlled_gates_native_qasm)
     assert ionq_program == controlled_gates_native_ionq
+
+
+def test_openqasm3_to_ionq_for_loop_unrolled(deutsch_jozsa_qasm3, deutch_jozsa_ionq):
+    """Test that openqasm3_to_ionq handles for-loop programs by using
+    the unrolled AST when no top-level gate operations are found."""
+    ionq_program = openqasm3_to_ionq(deutsch_jozsa_qasm3)
+    assert ionq_program == deutch_jozsa_ionq
+
+
+def test_openqasm3_to_ionq_no_gates_error_message():
+    """Test that a program with no gate operations produces a descriptive error."""
+    qasm_no_gates = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    """
+    with pytest.raises(ProgramConversionError, match="No gate operations found"):
+        openqasm3_to_ionq(qasm_no_gates)
