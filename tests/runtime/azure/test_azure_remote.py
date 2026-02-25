@@ -36,6 +36,8 @@ from qbraid.runtime import (
     Result,
 )
 
+DEFAULT_TIMEOUT = 120
+
 # Skip pyquil and/or pulser tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
 pulser_found = importlib.util.find_spec("pulser") is not None
@@ -69,7 +71,15 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """
 
     job = device.run(circuit, shots=100)
-    job.wait_for_final_state()
+    try:
+        timeout = 120
+        job.wait_for_final_state(timeout=timeout)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"Quantinuum job did not complete within {timeout} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
@@ -98,7 +108,14 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     }
 
     job = device.run(circuit, shots=100)
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"IonQ simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
@@ -185,7 +202,14 @@ def test_submit_quil_to_rigetti(
     else:
         job = device.run(pyquil_program, shots=shots, input_params=input_params)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"Rigetti QVM job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
@@ -215,7 +239,14 @@ def test_submit_sequence_to_pasqal(
 
     job = device.submit(pulser_sequence, shots=shots, input_params=input_params)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"Pasqal simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()

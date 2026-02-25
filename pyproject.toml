@@ -35,11 +35,10 @@ requires-python = ">=3.10"
 
 [project.urls]
 Homepage = "https://sdk.qbraid.com/"
-Documentation = "https://docs.qbraid.com/sdk"
+Documentation = "https://docs.qbraid.com/v2/sdk"
 "Source Code" = "https://github.com/qBraid/qBraid"
 "Bug Tracker" = "https://github.com/qBraid/qBraid/issues"
 Discord = "https://discord.gg/TPBU2sa8Et"
-"Launch on Lab" = "https://account.qbraid.com/?gitHubUrl=https://github.com/qBraid/qBraid.git"
 
 [project.optional-dependencies]
 azure = ["azure-quantum>=2.0,<2.3", "azure-identity>=1.17,<2.0"]

@@ -101,7 +101,7 @@ def get_program_spec_lambdas(
         return {"serialize": _serialize_sequence, "validate": None}
 
     if program_type_alias in {"qasm2", "qasm3"}:
-        device_prefix = device_id.split("_")[0]
+        provider = device_id.split(":")[1]
 
         # pylint: disable=unnecessary-lambda-assignment
         validations = {
@@ -110,7 +110,7 @@ def get_program_spec_lambdas(
         }
         # pylint: enable=unnecessary-lambda-assignment
 
-        validate = validations.get(device_prefix)
+        validate = validations.get(provider)
     else:
         validate = None
 
