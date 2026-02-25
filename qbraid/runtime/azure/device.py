@@ -16,6 +16,7 @@
 Module defining Azure Quantum device class for all devices managed by Azure Quantum.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -59,7 +60,7 @@ class AzureQuantumDevice(QuantumDevice):
         Returns:
             DeviceStatus: The current status of the device.
         """
-        status = self._device._current_availability
+        status = self._device.current_availability
         status_map = {
             "Available": DeviceStatus.ONLINE,
             "Deprecated": DeviceStatus.UNAVAILABLE,
@@ -87,8 +88,8 @@ class AzureQuantumDevice(QuantumDevice):
         return int(avg_queue_time_sec / 60)
 
     def submit(
-        self, run_input: qbraid.programs.QPROGRAM | list(qbraid.programs.QPROGRAM), *args, **kwargs
-    ) -> AzureQuantumJob | list(AzureQuantumJob):
+        self, run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM], *args, **kwargs
+    ) -> AzureQuantumJob | list[AzureQuantumJob]:
         """Submit a job to the Azure device.
 
         Args:
@@ -99,7 +100,7 @@ class AzureQuantumDevice(QuantumDevice):
         """
         if isinstance(run_input, list):
             quantum_jobs = []
-            for _, qprogram in enumerate(run_input):
+            for qprogram in run_input:
                 job = self._device.submit(qprogram, *args, **kwargs)
                 quantum_jobs.append(
                     AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)

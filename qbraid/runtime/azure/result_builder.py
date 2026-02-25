@@ -23,6 +23,7 @@
 Module defining AzureResultBuilder class
 
 """
+
 import ast
 import datetime
 import json

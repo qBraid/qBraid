@@ -37,6 +37,11 @@ class OutputDataFormat(Enum):
     MICROSOFT_V2 = "microsoft.quantum-results.v2"
     IONQ = "ionq.quantum-results.v1"
     QUANTINUUM = "honeywell.quantum-results.v1"
+    # Deprecated: azure-quantum >= 3.x no longer recognises "microsoft.resource-estimates.v1" as
+    # a handled output format — job.get_results() falls through to raw JSON for this format string.
+    # The microsoft.estimator backend is still available, but results are now returned differently.
+    # This value is retained solely for backward-compatible parsing of jobs submitted with older
+    # SDK versions. Support will be removed in v0.12.
     RESOURCE_ESTIMATOR = "microsoft.resource-estimates.v1"
     RIGETTI = "rigetti.quil-results.v1"
     PASQAL = "pasqal.pulser-results.v1"

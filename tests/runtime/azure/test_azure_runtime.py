@@ -20,16 +20,13 @@ Unit tests for the Azure Quantum runtime module.
 """
 
 import json
-import os
 import re
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from azure.core.exceptions import ResourceExistsError
-from azure.identity import ClientSecretCredential
 from azure.quantum import Job, JobDetails, Workspace
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.target.target import Target
 
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
@@ -68,7 +65,7 @@ def mock_target():
     target.input_data_format = InputDataFormat.MICROSOFT.value
     target.output_data_format = OutputDataFormat.MICROSOFT_V1.value
     target.content_type = "application/qasm"
-    target._current_availability = "Available"
+    target.current_availability = "Available"
     return target
 
 
@@ -82,7 +79,7 @@ def mock_invalid_target():
     target.input_data_format = "test_input"
     target.output_data_format = "test_output"
     target.content_type = ""
-    target._current_availability = "Available"
+    target.current_availability = "Available"
     return target
 
 
@@ -114,6 +111,9 @@ def mock_job_id() -> str:
     return "123-456-798"
 
 
+# TODO: Remove in v0.12 along with OutputDataFormat.RESOURCE_ESTIMATOR and
+# AzureQuantumJob._make_estimator_result. The "microsoft.resource-estimates.v1" output
+# format is no longer emitted by azure-quantum >= 3.x.
 @pytest.fixture
 def mock_estimator_job_data(mock_job_id) -> dict[str, str]:
     """Return dictionary data for a Microsoft resource estimator job."""
@@ -160,11 +160,12 @@ def mock_pasqal_job_data(mock_job_id) -> dict[str, str]:
 
 
 @pytest.fixture
-def mock_pasqal_result_data(mock_job_id) -> dict[str, str]:
+def mock_pasqal_result_data() -> dict[str, str]:
     """Return dictionary data for a Rigetti job with Microsoft result format V1."""
     return {"001010": 50, "001011": 50}
 
 
+# TODO: Remove in v0.12 along with mock_estimator_job_data.
 @pytest.fixture
 def estimator_result_data(mock_estimator_job_data: dict[str, str]) -> dict[str, Any]:
     """Return a dictionary with the data for a MicrosoftEstimatorResult."""
@@ -243,12 +244,14 @@ def create_mock_job(
     return AzureQuantumJob(job_id=mock_job.id, workspace=mock_workspace)
 
 
+# TODO: Remove in v0.12 along with mock_estimator_job_data.
 @pytest.fixture
 def mock_estimator_job_waiting(mock_estimator_job_data: dict[str, str]) -> AzureQuantumJob:
     """Return a mock AzureQuantumJob instance with status 'Waiting'."""
     return create_mock_job(**mock_estimator_job_data, status="Waiting", result_data={})
 
 
+# TODO: Remove in v0.12 along with mock_estimator_job_data.
 @pytest.fixture
 def mock_estimator_job(
     mock_estimator_job_data: dict[str, str], estimator_result_data: dict[str, Any]
@@ -259,6 +262,9 @@ def mock_estimator_job(
     )
 
 
+# TODO: Remove in v0.12 along with mock_estimator_job_data. Tests using this fixture
+# for non-estimator behavior (result builder, simulator flag, shots count) should be
+# migrated to a different mock job fixture.
 @pytest.fixture
 def mock_azure_job(
     mock_estimator_job_data: dict[str, str], estimator_result_data: dict[str, Any]
@@ -317,36 +323,37 @@ def azure_ahs_result_builder(mock_azure_ahs_job):
     return AzureResultBuilder(mock_azure_ahs_job)
 
 
-def test_azure_provider_init_with_credential():
-    """Test initializing an AzureQuantumProvider with a credential."""
-    workspace = Mock(spec=Workspace)
-    workspace.credential = None
-    credential = Mock(spec=ClientSecretCredential)
+def test_azure_provider_init_default():
+    """Test initializing an AzureQuantumProvider without a workspace uses default Workspace."""
+    with (
+        patch("qbraid.runtime.azure.provider.Workspace") as mock_workspace_cls,
+        patch.dict("os.environ", {}, clear=False) as env,
+    ):
+        env.pop("AZURE_QUANTUM_CONNECTION_STRING", None)
+        mock_workspace_instance = Mock(spec=Workspace)
+        mock_workspace_cls.return_value = mock_workspace_instance
 
-    provider = AzureQuantumProvider(workspace, credential)
+        provider = AzureQuantumProvider()
 
-    assert provider.workspace.credential == credential
-    assert "qbraid" in workspace.append_user_agent.call_args[0][0]
+        mock_workspace_cls.assert_called_once_with()
+        assert provider.workspace is mock_workspace_instance
+        assert "qbraid" in mock_workspace_instance.append_user_agent.call_args[0][0]
 
 
-def test_init_without_credential():
-    """Test initializing an AzureQuantumProvider without a credential."""
-    original_connection_string = os.environ.pop("AZURE_QUANTUM_CONNECTION_STRING", None)
+def test_azure_provider_init_from_connection_string():
+    """Test initializing an AzureQuantumProvider from AZURE_QUANTUM_CONNECTION_STRING."""
+    with (
+        patch("qbraid.runtime.azure.provider.Workspace") as mock_workspace_cls,
+        patch.dict("os.environ", {"AZURE_QUANTUM_CONNECTION_STRING": "test_conn_str"}),
+    ):
+        mock_workspace_instance = Mock(spec=Workspace)
+        mock_workspace_cls.from_connection_string.return_value = mock_workspace_instance
 
-    try:
-        assert "AZURE_QUANTUM_CONNECTION_STRING" not in os.environ
+        provider = AzureQuantumProvider()
 
-        workspace = Workspace(
-            subscription_id="something",
-            resource_group="something",
-            name="something",
-            location="something",
-        )
-        with pytest.warns(Warning):
-            AzureQuantumProvider(workspace)
-    finally:
-        if original_connection_string is not None:
-            os.environ["AZURE_QUANTUM_CONNECTION_STRING"] = original_connection_string
+        mock_workspace_cls.from_connection_string.assert_called_once_with("test_conn_str")
+        assert provider.workspace is mock_workspace_instance
+        assert "qbraid" in mock_workspace_instance.append_user_agent.call_args[0][0]
 
 
 def test_azure_provider_workspace_property(azure_provider, mock_workspace):
@@ -466,7 +473,7 @@ def test_get_devices_single_target(mock_workspace):
     single_target.capability = "test_capability"
     single_target.input_data_format = "test_input"
     single_target.output_data_format = "test_output"
-    single_target._current_availability = "Available"
+    single_target.current_availability = "Available"
     single_target.content_type = "application/json"
 
     mock_workspace.get_targets.return_value = single_target
@@ -509,20 +516,20 @@ def test_azure_device_status(azure_device, mock_target):
     """Test getting the status of an AzureQuantumDevice."""
     assert azure_device.status() == DeviceStatus.ONLINE
 
-    mock_target._current_availability = "Deprecated"
+    mock_target.current_availability = "Deprecated"
     assert azure_device.status() == DeviceStatus.UNAVAILABLE
 
-    mock_target._current_availability = "Unavailable"
+    mock_target.current_availability = "Unavailable"
     assert azure_device.status() == DeviceStatus.OFFLINE
 
-    mock_target._current_availability = "Unknown"
+    mock_target.current_availability = "Unknown"
     assert azure_device.status() == DeviceStatus.UNAVAILABLE
 
 
 def test_azure_device_is_available(mock_workspace, mock_target):
     """Test the is_available method of AzureQuantumDevice."""
     # Mock the target's availability
-    mock_target._current_availability = "Available"
+    mock_target.current_availability = "Available"
     mock_workspace.get_targets.return_value = mock_target
 
     # Create the AzureQuantumDevice instance
@@ -541,7 +548,7 @@ def test_azure_device_is_available(mock_workspace, mock_target):
     assert device.is_available() is True
 
     # Test when the device is offline
-    mock_target._current_availability = "Unavailable"
+    mock_target.current_availability = "Unavailable"
     assert device.is_available() is False
 
 
@@ -701,6 +708,7 @@ def test_job_for_microsoft_quantum_results_v1_success(mock_msft_v1_job_data):
     assert builder._shots_count() == 100
 
 
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result_with_failure():
     """Test making an estimator result with a failed job."""
     data = {
@@ -710,7 +718,7 @@ def test_make_estimator_result_with_failure():
             "message": "The resource is currently unavailable.",
         },
     }
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.warns(DeprecationWarning), pytest.raises(RuntimeError) as excinfo:
         AzureQuantumJob._make_estimator_result(data)
     assert (
         "Cannot retrieve results as job execution failed (ResourceUnavailable: "
@@ -727,16 +735,20 @@ def test_make_estimator_result_with_incorrect_results_length():
     assert "Expected resource estimator results to be of length 1" in str(excinfo.value)
 
 
+# TODO: Remove in v0.12 along with mock_estimator_job and _make_estimator_result.
 def test_get_job_result(mock_estimator_job):
     """Test getting the result of an AzureQuantumJob."""
-    result = mock_estimator_job.result()
-    assert isinstance(result, MicrosoftEstimatorResult)
+    with pytest.warns(DeprecationWarning):
+        result = mock_estimator_job.result()
+    assert isinstance(result, dict)
 
 
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result_successful(estimator_result_data):
     """Test making an estimator result with successful job."""
-    result = AzureQuantumJob._make_estimator_result(estimator_result_data)
-    assert isinstance(result, MicrosoftEstimatorResult)
+    with pytest.warns(DeprecationWarning):
+        result = AzureQuantumJob._make_estimator_result(estimator_result_data)
+    assert isinstance(result, dict)
     assert result["status"] == "success"
 
 
@@ -887,18 +899,24 @@ def test_shots_count(azure_result_builder):
     assert azure_result_builder._shots_count() == 1000
 
 
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result():
     """Test making an estimator result from an AzureQuantumJob."""
     mock_data = {"success": True, "data": {"mock_data_key": "mock_data_value"}}
-    result = AzureQuantumJob._make_estimator_result(mock_data)
-    assert isinstance(result, MicrosoftEstimatorResult)
-    assert result.data()["mock_data_key"] == "mock_data_value"
+    with pytest.warns(DeprecationWarning):
+        result = AzureQuantumJob._make_estimator_result(mock_data)
+    assert isinstance(result, dict)
+    assert result["mock_data_key"] == "mock_data_value"
 
 
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result_failure():
     """Test making an estimator result from a failed AzureQuantumJob."""
     mock_data = {"success": False, "error_data": {"code": "MockError", "message": "Job failed"}}
-    with pytest.raises(RuntimeError, match="Cannot retrieve results as job execution failed"):
+    with (
+        pytest.warns(DeprecationWarning),
+        pytest.raises(RuntimeError, match="Cannot retrieve results as job execution failed"),
+    ):
         AzureQuantumJob._make_estimator_result(mock_data)
 
 
@@ -1472,7 +1490,52 @@ def test_serialize_pulser_input():
 
     pulser_input = serialize_pulser_input(sequence)
 
-    expected_input = '{"sequence_builder": {"version": "1", "name": "pulser-exported", "register": [{"name": "q0", "x": 0.0, "y": 0.0}], "channels": {}, "variables": {}, "operations": [], "measurement": null, "pulser_version": "1.4.0", "device": {"name": "AnalogDevice", "dimensions": 2, "rydberg_level": 60, "min_atom_distance": 5, "max_atom_num": 80, "max_radial_distance": 38, "interaction_coeff_xy": null, "supports_slm_mask": false, "max_layout_filling": 0.5, "optimal_layout_filling": 0.45, "max_sequence_duration": 6000, "max_runs": 2000, "reusable_channels": false, "pre_calibrated_layouts": [{"coordinates": [[-20.0, 0.0], [-17.5, -4.330127], [-17.5, 4.330127], [-15.0, -8.660254], [-15.0, 0.0], [-15.0, 8.660254], [-12.5, -12.990381], [-12.5, -4.330127], [-12.5, 4.330127], [-12.5, 12.990381], [-10.0, -17.320508], [-10.0, -8.660254], [-10.0, 0.0], [-10.0, 8.660254], [-10.0, 17.320508], [-7.5, -12.990381], [-7.5, -4.330127], [-7.5, 4.330127], [-7.5, 12.990381], [-5.0, -17.320508], [-5.0, -8.660254], [-5.0, 0.0], [-5.0, 8.660254], [-5.0, 17.320508], [-2.5, -12.990381], [-2.5, -4.330127], [-2.5, 4.330127], [-2.5, 12.990381], [0.0, -17.320508], [0.0, -8.660254], [0.0, 0.0], [0.0, 8.660254], [0.0, 17.320508], [2.5, -12.990381], [2.5, -4.330127], [2.5, 4.330127], [2.5, 12.990381], [5.0, -17.320508], [5.0, -8.660254], [5.0, 0.0], [5.0, 8.660254], [5.0, 17.320508], [7.5, -12.990381], [7.5, -4.330127], [7.5, 4.330127], [7.5, 12.990381], [10.0, -17.320508], [10.0, -8.660254], [10.0, 0.0], [10.0, 8.660254], [10.0, 17.320508], [12.5, -12.990381], [12.5, -4.330127], [12.5, 4.330127], [12.5, 12.990381], [15.0, -8.660254], [15.0, 0.0], [15.0, 8.660254], [17.5, -4.330127], [17.5, 4.330127], [20.0, 0.0]], "slug": "TriangularLatticeLayout(61, 5.0\\u00b5m)"}], "version": "1", "pulser_version": "1.4.0", "channels": [{"id": "rydberg_global", "basis": "ground-rydberg", "addressing": "Global", "max_abs_detuning": 125.66370614359172, "max_amp": 12.566370614359172, "min_retarget_interval": null, "fixed_retarget_t": null, "max_targets": null, "clock_period": 4, "min_duration": 16, "max_duration": 100000000, "mod_bandwidth": 8, "eom_config": {"limiting_beam": "RED", "max_limiting_amp": 188.49555921538757, "intermediate_detuning": 2827.4333882308138, "controlled_beams": ["BLUE"], "mod_bandwidth": 40, "custom_buffer_time": 240}}], "is_virtual": false}}}'
+    # Long JSON string broken across lines for readability.
+    expected_input = (
+        '{"sequence_builder": {"version": "1", "name": "pulser-exported", '
+        '"register": [{"name": "q0", "x": 0.0, "y": 0.0}], "channels": {}, '
+        '"variables": {}, "operations": [], "measurement": null, '
+        '"pulser_version": "1.4.0", "device": {"name": "AnalogDevice", '
+        '"dimensions": 2, "rydberg_level": 60, "min_atom_distance": 5, '
+        '"max_atom_num": 80, "max_radial_distance": 38, '
+        '"interaction_coeff_xy": null, "supports_slm_mask": false, '
+        '"max_layout_filling": 0.5, "optimal_layout_filling": 0.45, '
+        '"max_sequence_duration": 6000, "max_runs": 2000, '
+        '"reusable_channels": false, "pre_calibrated_layouts": '
+        '[{"coordinates": [[-20.0, 0.0], [-17.5, -4.330127], '
+        "[-17.5, 4.330127], [-15.0, -8.660254], [-15.0, 0.0], "
+        "[-15.0, 8.660254], [-12.5, -12.990381], [-12.5, -4.330127], "
+        "[-12.5, 4.330127], [-12.5, 12.990381], [-10.0, -17.320508], "
+        "[-10.0, -8.660254], [-10.0, 0.0], [-10.0, 8.660254], "
+        "[-10.0, 17.320508], [-7.5, -12.990381], [-7.5, -4.330127], "
+        "[-7.5, 4.330127], [-7.5, 12.990381], [-5.0, -17.320508], "
+        "[-5.0, -8.660254], [-5.0, 0.0], [-5.0, 8.660254], "
+        "[-5.0, 17.320508], [-2.5, -12.990381], [-2.5, -4.330127], "
+        "[-2.5, 4.330127], [-2.5, 12.990381], [0.0, -17.320508], "
+        "[0.0, -8.660254], [0.0, 0.0], [0.0, 8.660254], "
+        "[0.0, 17.320508], [2.5, -12.990381], [2.5, -4.330127], "
+        "[2.5, 4.330127], [2.5, 12.990381], [5.0, -17.320508], "
+        "[5.0, -8.660254], [5.0, 0.0], [5.0, 8.660254], "
+        "[5.0, 17.320508], [7.5, -12.990381], [7.5, -4.330127], "
+        "[7.5, 4.330127], [7.5, 12.990381], [10.0, -17.320508], "
+        "[10.0, -8.660254], [10.0, 0.0], [10.0, 8.660254], "
+        "[10.0, 17.320508], [12.5, -12.990381], [12.5, -4.330127], "
+        "[12.5, 4.330127], [12.5, 12.990381], [15.0, -8.660254], "
+        "[15.0, 0.0], [15.0, 8.660254], [17.5, -4.330127], "
+        "[17.5, 4.330127], [20.0, 0.0]], "
+        '"slug": "TriangularLatticeLayout(61, 5.0\\u00b5m)"}], "version": "1", '
+        '"pulser_version": "1.4.0", "channels": [{"id": "rydberg_global", '
+        '"basis": "ground-rydberg", "addressing": "Global", '
+        '"max_abs_detuning": 125.66370614359172, '
+        '"max_amp": 12.566370614359172, "min_retarget_interval": null, '
+        '"fixed_retarget_t": null, "max_targets": null, "clock_period": 4, '
+        '"min_duration": 16, "max_duration": 100000000, "mod_bandwidth": 8, '
+        '"eom_config": {"limiting_beam": "RED", '
+        '"max_limiting_amp": 188.49555921538757, '
+        '"intermediate_detuning": 2827.4333882308138, '
+        '"controlled_beams": ["BLUE"], "mod_bandwidth": 40, '
+        '"custom_buffer_time": 240}}], "is_virtual": false}}}'
+    )
 
     expected_input = re.sub(
         r'"pulser_version"\s*:\s*"\d+\.\d+\.\d+"',

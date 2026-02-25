@@ -16,6 +16,7 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
+
 from __future__ import annotations
 
 import json
@@ -37,7 +38,6 @@ from .device import AzureQuantumDevice
 from .io_format import InputDataFormat
 
 if TYPE_CHECKING:
-    from azure.identity import ClientSecretCredential
     from pulser.sequence import Sequence
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
@@ -85,36 +85,21 @@ class AzureQuantumProvider(QuantumProvider):
         workspace (Workspace): The configured Azure Quantum workspace.
     """
 
-    def __init__(
-        self,
-        workspace: Optional[Workspace] = None,
-        credential: Optional[ClientSecretCredential] = None,
-    ):
+    def __init__(self, workspace: Optional[Workspace] = None):
         """
-        Initializes an AzureQuantumProvider instance with a specified Workspace. It sets the
-        credential for the workspace if it is not already set and a credential is provided.
+        Initializes an AzureQuantumProvider instance with a specified Workspace.
 
         Args:
             workspace (Workspace, optional): An Azure Quantum Workspace object. If not provided,
-                will be initialized with the provided credential or from environment variables.
-            credential (ClientSecretCredential, optional): Optional credential to be used
-                if the workspace lacks one.
+                will be initialized from the ``AZURE_QUANTUM_CONNECTION_STRING`` environment
+                variable, or via default Azure authentication.
         """
-        if not workspace:
+        if workspace is None:
             connection_str = os.getenv("AZURE_QUANTUM_CONNECTION_STRING")
-            workspace = (
-                Workspace.from_connection_string(connection_str) if connection_str else Workspace()
-            )
-
-        if not workspace.credential:
-            if credential:
-                workspace.credential = credential
+            if connection_str:
+                workspace = Workspace.from_connection_string(connection_str)
             else:
-                warnings.warn(
-                    "No credential provided; interactive authentication via a "
-                    "web browser may be required. To avoid interactive authentication, "
-                    "provide a ClientSecretCredential."
-                )
+                workspace = Workspace()  # pragma: no cover
         workspace.append_user_agent("qbraid")
         self._workspace = workspace
 
