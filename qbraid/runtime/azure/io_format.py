@@ -41,7 +41,7 @@ class OutputDataFormat(Enum):
     # a handled output format — job.get_results() falls through to raw JSON for this format string.
     # The microsoft.estimator backend is still available, but results are now returned differently.
     # This value is retained solely for backward-compatible parsing of jobs submitted with older
-    # SDK versions. Support will be removed in the next release.
+    # SDK versions. Support will be removed in v0.12.
     RESOURCE_ESTIMATOR = "microsoft.resource-estimates.v1"
     RIGETTI = "rigetti.quil-results.v1"
     PASQAL = "pasqal.pulser-results.v1"

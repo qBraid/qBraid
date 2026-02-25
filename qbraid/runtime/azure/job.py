@@ -85,7 +85,7 @@ class AzureQuantumJob(QuantumJob):
         .. deprecated::
             The ``microsoft.resource-estimates.v1`` output format is no longer handled by
             azure-quantum >= 3.x. This method exists only for backward-compatible retrieval
-            of jobs submitted with older SDK versions and will be removed in the next release.
+            of jobs submitted with older SDK versions and will be removed in v0.12.
 
         Args:
             data (dict): The data to create the result from.
@@ -98,7 +98,7 @@ class AzureQuantumJob(QuantumJob):
         """
         warnings.warn(
             "AzureQuantumJob._make_estimator_result is deprecated and will be removed in the "
-            "next release. The 'microsoft.resource-estimates.v1' output format is no longer "
+            "v0.12. The 'microsoft.resource-estimates.v1' output format is no longer "
             "handled by azure-quantum >= 3.x. Retrieve estimator results directly via "
             "job.get_results() instead.",
             DeprecationWarning,
@@ -131,7 +131,7 @@ class AzureQuantumJob(QuantumJob):
 
         # Deprecated: backward-compatible path for jobs submitted with azure-quantum < 3.x.
         # The microsoft.estimator backend still exists but no longer produces this output format.
-        # Will be removed in the next release.
+        # Will be removed in v0.12.
         if job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
             return self._make_estimator_result(
                 {

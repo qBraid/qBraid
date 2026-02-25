@@ -26,7 +26,6 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from azure.core.exceptions import ResourceExistsError
-from azure.identity import ClientSecretCredential
 from azure.quantum import Job, JobDetails, Workspace
 from azure.quantum.target.target import Target
 
@@ -112,7 +111,7 @@ def mock_job_id() -> str:
     return "123-456-798"
 
 
-# TODO: Remove in next release along with OutputDataFormat.RESOURCE_ESTIMATOR and
+# TODO: Remove in v0.12 along with OutputDataFormat.RESOURCE_ESTIMATOR and
 # AzureQuantumJob._make_estimator_result. The "microsoft.resource-estimates.v1" output
 # format is no longer emitted by azure-quantum >= 3.x.
 @pytest.fixture
@@ -166,7 +165,7 @@ def mock_pasqal_result_data() -> dict[str, str]:
     return {"001010": 50, "001011": 50}
 
 
-# TODO: Remove in next release along with mock_estimator_job_data.
+# TODO: Remove in v0.12 along with mock_estimator_job_data.
 @pytest.fixture
 def estimator_result_data(mock_estimator_job_data: dict[str, str]) -> dict[str, Any]:
     """Return a dictionary with the data for a MicrosoftEstimatorResult."""
@@ -245,14 +244,14 @@ def create_mock_job(
     return AzureQuantumJob(job_id=mock_job.id, workspace=mock_workspace)
 
 
-# TODO: Remove in next release along with mock_estimator_job_data.
+# TODO: Remove in v0.12 along with mock_estimator_job_data.
 @pytest.fixture
 def mock_estimator_job_waiting(mock_estimator_job_data: dict[str, str]) -> AzureQuantumJob:
     """Return a mock AzureQuantumJob instance with status 'Waiting'."""
     return create_mock_job(**mock_estimator_job_data, status="Waiting", result_data={})
 
 
-# TODO: Remove in next release along with mock_estimator_job_data.
+# TODO: Remove in v0.12 along with mock_estimator_job_data.
 @pytest.fixture
 def mock_estimator_job(
     mock_estimator_job_data: dict[str, str], estimator_result_data: dict[str, Any]
@@ -263,7 +262,7 @@ def mock_estimator_job(
     )
 
 
-# TODO: Remove in next release along with mock_estimator_job_data. Tests using this fixture
+# TODO: Remove in v0.12 along with mock_estimator_job_data. Tests using this fixture
 # for non-estimator behavior (result builder, simulator flag, shots count) should be
 # migrated to a different mock job fixture.
 @pytest.fixture
@@ -324,10 +323,8 @@ def azure_ahs_result_builder(mock_azure_ahs_job):
     return AzureResultBuilder(mock_azure_ahs_job)
 
 
-def test_azure_provider_init_with_credential():
-    """Test initializing an AzureQuantumProvider with a credential passes it at construction."""
-    credential = Mock(spec=ClientSecretCredential)
-
+def test_azure_provider_init_default():
+    """Test initializing an AzureQuantumProvider without a workspace uses default Workspace."""
     with (
         patch("qbraid.runtime.azure.provider.Workspace") as mock_workspace_cls,
         patch.dict("os.environ", {}, clear=False) as env,
@@ -336,20 +333,27 @@ def test_azure_provider_init_with_credential():
         mock_workspace_instance = Mock(spec=Workspace)
         mock_workspace_cls.return_value = mock_workspace_instance
 
-        provider = AzureQuantumProvider(credential=credential)
+        provider = AzureQuantumProvider()
 
-        mock_workspace_cls.assert_called_once_with(credential=credential)
+        mock_workspace_cls.assert_called_once_with()
         assert provider.workspace is mock_workspace_instance
         assert "qbraid" in mock_workspace_instance.append_user_agent.call_args[0][0]
 
 
-def test_init_without_credential():
-    """Test that AzureQuantumProvider warns when a workspace has no credential."""
-    workspace = Mock(spec=Workspace)
-    workspace.credential = None
+def test_azure_provider_init_from_connection_string():
+    """Test initializing an AzureQuantumProvider from AZURE_QUANTUM_CONNECTION_STRING."""
+    with (
+        patch("qbraid.runtime.azure.provider.Workspace") as mock_workspace_cls,
+        patch.dict("os.environ", {"AZURE_QUANTUM_CONNECTION_STRING": "test_conn_str"}),
+    ):
+        mock_workspace_instance = Mock(spec=Workspace)
+        mock_workspace_cls.from_connection_string.return_value = mock_workspace_instance
 
-    with pytest.warns(UserWarning, match="No credential provided"):
-        AzureQuantumProvider(workspace)
+        provider = AzureQuantumProvider()
+
+        mock_workspace_cls.from_connection_string.assert_called_once_with("test_conn_str")
+        assert provider.workspace is mock_workspace_instance
+        assert "qbraid" in mock_workspace_instance.append_user_agent.call_args[0][0]
 
 
 def test_azure_provider_workspace_property(azure_provider, mock_workspace):
@@ -704,7 +708,7 @@ def test_job_for_microsoft_quantum_results_v1_success(mock_msft_v1_job_data):
     assert builder._shots_count() == 100
 
 
-# TODO: Remove in next release along with AzureQuantumJob._make_estimator_result.
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result_with_failure():
     """Test making an estimator result with a failed job."""
     data = {
@@ -714,7 +718,7 @@ def test_make_estimator_result_with_failure():
             "message": "The resource is currently unavailable.",
         },
     }
-    with pytest.raises(RuntimeError) as excinfo:
+    with pytest.warns(DeprecationWarning), pytest.raises(RuntimeError) as excinfo:
         AzureQuantumJob._make_estimator_result(data)
     assert (
         "Cannot retrieve results as job execution failed (ResourceUnavailable: "
@@ -731,17 +735,19 @@ def test_make_estimator_result_with_incorrect_results_length():
     assert "Expected resource estimator results to be of length 1" in str(excinfo.value)
 
 
-# TODO: Remove in next release along with mock_estimator_job and _make_estimator_result.
+# TODO: Remove in v0.12 along with mock_estimator_job and _make_estimator_result.
 def test_get_job_result(mock_estimator_job):
     """Test getting the result of an AzureQuantumJob."""
-    result = mock_estimator_job.result()
+    with pytest.warns(DeprecationWarning):
+        result = mock_estimator_job.result()
     assert isinstance(result, dict)
 
 
-# TODO: Remove in next release along with AzureQuantumJob._make_estimator_result.
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result_successful(estimator_result_data):
     """Test making an estimator result with successful job."""
-    result = AzureQuantumJob._make_estimator_result(estimator_result_data)
+    with pytest.warns(DeprecationWarning):
+        result = AzureQuantumJob._make_estimator_result(estimator_result_data)
     assert isinstance(result, dict)
     assert result["status"] == "success"
 
@@ -893,20 +899,24 @@ def test_shots_count(azure_result_builder):
     assert azure_result_builder._shots_count() == 1000
 
 
-# TODO: Remove in next release along with AzureQuantumJob._make_estimator_result.
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result():
     """Test making an estimator result from an AzureQuantumJob."""
     mock_data = {"success": True, "data": {"mock_data_key": "mock_data_value"}}
-    result = AzureQuantumJob._make_estimator_result(mock_data)
+    with pytest.warns(DeprecationWarning):
+        result = AzureQuantumJob._make_estimator_result(mock_data)
     assert isinstance(result, dict)
     assert result["mock_data_key"] == "mock_data_value"
 
 
-# TODO: Remove in next release along with AzureQuantumJob._make_estimator_result.
+# TODO: Remove in v0.12 along with AzureQuantumJob._make_estimator_result.
 def test_make_estimator_result_failure():
     """Test making an estimator result from a failed AzureQuantumJob."""
     mock_data = {"success": False, "error_data": {"code": "MockError", "message": "Job failed"}}
-    with pytest.raises(RuntimeError, match="Cannot retrieve results as job execution failed"):
+    with (
+        pytest.warns(DeprecationWarning),
+        pytest.raises(RuntimeError, match="Cannot retrieve results as job execution failed"),
+    ):
         AzureQuantumJob._make_estimator_result(mock_data)
 
 

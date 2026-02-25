@@ -87,20 +87,9 @@ class AzureQuantumDevice(QuantumDevice):
             return None
         return int(avg_queue_time_sec / 60)
 
-    @staticmethod
-    def _serialize_input(run_input):
-        """Serialize run_input to a format accepted by the Azure Quantum target.
-
-        Pulser Sequence objects must be converted to their JSON abstract representation
-        before submission, as the azure-quantum SDK expects bytes, dict, or str.
-        """
-        if hasattr(run_input, "to_abstract_repr"):
-            return run_input.to_abstract_repr()
-        return run_input
-
     def submit(
-        self, run_input: qbraid.programs.QPROGRAM | list(qbraid.programs.QPROGRAM), *args, **kwargs
-    ) -> AzureQuantumJob | list(AzureQuantumJob):
+        self, run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM], *args, **kwargs
+    ) -> AzureQuantumJob | list[AzureQuantumJob]:
         """Submit a job to the Azure device.
 
         Args:
@@ -111,14 +100,12 @@ class AzureQuantumDevice(QuantumDevice):
         """
         if isinstance(run_input, list):
             quantum_jobs = []
-            for _, qprogram in enumerate(run_input):
-                qprogram = self._serialize_input(qprogram)
+            for qprogram in run_input:
                 job = self._device.submit(qprogram, *args, **kwargs)
                 quantum_jobs.append(
                     AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)
                 )
             return quantum_jobs
 
-        run_input = self._serialize_input(run_input)
         job = self._device.submit(run_input, *args, **kwargs)
         return AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)
