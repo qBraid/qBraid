@@ -67,6 +67,14 @@ def _serialize_sequence(sequence: pulser.Sequence) -> Program:
     )
 
 
+def _serialize_cudaq(program) -> Program:
+    """Serialize a CUDA-Q kernel to QIR for submission to the qBraid API."""
+    from qbraid.programs.gate_model.cudaq import CudaQKernel
+
+    kernel_wrapper = CudaQKernel(program)
+    return kernel_wrapper.serialize()
+
+
 def validate_qasm_no_measurements(
     program: Qasm2StringType | Qasm3StringType, device_id: str
 ) -> None:
@@ -99,6 +107,9 @@ def get_program_spec_lambdas(
 
     if program_type_alias == "pulser":
         return {"serialize": _serialize_sequence, "validate": None}
+
+    if program_type_alias == "cudaq":
+        return {"serialize": _serialize_cudaq, "validate": None}
 
     if program_type_alias in {"qasm2", "qasm3"}:
         device_prefix = device_id.split("_")[0]
