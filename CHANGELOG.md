@@ -16,7 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; all QCS SDK interfaces are used directly to avoid local quilc/QVM dependencies ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
+- Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; all QCS SDK interfaces are used directly to avoid local quilc/QVM dependencies ([#1127](https://github.com/qBraid/qBraid/pull/1127))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
