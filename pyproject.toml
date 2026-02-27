@@ -56,6 +56,7 @@ pyquil = ["pyquil>=4.4", "qcs-sdk-python>=0.21.12,<0.21.23"]
 pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2.0,<=0.5.1"]
 qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.39.0,<0.42", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
+rigetti = ["pyquil>=4.16.2"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
 
 [project.entry-points."qbraid.programs"]
