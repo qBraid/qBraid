@@ -56,6 +56,7 @@ jobs:
               pull_number: context.issue.number
             });
             core.setOutput('head_ref', pr.data.head.ref);
+            core.setOutput('head_sha', pr.data.head.sha);
             core.setOutput('pr_number', context.issue.number);
             core.setOutput('pr_title', pr.data.title);
             core.setOutput('is_fork', pr.data.head.repo.fork);
@@ -77,7 +78,7 @@ jobs:
         if: steps.pr_meta.outputs.is_fork != 'true'
         uses: actions/checkout@v6
         with:
-          ref: ${{ steps.pr_meta.outputs.head_ref }}
+          ref: ${{ steps.pr_meta.outputs.head_sha }}
           fetch-depth: 0
 
       - name: Get PR diff
