@@ -61,6 +61,9 @@ def workspace(
     credential: Optional[ClientSecretCredential], resource_id: Optional[str]
 ) -> Workspace:
     """Fixture for Azure Quantum workspace."""
+    connection_str = os.getenv("AZURE_QUANTUM_CONNECTION_STRING")
+    if connection_str:
+        return Workspace.from_connection_string(connection_str)
     location = os.getenv(EnvironmentVariables.QUANTUM_LOCATION, "eastus")
     return Workspace(resource_id=resource_id, location=location, credential=credential)
 
