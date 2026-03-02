@@ -74,13 +74,6 @@ jobs:
             });
             core.setFailed('Cannot push to fork branches');
 
-      - name: Checkout PR branch
-        if: steps.pr_meta.outputs.is_fork != 'true'
-        uses: actions/checkout@v6
-        with:
-          ref: ${{ steps.pr_meta.outputs.head_sha }}
-          fetch-depth: 0
-
       - name: Get PR diff
         if: steps.pr_meta.outputs.is_fork != 'true'
         id: diff
@@ -88,31 +81,46 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
         run: |
-          DIFF=$(gh pr diff "$PR_NUMBER" || echo "Failed to get diff")
+          DIFF=$(gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" || echo "Failed to get diff")
           DIFF=$(echo "$DIFF" | head -c 100000)
           EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
           echo "diff<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
           echo "$DIFF" >> "$GITHUB_OUTPUT"
           echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
 
-      - name: Get current Unreleased section
+      - name: Get current CHANGELOG.md from PR branch
         if: steps.pr_meta.outputs.is_fork != 'true'
         id: current
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ steps.pr_meta.outputs.head_ref }}
         run: |
+          CHANGELOG=$(gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$HEAD_REF" \
+            --jq '.content' | base64 -d)
+
+          CHANGELOG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$HEAD_REF" \
+            --jq '.sha')
+
           SECTION=$(python3 -c "
-          import re
-          with open('CHANGELOG.md', 'r') as f:
-              content = f.read()
+          import re, sys
+          content = sys.stdin.read()
           match = re.search(r'(## \[Unreleased\].*?)(?=\n## \[)', content, re.DOTALL)
           if match:
               print(match.group(1))
           else:
               print('## [Unreleased]')
-          ")
+          " <<< "$CHANGELOG")
+
           EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
           echo "section<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
           echo "$SECTION" >> "$GITHUB_OUTPUT"
           echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+          echo "full_changelog<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG" >> "$GITHUB_OUTPUT"
+          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+          echo "changelog_sha=$CHANGELOG_SHA" >> "$GITHUB_OUTPUT"
 
       - name: Call Claude API for changelog entries
         if: steps.pr_meta.outputs.is_fork != 'true'
@@ -186,46 +194,48 @@ jobs:
           echo "$CHANGELOG_CONTENT" >> "$GITHUB_OUTPUT"
           echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
 
-      - name: Update CHANGELOG.md
+      - name: Update CHANGELOG.md via API
         if: steps.pr_meta.outputs.is_fork != 'true'
         env:
-          NEW_SECTION: ${{ steps.claude.outputs.changelog }}
-        run: |
-          python3 << 'PYEOF'
-          import os
-          import re
-
-          new_section = os.environ["NEW_SECTION"].strip()
-
-          with open("CHANGELOG.md", "r") as f:
-              content = f.read()
-
-          pattern = r"## \[Unreleased\].*?(?=\n## \[)"
-          replacement = new_section + "\n"
-
-          updated = re.sub(pattern, replacement, content, count=1, flags=re.DOTALL)
-
-          with open("CHANGELOG.md", "w") as f:
-              f.write(updated)
-
-          print("CHANGELOG.md updated successfully")
-          PYEOF
-
-      - name: Commit and push
-        if: steps.pr_meta.outputs.is_fork != 'true'
-        env:
-          PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ steps.pr_meta.outputs.head_ref }}
+          PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
+          NEW_SECTION: ${{ steps.claude.outputs.changelog }}
+          FULL_CHANGELOG: ${{ steps.current.outputs.full_changelog }}
+          CHANGELOG_SHA: ${{ steps.current.outputs.changelog_sha }}
         run: |
-          git config --global user.name 'qbraidTeam'
-          git config --global user.email 'qbraid.team@qbraid.com'
-          git add CHANGELOG.md
-          if git diff --cached --quiet; then
-            echo "No changes to commit"
-          else
-            git commit -m "Update changelog for PR #$PR_NUMBER"
-            git push origin "$HEAD_REF"
+          UPDATED=$(python3 -c "
+          import os, re, base64, json
+          new_section = os.environ['NEW_SECTION'].strip()
+          content = os.environ['FULL_CHANGELOG']
+          pattern = r'## \[Unreleased\].*?(?=\n## \[)'
+          replacement = new_section + '\n'
+          updated = re.sub(pattern, replacement, content, count=1, flags=re.DOTALL)
+          encoded = base64.b64encode(updated.encode()).decode()
+          print(encoded)
+          ")
+
+          if [ -z "$UPDATED" ]; then
+            echo "::error::Failed to generate updated changelog"
+            exit 1
           fi
+
+          jq -n \
+            --arg message "Update changelog for PR #$PR_NUMBER" \
+            --arg content "$UPDATED" \
+            --arg sha "$CHANGELOG_SHA" \
+            --arg branch "$HEAD_REF" \
+            --arg name "qbraidTeam" \
+            --arg email "qbraid.team@qbraid.com" \
+            '{
+              message: $message,
+              content: $content,
+              sha: $sha,
+              branch: $branch,
+              committer: { name: $name, email: $email }
+            }' | gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md" \
+              --method PUT \
+              --input -
 
       - name: React to comment with rocket
         if: steps.pr_meta.outputs.is_fork != 'true' && success()
