@@ -16,7 +16,11 @@
 
 """Unit tests for RigettiJob."""
 
+from __future__ import annotations
+
+import importlib.util
 import warnings
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -24,10 +28,15 @@ from qcs_sdk.qpu.api import QpuApiError
 
 from qbraid.runtime import GateModelResultData, Result
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
-from qbraid.runtime.rigetti.job import RigettiJobError
+from qbraid.runtime.rigetti.job import RigettiJob, RigettiJobError
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
+
+pyquil_found = importlib.util.find_spec("pyquil") is not None
+pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+
+if TYPE_CHECKING:
+    from qbraid.runtime.rigetti.device import RigettiDevice
 
 # ===========================================================================
 # Job – basic properties

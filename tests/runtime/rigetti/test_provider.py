@@ -16,16 +16,26 @@
 
 """Unit tests for RigettiProvider."""
 
+from __future__ import annotations
+
+import importlib.util
 from unittest.mock import MagicMock, patch
 
-import pyquil
 import pytest
 
 from qbraid.programs.experiment import ExperimentType
 from qbraid.runtime import TargetProfile
-from qbraid.runtime.rigetti import RigettiDevice, RigettiProvider
 
 from .conftest import DEVICE_ID, DUMMY_CLIENT_ID, DUMMY_ISSUER, DUMMY_TOKEN
+
+pyquil_found = importlib.util.find_spec("pyquil") is not None
+pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+
+if pyquil_found:
+    from qbraid.runtime.rigetti import RigettiDevice, RigettiProvider
+else:
+    RigettiDevice = None
+    RigettiProvider = None
 
 
 class TestRigettiProviderInit:
@@ -239,6 +249,10 @@ class TestRigettiProviderBuildProfile:
         self, mock_qcs_client: MagicMock, mock_isa_response: MagicMock
     ) -> None:
         """Test test build profile program spec is pyquil program."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+
+        # pylint: enable=import-outside-toplevel
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with patch(

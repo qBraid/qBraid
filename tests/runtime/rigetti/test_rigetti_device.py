@@ -16,19 +16,29 @@
 
 """Unit tests for RigettiDevice."""
 
+from __future__ import annotations
+
+import importlib.util
 from unittest.mock import MagicMock, patch
 
-import pyquil
 import pytest
 from qcs_sdk.qpu.api import SubmissionError
 from qcs_sdk.qpu.isa import GetISAError
 
 from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
 from qbraid.runtime.rigetti.job import RigettiJobError
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
+
+pyquil_found = importlib.util.find_spec("pyquil") is not None
+pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+
+if pyquil_found:
+    from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
+else:
+    RigettiDevice = None
+    RigettiJob = None
 
 # ===========================================================================
 # Device – status
@@ -169,8 +179,13 @@ class TestRigettiDeviceLiveQubits:
 class TestRigettiDeviceSubmit:
     """Tests for RigettiDevice._submit and submit."""
 
-    def _make_program(self, shots: int = 3) -> pyquil.Program:
+    def _make_program(self, shots: int = 3):
         """Create a minimal native-Quil Program with the given shot count."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
         p = pyquil.Program()
         p.inst(pyquil.gates.RZ(0.5, 0))
         p.inst(pyquil.gates.MEASURE(0, None))
@@ -298,6 +313,10 @@ class TestRigettiDeviceSubmit:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """When program.num_shots is falsy, _submit must use 1 as the default."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+
+        # pylint: enable=import-outside-toplevel
         program = pyquil.Program()
         # pyquil.Program().num_shots == 1 by default; force it to 0 to test branch
         program.num_shots = 0

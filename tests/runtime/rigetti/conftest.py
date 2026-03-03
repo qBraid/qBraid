@@ -16,15 +16,16 @@
 
 """Shared fixtures for Rigetti runtime tests."""
 
+import importlib.util
 from unittest.mock import MagicMock
 
-import pyquil
 import pytest
 
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime import TargetProfile
-from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
+
+pyquil_found = importlib.util.find_spec("pyquil") is not None
 
 DEVICE_ID = "Ankaa-3"
 DUMMY_TOKEN = "dummy-refresh-token"
@@ -34,8 +35,13 @@ DUMMY_JOB_ID = "job-abc-123"
 
 
 @pytest.fixture()
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def qpu_profile() -> TargetProfile:
     """A TargetProfile representing a real QPU (simulator=False)."""
+    # pylint: disable=import-outside-toplevel
+    import pyquil
+
+    # pylint: enable=import-outside-toplevel
     return TargetProfile(
         device_id=DEVICE_ID,
         simulator=False,
@@ -47,8 +53,13 @@ def qpu_profile() -> TargetProfile:
 
 
 @pytest.fixture()
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def simulator_profile() -> TargetProfile:
     """A TargetProfile representing a simulator (simulator=True)."""
+    # pylint: disable=import-outside-toplevel
+    import pyquil
+
+    # pylint: enable=import-outside-toplevel
     return TargetProfile(
         device_id=DEVICE_ID,
         simulator=True,
@@ -66,14 +77,24 @@ def mock_qcs_client() -> MagicMock:
 
 
 @pytest.fixture()
-def rigetti_device(qpu_profile: TargetProfile, mock_qcs_client: MagicMock) -> RigettiDevice:
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+def rigetti_device(qpu_profile: TargetProfile, mock_qcs_client: MagicMock):
     """A RigettiDevice backed by a mock QCSClient and QPU profile."""
+    # pylint: disable=import-outside-toplevel
+    from qbraid.runtime.rigetti import RigettiDevice
+
+    # pylint: enable=import-outside-toplevel
     return RigettiDevice(profile=qpu_profile, qcs_client=mock_qcs_client)
 
 
 @pytest.fixture()
-def rigetti_job(rigetti_device: RigettiDevice) -> RigettiJob:
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+def rigetti_job(rigetti_device):
     """A RigettiJob in RUNNING state with num_shots=3."""
+    # pylint: disable=import-outside-toplevel
+    from qbraid.runtime.rigetti import RigettiJob
+
+    # pylint: enable=import-outside-toplevel
     return RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
 
 
