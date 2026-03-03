@@ -97,11 +97,6 @@ def test_braket_to_qiskit_vi_sxdg():
 
 def test_qasm3_to_cirq_raises_for_invalid_qasm():
     """Test that qasm3_to_cirq raises QasmError for unsupported QASM."""
-    invalid_qasm = """
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    qubit[2] q;
-    unsupported_gate q[0], q[1];
-    """
+    invalid_qasm = "OPENQASM 2.0;\nqreg q[1];\nbarrier q;"
     with pytest.raises(QasmError):
         qasm3_to_cirq(invalid_qasm)
