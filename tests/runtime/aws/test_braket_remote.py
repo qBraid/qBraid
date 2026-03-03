@@ -28,6 +28,8 @@ from braket.tracking.tracker import Tracker
 from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.tracker import get_quantum_task_cost
 
+DEFAULT_TIMEOUT = 120
+
 
 @pytest.fixture
 def braket_no_meas(braket_circuit: Circuit) -> Circuit:
@@ -67,6 +69,14 @@ def test_get_quantum_task_cost_simulator(braket_circuit):
 
     with Tracker() as tracker:
         task = device.run(braket_circuit, shots=100)
+        try:
+            task.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+        except TimeoutError:
+            try:
+                task.cancel()
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+            pytest.skip(f"Simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
         task.result()
 
     expected = tracker.simulator_tasks_cost()

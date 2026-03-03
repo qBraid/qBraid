@@ -625,7 +625,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
     """Test that the validate lambda for qasm3 programs raises exception
     for CircuitConversion error though validate_qasm_to_ionq."""
     program_type_alias = "qasm3"
-    device_id = "ionq_simulator"
+    device_id = "qbraid:ionq:sim:simulator"
     invalid_program = "invalid qasm3 code"
 
     lambdas = get_program_spec_lambdas(program_type_alias, device_id)
