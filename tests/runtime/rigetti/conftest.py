@@ -1,0 +1,111 @@
+# Copyright 2026 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# pylint: disable=redefined-outer-name
+
+"""Shared fixtures for Rigetti runtime tests."""
+
+import importlib.util
+from unittest.mock import MagicMock
+
+import pytest
+
+from qbraid.programs.experiment import ExperimentType
+from qbraid.programs.spec import ProgramSpec
+from qbraid.runtime import TargetProfile
+
+pyquil_found = importlib.util.find_spec("pyquil") is not None
+
+DEVICE_ID = "Ankaa-3"
+DUMMY_TOKEN = "dummy-refresh-token"
+DUMMY_CLIENT_ID = "dummy-client-id"
+DUMMY_ISSUER = "https://dummy.issuer.example.com"
+DUMMY_JOB_ID = "job-abc-123"
+
+
+@pytest.fixture()
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+def qpu_profile() -> TargetProfile:
+    """A TargetProfile representing a real QPU (simulator=False)."""
+    # pylint: disable=import-outside-toplevel
+    import pyquil
+
+    # pylint: enable=import-outside-toplevel
+    return TargetProfile(
+        device_id=DEVICE_ID,
+        simulator=False,
+        experiment_type=ExperimentType.GATE_MODEL,
+        program_spec=ProgramSpec(pyquil.Program),
+        num_qubits=84,
+        provider_name="rigetti",
+    )
+
+
+@pytest.fixture()
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+def simulator_profile() -> TargetProfile:
+    """A TargetProfile representing a simulator (simulator=True)."""
+    # pylint: disable=import-outside-toplevel
+    import pyquil
+
+    # pylint: enable=import-outside-toplevel
+    return TargetProfile(
+        device_id=DEVICE_ID,
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        program_spec=ProgramSpec(pyquil.Program),
+        num_qubits=84,
+        provider_name="rigetti",
+    )
+
+
+@pytest.fixture()
+def mock_qcs_client() -> MagicMock:
+    """A generic mock replacing qcs_sdk.client.QCSClient."""
+    return MagicMock(name="QCSClient")
+
+
+@pytest.fixture()
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+def rigetti_device(qpu_profile: TargetProfile, mock_qcs_client: MagicMock):
+    """A RigettiDevice backed by a mock QCSClient and QPU profile."""
+    # pylint: disable=import-outside-toplevel
+    from qbraid.runtime.rigetti import RigettiDevice
+
+    # pylint: enable=import-outside-toplevel
+    return RigettiDevice(profile=qpu_profile, qcs_client=mock_qcs_client)
+
+
+@pytest.fixture()
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+def rigetti_job(rigetti_device):
+    """A RigettiJob in RUNNING state with num_shots=3."""
+    # pylint: disable=import-outside-toplevel
+    from qbraid.runtime.rigetti import RigettiJob
+
+    # pylint: enable=import-outside-toplevel
+    return RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
+
+
+@pytest.fixture()
+def mock_isa_response() -> MagicMock:
+    """
+    Mimics the ISA object returned by get_instruction_set_architecture.
+    architecture.nodes is a list of Node-like objects each with a .node_id attribute.
+    """
+    node_ids = [0, 1, 2, 3, 4]
+    nodes = [MagicMock(node_id=nid) for nid in node_ids]
+    isa = MagicMock()
+    isa.architecture.nodes = nodes
+    return isa
