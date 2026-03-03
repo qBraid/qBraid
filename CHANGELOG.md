@@ -34,6 +34,7 @@ Types of changes:
 ### Dependencies
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
 
 ## [0.11.1] - 2026-02-24
 
