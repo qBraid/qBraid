@@ -18,9 +18,12 @@ Unit tests for OpenQASM 3 conversions
 """
 import braket.circuits
 import numpy as np
+import pytest
 import qiskit
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs.exceptions import QasmError
+from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import qasm3_to_cirq
 from qbraid.transpiler.converter import transpile
 
 
@@ -90,3 +93,15 @@ def test_braket_to_qiskit_vi_sxdg():
     qasm3_program = transpile(circuit, "qasm3")
     qiskit_circuit = transpile(qasm3_program, "qiskit")
     assert circuits_allclose(circuit, qiskit_circuit, strict_gphase=False)
+
+
+def test_qasm3_to_cirq_raises_for_invalid_qasm():
+    """Test that qasm3_to_cirq raises QasmError for unsupported QASM."""
+    invalid_qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    unsupported_gate q[0], q[1];
+    """
+    with pytest.raises(QasmError):
+        qasm3_to_cirq(invalid_qasm)

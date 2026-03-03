@@ -710,3 +710,27 @@ def test_openqasm3_to_ionq_no_gates_error_message():
     """
     with pytest.raises(ProgramConversionError, match="No gate operations found"):
         openqasm3_to_ionq(qasm_no_gates)
+
+
+def test_parse_gates_uses_unrolled_ast_when_no_top_level_gates():
+    """Test that _parse_gates falls back to unrolled_ast when
+    original_program has no top-level QuantumGate statements."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    h q[0];
+    cx q[0], q[1];
+    """
+    program = OpenQasm3Program(qasm)
+
+    # Build an unrolled AST that has gate operations
+    unrolled = parse(qasm)
+
+    # Replace original_program with one that has no QuantumGate statements
+    empty_original = openqasm3.ast.Program(statements=[], version="3.0")
+    program._module._original_program = empty_original
+    program._module._unrolled_ast = unrolled
+
+    gates = _parse_gates(program)
+    assert len(gates) > 0
