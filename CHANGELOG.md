@@ -35,6 +35,7 @@ Types of changes:
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
 - Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
 
 ## [0.11.1] - 2026-02-24
 
