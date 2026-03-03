@@ -35,6 +35,8 @@ Types of changes:
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
 - Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
+- Removed `qiskit-qir` from `requirements-dev.txt`; it requires `qiskit<2.0` and is incompatible with the current `qiskit>=2.0` test environment — its usage in the transpiler is lazy-loaded and tests are already guarded with `skipif` ([#1131](https://github.com/qBraid/qBraid/pull/1131))
 
 ## [0.11.1] - 2026-02-24
 

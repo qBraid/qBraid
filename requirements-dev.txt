@@ -16,13 +16,12 @@ qbraid-qir>=0.2.0,<=0.5.1
 pytket-braket>=0.35.1,<0.46.0
 qiskit-qasm3-import>=0.5.1
 qiskit-aer>=0.15.0; python_version < "3.13"
-qiskit-qir
 qiskit-ionq>=0.5.12
 pyqpanda3>=0.2.0; python_version < "3.13"
 autoqasm>=0.1.2,<0.3
 
 # optional runtime dependencies
-qiskit-ibm-runtime>=0.39.0,<0.42
+qiskit-ibm-runtime>=0.39.0,<0.46
 oqc-qcaas-client>=3.11.0; python_version < "3.13"
 azure-quantum>=2.0,<2.3
 azure-identity>=1.17,<2.0

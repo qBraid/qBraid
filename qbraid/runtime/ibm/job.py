@@ -55,14 +55,13 @@ IBM_JOB_STATUS_MAP = {
 
 
 class QiskitJob(QuantumJob):
-    """Class for interfacing with a Qiskit IBM ``RuntimeJob``."""
+    """Class for interfacing with a Qiskit IBM ``RuntimeJobV2``."""
 
     def __init__(
         self,
         job_id: str,
         job: Optional[
-            qiskit_ibm_runtime.RuntimeJob
-            | qiskit_ibm_runtime.RuntimeJobV2
+            qiskit_ibm_runtime.RuntimeJobV2
             | qiskit.primitives.PrimitiveJob
         ] = None,
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
@@ -74,8 +73,8 @@ class QiskitJob(QuantumJob):
 
     def _get_job(
         self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None
-    ) -> qiskit_ibm_runtime.RuntimeJob | qiskit_ibm_runtime.RuntimeJobV2:
-        """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
+    ) -> qiskit_ibm_runtime.RuntimeJobV2:
+        """Return the qiskit_ibm_runtime.RuntimeJobV2 associated with instance id attribute.
 
         Attempts to retrieve a job using a specified or default service. Handles
         service initialization with error management for authentication issues.
@@ -107,9 +106,7 @@ class QiskitJob(QuantumJob):
 
     def queue_position(self) -> Optional[int]:
         """Returns the position of the job in the server queue."""
-        if isinstance(self._job, RuntimeJobV2):
-            raise NotImplementedError("Queue position is not supported for RuntimeJobV2.")
-        return self._job.queue_position(refresh=True)
+        raise NotImplementedError("Queue position is not supported for RuntimeJobV2.")
 
     def result(self):
         """Return the results of the job."""
