@@ -11,26 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-Module for submitting and managing jobs through the Rigetti QCS API.
-
-.. currentmodule:: qbraid.runtime.rigetti
-
-Classes
---------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-    RigettiProvider
-    RigettiDevice
-    RigettiJob
-
-"""
-
-from .device import RigettiDevice
-from .job import RigettiJob
-from .provider import RigettiProvider
-
-__all__ = ["RigettiDevice", "RigettiProvider", "RigettiJob"]

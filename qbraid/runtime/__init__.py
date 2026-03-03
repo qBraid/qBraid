@@ -75,6 +75,7 @@ Exceptions
     ProviderLoaderError
 
 """
+
 import importlib
 from typing import TYPE_CHECKING
 
@@ -201,6 +202,7 @@ if TYPE_CHECKING:
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider
+
 
 def __getattr__(name):
     for mod_name, objects in _lazy.items():

@@ -1,12 +1,16 @@
-# Copyright (C) 2026 qBraid
+# Copyright 2026 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining Rigetti job class
@@ -39,10 +43,12 @@ class RigettiJob(QuantumJob):
         self,
         job_id: str | int,
         device: "RigettiDevice",
+        num_shots: int = 1,
         **kwargs: Any,
     ):
         super().__init__(job_id=job_id, **kwargs)
         self._device = device
+        self._num_shots = num_shots
         self._status = JobStatus.RUNNING
 
     @property
@@ -88,13 +94,20 @@ class RigettiJob(QuantumJob):
             quantum_processor_id=self._quantum_processor_id,
             client=self._client,
         )
-        ro_data = execution_results.buffers.get("ro")
-        if ro_data is None:
-            raise RigettiJobError("No 'ro' readout buffer found in execution results.")
 
-        readout = ro_data.data
-        measurements = ["".join(map(str, map(int, row))) for row in readout]
-        counts = {row: measurements.count(row) for row in set(measurements)}
+        ro_memory = execution_results.memory.get("ro")
+        if ro_memory is None:
+            raise RigettiJobError("No 'ro' register found in execution results.")
+
+        flat = ro_memory.to_binary()
+        num_qubits = len(flat) // self._num_shots
+
+        measurements = []
+        for i in range(self._num_shots):
+            row = flat[i * num_qubits : (i + 1) * num_qubits]
+            measurements.append("".join(str(b) for b in row))
+
+        counts = {m: measurements.count(m) for m in set(measurements)}
         total_counts = sum(counts.values())
         probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
         return {"counts": counts, "probabilities": probabilities}
@@ -103,7 +116,7 @@ class RigettiJob(QuantumJob):
         """Return the result of the Rigetti job."""
         try:
             result = self.get_result()
-        except (QpuApiError, RigettiJobError) as e:
+        except (QpuApiError, RigettiJobError):
             self._status = JobStatus.FAILED
             return Result(
                 device_id=self._device.profile.device_id,

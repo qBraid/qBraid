@@ -1,28 +1,32 @@
-# Copyright (C) 2026 qBraid
+# Copyright 2026 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
-Module defining Rigettu provider class
+Module defining Rigetti provider class
 
 """
 
 import os
 
 import pyquil
-from qcs_sdk.client import QCSClient, AuthServer, OAuthSession, RefreshToken
+from qcs_sdk.client import AuthServer, OAuthSession, QCSClient, RefreshToken
 from qcs_sdk.qpu import list_quantum_processors
 from qcs_sdk.qpu.isa import get_instruction_set_architecture
 
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime import QuantumDevice, QuantumProvider, TargetProfile
+from qbraid.runtime import QuantumProvider, TargetProfile
 
 from .device import RigettiDevice
 
@@ -35,39 +39,27 @@ class RigettiProvider(QuantumProvider):
     def __init__(
         self,
         qcs_client: QCSClient = None,
-        as_qvm: bool = True,
     ):
         self._qcs_client = qcs_client
         if self._qcs_client is None:
-            self.refresh_token = os.getenv("RIGETTI_REFRESH_TOKEN")
-            if not self.refresh_token:
+            refresh_token = os.getenv("RIGETTI_REFRESH_TOKEN")
+            if not refresh_token:
                 raise ValueError(
-                    "A Rigetti access token is required."
-                    " Set it via RIGETTI_REFRESH_TOKEN or pass directly."
+                    "A Rigetti refresh token is required."
+                    " Set it via RIGETTI_REFRESH_TOKEN or pass a QCSClient directly."
                 )
-            self.client_id = os.getenv("RIGETTI_CLIENT_ID")
-            if not self.client_id:
-                raise ValueError(
-                    "A Rigetti client ID is required."
-                    " Set it via RIGETTI_CLIENT_ID or pass directly."
-                )
-            self.issuer = os.getenv("RIGETTI_ISSUER")
-            if not self.issuer:
-                raise ValueError(
-                    "A Rigetti issuer is required. Set it via RIGETTI_ISSUER or pass directly."
-                )
+            client_id = os.getenv("RIGETTI_CLIENT_ID")
+            issuer = os.getenv("RIGETTI_ISSUER")
+            if client_id and issuer:
+                auth_server = AuthServer(client_id=client_id, issuer=issuer)
+            else:
+                auth_server = AuthServer.default()
             self._qcs_client = QCSClient(
                 oauth_session=OAuthSession(
-                    RefreshToken(   
-                        refresh_token=os.getenv("RIGETTI_REFRESH_TOKEN"),
-                    ),
-                    AuthServer(
-                        client_id=os.getenv("RIGETTI_CLIENT_ID"),
-                        issuer=os.getenv("RIGETTI_ISSUER"),
-                    ),
+                    RefreshToken(refresh_token=refresh_token),
+                    auth_server,
                 ),
             )
-        self._as_qvm = as_qvm
 
     def _build_profile(self, quantum_processor_id: str) -> TargetProfile:
         instruction_set_architecture = get_instruction_set_architecture(
@@ -77,20 +69,19 @@ class RigettiProvider(QuantumProvider):
         num_qubits = len(instruction_set_architecture.architecture.nodes)
         return TargetProfile(
             device_id=quantum_processor_id,
-            simulator=self._as_qvm,
+            simulator=False,
             experiment_type=ExperimentType.GATE_MODEL,
             program_spec=ProgramSpec(pyquil.Program),
             num_qubits=num_qubits,
             provider_name="rigetti",
-        ) 
+        )
 
     def get_devices(self) -> list[RigettiDevice]:
-        devices: list[QuantumDevice] = []
+        devices: list[RigettiDevice] = []
         quantum_processor_ids = list_quantum_processors(client=self._qcs_client)
-        for quantum_processor_id in quantum_processor_ids:
-            profile = self._build_profile(quantum_processor_id=quantum_processor_id)
+        for qpu_id in quantum_processor_ids:
+            profile = self._build_profile(quantum_processor_id=qpu_id)
             devices.append(RigettiDevice(profile=profile, qcs_client=self._qcs_client))
-
         return devices
 
     def get_device(self, device_id: str) -> RigettiDevice:

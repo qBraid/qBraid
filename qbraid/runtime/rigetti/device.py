@@ -1,16 +1,19 @@
-# Copyright (C) 2026 qBraid
+# Copyright 2026 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
-Module defining Rigettu device class
-
+Module defining Rigetti device class
 """
 
 from multiprocessing.pool import ThreadPool
@@ -18,7 +21,8 @@ from typing import Union
 
 import pyquil
 from qcs_sdk.client import QCSClient
-from qcs_sdk.qpu.api import SubmissionError, submit as qpu_submit
+from qcs_sdk.qpu.api import SubmissionError
+from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import translate
 
@@ -63,7 +67,7 @@ class RigettiDevice(QuantumDevice):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
-    def _submit(self, run_input: pyquil.Program, *args, **kwargs) -> RigettiJob:
+    def _submit(self, run_input: pyquil.Program, *_args, **_kwargs) -> RigettiJob:
         """
         Submit a native Quil program to the Rigetti QPU.
 
@@ -75,7 +79,7 @@ class RigettiDevice(QuantumDevice):
         quantum_processor_id = self.profile.device_id
 
         # TODO: figure out how to add the quilc compilation step here
-        #       Either we need to host that compiler or there must be 
+        #       Either we need to host that compiler or there must be
         #       some way for us to use it in the local system
         translation_result = translate(
             native_quil=quil_program,
@@ -85,7 +89,7 @@ class RigettiDevice(QuantumDevice):
         )
 
         try:
-            job_handle = qpu_submit(
+            job_id = qpu_submit(
                 program=translation_result.program,
                 patch_values={},
                 quantum_processor_id=quantum_processor_id,
@@ -95,8 +99,9 @@ class RigettiDevice(QuantumDevice):
             raise RigettiJobError("Failed to submit job to Rigetti QCS.") from e
 
         return RigettiJob(
-            job_id=job_handle.job_id,
+            job_id=job_id,
             device=self,
+            num_shots=num_shots,
         )
 
     def submit(
