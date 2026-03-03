@@ -48,6 +48,7 @@ def transform_notation(qasm3: str) -> str:
     """
     replacements = {
         "cx": "cnot",
+        "ccx": "ccnot",
         "sdg": "si",
         "tdg": "ti",
         "sx": "v",

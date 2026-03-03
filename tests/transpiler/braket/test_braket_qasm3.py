@@ -234,14 +234,12 @@ def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
                 """
                 OPENQASM 3.0;
                 include "stdgates.inc";
-                bit[3] meas;
-                qubit[3] q;
+                qubit[4] q;
                 h q[0];
-                ccx q[0], q[1], q[2];
-                meas = measure q;
+                c3x q[0], q[1], q[2], q[3];
             """
             ).strip(),
-            "ccx is not defined",
+            "c3x is not defined",
         ),
         (
             textwrap.dedent(
@@ -258,7 +256,7 @@ def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
             "Reset not supported",
         ),
     ],
-    ids=["undefined_gate_ccx", "unsupported_reset"],
+    ids=["undefined_gate_c3x", "unsupported_reset"],
 )
 def test_qasm3_to_braket_error_includes_detail(qasm_input, expected_detail):
     """Verify that QasmError includes the specific failure reason from the Braket parser."""
