@@ -23,6 +23,8 @@ import pytest
 
 from qbraid import GateModelResultData, QbraidJob, QbraidProvider
 
+DEFAULT_TIMEOUT = 120
+
 
 @pytest.mark.remote
 def test_qiskit_ionq_workflow():
@@ -54,7 +56,14 @@ def test_qiskit_ionq_workflow():
         job: QbraidJob = device.run(qiskit_circuit_transpiled, shots=shots)
 
         # pylint: disable=no-member
-        job.wait_for_final_state()
+        try:
+            job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+        except TimeoutError:
+            try:
+                job.cancel()
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+            pytest.skip(f"IonQ job did not complete within {DEFAULT_TIMEOUT} seconds")
         result = job.result()
         # pylint: enable=no-member
 

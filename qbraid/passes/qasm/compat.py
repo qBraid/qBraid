@@ -315,3 +315,8 @@ def declarations_to_qasm2(qasm: str) -> str:
         qasm = re.sub(pattern, replacement, qasm)
 
     return qasm
+
+
+def remove_empty_registers(qasm: str) -> str:
+    """Remove zero-length register declarations (e.g. ``creg c[0];``) from a QASM string."""
+    return re.sub(r"^\s*(qreg|creg)\s+\w+\s*\[\s*0\s*\]\s*;\s*\n?", "", qasm, flags=re.MULTILINE)

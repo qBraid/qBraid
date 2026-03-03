@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pennylane
 from pennylane.tape import QuantumTape
 
 from qbraid.transpiler.annotations import weight
@@ -39,4 +40,4 @@ def pennylane_to_qasm2(tape: QuantumTape) -> Qasm2StringType:
         str: OpenQASM 2.0 representation of the tape
 
     """
-    return tape.to_openqasm(measure_all=False)
+    return pennylane.to_openqasm(tape, measure_all=False)

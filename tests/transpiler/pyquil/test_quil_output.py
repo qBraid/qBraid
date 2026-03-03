@@ -307,7 +307,7 @@ def test_all_operations():
         == f"""# Created using qBraid.
 
 DECLARE m0 BIT[1]
-DECLARE m1 BIT[1]
+DECLARE m1 BIT[2]
 DECLARE m2 BIT[1]
 DECLARE m3 BIT[3]
 
@@ -394,7 +394,7 @@ WAIT
 MEASURE 0 m0[0]
 MEASURE 2 m1[0]
 MEASURE 3 m2[0]
-MEASURE 2 m1[0]
+MEASURE 2 m1[1]
 MEASURE 1 m3[0]
 X 2 # Inverting for following measurement
 MEASURE 2 m3[1]

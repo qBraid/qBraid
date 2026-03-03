@@ -48,6 +48,7 @@ def transform_notation(qasm3: str) -> str:
     """
     replacements = {
         "cx": "cnot",
+        "ccx": "ccnot",
         "sdg": "si",
         "tdg": "ti",
         "sx": "v",
@@ -94,7 +95,7 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         program = braket_openqasm.Program(source=qasm)
         return braket_circuits.Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
-        msg = "Error converting qasm3 string to braket circuit"
+        msg = f"Error converting qasm3 string to braket circuit: {err}"
         if prior_errors:
             msg += ". Prior errors: " + "; ".join(f"{label}: {e}" for label, e in prior_errors)
         raise QasmError(msg) from err

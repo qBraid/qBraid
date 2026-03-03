@@ -629,10 +629,18 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     assert device.status() == DeviceStatus.ONLINE
 
     shots = 100
+    timeout = 120
     job = device.run(program, shots=shots)
     assert isinstance(job, OQCJob)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=timeout)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"OQC job did not complete within {timeout} seconds")
     assert job.qpu_id == LUCY_SIM_ID
     assert job.is_terminal_state()
     assert job.status() == JobStatus.COMPLETED
