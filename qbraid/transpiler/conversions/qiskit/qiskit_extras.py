@@ -26,7 +26,7 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import requires_extras
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
-qiskit_qir = LazyLoader("qiskit_qir", globals(), "qiskit_qir")
+qbraid_qir_qiskit = LazyLoader("qbraid_qir_qiskit", globals(), "qbraid_qir.qiskit")
 qiskit_ionq = LazyLoader("qiskit_ionq", globals(), "qiskit_ionq")
 
 if TYPE_CHECKING:
@@ -57,7 +57,7 @@ def qiskit_to_braket(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> braket
         return qiskit_braket_provider.providers.adapter.to_braket(circuit, **kwargs)
 
 
-@requires_extras("qiskit_qir")
+@requires_extras("qbraid_qir.qiskit")
 def qiskit_to_pyqir(circuit: qiskit.circuit.QuantumCircuit) -> pyqir.Module:
     """Return a PyQIR module from a Qiskit quantum circuit.
 
@@ -67,9 +67,7 @@ def qiskit_to_pyqir(circuit: qiskit.circuit.QuantumCircuit) -> pyqir.Module:
     Returns:
         Module: PyQIR module
     """
-    # tuple of module and list of entry points
-    module, _ = qiskit_qir.to_qir_module(circuit)
-    return module
+    return qbraid_qir_qiskit.qiskit_to_qir(circuit)
 
 
 @requires_extras("qiskit_ionq")
