@@ -27,7 +27,6 @@ import pytest
 
 from qbraid.runtime import GateModelResultData, Result
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.rigetti.job import RigettiJob, RigettiJobError
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
 
@@ -38,6 +37,8 @@ if pyquil_found:
     # only import if pyquil is available as python 3.13 does not support pyquil and
     # we want to avoid import errors
     from qcs_sdk.qpu.api import QpuApiError
+
+    from qbraid.runtime.rigetti.job import RigettiJob, RigettiJobError
 
 if TYPE_CHECKING:
     from qbraid.runtime.rigetti.device import RigettiDevice

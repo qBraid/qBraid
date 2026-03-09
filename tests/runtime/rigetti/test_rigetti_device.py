@@ -22,8 +22,6 @@ import importlib.util
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qcs_sdk.qpu.api import SubmissionError
-from qcs_sdk.qpu.isa import GetISAError
 
 from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus
@@ -35,6 +33,9 @@ pyquil_found = importlib.util.find_spec("pyquil") is not None
 pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 
 if pyquil_found:
+    from qcs_sdk.qpu.api import SubmissionError
+    from qcs_sdk.qpu.isa import GetISAError
+
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
 else:
     RigettiDevice = None
