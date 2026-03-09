@@ -24,7 +24,6 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-from qcs_sdk.qpu.api import QpuApiError
 
 from qbraid.runtime import GateModelResultData, Result
 from qbraid.runtime.enums import JobStatus
@@ -34,6 +33,11 @@ from .conftest import DEVICE_ID, DUMMY_JOB_ID
 
 pyquil_found = importlib.util.find_spec("pyquil") is not None
 pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+
+if pyquil_found:
+    # only import if pyquil is available as python 3.13 does not support pyquil and
+    # we want to avoid import errors
+    from qcs_sdk.qpu.api import QpuApiError
 
 if TYPE_CHECKING:
     from qbraid.runtime.rigetti.device import RigettiDevice
