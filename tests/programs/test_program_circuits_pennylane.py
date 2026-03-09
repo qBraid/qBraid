@@ -16,9 +16,12 @@
 Unit tests for qbraid.programs.pennylane.PennylaneTape
 
 """
+# pylint: disable=wrong-import-position
 import numpy as np
-import pennylane as qml
 import pytest
+
+qml = pytest.importorskip("pennylane")
+
 from pennylane.tape import QuantumTape
 
 from qbraid.programs.exceptions import ProgramTypeError

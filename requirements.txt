@@ -5,4 +5,4 @@ qbraid-core>=0.2.0,<0.3.0
 pydantic>2.0.0
 pydantic-core
 typing-extensions>=4.0.0
-pyqasm>=0.5.0,<1.1.0
+pyqasm>=1.0.1,<1.1.0

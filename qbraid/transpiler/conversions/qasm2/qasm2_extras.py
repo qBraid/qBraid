@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
+from qbraid.passes.qasm.compat import remove_empty_registers
 from qbraid.transpiler.annotations import requires_extras
 
 qibo = LazyLoader("qibo", globals(), "qibo")
@@ -96,4 +97,5 @@ def pyqpanda3_to_qasm2(circuit: pyqpanda3_.core.QProg) -> Qasm2StringType:
     Returns:
         OpenQASM 2 string equivalent to the input pyqpanda3.core.QProg.
     """
-    return pyqpanda3.intermediate_compiler.convert_qprog_to_qasm(circuit)
+    qasm = pyqpanda3.intermediate_compiler.convert_qprog_to_qasm(circuit)
+    return remove_empty_registers(qasm)

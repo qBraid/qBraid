@@ -447,6 +447,17 @@ class QuilOutput:
             qubit_id_map=self.qubit_id_map, measurement_id_map=self.measurement_id_map
         )
 
+        # Pre-compute per-key total bit counts and per-operation bit offsets.
+        # This handles the case where multiple single-qubit MeasurementGate
+        # operations share the same key (e.g. from braket -> cirq conversion).
+        self._measurement_key_total_bits: dict[str, int] = {}
+        self._measurement_op_bit_offset: dict[int, int] = {}  # id(op) -> starting bit offset
+        for m_op in self.measurements:
+            key = protocols.measurement_key_name(m_op)
+            offset = self._measurement_key_total_bits.get(key, 0)
+            self._measurement_op_bit_offset[id(m_op)] = offset
+            self._measurement_key_total_bits[key] = offset + len(m_op.qubits)
+
     def _generate_qubit_ids(self) -> dict["cirq.Qid", str]:
         return {qubit: str(i) for i, qubit in enumerate(self.qubits)}
 
@@ -473,11 +484,36 @@ class QuilOutput:
         return self.rename_defgates("".join(output))
 
     def _op_to_maybe_quil(self, op: cirq.Operation) -> Optional[str]:
+        # Measurements need special handling to apply the global bit offset
+        # when multiple ops share a key (e.g. separate single-qubit measurements).
+        if isinstance(op.gate, ops.MeasurementGate):
+            return self._measurement_gate_with_offset(op)
+
         for gate_type, supported_gate in SUPPORTED_GATES.items():
             if isinstance(op.gate, gate_type):
-                quil: Callable[[cirq.Operation, QuilFormatter], Optional[str]] = supported_gate
-                return quil(op, self.formatter)
+                quil_fn: Callable[[cirq.Operation, QuilFormatter], Optional[str]] = supported_gate
+                return quil_fn(op, self.formatter)
         return None
+
+    def _measurement_gate_with_offset(self, op: cirq.Operation) -> str:
+        """Render a MeasurementGate using the pre-computed global bit offset."""
+        gate = cast(ops.MeasurementGate, op.gate)
+        bit_offset = self._measurement_op_bit_offset.get(id(op), 0)
+        invert_mask = gate.invert_mask
+        if len(invert_mask) < len(op.qubits):
+            invert_mask = invert_mask + (False,) * (len(op.qubits) - len(invert_mask))
+        lines = []
+        for i, (qubit, inv) in enumerate(zip(op.qubits, invert_mask)):
+            if inv:
+                lines.append(
+                    self.formatter.format("X {0} # Inverting for following measurement\n", qubit)
+                )
+            lines.append(
+                self.formatter.format(
+                    "MEASURE {0} {1:meas}[{2}]\n", qubit, gate.key, bit_offset + i
+                )
+            )
+        return "".join(lines)
 
     def _op_to_quil(self, op: cirq.Operation) -> str:
         quil_str = self._op_to_maybe_quil(op)
@@ -494,7 +530,8 @@ class QuilOutput:
                 if key in measurements_declared:
                     continue
                 measurements_declared.add(key)
-                output_func(f"DECLARE {self.measurement_id_map[key]} BIT[{len(m.qubits)}]\n")
+                total_bits = self._measurement_key_total_bits[key]
+                output_func(f"DECLARE {self.measurement_id_map[key]} BIT[{total_bits}]\n")
             output_func("\n")
 
         def keep(op: "cirq.Operation") -> bool:

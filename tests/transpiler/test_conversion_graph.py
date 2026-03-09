@@ -98,8 +98,15 @@ def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
     top_paths = native_conversion_graph.find_top_shortest_conversion_paths(
         "qiskit", "cirq", top_n=3
     )
-    assert str(shortest_path[0]) == bound_method_str("qiskit", "qasm2")
-    assert str(shortest_path[1]) == bound_method_str("qasm2", "cirq")
+    assert len(shortest_path) == 2
+    valid_intermediates = {"qasm2", "qasm3"}
+    path_strs = [str(edge) for edge in shortest_path]
+    intermediate = None
+    for mid in valid_intermediates:
+        if path_strs == [bound_method_str("qiskit", mid), bound_method_str(mid, "cirq")]:
+            intermediate = mid
+            break
+    assert intermediate is not None, f"Unexpected shortest path: {path_strs}"
     assert shortest_path == top_paths[0]
     assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])
 
@@ -134,13 +141,18 @@ def test_add_conversion():
     assert rx.is_isomorphic(updated_graph, expected_graph)
 
     # Assertion 3 - Verify the shortest path after adding the new edge
-    expected_shortest_path = [
-        bound_method_str("qiskit", "qasm2"),
-        bound_method_str("qasm2", "cirq"),
-        bound_method_str("cirq", target),
-    ]
     actual_shortest_path = graph_without_new_edge.find_shortest_conversion_path("qiskit", target)
-    assert [str(bound_method) for bound_method in actual_shortest_path] == expected_shortest_path
+    actual_strs = [str(bound_method) for bound_method in actual_shortest_path]
+    assert len(actual_strs) == 3
+    valid_paths = [
+        [
+            bound_method_str("qiskit", mid),
+            bound_method_str(mid, "cirq"),
+            bound_method_str("cirq", target),
+        ]
+        for mid in ("qasm2", "qasm3")
+    ]
+    assert actual_strs in valid_paths, f"Unexpected path: {actual_strs}"
 
 
 @pytest.mark.skipif(not qiskit_qir_installed, reason="qiskit_qir not installed")

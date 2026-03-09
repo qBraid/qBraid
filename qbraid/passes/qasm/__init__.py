@@ -37,6 +37,7 @@ from .compat import (
     convert_qasm_pi_to_decimal,
     insert_gate_def,
     normalize_qasm_gate_params,
+    remove_empty_registers,
     remove_stdgates_include,
     replace_gate_names,
 )
@@ -47,6 +48,7 @@ __all__ = [
     "insert_gate_def",
     "replace_gate_names",
     "add_stdgates_include",
+    "remove_empty_registers",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",

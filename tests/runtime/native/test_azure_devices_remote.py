@@ -28,6 +28,8 @@ import pytest
 from qbraid.runtime import DeviceStatus, JobStatus, QbraidProvider, Result
 from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
+DEFAULT_TIMEOUT = 120
+
 pyquil_found = importlib.util.find_spec("pyquil") is not None
 pulser_found = importlib.util.find_spec("pulser") is not None
 
@@ -79,6 +81,16 @@ def test_submit_pulser_sequence_to_pasqal(pulser_sequence: pulser_.Sequence):
 
     job = device.run(pulser_sequence, shots=100)
 
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+        pytest.skip(f"Pasqal simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
+    assert job.status() == JobStatus.COMPLETED
+
     result = job.result()
 
     assert isinstance(result.data, AnalogResultData)
@@ -123,7 +135,14 @@ def test_submit_quil_to_rigetti(pyquil_program: pyquil_.Program):
 
     job = device.run(pyquil_program, shots=100)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
+        pytest.skip(f"Rigetti QVM job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
