@@ -25,7 +25,6 @@ import pytest
 
 from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.rigetti.job import RigettiJobError
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
 
@@ -37,6 +36,7 @@ if pyquil_found:
     from qcs_sdk.qpu.isa import GetISAError
 
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
+    from qbraid.runtime.rigetti.job import RigettiJobError
 else:
     RigettiDevice = None
     RigettiJob = None
