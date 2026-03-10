@@ -22,6 +22,7 @@ Types of changes:
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Added `ccx` → `ccnot` gate mapping in QASM3-to-Braket conversion
 - Updated PennyLane-to-QASM2 conversion to use `pennylane.to_openqasm()` module-level function, replacing the removed `QuantumTape.to_openqasm()` instance method ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Added credential validation check in Azure Quantum test workspace fixture to skip tests when `resource_id` or `credential` are not fully configured ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -30,12 +31,14 @@ Types of changes:
 
 ### Fixed
 - Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
+- Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 
 ### Dependencies
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
 - Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
 - Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
+- Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 
 ## [0.11.1] - 2026-02-24
 
