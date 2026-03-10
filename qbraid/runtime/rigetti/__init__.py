@@ -33,4 +33,4 @@ from .device import RigettiDevice
 from .job import RigettiJob
 from .provider import RigettiProvider
 
-__all__ = ["RigettiDevice", "RigettiProvider", "RigettiJob"]
+__all__ = ["RigettiDevice", "RigettiJob", "RigettiProvider"]

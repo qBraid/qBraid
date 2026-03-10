@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=no-name-in-module
+
+# The above disable is necessary because the qcs_sdk.* modules load from Rust extension bindings
+# (__file__ is None for submodules), so pylint/astroid can’t reliably introspect exported names
+# and emits E0611 false positives.
+#
 """
 Module defining Rigetti job class
 
 """
 
-import warnings
+from __future__ import annotations
+
+import logging
 from typing import TYPE_CHECKING, Any
 
 from qcs_sdk.qpu.api import QpuApiError, cancel_job, retrieve_results
@@ -27,6 +35,8 @@ from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .device import RigettiDevice
@@ -42,59 +52,76 @@ class RigettiJob(QuantumJob):
     def __init__(
         self,
         job_id: str | int,
-        device: "RigettiDevice",
+        device: RigettiDevice,
         num_shots: int = 1,
         **kwargs: Any,
     ):
         super().__init__(job_id=job_id, **kwargs)
         self._device = device
         self._num_shots = num_shots
-        self._status = JobStatus.RUNNING
-
-    @property
-    def _quantum_processor_id(self) -> str:
-        return self._device.profile.device_id
+        self._status = JobStatus.INITIALIZING
+        self._cached_results = None
 
     @property
     def _client(self):
         return self._device._qcs_client
 
     def status(self) -> JobStatus:
-        """Return the current status of the Rigetti job."""
+        """Return the current status of the Rigetti job.
+
+        The QCS SDK does not expose a job-status endpoint. Instead,
+        ``retrieve_results`` blocks until the job completes. This method
+        attempts a retrieval to detect completion or failure and caches
+        the result for later use by ``get_result()``.
+        """
+        if self._status in JobStatus.terminal_states():
+            return self._status
+
+        try:
+            self._cached_results = retrieve_results(
+                job_id=str(self.id),
+                quantum_processor_id=self._device.id,
+                client=self._client,
+            )
+            self._status = JobStatus.COMPLETED
+        except QpuApiError:
+            self._status = JobStatus.FAILED
+
         return self._status
 
     def cancel(self) -> None:
         """Cancel the Rigetti job."""
+        self._status = JobStatus.CANCELLING
         try:
-            self._status = JobStatus.CANCELLING
+            logger.info(
+                "Attempting to cancel Rigetti job %s on device %s",
+                self.id,
+                self._device.id,
+            )
             cancel_job(
-                job_id=self._job_id,
-                quantum_processor_id=self._quantum_processor_id,
+                job_id=str(self.id),
+                quantum_processor_id=self._device.id,
                 client=self._client,
             )
-        except QpuApiError:
-            warnings.warn(
-                UserWarning(
-                    "Failed to cancel the QPU job. "
-                    "Cancellation is not guaranteed, as it "
-                    "is based on job state at the time of cancellation."
-                )
-            )
-            self._status = JobStatus.RUNNING
-        else:
-            self._status = JobStatus.CANCELLED
-
-    def get_result(self) -> dict[str, Any]:
-        """
-        Retrieve and translate Rigetti's readout data into a format
-        that can be consumed by qBraid runtime.
-        """
-        execution_results = retrieve_results(
-            job_id=self._job_id,
-            quantum_processor_id=self._quantum_processor_id,
-            client=self._client,
+        except QpuApiError as exc:
+            raise RigettiJobError(
+                "Failed to cancel the QPU job. "
+                "Cancellation is not guaranteed, as it "
+                "is based on job state at the time of cancellation."
+            ) from exc
+        self._status = JobStatus.CANCELLED
+        logger.info(
+            "Successfully cancelled Rigetti job %s on device %s",
+            self.id,
+            self._device.id,
         )
 
+    def _parse_results(self, execution_results) -> GateModelResultData:
+        """Parse raw execution results into GateModelResultData.
+
+        Extracts the 'ro' readout register, reshapes the flat binary
+        list into per-shot measurement strings, and builds counts.
+        """
         ro_memory = execution_results.memory.get("ro")
         if ro_memory is None:
             raise RigettiJobError("No 'ro' register found in execution results.")
@@ -108,30 +135,36 @@ class RigettiJob(QuantumJob):
             measurements.append("".join(str(b) for b in row))
 
         counts = {m: measurements.count(m) for m in set(measurements)}
-        total_counts = sum(counts.values())
-        probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
-        return {"counts": counts, "probabilities": probabilities}
+        return GateModelResultData(measurement_counts=counts)
+
+    def get_result(self) -> GateModelResultData:
+        """Retrieve and parse Rigetti execution results.
+
+        Uses cached results from ``status()`` polling if available,
+        otherwise fetches from the QCS API.
+        """
+        if self._cached_results is not None:
+            execution_results = self._cached_results
+        else:
+            execution_results = retrieve_results(
+                job_id=str(self.id),
+                quantum_processor_id=self._device.id,
+                client=self._client,
+            )
+
+        return self._parse_results(execution_results)
 
     def result(self) -> Result:
-        """Return the result of the Rigetti job."""
-        try:
-            result = self.get_result()
-        except (QpuApiError, RigettiJobError):
-            self._status = JobStatus.FAILED
-            return Result(
-                device_id=self._device.profile.device_id,
-                job_id=self._job_id,
-                success=False,
-                data=None,
-            )
-        self._status = JobStatus.COMPLETED
+        """Return the result of the Rigetti job.
 
-        return Result(
-            device_id=self._device.profile.device_id,
-            job_id=self._job_id,
+        Raises:
+            RigettiJobError: If the job result cannot be retrieved or parsed.
+        """
+        result_data = self.get_result()
+        self._status = JobStatus.COMPLETED
+        return Result[GateModelResultData](
+            device_id=self._device.id,
+            job_id=self.id,
             success=True,
-            data=GateModelResultData(
-                measurement_counts=result["counts"],
-                measurement_probabilities=result["probabilities"],
-            ),
+            data=result_data,
         )

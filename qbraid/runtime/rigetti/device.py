@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=no-name-in-module
+
+# The above disable is necessary because the qcs_sdk.* modules load from Rust extension bindings
+# (__file__ is None for submodules), so pylint/astroid can’t reliably introspect exported names
+# and emits E0611 false positives.
 """
 Module defining Rigetti device class
 """
@@ -21,15 +26,23 @@ from typing import Union
 
 import pyquil
 from qcs_sdk.client import QCSClient
+from qcs_sdk.qpu import ListQuantumProcessorsError, list_quantum_processors
 from qcs_sdk.qpu.api import SubmissionError
 from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import translate
+from typing_extensions import Optional
 
+from qbraid._caching import cached_method
 from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import RigettiJob, RigettiJobError
+
+
+class RigettiDeviceError(QbraidRuntimeError):
+    """Class for errors raised while processing a Rigetti device."""
 
 
 class RigettiDevice(QuantumDevice):
@@ -49,50 +62,68 @@ class RigettiDevice(QuantumDevice):
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
 
+    @cached_method(ttl=300)
     def status(self) -> DeviceStatus:
         """
         Return the current status of the device.
-        This is a placeholder; actual implementation may vary based on QCS API.
         """
-        # For now, we assume the device is always available
         if self.profile.simulator:
             # If it's a simulator, we consider it always online
             return DeviceStatus.ONLINE
         try:
-            get_instruction_set_architecture(
-                quantum_processor_id=self.profile.device_id,
-                client=self._qcs_client,
-            )
-        except GetISAError:
-            return DeviceStatus.OFFLINE
+            # Otherwise, check if the quantum processor ID is in the list of available processors
+            quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
+            if self.id not in quantum_processor_ids:
+                return DeviceStatus.OFFLINE
+        except ListQuantumProcessorsError as e:
+            raise RigettiDeviceError(
+                "Failed to retrieve quantum processor list from Rigetti QCS."
+            ) from e
         return DeviceStatus.ONLINE
 
-    def _submit(self, run_input: pyquil.Program, *_args, **_kwargs) -> RigettiJob:
+    def transform(self, run_input: pyquil.Program) -> pyquil.Program:
+        """Apply device-specific transformations to the program.
+
+        Currently a no-op. Future quilc compilation (native gate conversion)
+        will be added here.
+        """
+        # TODO: integrate quilc compilation step here to convert
+        #       arbitrary gates into native gates (RZ, RX, CZ, MEASURE)
+        return run_input
+
+    def _submit(self, run_input: str, shots: Optional[int] = None) -> RigettiJob:
         """
         Submit a native Quil program to the Rigetti QPU.
 
-        Uses qcs_sdk translate + submit directly with our authenticated client.
-        The program must already be in native gates (RZ, RX, CZ, MEASURE).
+        Args:
+            run_input: A serialized Quil program string (produced by prepare()).
+            shots: Number of shots for the job.
         """
-        quil_program = run_input.out()
-        num_shots = run_input.num_shots or 1
-        quantum_processor_id = self.profile.device_id
+        num_shots = shots
+        if num_shots is None:
+            raise RigettiJobError(
+                "Number of shots must be specified for Rigetti QPU jobs "
+                "either in the program or as an argument."
+            )
 
-        # TODO: figure out how to add the quilc compilation step here
-        #       Either we need to host that compiler or there must be
-        #       some way for us to use it in the local system
-        translation_result = translate(
-            native_quil=quil_program,
-            num_shots=num_shots,
-            quantum_processor_id=quantum_processor_id,
-            client=self._qcs_client,
-        )
+        try:
+            translation_result = translate(
+                native_quil=run_input,
+                num_shots=num_shots,
+                quantum_processor_id=self.id,
+                client=self._qcs_client,
+            )
+        except Exception as e:
+            raise RigettiJobError(
+                f"Translation failed for quantum processor '{self.id}'. "
+                "Ensure the program uses only native gates (RZ, RX, CZ, MEASURE)."
+            ) from e
 
         try:
             job_id = qpu_submit(
                 program=translation_result.program,
                 patch_values={},
-                quantum_processor_id=quantum_processor_id,
+                quantum_processor_id=self.id,
                 client=self._qcs_client,
             )
         except SubmissionError as e:
@@ -104,25 +135,34 @@ class RigettiDevice(QuantumDevice):
             num_shots=num_shots,
         )
 
+    # pylint: disable-next=arguments-differ
     def submit(
-        self, run_input: Union[pyquil.Program, list[pyquil.Program]], *args, **kwargs
+        self,
+        run_input: Union[str, list[str]],
+        shots: Optional[int] = None,
     ) -> Union[RigettiJob, list[RigettiJob]]:
         """
         Submit one or more jobs to the Rigetti device.
         """
         if isinstance(run_input, list):
             with ThreadPool(5) as pool:
-                quantum_jobs = pool.map(lambda job: self._submit(job, *args, **kwargs), run_input)
+                quantum_jobs = pool.map(lambda job: self._submit(job, shots), run_input)
                 return quantum_jobs
 
-        return self._submit(run_input, *args, **kwargs)
+        return self._submit(run_input, shots)
 
     def live_qubits(self) -> list[int]:
         """
         Returns a list of live qubit IDs for the device.
         """
-        isa = get_instruction_set_architecture(
-            quantum_processor_id=self.profile.device_id,
-            client=self._qcs_client,
-        )
-        return [node.node_id for node in isa.architecture.nodes]
+        try:
+            isa = get_instruction_set_architecture(
+                quantum_processor_id=self.id,
+                client=self._qcs_client,
+            )
+            return [node.node_id for node in isa.architecture.nodes]
+        except GetISAError as e:
+            raise RigettiDeviceError(
+                f"Failed to retrieve ISA for quantum processor '{self.id}'."
+            ) from e
+        return []

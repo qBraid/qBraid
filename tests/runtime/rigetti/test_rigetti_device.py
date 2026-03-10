@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,possibly-used-before-assignment,ungrouped-imports
+# pylint: disable=no-name-in-module,redefined-outer-name,possibly-used-before-assignment,ungrouped-imports
 
 """Unit tests for RigettiDevice."""
 
@@ -32,10 +32,11 @@ pyquil_found = importlib.util.find_spec("pyquil") is not None
 pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 
 if pyquil_found:
+    from qcs_sdk.qpu import ListQuantumProcessorsError
     from qcs_sdk.qpu.api import SubmissionError
-    from qcs_sdk.qpu.isa import GetISAError
 
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
+    from qbraid.runtime.rigetti.device import RigettiDeviceError
     from qbraid.runtime.rigetti.job import RigettiJobError
 else:
     RigettiDevice = None
@@ -49,40 +50,37 @@ else:
 class TestRigettiDeviceStatus:
     """Tests for RigettiDevice.status."""
 
-    def test_status_online_when_get_isa_succeeds(
-        self, rigetti_device: RigettiDevice, mock_isa_response: MagicMock
+    def test_status_online_when_processor_list_contains_device(
+        self, rigetti_device: RigettiDevice
     ) -> None:
-        """Device is ONLINE when get_instruction_set_architecture succeeds."""
+        """Device is ONLINE when list_quantum_processors includes the device ID."""
         with patch(
-            "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
-            return_value=mock_isa_response,
+            "qbraid.runtime.rigetti.device.list_quantum_processors",
+            return_value=[DEVICE_ID, "Lyra-1"],
         ):
             assert rigetti_device.status() == DeviceStatus.ONLINE
 
-    def test_status_offline_when_get_isa_raises_get_isa_error(
+    def test_status_offline_when_processor_list_does_not_contain_device(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """Device is OFFLINE when get_instruction_set_architecture raises GetISAError."""
+        """Device is OFFLINE when list_quantum_processors omits the device ID."""
         with patch(
-            "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
-            side_effect=GetISAError("QPU offline"),
+            "qbraid.runtime.rigetti.device.list_quantum_processors",
+            return_value=["Lyra-1", "QVM-1"],
         ):
             assert rigetti_device.status() == DeviceStatus.OFFLINE
 
-    def test_status_passes_device_id_and_client_to_get_isa(
-        self, rigetti_device: RigettiDevice, mock_isa_response: MagicMock
+    def test_status_calls_list_quantum_processors_with_client(
+        self, rigetti_device: RigettiDevice
     ) -> None:
-        """status() must call get_isa with the device's own processor ID and client."""
+        """status() must call list_quantum_processors with the device client."""
         with patch(
-            "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
-            return_value=mock_isa_response,
-        ) as mock_get_isa:
+            "qbraid.runtime.rigetti.device.list_quantum_processors",
+            return_value=[DEVICE_ID],
+        ) as mock_list_qpus:
             rigetti_device.status()
 
-        mock_get_isa.assert_called_once_with(
-            quantum_processor_id=DEVICE_ID,
-            client=rigetti_device._qcs_client,
-        )
+        mock_list_qpus.assert_called_once_with(client=rigetti_device._qcs_client)
 
     def test_status_simulator_always_online_without_get_isa_call(
         self, simulator_profile: TargetProfile, mock_qcs_client: MagicMock
@@ -90,21 +88,32 @@ class TestRigettiDeviceStatus:
         """A simulator device must report ONLINE and skip the ISA network call."""
         device = RigettiDevice(profile=simulator_profile, qcs_client=mock_qcs_client)
 
-        with patch(
-            "qbraid.runtime.rigetti.device.get_instruction_set_architecture"
-        ) as mock_get_isa:
+        with patch("qbraid.runtime.rigetti.device.list_quantum_processors") as mock_list_qpus:
             result = device.status()
 
         assert result == DeviceStatus.ONLINE
-        mock_get_isa.assert_not_called()
+        mock_list_qpus.assert_not_called()
 
     def test_status_other_exceptions_propagate(self, rigetti_device: RigettiDevice) -> None:
-        """Exceptions other than GetISAError must not be caught by status()."""
+        """Exceptions other than ListQuantumProcessorsError must not be caught."""
         with patch(
-            "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+            "qbraid.runtime.rigetti.device.list_quantum_processors",
             side_effect=RuntimeError("unexpected"),
         ):
             with pytest.raises(RuntimeError, match="unexpected"):
+                rigetti_device.status()
+
+    def test_status_raises_rigetti_device_error_on_list_qpus_error(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """ListQuantumProcessorsError must be wrapped in RigettiDeviceError."""
+        with patch(
+            "qbraid.runtime.rigetti.device.list_quantum_processors",
+            side_effect=ListQuantumProcessorsError("QCS unavailable"),
+        ):
+            with pytest.raises(
+                RigettiDeviceError, match="Failed to retrieve quantum processor list"
+            ):
                 rigetti_device.status()
 
 
@@ -173,15 +182,64 @@ class TestRigettiDeviceLiveQubits:
 
 
 # ===========================================================================
+# Device – transform
+# ===========================================================================
+
+
+class TestRigettiDeviceTransform:
+    """Tests for RigettiDevice.transform (no-op pass-through)."""
+
+    def test_transform_returns_same_program_object(self, rigetti_device: RigettiDevice) -> None:
+        """transform() must return the exact same Program instance (no copy)."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.RZ(0.5, 0))
+        assert rigetti_device.transform(program) is program
+
+    def test_transform_output_is_pyquil_program(self, rigetti_device: RigettiDevice) -> None:
+        """transform() must return a pyquil.Program instance."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+
+        # pylint: enable=import-outside-toplevel
+        result = rigetti_device.transform(pyquil.Program())
+        assert isinstance(result, pyquil.Program)
+
+    def test_transform_does_not_modify_quil_output(self, rigetti_device: RigettiDevice) -> None:
+        """The Quil string produced before and after transform must be identical."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.RZ(1.0, 1))
+        program.inst(pyquil.gates.MEASURE(1, None))
+        before = program.out()
+        rigetti_device.transform(program)
+        assert program.out() == before
+
+
+# ===========================================================================
 # Device – _submit / submit
 # ===========================================================================
 
 
 class TestRigettiDeviceSubmit:
-    """Tests for RigettiDevice._submit and submit."""
+    """Tests for RigettiDevice._submit and submit.
 
-    def _make_program(self, shots: int = 3):
-        """Create a minimal native-Quil Program with the given shot count."""
+    submit() receives a serialized Quil string (the output of ProgramSpec.serialize,
+    i.e. program.out()) together with an explicit shots count.  The pyquil.Program
+    object is only used here to generate realistic Quil text; it is NOT passed to
+    submit() directly.
+    """
+
+    def _make_quil(self, shots: int = 3) -> tuple[str, int]:
+        """Return (quil_str, shots) for a minimal native-Quil program."""
         # pylint: disable=import-outside-toplevel
         import pyquil
         import pyquil.gates
@@ -190,13 +248,13 @@ class TestRigettiDeviceSubmit:
         p = pyquil.Program()
         p.inst(pyquil.gates.RZ(0.5, 0))
         p.inst(pyquil.gates.MEASURE(0, None))
-        p.num_shots = shots
-        return p
+        return p.out(), shots
 
-    def test_submit_single_program_returns_rigetti_job(self, rigetti_device: RigettiDevice) -> None:
-        """Submitting a single Program must return a single RigettiJob."""
-        program = self._make_program(shots=2)
-
+    def test_submit_single_quil_string_returns_rigetti_job(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Submitting a Quil string must return a single RigettiJob."""
+        quil_str, shots = self._make_quil(shots=2)
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -210,14 +268,14 @@ class TestRigettiDeviceSubmit:
                 return_value=DUMMY_JOB_ID,
             ),
         ):
-            job = rigetti_device.submit(program)
+            job = rigetti_device.submit(quil_str, shots=shots)
 
         assert isinstance(job, RigettiJob)
         assert job.id == DUMMY_JOB_ID
 
     def test_submit_calls_translate_with_correct_args(self, rigetti_device: RigettiDevice) -> None:
         """_submit must call translate() with the Quil text, num_shots, processor ID, client."""
-        program = self._make_program(shots=5)
+        quil_str, shots = self._make_quil(shots=5)
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -231,11 +289,11 @@ class TestRigettiDeviceSubmit:
                 return_value=DUMMY_JOB_ID,
             ),
         ):
-            rigetti_device.submit(program)
+            rigetti_device.submit(quil_str, shots=shots)
 
         mock_translate.assert_called_once_with(
-            native_quil=program.out(),
-            num_shots=5,
+            native_quil=quil_str,
+            num_shots=shots,
             quantum_processor_id=DEVICE_ID,
             client=rigetti_device._qcs_client,
         )
@@ -244,7 +302,7 @@ class TestRigettiDeviceSubmit:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """_submit must pass translation_result.program to qpu_submit."""
-        program = self._make_program(shots=1)
+        quil_str, shots = self._make_quil(shots=1)
         compiled_program = "COMPILED_NATIVE_QUIL"
         fake_translation_result = MagicMock()
         fake_translation_result.program = compiled_program
@@ -259,7 +317,7 @@ class TestRigettiDeviceSubmit:
                 return_value=DUMMY_JOB_ID,
             ) as mock_submit,
         ):
-            rigetti_device.submit(program)
+            rigetti_device.submit(quil_str, shots=shots)
 
         mock_submit.assert_called_once_with(
             program=compiled_program,
@@ -272,7 +330,7 @@ class TestRigettiDeviceSubmit:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """A SubmissionError from qpu_submit must be wrapped in RigettiJobError."""
-        program = self._make_program(shots=1)
+        quil_str, shots = self._make_quil(shots=1)
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -287,12 +345,12 @@ class TestRigettiDeviceSubmit:
             ),
             pytest.raises(RigettiJobError, match="Failed to submit"),
         ):
-            rigetti_device.submit(program)
+            rigetti_device.submit(quil_str, shots=shots)
 
     def test_submit_job_stores_correct_num_shots(self, rigetti_device: RigettiDevice) -> None:
-        """The returned RigettiJob must store the same num_shots as the program."""
+        """The returned RigettiJob must store the same num_shots passed to submit."""
         shots = 7
-        program = self._make_program(shots=shots)
+        quil_str, _ = self._make_quil(shots=shots)
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -306,46 +364,22 @@ class TestRigettiDeviceSubmit:
                 return_value=DUMMY_JOB_ID,
             ),
         ):
-            job = rigetti_device.submit(program)
+            job = rigetti_device.submit(quil_str, shots=shots)
 
         assert job._num_shots == shots
 
-    def test_submit_defaults_num_shots_to_one_when_program_has_none(
+    def test_submit_raises_rigetti_job_error_when_shots_not_provided(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """When program.num_shots is falsy, _submit must use 1 as the default."""
-        # pylint: disable=import-outside-toplevel
-        import pyquil
+        """_submit must raise RigettiJobError when shots is not specified."""
+        quil_str, _ = self._make_quil()
 
-        # pylint: enable=import-outside-toplevel
-        program = pyquil.Program()
-        # pyquil.Program().num_shots == 1 by default; force it to 0 to test branch
-        program.num_shots = 0
-
-        fake_translation_result = MagicMock()
-        fake_translation_result.program = "COMPILED_PROGRAM"
-
-        with (
-            patch(
-                "qbraid.runtime.rigetti.device.translate",
-                return_value=fake_translation_result,
-            ) as mock_translate,
-            patch(
-                "qbraid.runtime.rigetti.device.qpu_submit",
-                return_value=DUMMY_JOB_ID,
-            ),
-        ):
-            job = rigetti_device.submit(program)
-
-        # num_shots=0 is falsy → implementation uses 1
-        mock_translate.assert_called_once()
-        _, kwargs = mock_translate.call_args
-        assert kwargs["num_shots"] == 1
-        assert job._num_shots == 1
+        with pytest.raises(RigettiJobError, match="shots"):
+            rigetti_device.submit(quil_str)
 
     def test_submit_list_returns_list_of_jobs(self, rigetti_device: RigettiDevice) -> None:
-        """Submitting a list of programs must return a list of RigettiJobs."""
-        programs = [self._make_program(shots=1), self._make_program(shots=2)]
+        """Submitting a list of Quil strings must return a list of RigettiJobs."""
+        quil_strings = [self._make_quil(shots=3)[0], self._make_quil(shots=3)[0]]
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -359,18 +393,18 @@ class TestRigettiDeviceSubmit:
                 return_value=DUMMY_JOB_ID,
             ),
         ):
-            jobs = rigetti_device.submit(programs)
+            jobs = rigetti_device.submit(quil_strings, shots=3)
 
         assert isinstance(jobs, list)
-        assert len(jobs) == len(programs)
+        assert len(jobs) == len(quil_strings)
         for job in jobs:
             assert isinstance(job, RigettiJob)
 
     def test_submit_list_submits_each_program_independently(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """Each program in a batch must be submitted as an independent job."""
-        programs = [self._make_program(shots=1), self._make_program(shots=2)]
+        """Each Quil string in a batch must be submitted as an independent job."""
+        quil_strings = [self._make_quil(shots=3)[0], self._make_quil(shots=3)[0]]
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -384,10 +418,10 @@ class TestRigettiDeviceSubmit:
                 return_value=DUMMY_JOB_ID,
             ) as mock_qpu_submit,
         ):
-            rigetti_device.submit(programs)
+            rigetti_device.submit(quil_strings, shots=3)
 
-        assert mock_translate.call_count == len(programs)
-        assert mock_qpu_submit.call_count == len(programs)
+        assert mock_translate.call_count == len(quil_strings)
+        assert mock_qpu_submit.call_count == len(quil_strings)
 
 
 # ===========================================================================
