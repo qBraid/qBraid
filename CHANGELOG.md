@@ -17,12 +17,14 @@ Types of changes:
 
 ### Added
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
+- Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Added `ccx` → `ccnot` gate mapping in QASM3-to-Braket conversion
 - Updated PennyLane-to-QASM2 conversion to use `pennylane.to_openqasm()` module-level function, replacing the removed `QuantumTape.to_openqasm()` instance method ([#1128](https://github.com/qBraid/qBraid/issues/1128))
 - Added credential validation check in Azure Quantum test workspace fixture to skip tests when `resource_id` or `credential` are not fully configured ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
