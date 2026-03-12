@@ -49,6 +49,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.remote
+@pytest.mark.skip(reason="Quantinuum emulator usage quota exceeded")
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
     device = provider.get_device("quantinuum.sim.h2-1e")
