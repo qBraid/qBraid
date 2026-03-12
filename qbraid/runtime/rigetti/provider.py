@@ -23,6 +23,8 @@ Module defining Rigetti provider class
 
 """
 
+from __future__ import annotations
+
 import os
 
 import pyquil
@@ -45,7 +47,7 @@ class RigettiProvider(QuantumProvider):
 
     def __init__(
         self,
-        qcs_client: QCSClient = None,
+        qcs_client: QCSClient | None = None,
     ):
         self._qcs_client = qcs_client
         if self._qcs_client is None:

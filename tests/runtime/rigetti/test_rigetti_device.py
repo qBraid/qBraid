@@ -28,10 +28,13 @@ from qbraid.runtime.enums import DeviceStatus
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
 
-pyquil_found = importlib.util.find_spec("pyquil") is not None
-pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+rigetti_deps_found = (
+    importlib.util.find_spec("pyquil") is not None
+    and importlib.util.find_spec("qcs_sdk") is not None
+)
+pytestmark = pytest.mark.skipif(not rigetti_deps_found, reason="Rigetti dependencies not installed")
 
-if pyquil_found:
+if rigetti_deps_found:
     from qcs_sdk.qpu import ListQuantumProcessorsError
     from qcs_sdk.qpu.api import SubmissionError
 
@@ -238,7 +241,7 @@ class TestRigettiDeviceSubmit:
     submit() directly.
     """
 
-    def _make_quil(self, shots: int = 3) -> tuple[str, int]:
+    def _make_quil(self, shots: int = 3, qubit: int = 0) -> tuple[str, int]:
         """Return (quil_str, shots) for a minimal native-Quil program."""
         # pylint: disable=import-outside-toplevel
         import pyquil
@@ -246,8 +249,8 @@ class TestRigettiDeviceSubmit:
 
         # pylint: enable=import-outside-toplevel
         p = pyquil.Program()
-        p.inst(pyquil.gates.RZ(0.5, 0))
-        p.inst(pyquil.gates.MEASURE(0, None))
+        p.inst(pyquil.gates.RZ(0.5, qubit))
+        p.inst(pyquil.gates.MEASURE(qubit, None))
         return p.out(), shots
 
     def test_submit_single_quil_string_returns_rigetti_job(
@@ -404,7 +407,7 @@ class TestRigettiDeviceSubmit:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """Each Quil string in a batch must be submitted as an independent job."""
-        quil_strings = [self._make_quil(shots=3)[0], self._make_quil(shots=3)[0]]
+        quil_strings = [self._make_quil(shots=3, qubit=0)[0], self._make_quil(shots=3, qubit=1)[0]]
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 
@@ -422,6 +425,8 @@ class TestRigettiDeviceSubmit:
 
         assert mock_translate.call_count == len(quil_strings)
         assert mock_qpu_submit.call_count == len(quil_strings)
+        submitted_quil = [call.kwargs["native_quil"] for call in mock_translate.call_args_list]
+        assert submitted_quil[0] != submitted_quil[1]
 
 
 # ===========================================================================

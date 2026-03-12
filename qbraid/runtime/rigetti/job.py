@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING, Any
 
 from qcs_sdk.qpu.api import QpuApiError, cancel_job, retrieve_results
 
+from qbraid.runtime import JobStateError
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
@@ -56,8 +57,7 @@ class RigettiJob(QuantumJob):
         num_shots: int = 1,
         **kwargs: Any,
     ):
-        super().__init__(job_id=job_id, **kwargs)
-        self._device = device
+        super().__init__(job_id=job_id, device=device, **kwargs)
         self._num_shots = num_shots
         self._status = JobStatus.INITIALIZING
         self._cached_results = None
@@ -78,6 +78,11 @@ class RigettiJob(QuantumJob):
             return self._status
 
         try:
+            # TODO: Figure out what status enums are returned in the
+            # qcs_sdk when we query the details of the job, and
+            # map those to the JobStatus enums.
+            # Currently, there is no way to know if the job is queued,
+            # or running, or in some other non-terminal state
             self._cached_results = retrieve_results(
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
@@ -90,7 +95,13 @@ class RigettiJob(QuantumJob):
         return self._status
 
     def cancel(self) -> None:
-        """Cancel the Rigetti job."""
+        """Cancel the Rigetti job.
+        We set the job status internally in the cancel job because
+        the QCS API does not return status updates for job cancellation.
+        """
+        if self._status in JobStatus.terminal_states():
+            raise JobStateError(f"Cannot cancel job {self.id} in terminal state {self._status}.")
+        previous_status = self._status
         self._status = JobStatus.CANCELLING
         try:
             logger.info(
@@ -104,6 +115,7 @@ class RigettiJob(QuantumJob):
                 client=self._client,
             )
         except QpuApiError as exc:
+            self._status = previous_status
             raise RigettiJobError(
                 "Failed to cancel the QPU job. "
                 "Cancellation is not guaranteed, as it "

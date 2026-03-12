@@ -29,12 +29,13 @@ from qbraid.runtime.enums import JobStatus
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
 
-pyquil_found = importlib.util.find_spec("pyquil") is not None
-pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
+rigetti_deps_found = (
+    importlib.util.find_spec("pyquil") is not None
+    and importlib.util.find_spec("qcs_sdk") is not None
+)
+pytestmark = pytest.mark.skipif(not rigetti_deps_found, reason="Rigetti dependencies not installed")
 
-if pyquil_found:
-    # only import if pyquil is available as python 3.13 does not support pyquil and
-    # we want to avoid import errors
+if rigetti_deps_found:
     from qcs_sdk.qpu.api import QpuApiError
 
     from qbraid.runtime.rigetti.job import RigettiJob, RigettiJobError
@@ -180,10 +181,10 @@ class TestRigettiJobCancel:
             with pytest.raises(RigettiJobError, match="cancel"):
                 rigetti_job.cancel()
 
-    def test_cancel_status_is_cancelling_when_qpu_api_error_raised(
+    def test_cancel_status_is_restored_when_qpu_api_error_raised(
         self, rigetti_job: RigettiJob
     ) -> None:
-        """When cancel() raises RigettiJobError, the status remains CANCELLING."""
+        """When cancel() raises RigettiJobError, the status is restored to pre-cancel state."""
         with patch(
             "qbraid.runtime.rigetti.job.cancel_job",
             side_effect=QpuApiError("already complete"),
@@ -191,7 +192,7 @@ class TestRigettiJobCancel:
             with pytest.raises(RigettiJobError):
                 rigetti_job.cancel()
 
-        assert rigetti_job._status == JobStatus.CANCELLING
+        assert rigetti_job._status == JobStatus.INITIALIZING
 
     def test_cancel_non_qpu_api_error_propagates(self, rigetti_job: RigettiJob) -> None:
         """Exceptions other than QpuApiError must not be swallowed."""

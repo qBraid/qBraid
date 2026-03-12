@@ -165,4 +165,3 @@ class RigettiDevice(QuantumDevice):
             raise RigettiDeviceError(
                 f"Failed to retrieve ISA for quantum processor '{self.id}'."
             ) from e
-        return []
