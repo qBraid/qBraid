@@ -22,7 +22,7 @@ Module defining Rigetti device class
 """
 
 from multiprocessing.pool import ThreadPool
-from typing import Union
+from typing import Optional, Union
 
 import pyquil
 from qcs_sdk.client import QCSClient
@@ -31,9 +31,7 @@ from qcs_sdk.qpu.api import SubmissionError
 from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import translate
-from typing_extensions import Optional
 
-from qbraid._caching import cached_method
 from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -62,14 +60,10 @@ class RigettiDevice(QuantumDevice):
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
 
-    @cached_method(ttl=300)
     def status(self) -> DeviceStatus:
         """
         Return the current status of the device.
         """
-        if self.profile.simulator:
-            # If it's a simulator, we consider it always online
-            return DeviceStatus.ONLINE
         try:
             # Otherwise, check if the quantum processor ID is in the list of available processors
             quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))

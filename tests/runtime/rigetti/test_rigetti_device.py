@@ -85,18 +85,6 @@ class TestRigettiDeviceStatus:
 
         mock_list_qpus.assert_called_once_with(client=rigetti_device._qcs_client)
 
-    def test_status_simulator_always_online_without_get_isa_call(
-        self, simulator_profile: TargetProfile, mock_qcs_client: MagicMock
-    ) -> None:
-        """A simulator device must report ONLINE and skip the ISA network call."""
-        device = RigettiDevice(profile=simulator_profile, qcs_client=mock_qcs_client)
-
-        with patch("qbraid.runtime.rigetti.device.list_quantum_processors") as mock_list_qpus:
-            result = device.status()
-
-        assert result == DeviceStatus.ONLINE
-        mock_list_qpus.assert_not_called()
-
     def test_status_other_exceptions_propagate(self, rigetti_device: RigettiDevice) -> None:
         """Exceptions other than ListQuantumProcessorsError must not be caught."""
         with patch(

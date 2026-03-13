@@ -46,20 +46,6 @@ def qpu_profile() -> TargetProfile:
 
 
 @pytest.fixture()
-def simulator_profile() -> TargetProfile:
-    """A TargetProfile representing a simulator (simulator=True)."""
-    pyquil = pytest.importorskip("pyquil")
-    return TargetProfile(
-        device_id=DEVICE_ID,
-        simulator=True,
-        experiment_type=ExperimentType.GATE_MODEL,
-        program_spec=ProgramSpec(pyquil.Program, serialize=lambda program: program.out()),
-        num_qubits=84,
-        provider_name="rigetti",
-    )
-
-
-@pytest.fixture()
 def mock_qcs_client() -> MagicMock:
     """A generic mock replacing qcs_sdk.client.QCSClient."""
     return MagicMock(name="QCSClient")

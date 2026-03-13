@@ -28,7 +28,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any
 
-from qcs_sdk.qpu.api import QpuApiError, cancel_job, retrieve_results
+from qcs_sdk.qpu.api import ExecutionOptions, QpuApiError, cancel_job, retrieve_results
 
 from qbraid.runtime import JobStateError
 from qbraid.runtime.enums import JobStatus
@@ -87,6 +87,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
+                execution_options=ExecutionOptions.default(),
             )
             self._status = JobStatus.COMPLETED
         except QpuApiError:
@@ -162,6 +163,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
+                execution_options=ExecutionOptions.default(),
             )
 
         return self._parse_results(execution_results)

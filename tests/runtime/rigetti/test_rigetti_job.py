@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import importlib.util
 from typing import TYPE_CHECKING
-from unittest.mock import MagicMock, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -228,6 +228,7 @@ class TestRigettiJobGetResult:
             job_id=DUMMY_JOB_ID,
             quantum_processor_id=DEVICE_ID,
             client=mock_qcs_client,
+            execution_options=ANY,
         )
 
     def test_get_result_raises_when_ro_register_absent(self, rigetti_device: RigettiDevice) -> None:
