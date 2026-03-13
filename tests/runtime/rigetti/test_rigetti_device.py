@@ -23,7 +23,6 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
@@ -365,7 +364,7 @@ class TestRigettiDeviceSubmit:
         """_submit must raise RigettiJobError when shots is not specified."""
         quil_str, _ = self._make_quil()
 
-        with pytest.raises(RigettiJobError, match="shots"):
+        with pytest.raises(RigettiJobError, match="Shots"):
             rigetti_device.submit(quil_str)
 
     def test_submit_list_returns_list_of_jobs(self, rigetti_device: RigettiDevice) -> None:
@@ -395,7 +394,10 @@ class TestRigettiDeviceSubmit:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """Each Quil string in a batch must be submitted as an independent job."""
-        quil_strings = [self._make_quil(shots=3, qubit=0)[0], self._make_quil(shots=3, qubit=1)[0]]
+        quil_strings = [
+            self._make_quil(shots=3, qubit=0)[0],
+            self._make_quil(shots=3, qubit=1)[0],
+        ]
         fake_translation_result = MagicMock()
         fake_translation_result.program = "COMPILED_PROGRAM"
 

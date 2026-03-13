@@ -94,10 +94,9 @@ class RigettiDevice(QuantumDevice):
             shots: Number of shots for the job.
         """
         num_shots = shots
-        if num_shots is None:
+        if num_shots is None or num_shots <= 0:
             raise RigettiJobError(
-                "Number of shots must be specified for Rigetti QPU jobs "
-                "either in the program or as an argument."
+                f"Shots > 0 must be specified for Rigetti QPU jobs, current value: {num_shots}."
             )
 
         try:

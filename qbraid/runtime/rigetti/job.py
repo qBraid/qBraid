@@ -26,7 +26,7 @@ Module defining Rigetti job class
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from qcs_sdk.qpu.api import ExecutionOptions, QpuApiError, cancel_job, retrieve_results
 
@@ -90,8 +90,11 @@ class RigettiJob(QuantumJob):
                 execution_options=ExecutionOptions.default(),
             )
             self._status = JobStatus.COMPLETED
-        except QpuApiError:
-            self._status = JobStatus.FAILED
+        except QpuApiError as err:
+            if "timeout" in str(err).lower():
+                logger.info("Retrieve timed out for job %s; job may still be running.", self.id)
+            else:
+                self._status = JobStatus.FAILED
 
         return self._status
 
@@ -150,31 +153,22 @@ class RigettiJob(QuantumJob):
         counts = {m: measurements.count(m) for m in set(measurements)}
         return GateModelResultData(measurement_counts=counts)
 
-    def get_result(self) -> GateModelResultData:
-        """Retrieve and parse Rigetti execution results.
-
-        Uses cached results from ``status()`` polling if available,
-        otherwise fetches from the QCS API.
-        """
-        if self._cached_results is not None:
-            execution_results = self._cached_results
-        else:
-            execution_results = retrieve_results(
-                job_id=str(self.id),
-                quantum_processor_id=self._device.id,
-                client=self._client,
-                execution_options=ExecutionOptions.default(),
-            )
-
-        return self._parse_results(execution_results)
-
-    def result(self) -> Result:
+    def result(self, timeout: Optional[int] = None) -> Result:
         """Return the result of the Rigetti job.
 
         Raises:
             RigettiJobError: If the job result cannot be retrieved or parsed.
         """
-        result_data = self.get_result()
+        self.wait_for_final_state(timeout=timeout)
+        if self._cached_results is None:
+            self._cached_results = retrieve_results(
+                job_id=str(self.id),
+                quantum_processor_id=self._device.id,
+                client=self._client,
+                execution_options=ExecutionOptions.default(),
+            )
+        result_data = self._parse_results(self._cached_results)
+
         self._status = JobStatus.COMPLETED
         return Result[GateModelResultData](
             device_id=self._device.id,
