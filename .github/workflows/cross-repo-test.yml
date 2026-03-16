@@ -34,6 +34,9 @@ on:
         type: string
         default: ''
 
+permissions:
+  contents: read
+
 jobs:
   cross-repo-test:
     runs-on: ubuntu-latest
@@ -103,7 +106,11 @@ jobs:
       - name: Fail if tests failed
         if: always()
         run: |
-          if [ "${{ steps.tests.outputs.exit_code }}" != "0" ]; then
-            echo "Tests failed with exit code ${{ steps.tests.outputs.exit_code }}"
+          EXIT_CODE="${{ steps.tests.outputs.exit_code }}"
+          if [ -z "$EXIT_CODE" ]; then
+            echo "Tests step did not run or produce an exit code"
+            exit 1
+          elif [ "$EXIT_CODE" != "0" ]; then
+            echo "Tests failed with exit code $EXIT_CODE"
             exit 1
           fi

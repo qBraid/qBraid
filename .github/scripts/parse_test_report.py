@@ -41,7 +41,12 @@ def parse_report(xml_path: str, branches: dict[str, str], run_url: str) -> str:
         file_path = classname.replace(".", "/") + ".py"
 
         if file_path not in file_results:
-            file_results[file_path] = {"passed": 0, "failed": 0, "errors": 0, "failures": []}
+            file_results[file_path] = {
+                "passed": 0,
+                "failed": 0,
+                "errors": 0,
+                "failures": [],
+            }
 
         failure = tc.find("failure")
         error = tc.find("error")
@@ -65,7 +70,9 @@ def parse_report(xml_path: str, branches: dict[str, str], run_url: str) -> str:
 
     lines = [f"## Cross-Repo Integration Test {icon} {status}\n"]
 
-    branch_lines = [f"- **{repo}:** `{branch}`" for repo, branch in branches.items() if branch]
+    branch_lines = [
+        f"- **{repo}:** `{branch}`" for repo, branch in branches.items() if branch
+    ]
     if not branch_lines:
         branch_lines.append("- _No branch overrides (using release versions)_")
     lines.append("**Branches used:**")
@@ -83,14 +90,15 @@ def parse_report(xml_path: str, branches: dict[str, str], run_url: str) -> str:
         lines.append("|------|:---:|:---:|:---:|")
         for fp, r in file_results.items():
             if r["failed"] + r["errors"] > 0:
-                lines.append(f"| `{fp}` | {r['passed']} | {r['failed']} | {r['errors']} |")
+                lines.append(
+                    f"| `{fp}` | {r['passed']} | {r['failed']} | {r['errors']} |"
+                )
         lines.append("")
         lines.append("<details><summary>Failure details</summary>\n")
         for fp, r in file_results.items():
             if r["failures"]:
                 lines.append(f"**`{fp}`**")
-                for f in r["failures"]:
-                    lines.append(f"- {f}")
+                lines.extend(f"- {f}" for f in r["failures"])
                 lines.append("")
         lines.append("</details>")
 
@@ -105,39 +113,32 @@ def post_to_pr(summary: str, repo: str, pr_number: int, token: str):
 
     result = subprocess.run(
         [
-            "gh", "api",
+            "gh",
+            "api",
             f"repos/{repo}/issues/{pr_number}/comments",
-            "--jq", ".[].id",
+            "--jq",
+            f'.[] | select(.body | contains("{marker}")) | .id',
         ],
         capture_output=True,
         text=True,
         env={**os.environ, "GH_TOKEN": token},
     )
-    existing_comments = result.stdout.strip().splitlines() if result.returncode == 0 else []
-
-    existing_id = None
-    for comment_id in existing_comments:
-        check = subprocess.run(
-            [
-                "gh", "api",
-                f"repos/{repo}/issues/comments/{comment_id}",
-                "--jq", ".body",
-            ],
-            capture_output=True,
-            text=True,
-            env={**os.environ, "GH_TOKEN": token},
-        )
-        if check.returncode == 0 and marker in check.stdout:
-            existing_id = comment_id
-            break
+    existing_id = (
+        result.stdout.strip().splitlines()[0]
+        if result.returncode == 0 and result.stdout.strip()
+        else None
+    )
 
     if existing_id:
         subprocess.run(
             [
-                "gh", "api",
-                "--method", "PATCH",
+                "gh",
+                "api",
+                "--method",
+                "PATCH",
                 f"repos/{repo}/issues/comments/{existing_id}",
-                "-f", f"body={body}",
+                "-f",
+                f"body={body}",
             ],
             env={**os.environ, "GH_TOKEN": token},
             check=True,
@@ -146,10 +147,13 @@ def post_to_pr(summary: str, repo: str, pr_number: int, token: str):
     else:
         subprocess.run(
             [
-                "gh", "api",
-                "--method", "POST",
+                "gh",
+                "api",
+                "--method",
+                "POST",
                 f"repos/{repo}/issues/{pr_number}/comments",
-                "-f", f"body={body}",
+                "-f",
+                f"body={body}",
             ],
             env={**os.environ, "GH_TOKEN": token},
             check=True,
@@ -159,9 +163,13 @@ def post_to_pr(summary: str, repo: str, pr_number: int, token: str):
 
 def main():
     xml_path = os.environ.get("REPORT_XML", "report.xml")
+    server = os.environ.get("GITHUB_SERVER_URL", "")
+    repo_name = os.environ.get("GITHUB_REPOSITORY", "")
+    run_id = os.environ.get("GITHUB_RUN_ID", "")
     run_url = (
-        f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}"
-        f"/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+        f"{server}/{repo_name}/actions/runs/{run_id}"
+        if all([server, repo_name, run_id])
+        else ""
     )
 
     branches = {
