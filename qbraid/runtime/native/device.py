@@ -18,6 +18,7 @@
 Module defining QbraidDevice class
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -25,6 +26,8 @@ from typing import TYPE_CHECKING, Any
 from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
 
+from qbraid._logging import logger
+from qbraid.runtime.batch import get_active_batch, get_active_batch_session
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.noise import NoiseModel
 
@@ -93,17 +96,29 @@ class QbraidDevice(QuantumDevice):
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
+        **kwargs,
     ) -> QbraidJob | list[QbraidJob]:
-        """Submit a program to the device."""
+        """Submit a program to the device.
+
+        If an active BatchJobSession context exists, the batch QRN is
+        automatically included in the job request and submitted jobs
+        are registered with the session.
+        """
         tags = tags or {}
         runtime_options = runtime_options or {}
         noise_model: NoiseModel | str | None = runtime_options.pop("noise_model", None)
+
+        # Read batch context — only QbraidDevice supports batched execution
+        batch_job_qrn = get_active_batch()
 
         if noise_model:
             runtime_options["noiseModel"] = self._resolve_noise_model(noise_model)
 
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
+
+        if batch_job_qrn:
+            logger.debug("Submitting job to device '%s' (batch: %s)", self.id, batch_job_qrn)
 
         jobs = []
 
@@ -115,8 +130,18 @@ class QbraidDevice(QuantumDevice):
                 name=name,
                 tags=tags,
                 runtimeOptions=runtime_options,
+                batchJobQrn=batch_job_qrn,
             )
             job_data = self.client.create_job(job_request)
             jobs.append(QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client))
 
-        return jobs[0] if is_single_input else jobs
+        result = jobs[0] if is_single_input else jobs
+
+        # Register submitted jobs with the active batch session
+        if batch_job_qrn:
+            session = get_active_batch_session()
+            if session is not None:
+                for job in jobs:
+                    session._register_job(job)
+
+        return result
