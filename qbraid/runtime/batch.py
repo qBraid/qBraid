@@ -26,9 +26,9 @@ from qbraid._logging import logger
 from qbraid.runtime.result import Result
 
 if TYPE_CHECKING:
-    from qbraid.runtime.job import QuantumJob
-
     from qbraid_core.services.runtime.schemas import BatchJob, BatchStatus
+
+    from qbraid.runtime.job import QuantumJob
 
 
 # Thread-safe context variables for tracking active batch
@@ -52,7 +52,7 @@ def get_active_batch() -> Optional[str]:
 def get_active_batch_session() -> Optional[BatchJobSession]:
     """Return the active BatchJobSession, or None.
 
-    Called by QuantumDevice._register_batch_job() to register jobs
+    Called by QbraidDevice.submit() to register jobs
     with the active batch session.
     """
     return _active_batch_session.get(None)
@@ -144,10 +144,8 @@ class BatchJobSession:
         ...     print(result.data.get_counts())
 
     Cross-references:
-        - Context variable read by: QuantumDevice.run() (device.py:490-514)
-        - Job tagging in: QbraidDevice.submit() (native/device.py:89-122)
-        - API endpoints: see plans/02-qbraid-runtime-api.md
-        - Core schemas: see plans/01-qbraid-core.md (BatchJob, BatchStatus)
+        - Context variable read by: QbraidDevice.submit() (native/device.py:92-147)
+        - Core schemas: qbraid_core.services.runtime.schemas (BatchJob, BatchStatus)
     """
 
     def __init__(

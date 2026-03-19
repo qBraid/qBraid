@@ -16,11 +16,13 @@
 Module defining mock data and classes for testing the runtime module.
 
 """
+
 from typing import Any, Optional
 from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import (
+    BatchJob,
     JobRequest,
     Program,
     Result,
@@ -618,6 +620,85 @@ class MockClient:
     def cancel_job(self, job_qrn: str) -> None:
         """Cancels a specific quantum job."""
         # Mock implementation - no-op for testing
+
+    # Batch methods
+    _batch_counter: int = 0
+
+    def create_batch(
+        self,
+        name: Optional[str] = None,
+        tags: Optional[dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+    ) -> BatchJob:
+        """Mock create_batch — returns a BatchJob with OPEN status."""
+        MockClient._batch_counter += 1
+        qrn = f"qbraid:batch:test-batch-{MockClient._batch_counter}"
+        return BatchJob.model_validate(
+            {
+                "batchJobQrn": qrn,
+                "name": name,
+                "status": "OPEN",
+                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+                "jobQrns": [],
+                "jobCount": 0,
+                "completedCount": 0,
+                "failedCount": 0,
+                "cancelledCount": 0,
+                "tags": tags or {},
+                "metadata": metadata or {},
+            }
+        )
+
+    def close_batch(self, batch_qrn: str) -> BatchJob:
+        """Mock close_batch — returns BatchJob with CLOSED status."""
+        return BatchJob.model_validate(
+            {
+                "batchJobQrn": batch_qrn,
+                "status": "CLOSED",
+                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+                "jobQrns": [],
+                "jobCount": 0,
+                "completedCount": 0,
+                "failedCount": 0,
+                "cancelledCount": 0,
+                "tags": {},
+                "metadata": {},
+            }
+        )
+
+    def cancel_batch(self, batch_qrn: str) -> BatchJob:
+        """Mock cancel_batch — returns BatchJob with CANCELLED status."""
+        return BatchJob.model_validate(
+            {
+                "batchJobQrn": batch_qrn,
+                "status": "CANCELLED",
+                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+                "jobQrns": [],
+                "jobCount": 0,
+                "completedCount": 0,
+                "failedCount": 0,
+                "cancelledCount": 0,
+                "tags": {},
+                "metadata": {},
+            }
+        )
+
+    def get_batch(self, batch_qrn: str) -> BatchJob:
+        """Mock get_batch — returns the batch data."""
+        return BatchJob.model_validate(
+            {
+                "batchJobQrn": batch_qrn,
+                "status": "OPEN",
+                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+                "jobQrns": [],
+                "jobCount": 0,
+                "completedCount": 0,
+                "failedCount": 0,
+                "cancelledCount": 0,
+                "tags": {},
+                "metadata": {},
+            }
+        )
 
     # Legacy methods for backward compatibility
     def search_devices(self, query: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
