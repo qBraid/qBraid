@@ -61,11 +61,12 @@ def _get_service(api_key: str):
     return service
 
 
-def _get_qcloud_job(job_id: str, api_key: str):
+def _get_qcloud_job(job_id: str, api_key: Optional[str] = None):
     """Instantiate a QCloudJob after ensuring the service is configured."""
     # pylint: disable-next=import-outside-toplevel
     from pyqpanda3 import qcloud as qcloud_module
 
+    api_key = api_key or _resolve_api_key()
     _get_service(api_key)
     return qcloud_module.QCloudJob(job_id)
 
