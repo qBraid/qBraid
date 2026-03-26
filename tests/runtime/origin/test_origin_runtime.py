@@ -21,7 +21,7 @@ import pytest
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.origin import OriginDevice, OriginJob, OriginProvider
 from qbraid.runtime.origin.job import _map_status, _normalize_status, OriginJobError
-from qbraid.runtime.origin.provider import _resolve_api_key, DEVICE_ALIASES
+from qbraid.runtime.origin.provider import _resolve_api_key
 from qbraid.runtime.profile import TargetProfile
 
 
@@ -114,10 +114,6 @@ class TestOriginProvider:
 
         assert len(devices) == 1
         assert devices[0].id == "full_amplitude"
-
-    def test_device_aliases(self):
-        assert DEVICE_ALIASES["wukong_102"] == "origin_wukong"
-        assert DEVICE_ALIASES["wukong_72"] == "72"
 
 
 # --- Device ---

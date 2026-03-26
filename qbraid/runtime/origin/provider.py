@@ -24,12 +24,6 @@ from .device import SIMULATOR_BACKENDS, OriginDevice
 
 logger = logging.getLogger(__name__)
 
-# Map user-facing device names to OriginQ backend identifiers
-DEVICE_ALIASES: dict[str, str] = {
-    "wukong_102": "origin_wukong",
-    "wukong_72": "72",
-}
-
 _SERVICE_CACHE: dict[str, Any] = {}
 _SERVICE_LOCK = Lock()
 
@@ -89,12 +83,11 @@ class OriginProvider(QuantumProvider):
     def get_device(self, device_id: str) -> OriginDevice:
         """Get a specific OriginQ device."""
         device_id = device_id.strip()
-        backend_name = DEVICE_ALIASES.get(device_id, device_id)
-        backend = self.service.backend(backend_name)
+        backend = self.service.backend(device_id)
         return OriginDevice(
-            profile=OriginDevice.build_profile(backend, device_id, backend_name),
+            profile=OriginDevice.build_profile(backend, device_id, device_id),
             backend=backend,
-            backend_name=backend_name,
+            backend_name=device_id,
             api_key=self._api_key,
         )
 
