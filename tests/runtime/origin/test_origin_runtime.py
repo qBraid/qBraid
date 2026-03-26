@@ -47,7 +47,7 @@ class TestResolveApiKey:
 
 class TestStatusMapping:
     @pytest.mark.parametrize(
-        "raw,expected",
+        ("raw", "expected"),
         [
             ("FINISH", JobStatus.COMPLETED),
             ("FINISHED", JobStatus.COMPLETED),

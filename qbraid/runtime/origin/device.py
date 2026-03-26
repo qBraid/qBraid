@@ -134,16 +134,15 @@ class OriginDevice(QuantumDevice):
         )
 
     def transform(self, run_input):
-        """Transform input to OriginQ's QProg format."""
-        if isinstance(run_input, Sequence) and not isinstance(run_input, str):
-            return [self._to_qprog(item) for item in run_input]
-        return [self._to_qprog(run_input)]
+        """Transform a single input to OriginQ's QProg format."""
+        return self._to_qprog(run_input)
 
     def run(self, run_input, *args, **kwargs):
         """Run a quantum program or list of programs on this device."""
-        if isinstance(run_input, Sequence) and not isinstance(run_input, str):
-            return [self.submit(item, *args, **kwargs) for item in run_input]
-        return self.submit(run_input, *args, **kwargs)
+        is_single = not isinstance(run_input, Sequence) or isinstance(run_input, str)
+        inputs = [run_input] if is_single else run_input
+        jobs = [self.submit(self._to_qprog(item), *args, **kwargs) for item in inputs]
+        return jobs[0] if is_single else jobs
 
     def submit(self, run_input, *, shots: int, **kwargs) -> OriginJob:
         """Submit a single quantum program to the OriginQ device."""

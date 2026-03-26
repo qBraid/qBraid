@@ -45,9 +45,9 @@ class OriginJobError(QbraidRuntimeError):
 def _normalize_status(origin_status: Any) -> str:
     """Convert various SDK status representations to a comparable uppercase string."""
     if hasattr(origin_status, "name"):
-        candidate = getattr(origin_status, "name")
+        candidate = origin_status.name
     elif hasattr(origin_status, "value"):
-        candidate = getattr(origin_status, "value")
+        candidate = origin_status.value
     else:
         candidate = origin_status
 
@@ -125,6 +125,7 @@ class OriginJob(QuantumJob):
                 counts_list = []
             if counts_list:
                 counts = counts_list[0]
+        counts = counts or {}
 
         normalized = {str(key): int(value) for key, value in counts.items()}
         device_id = self._device.profile.device_id if self._device else "origin"
