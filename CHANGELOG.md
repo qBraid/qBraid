@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added integration with IQM Resonance platform for running quantum programs on IQM devices. ([#1149](https://github.com/qBraid/qBraid/pull/1149))
 - Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
