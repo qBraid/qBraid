@@ -35,8 +35,8 @@ if TYPE_CHECKING:
 _active_batch: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "_active_batch", default=None
 )
-_active_batch_session: contextvars.ContextVar[Optional[BatchJobSession]] = contextvars.ContextVar(
-    "_active_batch_session", default=None
+_active_batch_session: contextvars.ContextVar[Optional[BatchJobSession]] = (
+    contextvars.ContextVar("_active_batch_session", default=None)
 )
 
 

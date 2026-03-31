@@ -118,7 +118,9 @@ class QbraidDevice(QuantumDevice):
         run_input = [run_input] if is_single_input else run_input
 
         if batch_job_qrn:
-            logger.debug("Submitting job to device '%s' (batch: %s)", self.id, batch_job_qrn)
+            logger.debug(
+                "Submitting job to device '%s' (batch: %s)", self.id, batch_job_qrn
+            )
 
         jobs = []
 
@@ -133,7 +135,9 @@ class QbraidDevice(QuantumDevice):
                 batchJobQrn=batch_job_qrn,
             )
             job_data = self.client.create_job(job_request)
-            jobs.append(QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client))
+            jobs.append(
+                QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client)
+            )
 
         result = jobs[0] if is_single_input else jobs
 
