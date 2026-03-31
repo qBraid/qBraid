@@ -94,21 +94,46 @@ class IQMJob(QuantumJob):
     def _stringify_many(items: list[Any]) -> list[str]:
         return [str(item) for item in items]
 
-    def _resolve_device_id(self) -> str:
-        """Resolve the device identifier for the current job."""
-        if self._device is not None:
-            return self.device.id
+    @classmethod
+    def _job_device_id(cls, job: Any) -> str | None:
+        """Extract a device identifier from job-specific state when available."""
+        job_data = cls._job_data(job)
+        for source in (job_data, job):
+            for attr in ("device_id", "quantum_computer", "backend", "backend_name", "dut_label"):
+                value = getattr(source, attr, None)
+                if value is not None:
+                    return str(value)
 
+        iqm_client = getattr(job, "_iqm_client", None)
+        iqm_server_client = getattr(iqm_client, "_iqm_server_client", None)
+        quantum_computer = getattr(iqm_server_client, "quantum_computer", None)
+        if quantum_computer is not None:
+            return str(quantum_computer)
+
+        try:
+            static_architecture = iqm_client.get_static_quantum_architecture()
+        except (AttributeError, RuntimeError):
+            return None
+        dut_label = getattr(static_architecture, "dut_label", None)
+        return str(dut_label) if dut_label is not None else None
+
+    def _resolve_device_id(self, job: Any | None = None) -> str:
+        """Resolve the device identifier for the current job."""
         cached_device_id = self._cache_metadata.get("device_id")
         if cached_device_id is not None:
             return cached_device_id
 
-        static_architecture = self.session.get_static_quantum_architecture()
-        device_id = (
-            self.session.quantum_computer
-            or getattr(static_architecture, "dut_label", None)
-            or self.session.url
-        )
+        job_device_id = self._job_device_id(job if job is not None else self._job)
+        if job_device_id is not None:
+            self._cache_metadata["device_id"] = job_device_id
+            return job_device_id
+
+        if self._device is not None:
+            device_id = self.device.id
+            self._cache_metadata["device_id"] = device_id
+            return device_id
+
+        device_id = self.session.quantum_computer or self.session.url
         self._cache_metadata["device_id"] = device_id
         return device_id
 
@@ -129,7 +154,7 @@ class IQMJob(QuantumJob):
 
         self._cache_metadata.update(
             {
-                "device_id": self._resolve_device_id(),
+                "device_id": self._resolve_device_id(job),
                 "messages": messages,
                 "errors": errors,
                 "queue_position": getattr(job_data, "queue_position", None),
@@ -177,7 +202,7 @@ class IQMJob(QuantumJob):
             measurements=measurements,
         )
         return Result(
-            device_id=self._resolve_device_id(),
+            device_id=self._resolve_device_id(job),
             job_id=self.id,
             success=True,
             data=data,

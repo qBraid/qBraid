@@ -18,8 +18,111 @@ from __future__ import annotations
 
 from functools import lru_cache
 from importlib import import_module
-import json
+from importlib.metadata import PackageNotFoundError, version
+import platform
 from types import SimpleNamespace
+from urllib.parse import urlparse
+import warnings
+
+import numpy as np
+
+
+def _create_client_signature(client_signature: str | None) -> str:
+    """Mirror the IQM client User-Agent format without relying on private SDK helpers."""
+    signature = platform.platform(terse=True)
+    signature += f", python {platform.python_version()}"
+    try:
+        iqm_client_version = version("iqm-client")
+    except PackageNotFoundError:
+        iqm_client_version = "unknown"
+    signature += f", IQMClient iqm-client {iqm_client_version}"
+    if client_signature:
+        signature += f", {client_signature}"
+    return signature
+
+
+def _normalize_server_url(
+    iqm_server_url: str,
+    *,
+    configuration_error: type[Exception],
+) -> str:
+    """Validate and normalize an IQM server base URL."""
+    if not iqm_server_url.isascii():
+        raise configuration_error(f"Non-ASCII characters in URL: {iqm_server_url}")
+    try:
+        url = urlparse(iqm_server_url)
+    except Exception as err:  # pragma: no cover - ``urlparse`` is very permissive.
+        raise configuration_error(f"Invalid URL: {iqm_server_url}") from err
+
+    if url.scheme not in {"http", "https"}:
+        raise configuration_error(
+            f"The URL schema has to be http or https. Incorrect schema in URL: {iqm_server_url}"
+        )
+
+    if url.hostname is None:
+        raise configuration_error(f"Invalid URL: {iqm_server_url}")
+
+    if url.path not in {"", "/"}:
+        raise configuration_error(
+            "The IQM Server URL must be a server base URL without a quantum computer path."
+        )
+
+    port_suffix = f":{url.port}" if url.port else ""
+    return f"{url.scheme}://{url.hostname}{port_suffix}"
+
+
+def _format_measurement_results(
+    measurement_results: dict[str, list[list[int]]],
+    requested_shots: int,
+    expect_exact_shots: bool = True,
+    *,
+    measurement_key_cls,
+) -> list[str]:
+    """Convert IQM measurement payloads into qiskit-style bitstrings."""
+    formatted_results: dict[int, np.ndarray] = {}
+    shots = requested_shots if expect_exact_shots else 0
+
+    for key, values in measurement_results.items():
+        measurement_key = measurement_key_cls.from_string(key)
+        result_array = np.asarray(values, dtype=int)
+        current_shots = len(result_array)
+
+        if current_shots == 0 and not expect_exact_shots:
+            warnings.warn(
+                "Received measurement results containing zero shots. "
+                "In case you are using non-default heralding mode, this could be because of bad calibration."
+            )
+            result_array = np.array([], dtype=int)
+        else:
+            if result_array.ndim != 2 or result_array.shape[1] != 1:
+                raise ValueError(
+                    f"Measurement result {measurement_key} has the wrong shape {result_array.shape}, "
+                    "expected (*, 1)"
+                )
+            result_array = result_array[:, 0]
+
+        if expect_exact_shots and current_shots != requested_shots:
+            raise ValueError(
+                f"Expected {requested_shots} shots but got {current_shots} "
+                f"for measurement result {measurement_key}"
+            )
+
+        if not expect_exact_shots:
+            shots = current_shots
+
+        classical_register = formatted_results.setdefault(
+            measurement_key.creg_idx,
+            np.zeros((current_shots, measurement_key.creg_len), dtype=int),
+        )
+        classical_register[:, measurement_key.clbit_idx] = result_array
+
+    return [
+        " ".join(
+            "".join(map(str, classical_register[shot, :]))
+            for _, classical_register in sorted(formatted_results.items())
+        )[::-1]
+        for shot in range(shots)
+    ]
 
 
 @lru_cache(maxsize=1)
@@ -49,7 +152,6 @@ def load_iqm_qiskit_symbols() -> SimpleNamespace:
     """Load qiskit adapter helpers shipped with ``iqm-client[qiskit]``."""
     try:
         qiskit_to_iqm = import_module("iqm.qiskit_iqm.qiskit_to_iqm")
-        iqm_qiskit_job = import_module("iqm.qiskit_iqm.iqm_job")
     except ImportError as err:
         raise ImportError(
             "IQM qiskit support requires the optional 'iqm-client[qiskit]' dependencies to be installed."
@@ -57,7 +159,14 @@ def load_iqm_qiskit_symbols() -> SimpleNamespace:
 
     return SimpleNamespace(
         serialize_instructions=qiskit_to_iqm.serialize_instructions,
-        format_measurement_results=iqm_qiskit_job.IQMJob._iqm_format_measurement_results,
+        format_measurement_results=lambda measurement_results, requested_shots, expect_exact_shots=True: (
+            _format_measurement_results(
+                measurement_results,
+                requested_shots,
+                expect_exact_shots,
+                measurement_key_cls=qiskit_to_iqm.MeasurementKey,
+            )
+        ),
     )
 
 
@@ -78,11 +187,14 @@ def list_quantum_computers(
             "IQM runtime support requires the optional 'iqm' dependencies to be installed."
         ) from err
 
-    root_url, _, _ = iqm_server_client._IQMServerClient.normalize_url(iqm_server_url, None)
+    root_url = _normalize_server_url(
+        iqm_server_url,
+        configuration_error=authentication.ClientConfigurationError,
+    )
     token_manager = authentication.TokenManager(token, tokens_file)
     auth_header_callback = token_manager.get_auth_header_callback()
     headers = {
-        "User-Agent": iqm_server_client._IQMServerClient._create_signature(client_signature),
+        "User-Agent": _create_client_signature(client_signature),
         "Accept": "application/json",
     }
     if auth_header_callback:
@@ -97,7 +209,7 @@ def list_quantum_computers(
         try:
             response_json = response.json()
             error_message = response_json.get("message") or response_json["detail"]
-        except (json.JSONDecodeError, KeyError):
+        except (ValueError, KeyError):
             error_message = response.text
 
         error_class = iqm_server_client.map_from_status_code_to_error(response.status_code)

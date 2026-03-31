@@ -14,10 +14,11 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from qiskit import QuantumCircuit, transpile
 
+from qbraid.programs import ProgramSpec, get_program_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
@@ -107,12 +108,19 @@ class IQMDevice(QuantumDevice):
 
         return transpile(run_input, **transpile_kwargs)
 
-    def prepare(self, run_input: QuantumCircuit) -> Any:
+    def _resolve_calibration_set_id(self, calibration_set_id=None):
+        """Resolve the calibration set to use for a single IQM run."""
+        return calibration_set_id if calibration_set_id is not None else self.profile.get(
+            "calibration_set_id"
+        )
+
+    def prepare(self, run_input: QuantumCircuit, *, calibration_set_id=None) -> Any:
         """Serialize a transpiled qiskit circuit into an IQM circuit."""
         if self._target_spec is None or not self._options.get("prepare"):
             return run_input
 
         symbols = _compat.load_iqm_symbols()
+        resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
         qubit_index_to_name = {index: qubit for index, qubit in enumerate(self.qubits)}
         iqm_circuit = serialize_circuit(
             run_input,
@@ -122,14 +130,33 @@ class IQMDevice(QuantumDevice):
         if not self.profile.get("computational_resonators"):
             return iqm_circuit
 
-        dynamic_architecture = self.session.get_dynamic_quantum_architecture(
-            self.profile.get("calibration_set_id")
-        )
+        dynamic_architecture = self.session.get_dynamic_quantum_architecture(resolved_calibration_set_id)
         return symbols.transpile_insert_moves(
             iqm_circuit,
             dynamic_architecture,
             existing_moves=symbols.ExistingMoveHandlingOptions.KEEP,
         )
+
+    def apply_runtime_profile(self, run_input: QuantumCircuit, *, calibration_set_id=None) -> Any:
+        """Process a qiskit program using a single calibration set across preparation and submission."""
+        if self._target_spec is not None and self._options.get("transpile") is True:
+            run_input_alias = get_program_type_alias(run_input, safe=True)
+            run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
+            run_input = self.transpile(run_input, run_input_spec)
+
+        is_single_output = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_output else run_input
+
+        if self._options.get("transform") is True:
+            run_input = [self.transform(p) for p in cast(list, run_input)]
+
+        self.validate(run_input)
+        run_input = [
+            self.prepare(p, calibration_set_id=calibration_set_id) for p in cast(list, run_input)
+        ]
+
+        run_input = run_input[0] if is_single_output else run_input
+        return run_input
 
     @staticmethod
     def _build_compilation_options(
@@ -215,11 +242,12 @@ class IQMDevice(QuantumDevice):
             dd_mode=dd_mode,
             dd_strategy=dd_strategy,
         )
+        resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
 
         job = self.session.submit_circuits(
             circuits,
             qubit_mapping=qubit_mapping,
-            calibration_set_id=calibration_set_id,
+            calibration_set_id=resolved_calibration_set_id,
             shots=shots,
             options=resolved_options,
             use_timeslot=use_timeslot,
@@ -231,4 +259,28 @@ class IQMDevice(QuantumDevice):
             job=job,
             shots=shots,
             circuit_count=len(circuits),
+        )
+
+    # pylint: disable-next=arguments-differ
+    def run(
+        self,
+        run_input: Union[QuantumCircuit, list[QuantumCircuit]],
+        *args,
+        calibration_set_id=None,
+        **kwargs,
+    ) -> Union[IQMJob, list[IQMJob]]:
+        """Run IQM jobs using one resolved calibration set for both preparation and submission."""
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
+        resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
+        run_input_compat = [
+            self.apply_runtime_profile(program, calibration_set_id=resolved_calibration_set_id)
+            for program in run_input
+        ]
+        run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
+        return self.submit(
+            run_input_compat,
+            *args,
+            calibration_set_id=resolved_calibration_set_id,
+            **kwargs,
         )
