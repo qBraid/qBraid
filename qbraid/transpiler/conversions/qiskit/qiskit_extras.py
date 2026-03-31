@@ -86,9 +86,36 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
     from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 
     instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
+
+    # After transpilation against a backend, qiskit may map a small circuit onto a
+    # large physical topology (e.g. 1 logical qubit -> physical qubit 12 on a 29-qubit
+    # device). We need to: (1) compute the set of actually-used qubit indices, and
+    # (2) remap them to a compact 0-based range so the IonQ API receives the minimal
+    # qubit count and correctly indexed targets.
+    used_indices: set[int] = set()
+    for gate in instrs:
+        for key in ("target", "targets", "control", "controls"):
+            val = gate.get(key)
+            if val is not None:
+                if isinstance(val, list):
+                    used_indices.update(val)
+                else:
+                    used_indices.add(val)
+
+    if used_indices:
+        compact_map = {old: new for new, old in enumerate(sorted(used_indices))}
+
+        for gate in instrs:
+            for key in ("target", "control"):
+                if key in gate:
+                    gate[key] = compact_map[gate[key]]
+            for key in ("targets", "controls"):
+                if key in gate:
+                    gate[key] = [compact_map[idx] for idx in gate[key]]
+
     return {
         "format": InputFormat.CIRCUIT.value,
         "gateset": kwargs.get("gateset", GateSet.QIS.value),
-        "qubits": circuit.num_qubits,
+        "qubits": len(used_indices),
         "circuit": instrs,
     }
