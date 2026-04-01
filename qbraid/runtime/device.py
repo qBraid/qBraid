@@ -289,9 +289,7 @@ class QuantumDevice(ABC):
         target_specs = (
             self._target_spec
             if isinstance(self._target_spec, list)
-            else [self._target_spec]
-            if self._target_spec
-            else []
+            else [self._target_spec] if self._target_spec else []
         )
 
         for target_spec in target_specs:

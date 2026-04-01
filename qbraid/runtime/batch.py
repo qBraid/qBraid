@@ -35,8 +35,8 @@ if TYPE_CHECKING:
 _active_batch: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
     "_active_batch", default=None
 )
-_active_batch_session: contextvars.ContextVar[Optional[BatchJobSession]] = (
-    contextvars.ContextVar("_active_batch_session", default=None)
+_active_batch_session: contextvars.ContextVar[Optional[BatchJobSession]] = contextvars.ContextVar(
+    "_active_batch_session", default=None
 )
 
 
@@ -171,7 +171,9 @@ class BatchJobSession:
     def client(self):
         """Lazily initialize the QuantumRuntimeClient."""
         if self._client is None:
-            from qbraid_core.services.runtime import QuantumRuntimeClient
+            from qbraid_core.services.runtime import (  # pylint: disable=import-outside-toplevel
+                QuantumRuntimeClient,
+            )
 
             self._client = QuantumRuntimeClient()
         return self._client
@@ -241,7 +243,7 @@ class BatchJobSession:
             try:
                 self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
                 logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-exception-caught
                 logger.error("Failed to close batch: %s", err)
 
         # If callback registered, wait for results and invoke
@@ -252,7 +254,7 @@ class BatchJobSession:
                     poll_interval=self._on_complete_poll_interval,
                 )
                 self._on_complete_callback(batch_result.results)
-            except Exception as err:
+            except Exception as err:  # pylint: disable=broad-exception-caught
                 logger.error("on_all_complete callback failed: %s", err)
 
         return False  # Don't suppress exceptions

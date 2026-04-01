@@ -21,7 +21,7 @@ from typing import Any, Optional
 from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
-from qbraid_core.services.runtime.schemas import (
+from qbraid_core.services.runtime.schemas import (  # pylint: disable=no-name-in-module
     BatchJob,
     JobRequest,
     Program,
