@@ -681,6 +681,35 @@ class TestCancelThenExit:
 # ===========================================================================
 
 
+class TestBatchTTL:
+    """Tests for the max_ttl parameter."""
+
+    def test_max_ttl_passed_to_create_batch(self):
+        client = MockClient()
+        with BatchJobSession(client=client, max_ttl=7200) as batch:
+            assert batch._batch_data.maxTTL == 7200
+
+    def test_max_ttl_none_by_default(self):
+        session = BatchJobSession(client=MockClient())
+        assert session.max_ttl is None
+
+    def test_max_ttl_property(self):
+        session = BatchJobSession(client=MockClient(), max_ttl=1800)
+        assert session.max_ttl == 1800
+
+    def test_max_ttl_exceeds_24h_raises(self):
+        with pytest.raises(ValueError, match="max_ttl must be between"):
+            BatchJobSession(client=MockClient(), max_ttl=86401)
+
+    def test_max_ttl_zero_raises(self):
+        with pytest.raises(ValueError, match="max_ttl must be between"):
+            BatchJobSession(client=MockClient(), max_ttl=0)
+
+    def test_max_ttl_negative_raises(self):
+        with pytest.raises(ValueError, match="max_ttl must be between"):
+            BatchJobSession(client=MockClient(), max_ttl=-1)
+
+
 class TestThreadIsolation:
     """Verify contextvars are not visible across threads."""
 

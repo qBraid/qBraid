@@ -137,6 +137,9 @@ class BatchJobSession:
         metadata: Optional metadata dict.
         client: Optional QuantumRuntimeClient instance. If not provided,
             a default client is created.
+        max_ttl: Optional max time-to-live in seconds (1–86400). After this
+            duration, the batch is automatically closed by the backend.
+            Defaults to None (backend default of 3600s / 1 hour).
 
     Example (context manager):
         >>> from qbraid.runtime import BatchJobSession
@@ -160,17 +163,21 @@ class BatchJobSession:
         - Core schemas: qbraid_core.services.runtime.schemas (BatchJob, BatchStatus)
     """
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         name: Optional[str] = None,
         tags: Optional[dict[str, Any]] = None,
         metadata: Optional[dict[str, Any]] = None,
         client: Optional[Any] = None,
+        max_ttl: Optional[int] = None,
     ):
+        if max_ttl is not None and (max_ttl < 1 or max_ttl > 86400):
+            raise ValueError(f"max_ttl must be between 1 and 86400 seconds, got {max_ttl}")
         self._name = name
         self._tags = tags or {}
         self._metadata = metadata or {}
         self._client = client
+        self._max_ttl = max_ttl
         self._batch_data: Optional[BatchJob] = None
         self._jobs: list[QuantumJob] = []
         self._token: Optional[contextvars.Token] = None
@@ -199,6 +206,11 @@ class BatchJobSession:
     def name(self) -> Optional[str]:
         """Return the batch name."""
         return self._name
+
+    @property
+    def max_ttl(self) -> Optional[int]:
+        """Return the max TTL in seconds, or None."""
+        return self._max_ttl
 
     @property
     def jobs(self) -> list[QuantumJob]:
@@ -241,6 +253,7 @@ class BatchJobSession:
             name=self._name,
             tags=self._tags,
             metadata=self._metadata,
+            max_ttl=self._max_ttl,
         )
         self._token = _active_batch.set(self._batch_data.batchJobQrn)
         self._session_token = _active_batch_session.set(self)

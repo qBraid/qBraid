@@ -638,6 +638,7 @@ class MockClient:
         name: Optional[str] = None,
         tags: Optional[dict[str, Any]] = None,
         metadata: Optional[dict[str, Any]] = None,
+        max_ttl: Optional[int] = None,
     ) -> BatchJob:
         """Mock create_batch — stores and returns a BatchJob with OPEN status."""
         MockClient._batch_counter += 1
@@ -651,6 +652,7 @@ class MockClient:
             "completedCount": 0,
             "failedCount": 0,
             "cancelledCount": 0,
+            "maxTTL": max_ttl or 3600,
             "tags": tags or {},
             "metadata": metadata or {},
         }
