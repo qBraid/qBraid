@@ -605,7 +605,9 @@ class TestStatus:
         with BatchJobSession(client=client) as batch:
             batch.status()
 
-        client.get_batch.assert_called_once_with("qbraid:batch:status-test")
+        # get_batch called twice: once from status(), once from close()
+        # (close() refreshes when batch is already in a terminal state)
+        assert client.get_batch.call_count == 2
 
 
 # ===========================================================================

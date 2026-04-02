@@ -281,11 +281,21 @@ class BatchJobSession:
             _active_batch_session.reset(self._session_token)
             self._session_token = None
 
-        # Close the batch on the backend (skip if already cancelled)
+        # Close the batch on the backend (skip if already in a terminal state,
+        # e.g. auto-closed by TTL expiry, or cancelled)
         current_status = getattr(self._batch_data.status, "value", self._batch_data.status)
-        if current_status != "CANCELLED":
+        terminal_statuses = {"CLOSED", "COMPLETED", "FAILED", "CANCELLED"}
+        if current_status not in terminal_statuses:
             self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
             logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
+        else:
+            # Refresh to get latest state from backend
+            self._batch_data = self.client.get_batch(self._batch_data.batchJobQrn)
+            logger.info(
+                "Batch already %s, skipping close: %s",
+                current_status,
+                self._batch_data.batchJobQrn,
+            )
 
     def __enter__(self) -> BatchJobSession:
         """Open the batch session (delegates to :meth:`open`)."""
