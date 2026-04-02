@@ -19,6 +19,7 @@ Unit tests for BatchJobSession and BatchResult.
 
 # pylint: disable=missing-function-docstring
 
+import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -531,3 +532,117 @@ class TestStatus:
             batch.status()
 
         client.get_batch.assert_called_once_with("qbraid:batch:status-test")
+
+
+# ===========================================================================
+# K. Session reuse — state reset on re-entry
+# ===========================================================================
+
+
+class TestSessionReuse:
+    """Verify that re-entering a session resets mutable state."""
+
+    def test_jobs_reset_on_reentry(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+
+        with session as batch:
+            batch._register_job(_make_mock_job("job-first-run"))
+            assert len(batch.jobs) == 1
+
+        # Re-enter the same session
+        with session as batch:
+            assert len(batch.jobs) == 0  # jobs must be empty
+
+    def test_callback_reset_on_reentry(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+
+        with session as batch:
+            batch.on_all_complete(lambda r: None, timeout=42)
+
+        with session as batch:
+            # Callback should be cleared; no waiting should occur
+            assert batch._on_complete_callback is None
+            assert batch._on_complete_timeout is None
+
+
+# ===========================================================================
+# L. Cancel then exit — close_batch should be skipped
+# ===========================================================================
+
+
+class TestCancelThenExit:
+    """Verify __exit__ does not overwrite CANCELLED status."""
+
+    def test_exit_skips_close_after_cancel(self):
+        client = MockClient()
+        with BatchJobSession(client=client) as batch:
+            batch.cancel()
+            assert batch._batch_data.status.value == "CANCELLED"
+
+        # After exit, status should still be CANCELLED (not CLOSED)
+        assert batch._batch_data.status.value == "CANCELLED"
+
+    def test_exit_skips_close_after_cancel_with_mock(self):
+        client = MagicMock()
+        mock_batch = MagicMock()
+        mock_batch.batchJobQrn = "qbraid:batch:cancel-skip"
+        client.create_batch.return_value = mock_batch
+
+        cancel_result = MagicMock()
+        cancel_result.batchJobQrn = "qbraid:batch:cancel-skip"
+        cancel_result.status = MagicMock(value="CANCELLED")
+        client.cancel_batch.return_value = cancel_result
+
+        with BatchJobSession(client=client) as batch:
+            batch.cancel()
+
+        # close_batch should NOT have been called
+        client.close_batch.assert_not_called()
+
+
+# ===========================================================================
+# M. Thread isolation for context variables
+# ===========================================================================
+
+
+class TestThreadIsolation:
+    """Verify contextvars are not visible across threads."""
+
+    def test_batch_not_visible_in_worker_thread(self):
+        """A batch opened in the main thread should not be visible in a worker."""
+        client = MockClient()
+        worker_result = {}
+
+        def worker():
+            worker_result["batch"] = get_active_batch()
+            worker_result["session"] = get_active_batch_session()
+
+        with BatchJobSession(client=client):
+            t = threading.Thread(target=worker)
+            t.start()
+            t.join()
+
+        assert worker_result["batch"] is None
+        assert worker_result["session"] is None
+
+    def test_worker_batch_not_visible_in_main_thread(self):
+        """A batch opened in a worker thread should not be visible in main."""
+        client = MockClient()
+        barrier = threading.Barrier(2, timeout=5)
+
+        def worker():
+            with BatchJobSession(client=client):
+                barrier.wait()  # signal main that batch is open
+                barrier.wait()  # wait for main to check
+
+        t = threading.Thread(target=worker)
+        t.start()
+
+        barrier.wait()  # wait for worker to open batch
+        assert get_active_batch() is None
+        assert get_active_batch_session() is None
+        barrier.wait()  # let worker exit
+
+        t.join()

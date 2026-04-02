@@ -43,7 +43,7 @@ _active_batch_session: contextvars.ContextVar[Optional[BatchJobSession]] = conte
 def get_active_batch() -> Optional[str]:
     """Return the batchJobQrn of the currently active batch, or None.
 
-    Called by QuantumDevice.run() to check if jobs should be tagged
+    Called by QbraidDevice.run() to check if jobs should be tagged
     with a batch identifier.
     """
     return _active_batch.get(None)
@@ -123,9 +123,10 @@ class BatchResult:
 class BatchJobSession:
     """Context manager for grouping quantum job submissions into a batch.
 
-    Jobs submitted via any QuantumDevice.run() call within this context
-    are automatically tagged with the batch's QRN. The batch supports
-    cross-device and cross-provider job submissions.
+    Jobs submitted via QbraidDevice.run() within this context are
+    automatically tagged with the batch's QRN. The batch supports
+    cross-device and cross-provider job submissions for qBraid
+    native devices.
 
     Args:
         name: Optional human-readable name for the batch.
@@ -196,7 +197,7 @@ class BatchJobSession:
     def _register_job(self, job: QuantumJob) -> None:
         """Register a job as part of this batch.
 
-        Called internally by QuantumDevice.run() when an active batch
+        Called internally by QbraidDevice.run() when an active batch
         context is detected.
         """
         self._jobs.append(job)
@@ -205,13 +206,19 @@ class BatchJobSession:
         """Open the batch session.
 
         Creates a batch on the backend and sets the context variable
-        so that subsequent QuantumDevice.run() calls include the
+        so that subsequent QbraidDevice.run() calls include the
         batchJobQrn in their job submissions.
         """
         if _active_batch.get(None) is not None:
             raise RuntimeError(
                 "Cannot nest BatchJobSession contexts. A batch session is already active."
             )
+
+        # Reset mutable state so the session can be safely reused
+        self._jobs = []
+        self._on_complete_callback = None
+        self._on_complete_timeout = None
+        self._on_complete_poll_interval = 5.0
 
         self._batch_data = self.client.create_batch(
             name=self._name,
@@ -238,13 +245,15 @@ class BatchJobSession:
             _active_batch_session.reset(self._session_token)
             self._session_token = None
 
-        # Close the batch on the backend
+        # Close the batch on the backend (skip if already cancelled)
         if self._batch_data is not None:
-            try:
-                self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
-                logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
-            except Exception as err:  # pylint: disable=broad-exception-caught
-                logger.error("Failed to close batch: %s", err)
+            current_status = getattr(self._batch_data.status, "value", self._batch_data.status)
+            if current_status != "CANCELLED":
+                try:
+                    self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
+                    logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
+                except Exception as err:  # pylint: disable=broad-exception-caught
+                    logger.error("Failed to close batch: %s", err)
 
         # If callback registered, wait for results and invoke
         if self._on_complete_callback is not None:

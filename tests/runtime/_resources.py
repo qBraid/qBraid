@@ -624,77 +624,55 @@ class MockClient:
     # Batch methods
     _batch_counter: int = 0
 
+    def __init__(self):
+        self._batches: dict[str, dict[str, Any]] = {}
+
+    def _make_batch_data(self, qrn: str, **overrides: Any) -> dict[str, Any]:
+        """Return the stored batch dict, applying any overrides."""
+        data = self._batches.get(qrn, {}).copy()
+        data.update(overrides)
+        return data
+
     def create_batch(
         self,
         name: Optional[str] = None,
         tags: Optional[dict[str, Any]] = None,
         metadata: Optional[dict[str, Any]] = None,
     ) -> BatchJob:
-        """Mock create_batch — returns a BatchJob with OPEN status."""
+        """Mock create_batch — stores and returns a BatchJob with OPEN status."""
         MockClient._batch_counter += 1
         qrn = f"qbraid:batch:test-batch-{MockClient._batch_counter}"
-        return BatchJob.model_validate(
-            {
-                "batchJobQrn": qrn,
-                "name": name,
-                "status": "OPEN",
-                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
-                "jobCount": 0,
-                "completedCount": 0,
-                "failedCount": 0,
-                "cancelledCount": 0,
-                "tags": tags or {},
-                "metadata": metadata or {},
-            }
-        )
+        data = {
+            "batchJobQrn": qrn,
+            "name": name,
+            "status": "OPEN",
+            "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+            "jobCount": 0,
+            "completedCount": 0,
+            "failedCount": 0,
+            "cancelledCount": 0,
+            "tags": tags or {},
+            "metadata": metadata or {},
+        }
+        self._batches[qrn] = data
+        return BatchJob.model_validate(data)
 
     def close_batch(self, batch_qrn: str) -> BatchJob:
-        """Mock close_batch — returns BatchJob with CLOSED status."""
-        return BatchJob.model_validate(
-            {
-                "batchJobQrn": batch_qrn,
-                "status": "CLOSED",
-                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
-                "jobCount": 0,
-                "completedCount": 0,
-                "failedCount": 0,
-                "cancelledCount": 0,
-                "tags": {},
-                "metadata": {},
-            }
-        )
+        """Mock close_batch — updates stored batch to CLOSED and returns it."""
+        data = self._make_batch_data(batch_qrn, status="CLOSED")
+        self._batches[batch_qrn] = data
+        return BatchJob.model_validate(data)
 
     def cancel_batch(self, batch_qrn: str) -> BatchJob:
-        """Mock cancel_batch — returns BatchJob with CANCELLED status."""
-        return BatchJob.model_validate(
-            {
-                "batchJobQrn": batch_qrn,
-                "status": "CANCELLED",
-                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
-                "jobCount": 0,
-                "completedCount": 0,
-                "failedCount": 0,
-                "cancelledCount": 0,
-                "tags": {},
-                "metadata": {},
-            }
-        )
+        """Mock cancel_batch — updates stored batch to CANCELLED and returns it."""
+        data = self._make_batch_data(batch_qrn, status="CANCELLED")
+        self._batches[batch_qrn] = data
+        return BatchJob.model_validate(data)
 
     def get_batch(self, batch_qrn: str) -> BatchJob:
-        """Mock get_batch — returns the batch data."""
-        return BatchJob.model_validate(
-            {
-                "batchJobQrn": batch_qrn,
-                "status": "OPEN",
-                "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
-                "jobCount": 0,
-                "completedCount": 0,
-                "failedCount": 0,
-                "cancelledCount": 0,
-                "tags": {},
-                "metadata": {},
-            }
-        )
+        """Mock get_batch — returns the stored batch data."""
+        data = self._make_batch_data(batch_qrn)
+        return BatchJob.model_validate(data)
 
     # Legacy methods for backward compatibility
     def search_devices(self, query: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
