@@ -18,6 +18,7 @@
 Module defining abstract QuantumDevice Class
 
 """
+
 from __future__ import annotations
 
 import warnings
@@ -385,7 +386,9 @@ class QuantumDevice(ABC):
         return run_input
 
     def validate(
-        self, run_input_batch: list[qbraid.programs.QPROGRAM], suppress_device_warning: bool = False
+        self,
+        run_input_batch: list[qbraid.programs.QPROGRAM],
+        suppress_device_warning: bool = False,
     ) -> None:
         """Verifies run input compatibility with target device.
 
