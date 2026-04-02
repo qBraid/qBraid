@@ -128,6 +128,9 @@ class BatchJobSession:
     cross-device and cross-provider job submissions for qBraid
     native devices.
 
+    Can be used as a context manager or opened/closed manually for
+    interactive workflows (notebooks, REPL).
+
     Args:
         name: Optional human-readable name for the batch.
         tags: Optional tags for filtering/organizing batches.
@@ -135,7 +138,7 @@ class BatchJobSession:
         client: Optional QuantumRuntimeClient instance. If not provided,
             a default client is created.
 
-    Example:
+    Example (context manager):
         >>> from qbraid.runtime import BatchJobSession
         >>> with BatchJobSession(name="sweep") as batch:
         ...     job1 = device_a.run(circuit_1)
@@ -143,6 +146,14 @@ class BatchJobSession:
         >>> results = batch.results(timeout=300)
         >>> for job_id, result in results.items():
         ...     print(result.data.get_counts())
+
+    Example (manual open/close):
+        >>> batch = BatchJobSession(name="interactive")
+        >>> batch.open()
+        >>> job1 = device_a.run(circuit_1)
+        >>> job2 = device_b.run(circuit_2)
+        >>> batch.close()
+        >>> results = batch.results(timeout=300)
 
     Cross-references:
         - Context variable read by: QbraidDevice.submit() (native/device.py:92-147)
@@ -202,12 +213,18 @@ class BatchJobSession:
         """
         self._jobs.append(job)
 
-    def __enter__(self) -> BatchJobSession:
+    def open(self) -> BatchJobSession:
         """Open the batch session.
 
         Creates a batch on the backend and sets the context variable
         so that subsequent QbraidDevice.run() calls include the
         batchJobQrn in their job submissions.
+
+        Returns:
+            self, for chaining.
+
+        Raises:
+            RuntimeError: If a batch session is already active.
         """
         if _active_batch.get(None) is not None:
             raise RuntimeError(
@@ -230,13 +247,19 @@ class BatchJobSession:
         logger.info("Opened batch session: %s", self._batch_data.batchJobQrn)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+    def close(self) -> None:
         """Close the batch session.
 
-        Resets the context variable and closes the batch on the backend.
-        If an on_all_complete callback was registered, blocks until all
-        jobs reach terminal state and then invokes the callback.
+        Resets context variables and closes the batch on the backend.
+        Unlike ``__exit__``, errors propagate to the caller and the
+        ``on_all_complete`` callback is **not** triggered.
+
+        Raises:
+            RuntimeError: If the session has not been opened.
         """
+        if self._batch_data is None:
+            raise RuntimeError("Batch session has not been opened.")
+
         # Reset context variables first (no more jobs can be tagged)
         if self._token is not None:
             _active_batch.reset(self._token)
@@ -246,14 +269,26 @@ class BatchJobSession:
             self._session_token = None
 
         # Close the batch on the backend (skip if already cancelled)
-        if self._batch_data is not None:
-            current_status = getattr(self._batch_data.status, "value", self._batch_data.status)
-            if current_status != "CANCELLED":
-                try:
-                    self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
-                    logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
-                except Exception as err:  # pylint: disable=broad-exception-caught
-                    logger.error("Failed to close batch: %s", err)
+        current_status = getattr(self._batch_data.status, "value", self._batch_data.status)
+        if current_status != "CANCELLED":
+            self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
+            logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
+
+    def __enter__(self) -> BatchJobSession:
+        """Open the batch session (delegates to :meth:`open`)."""
+        return self.open()
+
+    def __exit__(self, exc_type, exc_val, exc_tb) -> None:
+        """Close the batch session.
+
+        Delegates to :meth:`close` for context-var reset and backend
+        close, then runs the ``on_all_complete`` callback if registered.
+        Errors from ``close()`` and the callback are logged, not raised.
+        """
+        try:
+            self.close()
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to close batch: %s", err)
 
         # If callback registered, wait for results and invoke
         if self._on_complete_callback is not None:

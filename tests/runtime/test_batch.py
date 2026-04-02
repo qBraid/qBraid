@@ -121,6 +121,80 @@ class TestBatchJobSessionLifecycle:
 
 
 # ===========================================================================
+# A2. Manual open()/close()
+# ===========================================================================
+
+
+class TestManualOpenClose:
+    """Tests for the explicit open()/close() API."""
+
+    def test_open_creates_batch_and_sets_context(self):
+        client = MockClient()
+        session = BatchJobSession(name="manual", client=client)
+        result = session.open()
+
+        try:
+            assert result is session
+            assert session.batch_id is not None
+            assert session.batch_id.startswith("qbraid:batch:")
+            assert get_active_batch() == session.batch_id
+            assert get_active_batch_session() is session
+        finally:
+            session.close()
+
+    def test_close_resets_context_and_closes_batch(self):
+        client = MockClient()
+        session = BatchJobSession(name="close-manual", client=client)
+        session.open()
+        session.close()
+
+        assert get_active_batch() is None
+        assert get_active_batch_session() is None
+        assert session._batch_data.status.value == "CLOSED"
+
+    def test_close_before_open_raises(self):
+        session = BatchJobSession(client=MockClient())
+        with pytest.raises(RuntimeError, match="has not been opened"):
+            session.close()
+
+    def test_close_skips_close_after_cancel(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+        session.open()
+        session.cancel()
+        session.close()
+
+        assert session._batch_data.status.value == "CANCELLED"
+
+    def test_manual_reuse(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+
+        # First open/close cycle
+        session.open()
+        first_id = session.batch_id
+        session._register_job(_make_mock_job("job-a"))
+        assert len(session.jobs) == 1
+        session.close()
+        assert get_active_batch() is None
+
+        # Second open/close cycle — fresh state
+        session.open()
+        second_id = session.batch_id
+        assert second_id != first_id
+        assert len(session.jobs) == 0
+        session.close()
+
+    def test_open_returns_self(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+        try:
+            assert session.open() is session
+        finally:
+            session.close()
+
+
+# ===========================================================================
 # B. Job registration
 # ===========================================================================
 
