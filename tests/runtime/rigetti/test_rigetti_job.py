@@ -22,6 +22,7 @@ import importlib.util
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
+import numpy as np
 import pytest
 
 from qbraid.runtime import GateModelResultData, Result
@@ -44,14 +45,60 @@ if TYPE_CHECKING:
     from qbraid.runtime.rigetti.device import RigettiDevice
 
 
-def _make_execution_results(flat_binary: list[int]) -> MagicMock:
-    """Build a mock ExecutionResults whose .memory['ro'].to_binary() returns flat_binary."""
-    ro_memory = MagicMock()
-    ro_memory.to_binary.return_value = flat_binary
+def _make_execution_results(
+    readout_data: dict[str, list[int]],
+    memory: dict | None = None,
+) -> MagicMock:
+    """Build a mock ExecutionResults with buffers and memory attributes.
+
+    The new _parse_results approach accesses:
+      - execution_results.buffers: dict mapping readout keys to objects with .data attribute
+      - execution_results.memory: dict (used as memory_values for QPUResultData)
+
+    Args:
+        readout_data: Mapping from readout keys to lists of integer measurement values.
+        memory: Optional memory dict (defaults to empty).
+    """
+    buffers = {}
+    for readout_key, values in readout_data.items():
+        buf = MagicMock()
+        buf.data = values
+        buffers[readout_key] = buf
 
     exec_results = MagicMock()
-    exec_results.memory = {"ro": ro_memory}
+    exec_results.buffers = buffers
+    exec_results.memory = memory if memory is not None else {}
     return exec_results
+
+
+def _make_simple_execution_results(
+    bit_arrays: list[list[int]],
+    num_qubits: int | None = None,
+) -> tuple[MagicMock, dict[str, str]]:
+    """Build execution results for a simple 'ro' register with given shot-level bit arrays.
+
+    Args:
+        bit_arrays: List of shots, each shot is a list of bit values.
+                    bit_arrays[shot][qubit] = measurement value.
+        num_qubits: Number of qubits. If None, inferred from bit_arrays[0].
+
+    Returns:
+        (execution_results_mock, ro_sources_dict)
+    """
+    if num_qubits is None:
+        num_qubits = len(bit_arrays[0])
+    num_shots = len(bit_arrays)
+
+    ro_sources = {}
+    readout_data = {}
+    for q in range(num_qubits):
+        ref_key = f"ro[{q}]"
+        readout_key = f"q{q}_readout"
+        ro_sources[ref_key] = readout_key
+        # Each readout key gets the values across all shots for that qubit
+        readout_data[readout_key] = [bit_arrays[shot][q] for shot in range(num_shots)]
+
+    return _make_execution_results(readout_data), ro_sources
 
 
 # ===========================================================================
@@ -90,6 +137,17 @@ class TestRigettiJobProperties:
         """A freshly created job must have INITIALIZING status."""
         assert rigetti_job._status == JobStatus.INITIALIZING
 
+    def test_ro_sources_stored_correctly(self, rigetti_device: RigettiDevice) -> None:
+        """ro_sources kwarg must be stored as _ro_sources."""
+        ro_sources = {"ro[0]": "q0_ro", "ro[1]": "q1_ro"}
+        job = RigettiJob(job_id="x", device=rigetti_device, num_shots=1, ro_sources=ro_sources)
+        assert job._ro_sources == ro_sources
+
+    def test_ro_sources_defaults_to_empty_dict(self, rigetti_device: RigettiDevice) -> None:
+        """When ro_sources is omitted the default must be an empty dict."""
+        job = RigettiJob(job_id="x", device=rigetti_device)
+        assert job._ro_sources == {}
+
 
 # ===========================================================================
 # Job – status
@@ -103,13 +161,30 @@ class TestRigettiJobStatus:
         self, rigetti_job: RigettiJob
     ) -> None:
         """status() polls via retrieve_results; a successful call transitions to COMPLETED."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1])
+        exec_results = MagicMock()
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
             assert rigetti_job.status() == JobStatus.COMPLETED
+
+    def test_status_passes_execution_options_to_retrieve_results(
+        self, rigetti_job: RigettiJob
+    ) -> None:
+        """status() must pass device.execution_options to retrieve_results."""
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=MagicMock(),
+        ) as mock_retrieve:
+            rigetti_job.status()
+
+        mock_retrieve.assert_called_once_with(
+            job_id=str(rigetti_job.id),
+            quantum_processor_id=DEVICE_ID,
+            client=rigetti_job._client,
+            execution_options=rigetti_job._device.execution_options,
+        )
 
     def test_status_reflects_manual_internal_change(self, rigetti_job: RigettiJob) -> None:
         """Changing _status directly must be visible through status()."""
@@ -151,7 +226,7 @@ class TestRigettiJobCancel:
     def test_cancel_calls_cancel_job_with_correct_args(
         self, rigetti_job: RigettiJob, mock_qcs_client: MagicMock
     ) -> None:
-        """cancel() must forward job_id, quantum_processor_id, and client."""
+        """cancel() must forward job_id, quantum_processor_id, client, and execution_options."""
         with patch("qbraid.runtime.rigetti.job.cancel_job") as mock_cancel:
             rigetti_job.cancel()
 
@@ -159,6 +234,7 @@ class TestRigettiJobCancel:
             job_id=DUMMY_JOB_ID,
             quantum_processor_id=DEVICE_ID,
             client=mock_qcs_client,
+            execution_options=rigetti_job._device.execution_options,
         )
 
     def test_cancel_sets_status_to_cancelled_on_success(self, rigetti_job: RigettiJob) -> None:
@@ -221,81 +297,181 @@ class TestRigettiJobCancel:
 
 
 # ===========================================================================
-# Job – get_result (raw data parsing)
+# Job – _build_register_map
+# ===========================================================================
+
+
+class TestRigettiJobBuildRegisterMap:
+    """Tests for RigettiJob._build_register_map."""
+
+    def test_build_register_map_returns_register_map(self, rigetti_device: RigettiDevice) -> None:
+        """_build_register_map must return a RegisterMap with the declared registers."""
+        ro_sources = {"ro[0]": "q0_readout", "ro[1]": "q1_readout"}
+        readout_data = {"q0_readout": [0, 1], "q1_readout": [1, 0]}
+        exec_results = _make_execution_results(readout_data)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=2, ro_sources=ro_sources
+        )
+        reg_map = job._build_register_map(exec_results)
+
+        assert "ro" in list(reg_map.keys())
+
+    def test_build_register_map_matrix_shape_matches_shots_and_qubits(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """The register matrix must have shape (num_shots, num_bits_in_register)."""
+        ro_sources = {"ro[0]": "q0_ro", "ro[1]": "q1_ro", "ro[2]": "q2_ro"}
+        readout_data = {
+            "q0_ro": [0, 1, 0, 1],
+            "q1_ro": [1, 0, 1, 0],
+            "q2_ro": [0, 0, 1, 1],
+        }
+        exec_results = _make_execution_results(readout_data)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=4, ro_sources=ro_sources
+        )
+        reg_map = job._build_register_map(exec_results)
+        matrix = reg_map.get_register_matrix("ro")
+        arr = matrix.to_ndarray()
+
+        assert arr.shape == (4, 3)
+
+    def test_build_register_map_values_are_correct(self, rigetti_device: RigettiDevice) -> None:
+        """The register matrix values must match the readout data."""
+        ro_sources = {"ro[0]": "q0_ro", "ro[1]": "q1_ro"}
+        readout_data = {"q0_ro": [0, 1, 0], "q1_ro": [1, 0, 1]}
+        exec_results = _make_execution_results(readout_data)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3, ro_sources=ro_sources
+        )
+        reg_map = job._build_register_map(exec_results)
+        arr = reg_map.get_register_matrix("ro").to_ndarray()
+
+        expected = np.array([[0, 1], [1, 0], [0, 1]])
+        np.testing.assert_array_equal(arr, expected)
+
+    def test_build_register_map_multiple_registers(self, rigetti_device: RigettiDevice) -> None:
+        """_build_register_map must handle multiple declared registers."""
+        ro_sources = {
+            "ro[0]": "r0",
+            "aux[0]": "a0",
+            "aux[1]": "a1",
+        }
+        readout_data = {
+            "r0": [0, 1],
+            "a0": [1, 0],
+            "a1": [1, 1],
+        }
+        exec_results = _make_execution_results(readout_data)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=2, ro_sources=ro_sources
+        )
+        reg_map = job._build_register_map(exec_results)
+
+        assert "ro" in list(reg_map.keys())
+        assert "aux" in list(reg_map.keys())
+
+        ro_arr = reg_map.get_register_matrix("ro").to_ndarray()
+        assert ro_arr.shape == (2, 1)
+
+        aux_arr = reg_map.get_register_matrix("aux").to_ndarray()
+        assert aux_arr.shape == (2, 2)
+
+
+# ===========================================================================
+# Job – _parse_results
 # ===========================================================================
 
 
 class TestRigettiJobParseResults:
-    """Tests for RigettiJob._parse_results – covers the flat-binary-to-counts conversion."""
+    """Tests for RigettiJob._parse_results using the register map approach."""
 
-    def test_parse_results_raises_when_ro_register_absent(
+    def test_parse_results_raises_when_no_declared_registers(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """A missing 'ro' key in memory must raise RigettiJobError."""
+        """When ro_sources is empty, _parse_results must raise RigettiJobError."""
         exec_results = MagicMock()
-        exec_results.memory = {}  # no 'ro' key
+        exec_results.buffers = {}
+        exec_results.memory = {}
 
         job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1)
+        # job._ro_sources is {} by default
 
-        with pytest.raises(RigettiJobError, match="'ro' register"):
+        with pytest.raises(RigettiJobError, match="No declared registers"):
             job._parse_results(exec_results)
 
     def test_parse_results_counts_sum_equals_num_shots(self, rigetti_device: RigettiDevice) -> None:
         """Total counts must equal num_shots."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1, 1, 1])
+        num_shots = 4
+        bit_arrays = [[0, 1], [1, 0], [0, 1], [1, 1]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=4)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=num_shots,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
-        assert sum(result.measurement_counts.values()) == 4
+        assert sum(result.measurement_counts.values()) == num_shots
 
     def test_parse_results_measurement_strings_have_correct_length(
         self, rigetti_device: RigettiDevice
     ) -> None:
         """Each measurement key must have length == num_qubits (bits per shot)."""
-        num_shots = 3
         num_qubits = 5
-        flat = [
-            0,
-            1,
-            0,
-            1,
-            0,
-            1,
-            0,
-            1,
-            0,
-            1,
-            0,
-            0,
-            1,
-            1,
-            0,
+        bit_arrays = [
+            [0, 1, 0, 1, 0],
+            [1, 0, 1, 0, 1],
+            [0, 0, 1, 1, 0],
         ]
-        exec_results = _make_execution_results(flat)
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=num_shots)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=3,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
         for key in result.measurement_counts:
             assert len(key) == num_qubits
 
-    def test_parse_results_counts_are_correct_for_known_flat_list(
+    def test_parse_results_counts_are_correct_for_known_data(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """Verify the exact counts produced for a fully known flat binary list."""
-        exec_results = _make_execution_results([0, 0, 1, 1, 0, 0])
+        """Verify the exact counts produced for a fully known data set."""
+        # 3 shots, 2 qubits: [00, 11, 00] -> {"00": 2, "11": 1}
+        bit_arrays = [[0, 0], [1, 1], [0, 0]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=3,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
         assert result.measurement_counts == {"00": 2, "11": 1}
 
     def test_parse_results_probabilities_sum_to_one(self, rigetti_device: RigettiDevice) -> None:
         """Probabilities must sum to approximately 1.0."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1])
+        bit_arrays = [[0, 1], [1, 0], [0, 1]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=3,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
         total_prob = sum(result.get_probabilities().values())
@@ -303,9 +479,15 @@ class TestRigettiJobParseResults:
 
     def test_parse_results_probabilities_match_counts(self, rigetti_device: RigettiDevice) -> None:
         """Each probability must equal count / total_shots."""
-        exec_results = _make_execution_results([0, 0, 1, 1, 0, 0])
+        bit_arrays = [[0, 0], [1, 1], [0, 0]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=3,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
         for outcome, prob in result.get_probabilities().items():
@@ -316,9 +498,15 @@ class TestRigettiJobParseResults:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """A single-shot result must produce exactly one count of 1."""
-        exec_results = _make_execution_results([1, 0, 1])
+        bit_arrays = [[1, 0, 1]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=1,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
         assert result.measurement_counts == {"101": 1}
@@ -328,14 +516,80 @@ class TestRigettiJobParseResults:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """_parse_results must return a GateModelResultData instance."""
-        exec_results = _make_execution_results([0, 1])
+        bit_arrays = [[0, 1]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1)
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=1,
+            ro_sources=ro_sources,
+        )
         result = job._parse_results(exec_results)
 
         assert isinstance(result, GateModelResultData)
         assert result.measurement_counts is not None
         assert result.get_probabilities() is not None
+
+    def test_parse_results_multiple_registers_concatenated_in_sorted_order(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """When multiple registers exist, they are concatenated in sorted order."""
+        # "aux" comes before "ro" alphabetically, so aux bits come first
+        ro_sources = {
+            "ro[0]": "r0",
+            "aux[0]": "a0",
+            "aux[1]": "a1",
+        }
+        # 2 shots
+        readout_data = {
+            "r0": [0, 1],
+            "a0": [1, 0],
+            "a1": [1, 1],
+        }
+        exec_results = _make_execution_results(readout_data)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=2,
+            ro_sources=ro_sources,
+        )
+        result = job._parse_results(exec_results)
+
+        # Shot 1: aux=[1,1], ro=[0] -> "110"
+        # Shot 2: aux=[0,1], ro=[1] -> "011"
+        assert result.measurement_counts == {"110": 1, "011": 1}
+
+    def test_parse_results_all_zeros(self, rigetti_device: RigettiDevice) -> None:
+        """All-zero measurements must produce a single '000...' count."""
+        bit_arrays = [[0, 0], [0, 0], [0, 0]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=3,
+            ro_sources=ro_sources,
+        )
+        result = job._parse_results(exec_results)
+
+        assert result.measurement_counts == {"00": 3}
+
+    def test_parse_results_all_ones(self, rigetti_device: RigettiDevice) -> None:
+        """All-one measurements must produce a single '111...' count."""
+        bit_arrays = [[1, 1], [1, 1]]
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=2,
+            ro_sources=ro_sources,
+        )
+        result = job._parse_results(exec_results)
+
+        assert result.measurement_counts == {"11": 2}
 
 
 # ===========================================================================
@@ -344,93 +598,107 @@ class TestRigettiJobParseResults:
 
 
 class TestRigettiJobResult:
-    """Tests for RigettiJob.result – verifies Result object construction."""
+    """Tests for RigettiJob.result -- verifies Result object construction."""
 
-    def test_result_returns_result_instance(self, rigetti_job: RigettiJob) -> None:
+    @staticmethod
+    def _make_job_with_results(
+        rigetti_device: RigettiDevice,
+        bit_arrays: list[list[int]],
+    ) -> tuple[RigettiJob, MagicMock]:
+        """Create a job and matching execution results for result() testing."""
+        exec_results, ro_sources = _make_simple_execution_results(bit_arrays)
+        num_shots = len(bit_arrays)
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=num_shots,
+            ro_sources=ro_sources,
+        )
+        return job, exec_results
+
+    def test_result_returns_result_instance(self, rigetti_device: RigettiDevice) -> None:
         """result() must return a qBraid Result object."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1])
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1], [1, 0], [0, 1]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            res = rigetti_job.result()
+            res = job.result()
 
         assert isinstance(res, Result)
 
-    def test_result_success_true_on_happy_path(self, rigetti_job: RigettiJob) -> None:
+    def test_result_success_true_on_happy_path(self, rigetti_device: RigettiDevice) -> None:
         """result() must report success=True when get_result() does not raise."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1])
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1], [1, 0], [0, 1]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            res = rigetti_job.result()
+            res = job.result()
 
         assert res.success is True
 
     def test_result_data_is_gate_model_result_data_on_success(
-        self, rigetti_job: RigettiJob
+        self, rigetti_device: RigettiDevice
     ) -> None:
         """On success, result().data must be a GateModelResultData instance."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1])
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1], [1, 0], [0, 1]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            res = rigetti_job.result()
+            res = job.result()
 
         assert isinstance(res.data, GateModelResultData)
 
-    def test_result_device_id_matches_device_profile(self, rigetti_job: RigettiJob) -> None:
+    def test_result_device_id_matches_device_profile(self, rigetti_device: RigettiDevice) -> None:
         """result().device_id must match the device's profile.device_id."""
-        exec_results = _make_execution_results([0, 1])
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            res = rigetti_job.result()
+            res = job.result()
 
         assert res.device_id == DEVICE_ID
 
-    def test_result_job_id_matches_job(self, rigetti_job: RigettiJob) -> None:
+    def test_result_job_id_matches_job(self, rigetti_device: RigettiDevice) -> None:
         """result().job_id must match the RigettiJob's own job ID."""
-        exec_results = _make_execution_results([0, 1])
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            res = rigetti_job.result()
+            res = job.result()
 
         assert res.job_id == DUMMY_JOB_ID
 
-    def test_result_sets_status_to_completed_on_success(self, rigetti_job: RigettiJob) -> None:
+    def test_result_sets_status_to_completed_on_success(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
         """A successful result() call must leave the job in COMPLETED state."""
-        exec_results = _make_execution_results([0, 1, 1, 0, 0, 1])
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1], [1, 0], [0, 1]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            rigetti_job.result()
+            job.result()
 
-        assert rigetti_job.status() == JobStatus.COMPLETED
+        assert job.status() == JobStatus.COMPLETED
 
     def test_result_measurement_counts_stored_correctly(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """The GateModelResultData inside result() must carry the counts from get_result()."""
-        flat = [0, 0, 1, 1, 0, 0]  # 3 shots × 2 qubits → {'00': 2, '11': 1}
-        ro_memory = MagicMock()
-        ro_memory.to_binary.return_value = flat
-        exec_results = MagicMock()
-        exec_results.memory = {"ro": ro_memory}
-
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
+        """The GateModelResultData inside result() must carry the counts."""
+        # 3 shots x 2 qubits: [00, 11, 00] -> {"00": 2, "11": 1}
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 0], [1, 1], [0, 0]])
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
@@ -439,6 +707,25 @@ class TestRigettiJobResult:
             res = job.result()
 
         assert res.data.measurement_counts == {"00": 2, "11": 1}
+
+    def test_result_passes_execution_options_to_retrieve_results(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """result() must pass device.execution_options to retrieve_results."""
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ) as mock_retrieve:
+            job.result()
+
+        mock_retrieve.assert_called_with(
+            job_id=str(DUMMY_JOB_ID),
+            quantum_processor_id=DEVICE_ID,
+            client=job._client,
+            execution_options=rigetti_device.execution_options,
+        )
 
     def test_result_raises_on_qpu_api_error(self, rigetti_job: RigettiJob) -> None:
         """A QpuApiError from retrieve_results must propagate (not be caught)."""
@@ -449,18 +736,22 @@ class TestRigettiJobResult:
             with pytest.raises(QpuApiError, match="QPU unreachable"):
                 rigetti_job.result()
 
-    def test_result_raises_on_rigetti_job_error(self, rigetti_device: RigettiDevice) -> None:
-        """A RigettiJobError (e.g. missing 'ro' register) must propagate (not be caught)."""
+    def test_result_raises_on_rigetti_job_error_when_no_ro_sources(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A RigettiJobError (no declared registers) must propagate."""
         exec_results = MagicMock()
-        exec_results.memory = {}  # triggers RigettiJobError inside get_result
+        exec_results.buffers = {}
+        exec_results.memory = {}
 
+        # Create job WITHOUT ro_sources to trigger the error
         job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1)
 
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=exec_results,
         ):
-            with pytest.raises(RigettiJobError, match="'ro' register"):
+            with pytest.raises(RigettiJobError, match="No declared registers"):
                 job.result()
 
     def test_result_raises_on_retrieval_failure(self, rigetti_job: RigettiJob) -> None:

@@ -32,7 +32,6 @@ from qcs_sdk.client import AuthServer, OAuthSession, QCSClient, RefreshToken
 from qcs_sdk.qpu import list_quantum_processors
 from qcs_sdk.qpu.isa import get_instruction_set_architecture
 
-from qbraid._caching import cached_method
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime import QuantumProvider, TargetProfile
@@ -85,7 +84,6 @@ class RigettiProvider(QuantumProvider):
             provider_name="rigetti",
         )
 
-    @cached_method(ttl=300)
     def get_devices(self) -> list[RigettiDevice]:
         devices: list[RigettiDevice] = []
         quantum_processor_ids = list_quantum_processors(client=self._qcs_client)

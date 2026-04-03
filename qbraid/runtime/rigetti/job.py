@@ -26,9 +26,12 @@ Module defining Rigetti job class
 from __future__ import annotations
 
 import logging
+import re
 from typing import TYPE_CHECKING, Any, Optional
 
-from qcs_sdk.qpu.api import ExecutionOptions, QpuApiError, cancel_job, retrieve_results
+import numpy as np
+from qcs_sdk.qpu import QPUResultData, ReadoutValues
+from qcs_sdk.qpu.api import QpuApiError, cancel_job, retrieve_results
 
 from qbraid.runtime import JobStateError
 from qbraid.runtime.enums import JobStatus
@@ -55,10 +58,12 @@ class RigettiJob(QuantumJob):
         job_id: str | int,
         device: RigettiDevice,
         num_shots: int = 1,
+        ro_sources: Optional[dict] = None,
         **kwargs: Any,
     ):
         super().__init__(job_id=job_id, device=device, **kwargs)
         self._num_shots = num_shots
+        self._ro_sources = ro_sources or {}
         self._status = JobStatus.INITIALIZING
         self._cached_results = None
 
@@ -87,7 +92,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
-                execution_options=ExecutionOptions.default(),
+                execution_options=self._device.execution_options,
             )
             self._status = JobStatus.COMPLETED
         except QpuApiError as err:
@@ -117,6 +122,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
+                execution_options=self._device.execution_options,
             )
         except QpuApiError as exc:
             self._status = previous_status
@@ -132,22 +138,65 @@ class RigettiJob(QuantumJob):
             self._device.id,
         )
 
+    def _build_register_map(self, execution_results):
+        """Build a ``RegisterMap`` from raw execution results and ro_sources.
+
+        Constructs a ``QPUResultData`` object and calls ``to_register_map()``
+        which handles qubit ordering and register grouping internally.
+        """
+        readout_values = {
+            key: ReadoutValues(value.data) for key, value in execution_results.buffers.items()
+        }
+        qpu_result_data = QPUResultData(
+            mappings=dict(self._ro_sources),
+            readout_values=readout_values,
+            memory_values=execution_results.memory,
+        )
+        return qpu_result_data.to_register_map()
+
     def _parse_results(self, execution_results) -> GateModelResultData:
         """Parse raw execution results into GateModelResultData.
 
-        Extracts the 'ro' readout register, reshapes the flat binary
-        list into per-shot measurement strings, and builds counts.
+        Uses ``QPUResultData.to_register_map()`` to convert raw buffers
+        into per-register numpy arrays, then extracts the user-declared
+        registers and builds measurement count strings.
         """
-        ro_memory = execution_results.memory.get("ro")
-        if ro_memory is None:
-            raise RigettiJobError("No 'ro' register found in execution results.")
+        register_map = self._build_register_map(execution_results)
 
-        flat = ro_memory.to_binary()
-        num_qubits = len(flat) // self._num_shots
+        # Identify user-declared register names from ro_sources
+        # e.g. "ro[0]" -> "ro", "aux[1]" -> "aux"
+        declared_registers = set()
+        for mem_ref in self._ro_sources:
+            match = re.match(r"^(.+)\[\d+\]$", mem_ref)
+            if match:
+                declared_registers.add(match.group(1))
+
+        if not declared_registers:
+            raise RigettiJobError(
+                "No declared registers found in ro_sources. "
+                f"ro_sources keys: {list(self._ro_sources.keys())}"
+            )
+
+        # Concatenate declared registers in sorted order into measurement bitstrings
+        # Each register matrix has shape (num_shots, num_bits_in_register)
+        register_arrays = []
+        for reg_name in sorted(declared_registers):
+            matrix = register_map.get_register_matrix(reg_name)
+            if matrix is None:
+                continue
+            register_arrays.append(matrix.to_ndarray().astype(int))
+
+        if not register_arrays:
+            raise RigettiJobError(
+                f"No data found for declared registers {declared_registers} "
+                f"in register map keys: {list(register_map.keys())}"
+            )
+
+        # Horizontally stack all register arrays: (num_shots, total_bits)
+        all_bits = np.hstack(register_arrays)
 
         measurements = []
-        for i in range(self._num_shots):
-            row = flat[i * num_qubits : (i + 1) * num_qubits]
+        for row in all_bits:
             measurements.append("".join(str(b) for b in row))
 
         counts = {m: measurements.count(m) for m in set(measurements)}
@@ -165,7 +214,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
-                execution_options=ExecutionOptions.default(),
+                execution_options=self._device.execution_options,
             )
         result_data = self._parse_results(self._cached_results)
 

@@ -21,13 +21,19 @@
 Module defining Rigetti device class
 """
 
+import os
 from multiprocessing.pool import ThreadPool
 from typing import Optional, Union
 
-import pyquil
 from qcs_sdk.client import QCSClient
+from qcs_sdk.compiler.quilc import QuilcClient, TargetDevice, compile_program
 from qcs_sdk.qpu import ListQuantumProcessorsError, list_quantum_processors
-from qcs_sdk.qpu.api import SubmissionError
+from qcs_sdk.qpu.api import (
+    ConnectionStrategy,
+    ExecutionOptions,
+    ExecutionOptionsBuilder,
+    SubmissionError,
+)
 from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import translate
@@ -37,6 +43,10 @@ from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import RigettiJob, RigettiJobError
+
+DEFAULT_GRPC_ENDPOINT = "https://grpc.qcs.rigetti.com"
+DEFAULT_QUILC_ENDPOINT = "tcp://127.0.0.1:5555"
+DEFAULT_EXECUTION_TIMEOUT = 30.0
 
 
 class RigettiDeviceError(QbraidRuntimeError):
@@ -56,9 +66,19 @@ class RigettiDevice(QuantumDevice):
         """
         profile: A TargetProfile object (constructed by RigettiProvider).
         """
-        # Call base class initializer, passing the TargetProfile
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
+        self.execution_options = self._build_execution_options()
+
+    @staticmethod
+    def _build_execution_options() -> ExecutionOptions:
+        """Build ExecutionOptions using the QCS gRPC endpoint."""
+        endpoint = os.getenv("QCS_GRPC_ENDPOINT", DEFAULT_GRPC_ENDPOINT)
+        timeout = float(os.getenv("QCS_EXECUTION_TIMEOUT", str(DEFAULT_EXECUTION_TIMEOUT)))
+        builder = ExecutionOptionsBuilder()
+        builder.connection_strategy = ConnectionStrategy.EndpointAddress(endpoint)
+        builder.timeout_seconds = timeout
+        return builder.build()
 
     def status(self) -> DeviceStatus:
         """
@@ -75,19 +95,44 @@ class RigettiDevice(QuantumDevice):
             ) from e
         return DeviceStatus.ONLINE
 
-    def transform(self, run_input: pyquil.Program) -> pyquil.Program:
-        """Apply device-specific transformations to the program.
+    def transform(self, run_input: str) -> str:
+        """Compile a Quil program into the QPU's native gate set via quilc.
 
-        Currently a no-op. Future quilc compilation (native gate conversion)
-        will be added here.
+        Args:
+            run_input: A serialized Quil program string.
+
+        Returns:
+            A compiled Quil program string using only native gates
+            (RZ, RX, CZ, MEASURE).
+
+        Raises:
+            RigettiDeviceError: If quilc compilation fails.
         """
-        # TODO: integrate quilc compilation step here to convert
-        #       arbitrary gates into native gates (RZ, RX, CZ, MEASURE)
-        return run_input
+        try:
+            compilation_result = compile_program(
+                quil=run_input,
+                target=TargetDevice.from_isa(
+                    get_instruction_set_architecture(
+                        quantum_processor_id=self.id, client=self._qcs_client
+                    )
+                ),
+                # TODO: the quilc compiler should be present in a cloud server env,
+                # otherwise we need to ship it with qbraid-sdk and run it locally.
+                client=QuilcClient.new_rpcq(
+                    os.getenv("QCS_QUILC_ENDPOINT", DEFAULT_QUILC_ENDPOINT)
+                ),
+            )
+            return compilation_result.program.to_quil()
+        except Exception as e:
+            raise RigettiDeviceError(
+                f"Compilation failed for quantum processor '{self.id}'. "
+                "Ensure the program is valid Quil and that the quilc "
+                "compiler is running and accessible"
+            ) from e
 
     def _submit(self, run_input: str, shots: Optional[int] = None) -> RigettiJob:
         """
-        Submit a native Quil program to the Rigetti QPU.
+        Submit a Quil program to the Rigetti QPU.
 
         Args:
             run_input: A serialized Quil program string (produced by prepare()).
@@ -99,9 +144,11 @@ class RigettiDevice(QuantumDevice):
                 f"Shots > 0 must be specified for Rigetti QPU jobs, current value: {num_shots}."
             )
 
+        compiled_quil = self.transform(run_input)
+
         try:
             translation_result = translate(
-                native_quil=run_input,
+                native_quil=compiled_quil,
                 num_shots=num_shots,
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
@@ -109,7 +156,7 @@ class RigettiDevice(QuantumDevice):
         except Exception as e:
             raise RigettiJobError(
                 f"Translation failed for quantum processor '{self.id}'. "
-                "Ensure the program uses only native gates (RZ, RX, CZ, MEASURE)."
+                "Ensure the program uses only native gates for the target QPU."
             ) from e
 
         try:
@@ -118,6 +165,7 @@ class RigettiDevice(QuantumDevice):
                 patch_values={},
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
+                execution_options=self.execution_options,
             )
         except SubmissionError as e:
             raise RigettiJobError("Failed to submit job to Rigetti QCS.") from e
@@ -126,6 +174,7 @@ class RigettiDevice(QuantumDevice):
             job_id=job_id,
             device=self,
             num_shots=num_shots,
+            ro_sources=translation_result.ro_sources,
         )
 
     # pylint: disable-next=arguments-differ

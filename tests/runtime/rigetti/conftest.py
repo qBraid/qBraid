@@ -30,6 +30,13 @@ DUMMY_CLIENT_ID = "dummy-client-id"
 DUMMY_ISSUER = "https://dummy.issuer.example.com"
 DUMMY_JOB_ID = "job-abc-123"
 
+# Default ro_sources mapping used by the rigetti_job fixture.
+# Maps declared memory references to hardware readout keys.
+DEFAULT_RO_SOURCES = {
+    "ro[0]": "q0_readout",
+    "ro[1]": "q1_readout",
+}
+
 
 @pytest.fixture()
 def qpu_profile() -> TargetProfile:
@@ -62,11 +69,16 @@ def rigetti_device(qpu_profile: TargetProfile, mock_qcs_client: MagicMock):
 
 @pytest.fixture()
 def rigetti_job(rigetti_device):
-    """A RigettiJob in RUNNING state with num_shots=3."""
+    """A RigettiJob in INITIALIZING state with num_shots=3 and default ro_sources."""
     pytest.importorskip("pyquil")
     from qbraid.runtime.rigetti import RigettiJob
 
-    return RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=3)
+    return RigettiJob(
+        job_id=DUMMY_JOB_ID,
+        device=rigetti_device,
+        num_shots=3,
+        ro_sources=DEFAULT_RO_SOURCES,
+    )
 
 
 @pytest.fixture()
