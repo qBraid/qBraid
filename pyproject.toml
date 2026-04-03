@@ -56,6 +56,7 @@ pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2.0,<=0.5.1"]
 qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.39.0,<0.42", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
+openfermion = ["openfermion"]
 
 [project.entry-points."qbraid.programs"]
 qubo = "qbraid.programs.annealing.qubo:QuboProgram"
