@@ -27,6 +27,7 @@ Types of changes:
 - Updated PennyLane-to-QASM2 conversion to use `pennylane.to_openqasm()` module-level function, replacing the removed `QuantumTape.to_openqasm()` instance method ([#1128](https://github.com/qBraid/qBraid/issues/1128))
 - Added credential validation check in Azure Quantum test workspace fixture to skip tests when `resource_id` or `credential` are not fully configured ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
+- Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -43,6 +44,7 @@ Types of changes:
 - Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
 - Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
 - Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
 
 ## [0.11.1] - 2026-02-24
 
