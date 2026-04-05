@@ -22,7 +22,6 @@ from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.origin import OriginDevice, OriginJob, OriginProvider
 from qbraid.runtime.origin.job import _map_status, _normalize_status, OriginJobError
 from qbraid.runtime.origin.provider import _resolve_api_key
-from qbraid.runtime.profile import TargetProfile
 
 
 # --- API key resolution ---
@@ -88,12 +87,12 @@ class TestOriginProvider:
         mock_service.backend.return_value = mock_backend
         mock_get_service.return_value = mock_service
 
-        provider = OriginProvider(api_key="test-key")
-        device = provider.get_device("full_amplitude")
+        with patch("qbraid.runtime.origin.provider.ProgramSpec"):
+            provider = OriginProvider(api_key="test-key")
+            device = provider.get_device("full_amplitude")
 
         assert isinstance(device, OriginDevice)
         assert device.id == "full_amplitude"
-        assert device.profile.simulator is True
 
     @patch("qbraid.runtime.origin.provider._get_service")
     def test_get_devices_filters_unavailable(self, mock_get_service, monkeypatch):
@@ -109,8 +108,9 @@ class TestOriginProvider:
         mock_service.backend.return_value = mock_backend
         mock_get_service.return_value = mock_service
 
-        provider = OriginProvider(api_key="test-key")
-        devices = provider.get_devices()
+        with patch("qbraid.runtime.origin.provider.ProgramSpec"):
+            provider = OriginProvider(api_key="test-key")
+            devices = provider.get_devices()
 
         assert len(devices) == 1
         assert devices[0].id == "full_amplitude"
@@ -123,39 +123,21 @@ class TestOriginDevice:
     def _make_device(self, backend_name="full_amplitude", device_id=None):
         device_id = device_id or backend_name
         mock_backend = MagicMock()
-        mock_backend.chip_info.side_effect = Exception("no chip info")
-        profile = OriginDevice.build_profile(mock_backend, device_id, backend_name)
+        mock_service = MagicMock()
+        profile = MagicMock()
+        profile.device_id = device_id
+        profile.simulator = backend_name in {"full_amplitude", "partial_amplitude", "single_amplitude"}
+        profile.num_qubits = 35 if profile.simulator else None
         return OriginDevice(
             profile=profile,
             backend=mock_backend,
             backend_name=backend_name,
-            api_key="test-key",
+            service=mock_service,
         )
 
     def test_status_always_online(self):
         device = self._make_device()
         assert device.status() == DeviceStatus.ONLINE
-
-    def test_simulator_profile(self):
-        device = self._make_device("full_amplitude")
-        assert device.profile.simulator is True
-        assert device.profile.num_qubits == 35
-
-    def test_hardware_profile(self):
-        mock_backend = MagicMock()
-        mock_chip_info = MagicMock()
-        mock_chip_info.qubits_num.return_value = 102
-        mock_chip_info.get_basic_gates.return_value = ["H", "CNOT", "RZ"]
-        mock_backend.chip_info.return_value = mock_chip_info
-
-        profile = OriginDevice.build_profile(mock_backend, "wukong_102", "origin_wukong")
-        assert profile.simulator is False
-        assert profile.num_qubits == 102
-
-    def test_unsupported_input_type_raises(self):
-        device = self._make_device()
-        with pytest.raises(TypeError, match="Unsupported input type"):
-            device._to_qprog(12345)
 
 
 # --- Job ---

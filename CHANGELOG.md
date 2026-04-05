@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added OriginQ QCloud provider integration (`qbraid.runtime.origin`) with `OriginProvider`, `OriginDevice`, and `OriginJob` classes. ([#1148](https://github.com/qBraid/qBraid/pull/1148))
 
 ### Improved / Modified
 - Removed legacy `pkg_resources` logic for loading entry points (`qbraid._entrypoints`), as support for Python 3.9 has been dropped and the project now requires Python 3.10 or higher. ([#1002](https://github.com/qBraid/qBraid/issues/1002))

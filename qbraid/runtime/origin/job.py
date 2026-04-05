@@ -74,12 +74,12 @@ class OriginJob(QuantumJob):
         *,
         device: Optional[Any] = None,
         backend_job: Optional[Any] = None,
-        api_key: Optional[str] = None,
+        service: Optional[Any] = None,
         **kwargs,
     ) -> None:
         super().__init__(job_id=job_id, device=device, **kwargs)
         self._backend_job = backend_job
-        self._api_key = api_key
+        self._service = service
 
     def _get_backend_job(self):
         """Return the cached backend job, or reconstruct it from the job ID."""
@@ -89,7 +89,7 @@ class OriginJob(QuantumJob):
             # pylint: disable-next=import-outside-toplevel
             from qbraid.runtime.origin.provider import _get_qcloud_job
 
-            self._backend_job = _get_qcloud_job(self.id, self._api_key)
+            self._backend_job = _get_qcloud_job(self.id, service=self._service)
         except Exception as exc:
             raise OriginJobError(f"Unable to retrieve OriginQ job {self.id}") from exc
         return self._backend_job
