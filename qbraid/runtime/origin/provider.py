@@ -59,7 +59,7 @@ def _get_qcloud_job(job_id: str, service: Optional[Any] = None):
 
     if service is None:
         api_key = _resolve_api_key()
-        _get_service(api_key)
+        service = _get_service(api_key)
     return qcloud_module.QCloudJob(job_id)
 
 

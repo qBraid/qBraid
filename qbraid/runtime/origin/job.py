@@ -112,6 +112,8 @@ class OriginJob(QuantumJob):
         self.wait_for_final_state()
         backend_job = self._get_backend_job()
 
+        success = self.status() == JobStatus.COMPLETED
+
         try:
             result_obj = backend_job.result()
         except Exception as exc:
@@ -133,6 +135,6 @@ class OriginJob(QuantumJob):
         return Result(
             device_id=device_id,
             job_id=self.id,
-            success=True,
+            success=success,
             data=GateModelResultData(measurement_counts=normalized),
         )

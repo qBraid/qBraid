@@ -73,10 +73,9 @@ class OriginDevice(QuantumDevice):
         is_single = not isinstance(run_input, (list, Sequence))
         inputs = [run_input] if is_single else run_input
 
+        nshots = int(shots)
         jobs = []
         for qprog in inputs:
-            nshots = int(shots)
-
             if self._backend_name in SIMULATOR_BACKENDS:
                 backend_job = self._backend.run(qprog, nshots)
             else:
