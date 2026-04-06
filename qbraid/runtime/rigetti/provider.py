@@ -28,16 +28,12 @@ from __future__ import annotations
 import atexit
 import logging
 import os
-import shutil
 import signal
-import socket
-import time
-from pathlib import Path
 from subprocess import DEVNULL, Popen, TimeoutExpired
 from typing import Optional
 
 import pyquil
-from qcs_sdk.client import AuthServer, OAuthSession, QCSClient, RefreshToken
+from qcs_sdk.client import QCSClient
 from qcs_sdk.qpu import list_quantum_processors
 from qcs_sdk.qpu.api import ConnectionStrategy, ExecutionOptionsBuilder
 from qcs_sdk.qpu.isa import get_instruction_set_architecture
@@ -45,21 +41,23 @@ from qcs_sdk.qpu.isa import get_instruction_set_architecture
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime import QuantumProvider, TargetProfile
-from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .device import RigettiDevice
+from .setup import (
+    DEFAULT_GRPC_API_URL,
+    DEFAULT_QUILC_PORT,
+    DEFAULT_QUILC_URL,
+    DEFAULT_QVM_PORT,
+    DEFAULT_QVM_URL,
+    RigettiProviderError,
+    build_qcs_client,
+    download_forest_sdk,
+    find_binary,
+    is_port_in_use,
+    wait_for_port,
+)
 
 logger = logging.getLogger(__name__)
-
-DEFAULT_GRPC_API_URL = "https://grpc.qcs.rigetti.com"
-DEFAULT_QUILC_URL = "tcp://127.0.0.1:5555"
-DEFAULT_QVM_URL = "http://127.0.0.1:5000"
-DEFAULT_QUILC_PORT = 5555
-DEFAULT_QVM_PORT = 5000
-
-
-class RigettiProviderError(QbraidRuntimeError):
-    """Class for errors raised during Rigetti provider setup."""
 
 
 class RigettiProvider(QuantumProvider):
@@ -85,7 +83,7 @@ class RigettiProvider(QuantumProvider):
                     "A Rigetti refresh token is required."
                     " Set it via RIGETTI_REFRESH_TOKEN or pass a QCSClient directly."
                 )
-            self._qcs_client = self._build_qcs_client(
+            self._qcs_client = build_qcs_client(
                 refresh_token=refresh_token,
                 client_id=os.getenv("RIGETTI_CLIENT_ID"),
                 issuer=os.getenv("RIGETTI_ISSUER"),
@@ -96,78 +94,18 @@ class RigettiProvider(QuantumProvider):
 
         self._execution_options = self._build_execution_options()
 
-    @staticmethod
-    def _build_qcs_client(  # pylint: disable=too-many-arguments
-        refresh_token: str,
-        client_id: Optional[str] = None,
-        issuer: Optional[str] = None,
-        grpc_api_url: Optional[str] = None,
-        quilc_url: Optional[str] = None,
-        qvm_url: Optional[str] = None,
-    ) -> QCSClient:
-        """Build a QCSClient with the given credentials and URL configuration."""
-        if client_id and issuer:
-            auth_server = AuthServer(client_id=client_id, issuer=issuer)
-        else:
-            auth_server = AuthServer.default()
-
-        kwargs: dict = {
-            "oauth_session": OAuthSession(
-                RefreshToken(refresh_token=refresh_token),
-                auth_server,
-            ),
-        }
-        if grpc_api_url is not None:
-            kwargs["grpc_api_url"] = grpc_api_url
-        if quilc_url is not None:
-            kwargs["quilc_url"] = quilc_url
-        if qvm_url is not None:
-            kwargs["qvm_url"] = qvm_url
-
-        return QCSClient(**kwargs)
-
-    @staticmethod
-    def _is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
-        """Check whether a TCP port is already accepting connections."""
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-            sock.settimeout(1)
-            return sock.connect_ex((host, port)) == 0
-
-    @staticmethod
-    def _find_binary(name: str) -> Optional[Path]:
-        """Find a binary on PATH or in ~/.qbraid/rigetti/bin/."""
-        which_result = shutil.which(name)
-        if which_result:
-            return Path(which_result)
-        fallback = Path.home() / ".qbraid" / "rigetti" / "bin" / name
-        if fallback.is_file() and os.access(fallback, os.X_OK):
-            return fallback
-        return None
-
-    @staticmethod
-    def _wait_for_port(port: int, host: str = "127.0.0.1", timeout: float = 15.0) -> None:
-        """Block until a TCP port starts accepting connections or timeout elapses."""
-        deadline = time.monotonic() + timeout
-        while time.monotonic() < deadline:
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-                sock.settimeout(1)
-                if sock.connect_ex((host, port)) == 0:
-                    return
-            time.sleep(0.5)
-        raise RigettiProviderError(f"Timed out waiting for port {port} on {host} after {timeout}s.")
-
-    def _start_quilc(self, binary_path: Path) -> None:
+    def _start_quilc(self, binary_path) -> None:
         """Start quilc as a background RPCQ server on port 5555."""
         logger.info("Starting quilc from %s", binary_path)
         self._quilc_process = Popen(  # pylint: disable=consider-using-with
-            [str(binary_path), "-S"],
+            [str(binary_path), "-P", "-S", "-p", str(DEFAULT_QUILC_PORT)],
             stdout=DEVNULL,
             stderr=DEVNULL,
         )
-        self._wait_for_port(DEFAULT_QUILC_PORT)
+        wait_for_port(DEFAULT_QUILC_PORT)
         logger.info("quilc is running (pid=%d)", self._quilc_process.pid)
 
-    def _start_qvm(self, binary_path: Path) -> None:
+    def _start_qvm(self, binary_path) -> None:
         """Start qvm as a background server on port 5000."""
         logger.info("Starting qvm from %s", binary_path)
         self._qvm_process = Popen(  # pylint: disable=consider-using-with
@@ -175,7 +113,7 @@ class RigettiProvider(QuantumProvider):
             stdout=DEVNULL,
             stderr=DEVNULL,
         )
-        self._wait_for_port(DEFAULT_QVM_PORT)
+        wait_for_port(DEFAULT_QVM_PORT)
         logger.info("qvm is running (pid=%d)", self._qvm_process.pid)
 
     def _cleanup(self) -> None:
@@ -210,21 +148,6 @@ class RigettiProvider(QuantumProvider):
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
         self._cleanup_registered = True
-
-    @staticmethod
-    def _download_forest_sdk() -> None:
-        """Stub: download and install quilc/qvm binaries.
-
-        Full implementation deferred to a follow-up PR since it involves
-        platform-specific installers (.pkg, .deb, .rpm, .msi).
-        """
-        raise RigettiProviderError(
-            "quilc binary not found. Install the Forest SDK manually:\n"
-            "  macOS:  Download from https://qcs.rigetti.com/sdk-downloads\n"
-            "  Linux:  Download from https://qcs.rigetti.com/sdk-downloads\n"
-            "  Docker: docker run --rm -p 5555:5555 rigetti/quilc -S\n"
-            "Then re-run setup()."
-        )
 
     def setup(  # pylint: disable=too-many-arguments
         self,
@@ -284,7 +207,7 @@ class RigettiProvider(QuantumProvider):
         grpc_api_url = grpc_endpoint or os.getenv("QCS_GRPC_ENDPOINT", DEFAULT_GRPC_API_URL)
 
         # --- Rebuild QCSClient ---
-        self._qcs_client = self._build_qcs_client(
+        self._qcs_client = build_qcs_client(
             refresh_token=refresh_token,
             client_id=client_id,
             issuer=issuer,
@@ -298,24 +221,24 @@ class RigettiProvider(QuantumProvider):
         if quilc_endpoint:
             logger.info("Using provided quilc endpoint: %s", quilc_endpoint)
         elif start_quilc:
-            if self._is_port_in_use(DEFAULT_QUILC_PORT):
+            if is_port_in_use(DEFAULT_QUILC_PORT):
                 logger.info("quilc already running on port %d, skipping.", DEFAULT_QUILC_PORT)
             else:
-                binary = self._find_binary("quilc")
+                binary = find_binary("quilc")
                 if binary is None:
-                    self._download_forest_sdk()
+                    download_forest_sdk()
                 self._start_quilc(binary)
 
         # --- Handle qvm ---
         if qvm_endpoint:
             logger.info("Using provided qvm endpoint: %s", qvm_endpoint)
         elif start_qvm:
-            if self._is_port_in_use(DEFAULT_QVM_PORT):
+            if is_port_in_use(DEFAULT_QVM_PORT):
                 logger.info("qvm already running on port %d, skipping.", DEFAULT_QVM_PORT)
             else:
-                binary = self._find_binary("qvm")
+                binary = find_binary("qvm")
                 if binary is None:
-                    self._download_forest_sdk()
+                    download_forest_sdk()
                 self._start_qvm(binary)
 
         # --- Register cleanup ---
