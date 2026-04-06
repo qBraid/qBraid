@@ -185,7 +185,12 @@ class TestRigettiProviderInit:
 
             mock_refresh_token_cls.assert_called_once_with(refresh_token=DUMMY_TOKEN)
             mock_oauth_session_cls.assert_called_once_with(fake_refresh_token, fake_auth_server)
-            mock_qcs_client_cls.assert_called_once_with(oauth_session=fake_oauth_session)
+            mock_qcs_client_cls.assert_called_once_with(
+                oauth_session=fake_oauth_session,
+                grpc_api_url="https://grpc.qcs.rigetti.com",
+                quilc_url="tcp://127.0.0.1:5555",
+                qvm_url="http://127.0.0.1:5000",
+            )
 
             assert provider._qcs_client is fake_client
 

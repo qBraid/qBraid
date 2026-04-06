@@ -67,6 +67,9 @@ class RigettiProvider(QuantumProvider):
                     RefreshToken(refresh_token=refresh_token),
                     auth_server,
                 ),
+                grpc_api_url=os.getenv("QCS_GRPC_ENDPOINT", "https://grpc.qcs.rigetti.com"),
+                quilc_url=os.getenv("QCS_QUILC_ENDPOINT", "tcp://127.0.0.1:5555"),
+                qvm_url=os.getenv("QCS_QVM_ENDPOINT", "http://127.0.0.1:5000"),
             )
 
     def _build_profile(self, quantum_processor_id: str) -> TargetProfile:

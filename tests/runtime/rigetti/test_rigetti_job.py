@@ -169,10 +169,8 @@ class TestRigettiJobStatus:
         ):
             assert rigetti_job.status() == JobStatus.COMPLETED
 
-    def test_status_passes_execution_options_to_retrieve_results(
-        self, rigetti_job: RigettiJob
-    ) -> None:
-        """status() must pass device.execution_options to retrieve_results."""
+    def test_status_passes_correct_args_to_retrieve_results(self, rigetti_job: RigettiJob) -> None:
+        """status() must pass job_id, quantum_processor_id, and client to retrieve_results."""
         with patch(
             "qbraid.runtime.rigetti.job.retrieve_results",
             return_value=MagicMock(),
@@ -183,7 +181,6 @@ class TestRigettiJobStatus:
             job_id=str(rigetti_job.id),
             quantum_processor_id=DEVICE_ID,
             client=rigetti_job._client,
-            execution_options=rigetti_job._device.execution_options,
         )
 
     def test_status_reflects_manual_internal_change(self, rigetti_job: RigettiJob) -> None:
@@ -226,7 +223,7 @@ class TestRigettiJobCancel:
     def test_cancel_calls_cancel_job_with_correct_args(
         self, rigetti_job: RigettiJob, mock_qcs_client: MagicMock
     ) -> None:
-        """cancel() must forward job_id, quantum_processor_id, client, and execution_options."""
+        """cancel() must forward job_id, quantum_processor_id, and client."""
         with patch("qbraid.runtime.rigetti.job.cancel_job") as mock_cancel:
             rigetti_job.cancel()
 
@@ -234,7 +231,6 @@ class TestRigettiJobCancel:
             job_id=DUMMY_JOB_ID,
             quantum_processor_id=DEVICE_ID,
             client=mock_qcs_client,
-            execution_options=rigetti_job._device.execution_options,
         )
 
     def test_cancel_sets_status_to_cancelled_on_success(self, rigetti_job: RigettiJob) -> None:
@@ -708,10 +704,10 @@ class TestRigettiJobResult:
 
         assert res.data.measurement_counts == {"00": 2, "11": 1}
 
-    def test_result_passes_execution_options_to_retrieve_results(
+    def test_result_passes_correct_args_to_retrieve_results(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """result() must pass device.execution_options to retrieve_results."""
+        """result() must pass job_id, quantum_processor_id, and client to retrieve_results."""
         job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
 
         with patch(
@@ -724,7 +720,6 @@ class TestRigettiJobResult:
             job_id=str(DUMMY_JOB_ID),
             quantum_processor_id=DEVICE_ID,
             client=job._client,
-            execution_options=rigetti_device.execution_options,
         )
 
     def test_result_raises_on_qpu_api_error(self, rigetti_job: RigettiJob) -> None:

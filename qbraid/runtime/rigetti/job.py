@@ -92,7 +92,6 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
-                execution_options=self._device.execution_options,
             )
             self._status = JobStatus.COMPLETED
         except QpuApiError as err:
@@ -122,7 +121,6 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
-                execution_options=self._device.execution_options,
             )
         except QpuApiError as exc:
             self._status = previous_status
@@ -214,7 +212,6 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
-                execution_options=self._device.execution_options,
             )
         result_data = self._parse_results(self._cached_results)
 

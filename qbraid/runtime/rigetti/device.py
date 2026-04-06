@@ -21,19 +21,13 @@
 Module defining Rigetti device class
 """
 
-import os
 from multiprocessing.pool import ThreadPool
 from typing import Optional, Union
 
 from qcs_sdk.client import QCSClient
 from qcs_sdk.compiler.quilc import QuilcClient, TargetDevice, compile_program
 from qcs_sdk.qpu import ListQuantumProcessorsError, list_quantum_processors
-from qcs_sdk.qpu.api import (
-    ConnectionStrategy,
-    ExecutionOptions,
-    ExecutionOptionsBuilder,
-    SubmissionError,
-)
+from qcs_sdk.qpu.api import SubmissionError
 from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import translate
@@ -43,10 +37,6 @@ from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import RigettiJob, RigettiJobError
-
-DEFAULT_GRPC_ENDPOINT = "https://grpc.qcs.rigetti.com"
-DEFAULT_QUILC_ENDPOINT = "tcp://127.0.0.1:5555"
-DEFAULT_EXECUTION_TIMEOUT = 30.0
 
 
 class RigettiDeviceError(QbraidRuntimeError):
@@ -68,17 +58,6 @@ class RigettiDevice(QuantumDevice):
         """
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
-        self.execution_options = self._build_execution_options()
-
-    @staticmethod
-    def _build_execution_options() -> ExecutionOptions:
-        """Build ExecutionOptions using the QCS gRPC endpoint."""
-        endpoint = os.getenv("QCS_GRPC_ENDPOINT", DEFAULT_GRPC_ENDPOINT)
-        timeout = float(os.getenv("QCS_EXECUTION_TIMEOUT", str(DEFAULT_EXECUTION_TIMEOUT)))
-        builder = ExecutionOptionsBuilder()
-        builder.connection_strategy = ConnectionStrategy.EndpointAddress(endpoint)
-        builder.timeout_seconds = timeout
-        return builder.build()
 
     def status(self) -> DeviceStatus:
         """
@@ -118,9 +97,7 @@ class RigettiDevice(QuantumDevice):
                 ),
                 # TODO: the quilc compiler should be present in a cloud server env,
                 # otherwise we need to ship it with qbraid-sdk and run it locally.
-                client=QuilcClient.new_rpcq(
-                    os.getenv("QCS_QUILC_ENDPOINT", DEFAULT_QUILC_ENDPOINT)
-                ),
+                client=QuilcClient.new_rpcq(self._qcs_client.quilc_url),
             )
             return compilation_result.program.to_quil()
         except Exception as e:
@@ -165,7 +142,6 @@ class RigettiDevice(QuantumDevice):
                 patch_values={},
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
-                execution_options=self.execution_options,
             )
         except SubmissionError as e:
             raise RigettiJobError("Failed to submit job to Rigetti QCS.") from e

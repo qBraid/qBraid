@@ -55,7 +55,11 @@ def qpu_profile() -> TargetProfile:
 @pytest.fixture()
 def mock_qcs_client() -> MagicMock:
     """A generic mock replacing qcs_sdk.client.QCSClient."""
-    return MagicMock(name="QCSClient")
+    mock = MagicMock(name="QCSClient")
+    mock.quilc_url = "tcp://127.0.0.1:5555"
+    mock.qvm_url = "http://127.0.0.1:5000"
+    mock.grpc_api_url = "https://grpc.qcs.rigetti.com"
+    return mock
 
 
 @pytest.fixture()

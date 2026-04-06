@@ -38,101 +38,11 @@ if rigetti_deps_found:
     from qcs_sdk.qpu.api import SubmissionError
 
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
-    from qbraid.runtime.rigetti.device import (
-        DEFAULT_EXECUTION_TIMEOUT,
-        DEFAULT_GRPC_ENDPOINT,
-        RigettiDeviceError,
-    )
+    from qbraid.runtime.rigetti.device import RigettiDeviceError
     from qbraid.runtime.rigetti.job import RigettiJobError
 else:
     RigettiDevice = None
     RigettiJob = None
-
-# ===========================================================================
-# Device – _build_execution_options
-# ===========================================================================
-
-
-class TestBuildExecutionOptions:
-    """Tests for RigettiDevice._build_execution_options."""
-
-    def test_build_execution_options_returns_execution_options(
-        self, rigetti_device: RigettiDevice
-    ) -> None:
-        """_build_execution_options must return an ExecutionOptions instance."""
-        opts = rigetti_device.execution_options
-        assert opts is not None
-
-    def test_build_execution_options_uses_default_endpoint(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When QCS_GRPC_ENDPOINT is not set, the default endpoint is used."""
-        monkeypatch.delenv("QCS_GRPC_ENDPOINT", raising=False)
-        monkeypatch.delenv("QCS_EXECUTION_TIMEOUT", raising=False)
-        opts = RigettiDevice._build_execution_options()
-        # Verify it returns without error; the endpoint value is embedded
-        # inside the Rust-backed ExecutionOptions object, so we just ensure
-        # construction succeeds with the default constant.
-        assert opts is not None
-
-    def test_build_execution_options_uses_custom_endpoint(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When QCS_GRPC_ENDPOINT is set, the custom endpoint is used."""
-        monkeypatch.setenv("QCS_GRPC_ENDPOINT", "https://custom.grpc.endpoint:443")
-        monkeypatch.delenv("QCS_EXECUTION_TIMEOUT", raising=False)
-        opts = RigettiDevice._build_execution_options()
-        assert opts is not None
-
-    def test_build_execution_options_uses_custom_timeout(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When QCS_EXECUTION_TIMEOUT is set, the custom timeout is used."""
-        monkeypatch.delenv("QCS_GRPC_ENDPOINT", raising=False)
-        monkeypatch.setenv("QCS_EXECUTION_TIMEOUT", "60.0")
-        opts = RigettiDevice._build_execution_options()
-        assert opts is not None
-
-    def test_build_execution_options_uses_both_custom_values(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When both env vars are set, both custom values are used."""
-        monkeypatch.setenv("QCS_GRPC_ENDPOINT", "https://custom:443")
-        monkeypatch.setenv("QCS_EXECUTION_TIMEOUT", "120.0")
-        opts = RigettiDevice._build_execution_options()
-        assert opts is not None
-
-    def test_build_execution_options_reads_correct_env_vars(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """Verify the method reads QCS_GRPC_ENDPOINT and QCS_EXECUTION_TIMEOUT."""
-        custom_endpoint = "https://test.grpc:443"
-        custom_timeout = "45.5"
-        monkeypatch.setenv("QCS_GRPC_ENDPOINT", custom_endpoint)
-        monkeypatch.setenv("QCS_EXECUTION_TIMEOUT", custom_timeout)
-
-        with (
-            patch("qbraid.runtime.rigetti.device.os.getenv") as mock_getenv,
-            patch("qbraid.runtime.rigetti.device.ExecutionOptionsBuilder") as mock_builder_cls,
-        ):
-            mock_builder = MagicMock()
-            mock_builder_cls.return_value = mock_builder
-            mock_getenv.side_effect = lambda key, default=None: {
-                "QCS_GRPC_ENDPOINT": custom_endpoint,
-                "QCS_EXECUTION_TIMEOUT": custom_timeout,
-            }.get(key, default)
-
-            RigettiDevice._build_execution_options()
-
-            mock_getenv.assert_any_call("QCS_GRPC_ENDPOINT", DEFAULT_GRPC_ENDPOINT)
-            mock_getenv.assert_any_call("QCS_EXECUTION_TIMEOUT", str(DEFAULT_EXECUTION_TIMEOUT))
-
-    def test_execution_options_stored_as_public_attribute(
-        self, rigetti_device: RigettiDevice
-    ) -> None:
-        """execution_options must be stored as a public attribute on the device."""
-        assert hasattr(rigetti_device, "execution_options")
-        assert rigetti_device.execution_options is not None
 
 
 # ===========================================================================
@@ -445,10 +355,8 @@ class TestRigettiDeviceSubmit:
             client=rigetti_device._qcs_client,
         )
 
-    def test_submit_calls_qpu_submit_with_execution_options(
-        self, rigetti_device: RigettiDevice
-    ) -> None:
-        """_submit must pass execution_options to qpu_submit."""
+    def test_submit_calls_qpu_submit_with_correct_args(self, rigetti_device: RigettiDevice) -> None:
+        """_submit must pass the translated program and client to qpu_submit."""
         quil_str, shots = self._make_quil(shots=1)
         _, _, _, mock_submit = _mock_submit_pipeline(rigetti_device, quil_str, shots)
 
@@ -457,7 +365,6 @@ class TestRigettiDeviceSubmit:
             patch_values={},
             quantum_processor_id=DEVICE_ID,
             client=rigetti_device._qcs_client,
-            execution_options=rigetti_device.execution_options,
         )
 
     def test_submit_raises_rigetti_job_error_on_submission_error(
