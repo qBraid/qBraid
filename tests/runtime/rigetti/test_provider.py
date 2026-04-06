@@ -79,6 +79,7 @@ class TestRigettiProviderInit:
             patch("qbraid.runtime.rigetti.provider.OAuthSession"),
             patch("qbraid.runtime.rigetti.provider.RefreshToken"),
             patch("qbraid.runtime.rigetti.provider.QCSClient") as mock_qcs_client_cls,
+            patch.object(RigettiProvider, "_build_execution_options", return_value=MagicMock()),
         ):
             mock_auth_server_cls.return_value = MagicMock(name="CustomAuthServer")
             mock_qcs_client_cls.return_value = MagicMock(name="QCSClient")
@@ -104,6 +105,7 @@ class TestRigettiProviderInit:
             patch("qbraid.runtime.rigetti.provider.OAuthSession"),
             patch("qbraid.runtime.rigetti.provider.RefreshToken"),
             patch("qbraid.runtime.rigetti.provider.QCSClient") as mock_qcs_client_cls,
+            patch.object(RigettiProvider, "_build_execution_options", return_value=MagicMock()),
         ):
             mock_auth_server_cls.default.return_value = MagicMock(name="DefaultAuthServer")
             mock_qcs_client_cls.return_value = MagicMock(name="QCSClient")
@@ -126,6 +128,7 @@ class TestRigettiProviderInit:
             patch("qbraid.runtime.rigetti.provider.OAuthSession"),
             patch("qbraid.runtime.rigetti.provider.RefreshToken"),
             patch("qbraid.runtime.rigetti.provider.QCSClient") as mock_qcs_client_cls,
+            patch.object(RigettiProvider, "_build_execution_options", return_value=MagicMock()),
         ):
             mock_auth_server_cls.default.return_value = MagicMock(name="DefaultAuthServer")
             mock_qcs_client_cls.return_value = MagicMock(name="QCSClient")
@@ -148,6 +151,7 @@ class TestRigettiProviderInit:
             patch("qbraid.runtime.rigetti.provider.OAuthSession"),
             patch("qbraid.runtime.rigetti.provider.RefreshToken"),
             patch("qbraid.runtime.rigetti.provider.QCSClient") as mock_qcs_client_cls,
+            patch.object(RigettiProvider, "_build_execution_options", return_value=MagicMock()),
         ):
             mock_auth_server_cls.default.return_value = MagicMock(name="DefaultAuthServer")
             mock_qcs_client_cls.return_value = MagicMock(name="QCSClient")
@@ -170,6 +174,7 @@ class TestRigettiProviderInit:
             patch("qbraid.runtime.rigetti.provider.OAuthSession") as mock_oauth_session_cls,
             patch("qbraid.runtime.rigetti.provider.RefreshToken") as mock_refresh_token_cls,
             patch("qbraid.runtime.rigetti.provider.QCSClient") as mock_qcs_client_cls,
+            patch.object(RigettiProvider, "_build_execution_options", return_value=MagicMock()),
         ):
             fake_auth_server = MagicMock(name="DefaultAuthServer")
             fake_oauth_session = MagicMock(name="OAuthSession")
@@ -913,6 +918,7 @@ class TestSetup:
                 return_value=fake_new_client,
             ) as mock_build,
             patch.object(RigettiProvider, "_is_port_in_use", return_value=True),
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -944,6 +950,7 @@ class TestSetup:
                 return_value=MagicMock(),
             ),
             patch.object(RigettiProvider, "_is_port_in_use", return_value=True),
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(interactive=True, start_quilc=False, start_qvm=False)
@@ -975,6 +982,7 @@ class TestSetup:
             ),
             patch.object(RigettiProvider, "_is_port_in_use") as mock_port,
             patch.object(provider, "_start_quilc") as mock_start,
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -1000,6 +1008,7 @@ class TestSetup:
             ),
             patch.object(RigettiProvider, "_is_port_in_use", return_value=True),
             patch.object(provider, "_start_quilc") as mock_start,
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -1029,6 +1038,7 @@ class TestSetup:
             patch.object(RigettiProvider, "_is_port_in_use", return_value=False),
             patch.object(RigettiProvider, "_find_binary", return_value=fake_binary),
             patch.object(provider, "_start_quilc") as mock_start,
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -1059,6 +1069,7 @@ class TestSetup:
                 "_download_forest_sdk",
                 side_effect=RigettiProviderError("not found"),
             ) as mock_download,
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             with pytest.raises(RigettiProviderError):
@@ -1082,6 +1093,7 @@ class TestSetup:
                 return_value=MagicMock(),
             ),
             patch.object(provider, "_start_qvm") as mock_start,
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -1112,6 +1124,7 @@ class TestSetup:
             patch.object(RigettiProvider, "_is_port_in_use", return_value=False),
             patch.object(RigettiProvider, "_find_binary", return_value=fake_binary),
             patch.object(provider, "_start_qvm") as mock_start,
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -1133,6 +1146,7 @@ class TestSetup:
                 "_build_qcs_client",
                 return_value=MagicMock(),
             ),
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup") as mock_register,
         ):
             provider.setup(
@@ -1163,6 +1177,7 @@ class TestSetup:
                 "_build_qcs_client",
                 return_value=MagicMock(),
             ),
+            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(interactive=True, start_quilc=False, start_qvm=False)

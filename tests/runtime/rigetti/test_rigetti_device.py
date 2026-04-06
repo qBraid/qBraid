@@ -187,10 +187,14 @@ def _mock_compile_pipeline(compiled_quil: str = "COMPILED_QUIL"):
 
 
 class TestRigettiDeviceTransform:
-    """Tests for RigettiDevice.transform (compilation only)."""
+    """Tests for RigettiDevice.transform (compilation only).
 
-    def test_transform_calls_compile_program(self, rigetti_device: RigettiDevice) -> None:
-        """transform must invoke compile_program with the input Quil string."""
+    transform() accepts both pyquil.Program and str inputs and returns
+    the same type: Program in → Program out, str in → str out.
+    """
+
+    def test_transform_str_calls_compile_program(self, rigetti_device: RigettiDevice) -> None:
+        """transform(str) must invoke compile_program with the Quil string."""
         fake_comp = _mock_compile_pipeline()
         quil_str = "DECLARE ro BIT[1]\nMEASURE 0 ro[0]\n"
 
@@ -215,8 +219,8 @@ class TestRigettiDeviceTransform:
         assert call_kwargs.kwargs["quil"] == quil_str
         assert call_kwargs.kwargs["target"] == mock_from_isa.return_value
 
-    def test_transform_returns_compiled_quil_string(self, rigetti_device: RigettiDevice) -> None:
-        """transform must return the compiled Quil string from compile_program."""
+    def test_transform_str_returns_str(self, rigetti_device: RigettiDevice) -> None:
+        """transform(str) must return the compiled Quil as a str."""
         compiled_quil = "RZ(pi/2) 0\nMEASURE 0 ro[0]\n"
         fake_comp = _mock_compile_pipeline(compiled_quil=compiled_quil)
 
@@ -236,7 +240,71 @@ class TestRigettiDeviceTransform:
         ):
             result = rigetti_device.transform("H 0\nMEASURE 0 ro[0]\n")
 
+        assert isinstance(result, str)
         assert result == compiled_quil
+
+    def test_transform_program_serializes_before_compile(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """transform(Program) must call program.out() and pass the string to compile_program."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        expected_quil_str = program.out()
+        fake_comp = _mock_compile_pipeline()
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+        ):
+            rigetti_device.transform(program)
+
+        mock_compile.assert_called_once()
+        assert mock_compile.call_args.kwargs["quil"] == expected_quil_str
+
+    def test_transform_program_returns_program(self, rigetti_device: RigettiDevice) -> None:
+        """transform(Program) must return a pyquil.Program, not a string."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        compiled_quil = "RZ(pi/2) 0\nMEASURE 0 ro[0]\n"
+        fake_comp = _mock_compile_pipeline(compiled_quil=compiled_quil)
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ),
+        ):
+            result = rigetti_device.transform(program)
+
+        assert isinstance(result, pyquil.Program)
 
     def test_transform_compilation_failure_raises_device_error(
         self, rigetti_device: RigettiDevice
@@ -365,6 +433,7 @@ class TestRigettiDeviceSubmit:
             patch_values={},
             quantum_processor_id=DEVICE_ID,
             client=rigetti_device._qcs_client,
+            execution_options=rigetti_device._execution_options,
         )
 
     def test_submit_raises_rigetti_job_error_on_submission_error(

@@ -39,6 +39,7 @@ from typing import Optional
 import pyquil
 from qcs_sdk.client import AuthServer, OAuthSession, QCSClient, RefreshToken
 from qcs_sdk.qpu import list_quantum_processors
+from qcs_sdk.qpu.api import ConnectionStrategy, ExecutionOptionsBuilder
 from qcs_sdk.qpu.isa import get_instruction_set_architecture
 
 from qbraid.programs.experiment import ExperimentType
@@ -92,6 +93,8 @@ class RigettiProvider(QuantumProvider):
                 quilc_url=os.getenv("QCS_QUILC_ENDPOINT", DEFAULT_QUILC_URL),
                 qvm_url=os.getenv("QCS_QVM_ENDPOINT", DEFAULT_QVM_URL),
             )
+
+        self._execution_options = self._build_execution_options()
 
     @staticmethod
     def _build_qcs_client(  # pylint: disable=too-many-arguments
@@ -289,6 +292,7 @@ class RigettiProvider(QuantumProvider):
             quilc_url=quilc_url,
             qvm_url=qvm_url,
         )
+        self._execution_options = self._build_execution_options()
 
         # --- Handle quilc ---
         if quilc_endpoint:
@@ -317,6 +321,20 @@ class RigettiProvider(QuantumProvider):
         # --- Register cleanup ---
         self._register_cleanup()
 
+    def _build_execution_options(self):
+        """Build ExecutionOptions from the client's gRPC endpoint.
+
+        The QCS QPU API calls (submit, retrieve_results, cancel_job) require
+        ``ConnectionStrategy.EndpointAddress`` to connect directly to the
+        gRPC endpoint. The default ``Gateway`` strategy does not work for
+        direct API access.
+        """
+        builder = ExecutionOptionsBuilder()
+        builder.connection_strategy = ConnectionStrategy.EndpointAddress(
+            self._qcs_client.grpc_api_url
+        )
+        return builder.build()
+
     def _build_profile(self, quantum_processor_id: str) -> TargetProfile:
         instruction_set_architecture = get_instruction_set_architecture(
             quantum_processor_id=quantum_processor_id,
@@ -337,9 +355,19 @@ class RigettiProvider(QuantumProvider):
         quantum_processor_ids = list_quantum_processors(client=self._qcs_client)
         for qpu_id in quantum_processor_ids:
             profile = self._build_profile(quantum_processor_id=qpu_id)
-            devices.append(RigettiDevice(profile=profile, qcs_client=self._qcs_client))
+            devices.append(
+                RigettiDevice(
+                    profile=profile,
+                    qcs_client=self._qcs_client,
+                    execution_options=self._execution_options,
+                )
+            )
         return devices
 
     def get_device(self, device_id: str) -> RigettiDevice:
         profile = self._build_profile(quantum_processor_id=device_id)
-        return RigettiDevice(profile=profile, qcs_client=self._qcs_client)
+        return RigettiDevice(
+            profile=profile,
+            qcs_client=self._qcs_client,
+            execution_options=self._execution_options,
+        )

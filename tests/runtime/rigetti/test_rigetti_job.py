@@ -181,6 +181,7 @@ class TestRigettiJobStatus:
             job_id=str(rigetti_job.id),
             quantum_processor_id=DEVICE_ID,
             client=rigetti_job._client,
+            execution_options=rigetti_job._device._execution_options,
         )
 
     def test_status_reflects_manual_internal_change(self, rigetti_job: RigettiJob) -> None:
@@ -231,6 +232,7 @@ class TestRigettiJobCancel:
             job_id=DUMMY_JOB_ID,
             quantum_processor_id=DEVICE_ID,
             client=mock_qcs_client,
+            execution_options=rigetti_job._device._execution_options,
         )
 
     def test_cancel_sets_status_to_cancelled_on_success(self, rigetti_job: RigettiJob) -> None:
@@ -720,6 +722,7 @@ class TestRigettiJobResult:
             job_id=str(DUMMY_JOB_ID),
             quantum_processor_id=DEVICE_ID,
             client=job._client,
+            execution_options=rigetti_device._execution_options,
         )
 
     def test_result_raises_on_qpu_api_error(self, rigetti_job: RigettiJob) -> None:

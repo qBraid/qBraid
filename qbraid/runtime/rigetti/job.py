@@ -92,11 +92,14 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
+                execution_options=self._device._execution_options,
             )
             self._status = JobStatus.COMPLETED
         except QpuApiError as err:
             if "timeout" in str(err).lower():
-                logger.info("Retrieve timed out for job %s; job may still be running.", self.id)
+                logger.info(
+                    "Retrieve timed out for job %s; job may still be running.", self.id
+                )
             else:
                 self._status = JobStatus.FAILED
 
@@ -108,7 +111,9 @@ class RigettiJob(QuantumJob):
         the QCS API does not return status updates for job cancellation.
         """
         if self._status in JobStatus.terminal_states():
-            raise JobStateError(f"Cannot cancel job {self.id} in terminal state {self._status}.")
+            raise JobStateError(
+                f"Cannot cancel job {self.id} in terminal state {self._status}."
+            )
         previous_status = self._status
         self._status = JobStatus.CANCELLING
         try:
@@ -121,6 +126,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
+                execution_options=self._device._execution_options,
             )
         except QpuApiError as exc:
             self._status = previous_status
@@ -143,7 +149,8 @@ class RigettiJob(QuantumJob):
         which handles qubit ordering and register grouping internally.
         """
         readout_values = {
-            key: ReadoutValues(value.data) for key, value in execution_results.buffers.items()
+            key: ReadoutValues(value.data)
+            for key, value in execution_results.buffers.items()
         }
         qpu_result_data = QPUResultData(
             mappings=dict(self._ro_sources),
@@ -212,6 +219,7 @@ class RigettiJob(QuantumJob):
                 job_id=str(self.id),
                 quantum_processor_id=self._device.id,
                 client=self._client,
+                execution_options=self._device._execution_options,
             )
         result_data = self._parse_results(self._cached_results)
 

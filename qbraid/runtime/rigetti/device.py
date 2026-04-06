@@ -24,10 +24,11 @@ Module defining Rigetti device class
 from multiprocessing.pool import ThreadPool
 from typing import Optional, Union
 
+import pyquil
 from qcs_sdk.client import QCSClient
 from qcs_sdk.compiler.quilc import QuilcClient, TargetDevice, compile_program
 from qcs_sdk.qpu import ListQuantumProcessorsError, list_quantum_processors
-from qcs_sdk.qpu.api import SubmissionError
+from qcs_sdk.qpu.api import ExecutionOptions, SubmissionError
 from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import translate
@@ -52,12 +53,16 @@ class RigettiDevice(QuantumDevice):
         self,
         profile: TargetProfile,
         qcs_client: QCSClient,
+        execution_options: ExecutionOptions | None = None,
     ):
         """
         profile: A TargetProfile object (constructed by RigettiProvider).
+        execution_options: ExecutionOptions built by RigettiProvider. If None,
+            the SDK default (Gateway strategy) is used.
         """
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
+        self._execution_options = execution_options
 
     def status(self) -> DeviceStatus:
         """
@@ -65,7 +70,9 @@ class RigettiDevice(QuantumDevice):
         """
         try:
             # Otherwise, check if the quantum processor ID is in the list of available processors
-            quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
+            quantum_processor_ids = set(
+                list_quantum_processors(client=self._qcs_client)
+            )
             if self.id not in quantum_processor_ids:
                 return DeviceStatus.OFFLINE
         except ListQuantumProcessorsError as e:
@@ -74,38 +81,40 @@ class RigettiDevice(QuantumDevice):
             ) from e
         return DeviceStatus.ONLINE
 
-    def transform(self, run_input: str) -> str:
+    def transform(self, run_input):
         """Compile a Quil program into the QPU's native gate set via quilc.
 
-        Args:
-            run_input: A serialized Quil program string.
-
-        Returns:
-            A compiled Quil program string using only native gates
-            (RZ, RX, CZ, MEASURE).
+        Accepts either a ``pyquil.Program`` object or a serialized Quil
+        string. Returns the same type as the input: ``Program`` in,
+        ``Program`` out; ``str`` in, ``str`` out.
 
         Raises:
             RigettiDeviceError: If quilc compilation fails.
         """
+        is_program = isinstance(run_input, pyquil.Program)
+        quil_str = run_input.out() if is_program else run_input
+
         try:
             compilation_result = compile_program(
-                quil=run_input,
+                quil=quil_str,
                 target=TargetDevice.from_isa(
                     get_instruction_set_architecture(
                         quantum_processor_id=self.id, client=self._qcs_client
                     )
                 ),
-                # TODO: the quilc compiler should be present in a cloud server env,
-                # otherwise we need to ship it with qbraid-sdk and run it locally.
                 client=QuilcClient.new_rpcq(self._qcs_client.quilc_url),
             )
-            return compilation_result.program.to_quil()
+            compiled_quil = compilation_result.program.to_quil()
         except Exception as e:
             raise RigettiDeviceError(
                 f"Compilation failed for quantum processor '{self.id}'. "
                 "Ensure the program is valid Quil and that the quilc "
                 "compiler is running and accessible"
             ) from e
+
+        if is_program:
+            return pyquil.Program(compiled_quil)
+        return compiled_quil
 
     def _submit(self, run_input: str, shots: Optional[int] = None) -> RigettiJob:
         """
@@ -122,6 +131,8 @@ class RigettiDevice(QuantumDevice):
             )
 
         compiled_quil = self.transform(run_input)
+        if isinstance(compiled_quil, pyquil.Program):
+            compiled_quil = compiled_quil.out()
 
         try:
             translation_result = translate(
@@ -142,6 +153,7 @@ class RigettiDevice(QuantumDevice):
                 patch_values={},
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
+                execution_options=self._execution_options,
             )
         except SubmissionError as e:
             raise RigettiJobError("Failed to submit job to Rigetti QCS.") from e
