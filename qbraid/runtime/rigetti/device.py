@@ -70,9 +70,7 @@ class RigettiDevice(QuantumDevice):
         """
         try:
             # Otherwise, check if the quantum processor ID is in the list of available processors
-            quantum_processor_ids = set(
-                list_quantum_processors(client=self._qcs_client)
-            )
+            quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
             if self.id not in quantum_processor_ids:
                 return DeviceStatus.OFFLINE
         except ListQuantumProcessorsError as e:
@@ -130,13 +128,9 @@ class RigettiDevice(QuantumDevice):
                 f"Shots > 0 must be specified for Rigetti QPU jobs, current value: {num_shots}."
             )
 
-        compiled_quil = self.transform(run_input)
-        if isinstance(compiled_quil, pyquil.Program):
-            compiled_quil = compiled_quil.out()
-
         try:
             translation_result = translate(
-                native_quil=compiled_quil,
+                native_quil=run_input,
                 num_shots=num_shots,
                 quantum_processor_id=self.id,
                 client=self._qcs_client,

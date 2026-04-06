@@ -325,17 +325,17 @@ class TestRigettiDeviceTransform:
 # ===========================================================================
 
 
-def _mock_submit_pipeline(  # pylint: disable=too-many-arguments
+def _mock_submit_pipeline(
     rigetti_device: RigettiDevice,
     quil_str: str,
     shots: int,
     job_id: str = DUMMY_JOB_ID,
-    compiled_quil: str = "COMPILED_QUIL",
     ro_sources: dict | None = None,
 ):
-    """Patch transform, translate, and qpu_submit, then call submit.
+    """Patch translate and qpu_submit, then call submit.
 
-    Returns (job, mock_transform, mock_translate, mock_qpu_submit).
+    _submit() does NOT call transform(); the parent pipeline handles that.
+    Returns (job, mock_translate, mock_qpu_submit).
     """
     if ro_sources is None:
         ro_sources = {"ro[0]": "q0_readout"}
@@ -345,11 +345,6 @@ def _mock_submit_pipeline(  # pylint: disable=too-many-arguments
     fake_translation_result.ro_sources = ro_sources
 
     with (
-        patch.object(
-            rigetti_device,
-            "transform",
-            return_value=compiled_quil,
-        ) as mock_transform,
         patch(
             "qbraid.runtime.rigetti.device.translate",
             return_value=fake_translation_result,
@@ -361,7 +356,7 @@ def _mock_submit_pipeline(  # pylint: disable=too-many-arguments
     ):
         job = rigetti_device.submit(quil_str, shots=shots)
 
-    return job, mock_transform, mock_translate, mock_qpu_submit
+    return job, mock_translate, mock_qpu_submit
 
 
 # ===========================================================================
@@ -374,7 +369,8 @@ class TestRigettiDeviceSubmit:
 
     submit() receives a serialized Quil string (the output of ProgramSpec.serialize,
     i.e. program.out()) together with an explicit shots count.  The _submit method
-    calls transform (compilation), then translate, then qpu_submit.
+    calls translate, then qpu_submit.  Compilation (transform) is handled by the
+    parent pipeline before _submit is called.
     """
 
     def _make_quil(self, shots: int = 3, qubit: int = 0) -> tuple[str, int]:
@@ -394,30 +390,20 @@ class TestRigettiDeviceSubmit:
     ) -> None:
         """Submitting a Quil string must return a single RigettiJob."""
         quil_str, shots = self._make_quil(shots=2)
-        job, _, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
+        job, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
 
         assert isinstance(job, RigettiJob)
         assert job.id == DUMMY_JOB_ID
 
-    def test_submit_calls_transform_with_quil_string(self, rigetti_device: RigettiDevice) -> None:
-        """_submit must call transform() with the Quil string only."""
-        quil_str, shots = self._make_quil(shots=5)
-        _, mock_transform, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
-
-        mock_transform.assert_called_once_with(quil_str)
-
-    def test_submit_calls_translate_with_compiled_quil_and_shots(
+    def test_submit_calls_translate_with_quil_and_shots(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """_submit must call translate() with the compiled Quil from transform and shots."""
+        """_submit must call translate() with the Quil string and shots."""
         quil_str, shots = self._make_quil(shots=10)
-        compiled_quil = "RZ(pi) 0\nMEASURE 0 ro[0]\n"
-        _, _, mock_translate, _ = _mock_submit_pipeline(
-            rigetti_device, quil_str, shots, compiled_quil=compiled_quil
-        )
+        _, mock_translate, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
 
         mock_translate.assert_called_once_with(
-            native_quil=compiled_quil,
+            native_quil=quil_str,
             num_shots=shots,
             quantum_processor_id=DEVICE_ID,
             client=rigetti_device._qcs_client,
@@ -426,7 +412,7 @@ class TestRigettiDeviceSubmit:
     def test_submit_calls_qpu_submit_with_correct_args(self, rigetti_device: RigettiDevice) -> None:
         """_submit must pass the translated program and client to qpu_submit."""
         quil_str, shots = self._make_quil(shots=1)
-        _, _, _, mock_submit = _mock_submit_pipeline(rigetti_device, quil_str, shots)
+        _, _, mock_submit = _mock_submit_pipeline(rigetti_device, quil_str, shots)
 
         mock_submit.assert_called_once_with(
             program="TRANSLATED_BINARY",
@@ -447,7 +433,6 @@ class TestRigettiDeviceSubmit:
         fake_translation_result.ro_sources = {"ro[0]": "q0"}
 
         with (
-            patch.object(rigetti_device, "transform", return_value="COMPILED"),
             patch(
                 "qbraid.runtime.rigetti.device.translate",
                 return_value=fake_translation_result,
@@ -467,7 +452,6 @@ class TestRigettiDeviceSubmit:
         quil_str, shots = self._make_quil(shots=1)
 
         with (
-            patch.object(rigetti_device, "transform", return_value="COMPILED"),
             patch(
                 "qbraid.runtime.rigetti.device.translate",
                 side_effect=RuntimeError("translation error"),
@@ -480,7 +464,7 @@ class TestRigettiDeviceSubmit:
         """The returned RigettiJob must store the same num_shots passed to submit."""
         shots = 7
         quil_str, _ = self._make_quil(shots=shots)
-        job, _, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
+        job, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
 
         assert job._num_shots == shots
 
@@ -497,23 +481,9 @@ class TestRigettiDeviceSubmit:
         """The RigettiJob returned by _submit must carry translation_result.ro_sources."""
         quil_str, shots = self._make_quil(shots=2)
         ro_sources = {"ro[0]": "q0_readout", "ro[1]": "q1_readout"}
-        job, _, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots, ro_sources=ro_sources)
+        job, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots, ro_sources=ro_sources)
 
         assert job._ro_sources == ro_sources
-
-    def test_submit_propagates_transform_device_error(self, rigetti_device: RigettiDevice) -> None:
-        """A RigettiDeviceError from transform must propagate through submit."""
-        quil_str, shots = self._make_quil(shots=1)
-
-        with (
-            patch.object(
-                rigetti_device,
-                "transform",
-                side_effect=RigettiDeviceError("Compilation failed"),
-            ),
-            pytest.raises(RigettiDeviceError, match="Compilation failed"),
-        ):
-            rigetti_device.submit(quil_str, shots=shots)
 
     def test_submit_list_returns_list_of_jobs(self, rigetti_device: RigettiDevice) -> None:
         """Submitting a list of Quil strings must return a list of RigettiJobs."""
@@ -524,7 +494,6 @@ class TestRigettiDeviceSubmit:
         fake_translation_result.ro_sources = {"ro[0]": "q0"}
 
         with (
-            patch.object(rigetti_device, "transform", return_value="COMPILED"),
             patch(
                 "qbraid.runtime.rigetti.device.translate",
                 return_value=fake_translation_result,
@@ -555,7 +524,6 @@ class TestRigettiDeviceSubmit:
         fake_translation_result.ro_sources = {"ro[0]": "q0"}
 
         with (
-            patch.object(rigetti_device, "transform", return_value="COMPILED") as mock_transform,
             patch(
                 "qbraid.runtime.rigetti.device.translate",
                 return_value=fake_translation_result,
@@ -567,7 +535,6 @@ class TestRigettiDeviceSubmit:
         ):
             rigetti_device.submit(quil_strings, shots=3)
 
-        assert mock_transform.call_count == len(quil_strings)
         assert mock_translate.call_count == len(quil_strings)
         assert mock_qpu_submit.call_count == len(quil_strings)
 
