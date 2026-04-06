@@ -21,6 +21,8 @@
 Module defining Rigetti device class
 """
 
+from __future__ import annotations
+
 from multiprocessing.pool import ThreadPool
 from typing import Optional, Union
 
@@ -45,9 +47,7 @@ class RigettiDeviceError(QbraidRuntimeError):
 
 
 class RigettiDevice(QuantumDevice):
-    """
-    Wraps a single Rigetti QCS quantum processor or simulator.
-    """
+    """Wraps a single Rigetti QCS quantum processor or simulator."""
 
     def __init__(
         self,
@@ -55,10 +55,12 @@ class RigettiDevice(QuantumDevice):
         qcs_client: QCSClient,
         execution_options: ExecutionOptions | None = None,
     ):
-        """
-        profile: A TargetProfile object (constructed by RigettiProvider).
-        execution_options: ExecutionOptions built by RigettiProvider. If None,
-            the SDK default (Gateway strategy) is used.
+        """Initialize a RigettiDevice.
+
+        Args:
+            profile: A TargetProfile object (constructed by RigettiProvider).
+            execution_options: ExecutionOptions built by RigettiProvider. If None,
+                the SDK default (Gateway strategy) is used.
         """
         super().__init__(profile=profile)
         self._qcs_client = qcs_client

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,import-outside-toplevel
+# pylint: disable=redefined-outer-name,import-outside-toplevel,possibly-used-before-assignment
 
 """Unit tests for qbraid.runtime.rigetti.setup utilities."""
 

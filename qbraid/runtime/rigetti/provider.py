@@ -49,7 +49,6 @@ from .setup import (
     DEFAULT_QUILC_URL,
     DEFAULT_QVM_PORT,
     DEFAULT_QVM_URL,
-    RigettiProviderError,
     build_qcs_client,
     download_forest_sdk,
     find_binary,
