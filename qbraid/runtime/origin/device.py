@@ -15,7 +15,6 @@ Module defining OriginQ device class.
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.runtime.device import QuantumDevice
@@ -70,7 +69,7 @@ class OriginDevice(QuantumDevice):
         self, run_input: Union[QProg, list[QProg]], *, shots: int, **kwargs
     ) -> Union[OriginJob, list[OriginJob]]:
         """Submit a quantum program or list of programs to the OriginQ device."""
-        is_single = not isinstance(run_input, (list, Sequence))
+        is_single = not isinstance(run_input, list)
         inputs = [run_input] if is_single else run_input
 
         nshots = int(shots)
