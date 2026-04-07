@@ -71,6 +71,18 @@ class RigettiJob(QuantumJob):
     def _client(self):
         return self._device._qcs_client
 
+    @property
+    def execution_duration_microseconds(self) -> int | None:
+        """Actual QPU execution time in microseconds.
+
+        Populated as a side effect of ``status()`` / ``result()`` when they
+        call ``retrieve_results``. Returns ``None`` if the job has not yet
+        produced a cached result.
+        """
+        if self._cached_results is None:
+            return None
+        return self._cached_results.execution_duration_microseconds
+
     def status(self) -> JobStatus:
         """Return the current status of the Rigetti job.
 

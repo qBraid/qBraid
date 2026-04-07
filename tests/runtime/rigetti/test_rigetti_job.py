@@ -148,6 +148,23 @@ class TestRigettiJobProperties:
         job = RigettiJob(job_id="x", device=rigetti_device)
         assert job._ro_sources == {}
 
+    def test_execution_duration_microseconds_none_when_no_cached_results(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Property returns None before status()/result() populate _cached_results."""
+        job = RigettiJob(job_id="x", device=rigetti_device)
+        assert job.execution_duration_microseconds is None
+
+    def test_execution_duration_microseconds_reads_from_cached_results(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Property forwards the cached ExecutionResults attribute."""
+        job = RigettiJob(job_id="x", device=rigetti_device)
+        cached = MagicMock()
+        cached.execution_duration_microseconds = 1_500_000
+        job._cached_results = cached
+        assert job.execution_duration_microseconds == 1_500_000
+
 
 # ===========================================================================
 # Job – status
