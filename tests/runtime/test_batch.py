@@ -267,9 +267,7 @@ class TestErrorHandling:
                 # No jobs, so results() returns empty BatchResult
 
         # Check that the error was logged
-        error_calls = [
-            c for c in mock_logger.error.call_args_list if "callback failed" in str(c)
-        ]
+        error_calls = [c for c in mock_logger.error.call_args_list if "callback failed" in str(c)]
         assert len(error_calls) == 1
 
     def test_exit_does_not_suppress_exceptions(self):
@@ -337,9 +335,7 @@ class TestResults:
         assert len(result) == 3
 
         for job in jobs:
-            job.wait_for_final_state.assert_called_once_with(
-                timeout=10, poll_interval=1
-            )
+            job.wait_for_final_state.assert_called_once_with(timeout=10, poll_interval=1)
             job.result.assert_called_once()
 
     def test_results_empty_batch(self):
