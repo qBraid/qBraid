@@ -23,6 +23,7 @@ import threading
 from unittest.mock import MagicMock, patch
 
 import pytest
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.runtime.batch import (
     BatchJobSession,
@@ -266,7 +267,9 @@ class TestErrorHandling:
                 # No jobs, so results() returns empty BatchResult
 
         # Check that the error was logged
-        error_calls = [c for c in mock_logger.error.call_args_list if "callback failed" in str(c)]
+        error_calls = [
+            c for c in mock_logger.error.call_args_list if "callback failed" in str(c)
+        ]
         assert len(error_calls) == 1
 
     def test_exit_does_not_suppress_exceptions(self):
@@ -329,12 +332,14 @@ class TestResults:
                 batch._register_job(job)
                 jobs.append(job)
 
-        result = batch.results(timeout=10, poll_interval=0.1)
+        result = batch.results(timeout=10, poll_interval=1)
         assert isinstance(result, BatchResult)
         assert len(result) == 3
 
         for job in jobs:
-            job.wait_for_final_state.assert_called_once_with(timeout=10, poll_interval=0.1)
+            job.wait_for_final_state.assert_called_once_with(
+                timeout=10, poll_interval=1
+            )
             job.result.assert_called_once()
 
     def test_results_empty_batch(self):
@@ -379,7 +384,7 @@ class TestOnAllComplete:
 
         with BatchJobSession(client=client) as batch:
             batch._register_job(_make_mock_job("j1", result=r1))
-            batch.on_all_complete(callback, timeout=5, poll_interval=0.1)
+            batch.on_all_complete(callback, timeout=5, poll_interval=1)
 
         assert "j1" in collected
         assert collected["j1"] is r1
@@ -390,9 +395,9 @@ class TestOnAllComplete:
 
         with BatchJobSession(client=client) as batch:
             batch._register_job(job)
-            batch.on_all_complete(lambda r: None, timeout=42, poll_interval=1.5)
+            batch.on_all_complete(lambda r: None, timeout=42, poll_interval=2)
 
-        job.wait_for_final_state.assert_called_once_with(timeout=42, poll_interval=1.5)
+        job.wait_for_final_state.assert_called_once_with(timeout=42, poll_interval=2)
 
     def test_callback_not_invoked_if_not_registered(self):
         """If no callback is registered, __exit__ just closes without waiting."""
@@ -440,21 +445,15 @@ class TestBatchResult:
         br = self._make_batch_result()
         assert len(br) == 3
 
-    def test_items(self):
+    def test_results_dict_access(self):
+        """Direct access to the underlying ``results`` dict is the canonical
+        way to enumerate (jobQrn, Result) pairs."""
         br = self._make_batch_result()
-        items = list(br.items())
+        items = list(br.results.items())
         assert len(items) == 3
+        assert set(br.results.keys()) == {"j1", "j2", "j3"}
         for _, val in items:
             assert isinstance(val, Result)
-
-    def test_keys(self):
-        br = self._make_batch_result()
-        assert set(br.keys()) == {"j1", "j2", "j3"}
-
-    def test_values(self):
-        br = self._make_batch_result()
-        vals = list(br.values())
-        assert len(vals) == 3
 
     def test_successful(self):
         br = self._make_batch_result()
@@ -751,3 +750,55 @@ class TestThreadIsolation:
         barrier.wait()  # let worker exit
 
         t.join()
+
+
+# ===========================================================================
+# N. Partial-failure registration regression
+# ===========================================================================
+
+
+class TestPartialFailureRegistration:
+    """Regression test for per-iteration job registration.
+
+    When ``QbraidDevice.submit()`` fails mid-loop (e.g. the N-th call to
+    ``client.create_job`` raises), all jobs created *before* the failure
+    must still be registered with the active :class:`BatchJobSession`.
+
+    Prior to the fix, jobs were only registered after the loop completed
+    successfully, so a failure mid-loop would leave ``session.jobs``
+    empty even though real jobs had been created on the backend —
+    causing silent data loss from the SDK's point of view.
+    """
+
+    def test_partial_failure_registers_successful_jobs(self, mock_qbraid_device):
+        """Successful jobs are registered even if a later create_job raises."""
+        # pylint: disable=protected-access
+
+        # Swap the device's client for a MagicMock whose create_job returns
+        # two valid-looking job responses and then raises on the third call.
+        # Each response only needs a ``jobQrn`` attribute — that is the only
+        # field QbraidDevice.submit() reads from it.
+        response_1 = MagicMock(jobQrn="qbraid:qbraid:sim:qir-sv-qjob-000001")
+        response_2 = MagicMock(jobQrn="qbraid:qbraid:sim:qir-sv-qjob-000002")
+
+        failing_client = MagicMock()
+        failing_client.create_job = MagicMock(
+            side_effect=[response_1, response_2, RuntimeError("backend boom")]
+        )
+        mock_qbraid_device._client = failing_client
+
+        # Program instances must satisfy the JobRequest pydantic schema.
+        programs = [Program(format="qasm2", data="OPENQASM 2.0;") for _ in range(5)]
+
+        with BatchJobSession(client=MockClient()) as batch:
+            with pytest.raises(RuntimeError, match="backend boom"):
+                # Call submit() directly to bypass transpile/validate/prepare,
+                # which would otherwise try to load the minimal program.
+                mock_qbraid_device.submit(programs)
+
+            # The two successful jobs must already be registered on the
+            # session even though submit() raised before returning.
+            assert len(batch.jobs) == 2
+            assert len(batch._jobs) == 2
+            # create_job was called exactly three times (2 successes + 1 fail)
+            assert failing_client.create_job.call_count == 3

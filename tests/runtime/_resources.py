@@ -17,10 +17,14 @@ Module defining mock data and classes for testing the runtime module.
 
 """
 
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
+
+# TODO: remove the `no-name-in-module` disable below once qbraid-core 0.2.2
+# (which exports BatchJob from `qbraid_core.services.runtime.schemas`) has
+# been released and the minimum version pin in requirements.txt is bumped.
 from qbraid_core.services.runtime.schemas import (  # pylint: disable=no-name-in-module
     BatchJob,
     JobRequest,
@@ -635,10 +639,10 @@ class MockClient:
 
     def create_batch(
         self,
-        name: Optional[str] = None,
-        tags: Optional[dict[str, Any]] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        max_ttl: Optional[int] = None,
+        name: str | None = None,
+        tags: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        max_ttl: int | None = None,
     ) -> BatchJob:
         """Mock create_batch — stores and returns a BatchJob with OPEN status."""
         MockClient._batch_counter += 1
@@ -672,12 +676,18 @@ class MockClient:
         return BatchJob.model_validate(data)
 
     def get_batch(self, batch_qrn: str) -> BatchJob:
-        """Mock get_batch — returns the stored batch data."""
+        """Mock get_batch — returns the stored batch data.
+
+        Raises:
+            KeyError: If the batch QRN is not found in the mock store.
+        """
+        if batch_qrn not in self._batches:
+            raise KeyError(f"Batch {batch_qrn} not found in mock storage")
         data = self._make_batch_data(batch_qrn)
         return BatchJob.model_validate(data)
 
     # Legacy methods for backward compatibility
-    def search_devices(self, query: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    def search_devices(self, query: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Returns a list of devices matching the given query (legacy method)."""
         all_devices = [data["data"].copy() for data in self.DEVICE_MAP.values()]
 

@@ -96,7 +96,6 @@ class QbraidDevice(QuantumDevice):
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
-        **kwargs,
     ) -> QbraidJob | list[QbraidJob]:
         """Submit a program to the device.
 
@@ -108,8 +107,12 @@ class QbraidDevice(QuantumDevice):
         runtime_options = runtime_options or {}
         noise_model: NoiseModel | str | None = runtime_options.pop("noise_model", None)
 
-        # Read batch context — only QbraidDevice supports batched execution
+        # Read batch context — only QbraidDevice supports batched execution.
+        # Resolve the active session once, up front, so that each job can be
+        # registered immediately after creation. This keeps the SDK view in
+        # sync with the backend even if create_job() fails mid-loop.
         batch_job_qrn = get_active_batch()
+        session = get_active_batch_session() if batch_job_qrn else None
 
         if noise_model:
             runtime_options["noiseModel"] = self._resolve_noise_model(noise_model)
@@ -133,15 +136,9 @@ class QbraidDevice(QuantumDevice):
                 batchJobQrn=batch_job_qrn,
             )
             job_data = self.client.create_job(job_request)
-            jobs.append(QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client))
-
-        result = jobs[0] if is_single_input else jobs
-
-        # Register submitted jobs with the active batch session
-        if batch_job_qrn:
-            session = get_active_batch_session()
+            job = QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client)
+            jobs.append(job)
             if session is not None:
-                for job in jobs:
-                    session._register_job(job)
+                session._register_job(job)
 
-        return result
+        return jobs[0] if is_single_input else jobs

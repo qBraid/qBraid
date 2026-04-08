@@ -20,7 +20,7 @@ Module defining BatchJobSession context manager and BatchResult container.
 from __future__ import annotations
 
 import contextvars
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 from qbraid._logging import logger
 from qbraid.runtime.result import Result
@@ -31,16 +31,18 @@ if TYPE_CHECKING:
     from qbraid.runtime.job import QuantumJob
 
 
-# Thread-safe context variables for tracking active batch
-_active_batch: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar(
+# Thread-safe context variables for tracking active batch.
+# NOTE: ContextVar is subscripted at runtime (not lazy like annotations),
+# so we must use a string forward ref for BatchJobSession.
+_active_batch: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "_active_batch", default=None
 )
-_active_batch_session: contextvars.ContextVar[Optional[BatchJobSession]] = contextvars.ContextVar(
+_active_batch_session: contextvars.ContextVar["BatchJobSession | None"] = contextvars.ContextVar(
     "_active_batch_session", default=None
 )
 
 
-def get_active_batch() -> Optional[str]:
+def get_active_batch() -> str | None:
     """Return the batchJobQrn of the currently active batch, or None.
 
     Called by QbraidDevice.run() to check if jobs should be tagged
@@ -49,7 +51,7 @@ def get_active_batch() -> Optional[str]:
     return _active_batch.get(None)
 
 
-def get_active_batch_session() -> Optional[BatchJobSession]:
+def get_active_batch_session() -> BatchJobSession | None:
     """Return the active BatchJobSession, or None.
 
     Called by QbraidDevice.submit() to register jobs
@@ -61,7 +63,9 @@ def get_active_batch_session() -> Optional[BatchJobSession]:
 class BatchResult:
     """Container for results of all jobs in a batch.
 
-    Provides dict-like access to individual job results keyed by jobQrn.
+    Exposes the raw ``results`` mapping for direct access, plus
+    convenience helpers for filtering by success. Supports indexing,
+    iteration, and ``len()`` via the underlying mapping.
 
     Attributes:
         batch_id: The batchJobQrn identifier.
@@ -69,7 +73,7 @@ class BatchResult:
 
     Example:
         >>> batch_result = batch.results()
-        >>> for job_id, result in batch_result.items():
+        >>> for job_id, result in batch_result.results.items():
         ...     counts = result.data.get_counts()
         ...     print(f"{job_id}: {counts}")
     """
@@ -89,18 +93,6 @@ class BatchResult:
     def __len__(self) -> int:
         """Number of results."""
         return len(self.results)
-
-    def items(self):
-        """Iterate over (jobQrn, Result) pairs."""
-        return self.results.items()
-
-    def keys(self):
-        """Return job QRNs."""
-        return self.results.keys()
-
-    def values(self):
-        """Return Result objects."""
-        return self.results.values()
 
     def successful(self) -> dict[str, Result]:
         """Return only successful job results."""
@@ -165,11 +157,11 @@ class BatchJobSession:
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        name: Optional[str] = None,
-        tags: Optional[dict[str, Any]] = None,
-        metadata: Optional[dict[str, Any]] = None,
-        client: Optional[Any] = None,
-        max_ttl: Optional[int] = None,
+        name: str | None = None,
+        tags: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        client: Any | None = None,
+        max_ttl: int | None = None,
     ):
         if max_ttl is not None and (max_ttl < 1 or max_ttl > 86400):
             raise ValueError(f"max_ttl must be between 1 and 86400 seconds, got {max_ttl}")
@@ -178,13 +170,13 @@ class BatchJobSession:
         self._metadata = metadata or {}
         self._client = client
         self._max_ttl = max_ttl
-        self._batch_data: Optional[BatchJob] = None
+        self._batch_data: BatchJob | None = None
         self._jobs: list[QuantumJob] = []
-        self._token: Optional[contextvars.Token] = None
-        self._session_token: Optional[contextvars.Token] = None
-        self._on_complete_callback: Optional[Callable[[dict[str, Result]], None]] = None
-        self._on_complete_timeout: Optional[int] = None
-        self._on_complete_poll_interval: float = 5.0
+        self._token: contextvars.Token | None = None
+        self._session_token: contextvars.Token | None = None
+        self._on_complete_callback: Callable[[dict[str, Result]], None] | None = None
+        self._on_complete_timeout: int | None = None
+        self._on_complete_poll_interval: int = 5
 
     @property
     def client(self):
@@ -198,17 +190,17 @@ class BatchJobSession:
         return self._client
 
     @property
-    def batch_id(self) -> Optional[str]:
+    def batch_id(self) -> str | None:
         """Return the batch QRN, or None if not yet opened."""
         return self._batch_data.batchJobQrn if self._batch_data else None
 
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         """Return the batch name."""
         return self._name
 
     @property
-    def max_ttl(self) -> Optional[int]:
+    def max_ttl(self) -> int | None:
         """Return the max TTL in seconds, or None."""
         return self._max_ttl
 
@@ -247,7 +239,7 @@ class BatchJobSession:
         self._jobs = []
         self._on_complete_callback = None
         self._on_complete_timeout = None
-        self._on_complete_poll_interval = 5.0
+        self._on_complete_poll_interval = 5
 
         self._batch_data = self.client.create_batch(
             name=self._name,
@@ -307,6 +299,8 @@ class BatchJobSession:
         Delegates to :meth:`close` for context-var reset and backend
         close, then runs the ``on_all_complete`` callback if registered.
         Errors from ``close()`` and the callback are logged, not raised.
+        Returns ``None`` implicitly so any exception raised inside the
+        ``with`` block is not suppressed.
         """
         try:
             self.close()
@@ -324,8 +318,6 @@ class BatchJobSession:
             except Exception as err:  # pylint: disable=broad-exception-caught
                 logger.error("on_all_complete callback failed: %s", err)
 
-        return False  # Don't suppress exceptions
-
     def status(self) -> BatchStatus:
         """Fetch and return the current batch status from the backend.
 
@@ -339,8 +331,8 @@ class BatchJobSession:
 
     def results(
         self,
-        timeout: Optional[int] = None,
-        poll_interval: float = 5.0,
+        timeout: int | None = None,
+        poll_interval: int = 5,
     ) -> BatchResult:
         """Wait for all jobs to complete and return a BatchResult.
 
@@ -348,14 +340,17 @@ class BatchJobSession:
         CANCELLED) or until the timeout is reached.
 
         Args:
-            timeout: Maximum seconds to wait. None = wait indefinitely.
+            timeout: Maximum seconds to wait **per job**. ``None`` = wait
+                indefinitely. Note: this is applied per job, not across the
+                whole batch, so with N jobs the total blocking time may
+                reach up to N × timeout seconds.
             poll_interval: Seconds between status checks per job.
 
         Returns:
             BatchResult mapping jobQrn -> Result[ResultDataType].
 
         Raises:
-            TimeoutError: If timeout reached before all jobs complete.
+            TimeoutError: If timeout reached before a job completes.
             RuntimeError: If batch session was never opened.
         """
         if self._batch_data is None:
@@ -383,8 +378,8 @@ class BatchJobSession:
     def on_all_complete(
         self,
         callback: Callable[[dict[str, Result]], None],
-        timeout: Optional[int] = None,
-        poll_interval: float = 5.0,
+        timeout: int | None = None,
+        poll_interval: int = 5,
     ) -> None:
         """Register a callback to run when all jobs complete.
 
@@ -405,7 +400,9 @@ class BatchJobSession:
                         for job_id, result in results.items():
                             counts = result.data.get_counts()
                             print(f"{job_id}: {counts}")
-            timeout: Max seconds to wait for all jobs. None = indefinite.
+            timeout: Max seconds to wait **per job** for terminal state.
+                ``None`` = indefinite. Applied per job, so total blocking
+                time may reach up to N × timeout seconds for N jobs.
             poll_interval: Seconds between status polls per job.
 
         Example:
