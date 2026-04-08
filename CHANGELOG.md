@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `BatchJobSession` context manager and `BatchResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical batch. Jobs submitted via `QbraidDevice.run()` inside an active `BatchJobSession` are automatically tagged with the batch's QRN, supporting cross-device and cross-provider batches on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the batch, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_batch` for retrieving the currently active batch QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
 - Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
