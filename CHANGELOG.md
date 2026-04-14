@@ -17,6 +17,76 @@ Types of changes:
 
 ### Added
 - Added `BatchJobSession` context manager and `BatchResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical batch. Jobs submitted via `QbraidDevice.run()` inside an active `BatchJobSession` are automatically tagged with the batch's QRN, supporting cross-device and cross-provider batches on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the batch, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_batch` for retrieving the currently active batch QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
+
+  **Context-manager usage (cross-device batch):**
+
+  ```python
+  from qbraid.runtime import BatchJobSession, QbraidProvider
+
+  provider = QbraidProvider()
+
+  bell = """
+  OPENQASM 3.0;
+  include "stdgates.inc";
+  qubit[2] q;
+  bit[2] c;
+  h q[0];
+  cx q[0], q[1];
+  c = measure q;
+  """
+
+  # All jobs inside the context are automatically tagged with the batch QRN
+  with BatchJobSession(name="Bell State Sweep") as batch:
+      # Jobs can target different devices and providers within the same batch
+      device_a = provider.get_device("aws:aws:sim:sv1")
+      job1 = device_a.run(bell, shots=100)
+
+      device_b = provider.get_device("aws:aws:sim:tn1")
+      job2 = device_b.run(bell, shots=100)
+
+  # Collect results after the batch is closed
+  results = batch.results(timeout=300)
+  for job_id, result in results.results.items():
+      print(f"{job_id}: {result.data.get_counts()}")
+  ```
+
+  **Manual open/close (notebooks and REPL):**
+
+  ```python
+  # Useful for notebooks where you don't want a single with block
+  batch = BatchJobSession(name="interactive")
+  batch.open()
+
+  # Submit jobs across multiple cells
+  job1 = device.run(circuit_1, shots=100)
+  job2 = device.run(circuit_2, shots=100)
+
+  # Explicitly close when done submitting
+  batch.close()
+  results = batch.results(timeout=300)
+  ```
+
+  **Auto-close with Time-to-Live (TTL):**
+
+  ```python
+  # Batch auto-closes after 60s if not explicitly closed (default: 3600s / 1 hour)
+  with BatchJobSession(name="short-lived", max_ttl=60) as batch:
+      job = device.run(bell, shots=10)
+  ```
+
+  **Completion callback:**
+
+  ```python
+  # Define a handler for when all jobs finish
+  def analyze(results):
+      for job_id, result in results.items():
+          print(f"{job_id}: {result.data.get_counts()}")
+
+  with BatchJobSession(name="with-callback") as batch:
+      device.run(bell, shots=100)
+      # Register callback; it fires automatically when the context exits
+      batch.on_all_complete(analyze, timeout=600)
+  ```
 - Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
