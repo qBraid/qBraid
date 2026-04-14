@@ -22,6 +22,8 @@ from __future__ import annotations
 import contextvars
 from typing import TYPE_CHECKING, Any, Callable
 
+from qbraid_core.services.runtime import QuantumRuntimeClient
+
 from qbraid._logging import logger
 from qbraid.runtime.result import Result
 
@@ -34,9 +36,14 @@ if TYPE_CHECKING:
 # Thread-safe context variables for tracking active batch.
 # NOTE: ContextVar is subscripted at runtime (not lazy like annotations),
 # so we must use a string forward ref for BatchJobSession.
+
+# Var for the batchJobQrn string, which is included in job submissions by QbraidDevice.run()
 _active_batch: contextvars.ContextVar[str | None] = contextvars.ContextVar(
     "_active_batch", default=None
 )
+
+# Var for the active BatchJobSession instance, which is read by QbraidDevice.submit()
+# to register jobs with the session.
 _active_batch_session: contextvars.ContextVar["BatchJobSession | None"] = contextvars.ContextVar(
     "_active_batch_session", default=None
 )
@@ -58,6 +65,16 @@ def get_active_batch_session() -> BatchJobSession | None:
     with the active batch session.
     """
     return _active_batch_session.get(None)
+
+
+def reset_active_batch(token: contextvars.Token) -> None:
+    """Reset the active batch QRN to its previous value."""
+    _active_batch.reset(token)
+
+
+def reset_active_batch_session(token: contextvars.Token) -> None:
+    """Reset the active batch session to its previous value."""
+    _active_batch_session.reset(token)
 
 
 class BatchResult:
@@ -182,10 +199,6 @@ class BatchJobSession:
     def client(self):
         """Lazily initialize the QuantumRuntimeClient."""
         if self._client is None:
-            from qbraid_core.services.runtime import (  # pylint: disable=import-outside-toplevel
-                QuantumRuntimeClient,
-            )
-
             self._client = QuantumRuntimeClient()
         return self._client
 
@@ -217,6 +230,15 @@ class BatchJobSession:
         """
         self._jobs.append(job)
 
+    def _reset_context(self) -> None:
+        """Reset context variables so no further jobs are tagged with this batch."""
+        if self._token is not None:
+            reset_active_batch(self._token)
+            self._token = None
+        if self._session_token is not None:
+            reset_active_batch_session(self._session_token)
+            self._session_token = None
+
     def open(self) -> BatchJobSession:
         """Open the batch session.
 
@@ -230,7 +252,7 @@ class BatchJobSession:
         Raises:
             RuntimeError: If a batch session is already active.
         """
-        if _active_batch.get(None) is not None:
+        if get_active_batch() is not None:
             raise RuntimeError(
                 "Cannot nest BatchJobSession contexts. A batch session is already active."
             )
@@ -265,13 +287,7 @@ class BatchJobSession:
         if self._batch_data is None:
             raise RuntimeError("Batch session has not been opened.")
 
-        # Reset context variables first (no more jobs can be tagged)
-        if self._token is not None:
-            _active_batch.reset(self._token)
-            self._token = None
-        if self._session_token is not None:
-            _active_batch_session.reset(self._session_token)
-            self._session_token = None
+        self._reset_context()
 
         # Close the batch on the backend (skip if already in a terminal state,
         # e.g. auto-closed by TTL expiry, or cancelled)
@@ -366,11 +382,16 @@ class BatchJobSession:
     def cancel(self) -> None:
         """Cancel the batch and all non-terminal jobs.
 
+        Also resets context variables so that no further jobs are tagged
+        with this batch and a new ``BatchJobSession`` can be opened.
+
         Raises:
             RuntimeError: If batch session was never opened.
         """
         if self._batch_data is None:
             raise RuntimeError("Batch session has not been opened.")
+
+        self._reset_context()
 
         self._batch_data = self.client.cancel_batch(self._batch_data.batchJobQrn)
         logger.info("Cancelled batch: %s", self._batch_data.batchJobQrn)

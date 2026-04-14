@@ -28,8 +28,12 @@ from qbraid_core.services.runtime.schemas import Program
 from qbraid.runtime.batch import (
     BatchJobSession,
     BatchResult,
+    _active_batch,
+    _active_batch_session,
     get_active_batch,
     get_active_batch_session,
+    reset_active_batch,
+    reset_active_batch_session,
 )
 from qbraid.runtime.result import Result
 
@@ -311,6 +315,57 @@ class TestCancel:
             batch.cancel()
 
         client.cancel_batch.assert_called_once_with("qbraid:batch:cancel-test")
+
+    def test_cancel_resets_context_vars(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+        session.open()
+
+        assert get_active_batch() is not None
+        assert get_active_batch_session() is session
+
+        session.cancel()
+
+        assert get_active_batch() is None
+        assert get_active_batch_session() is None
+
+    def test_cancel_allows_new_session(self):
+        client = MockClient()
+        session = BatchJobSession(client=client)
+        session.open()
+        session.cancel()
+
+        # A new session should be openable after cancel
+        session2 = BatchJobSession(client=client)
+        session2.open()
+        assert get_active_batch() == session2.batch_id
+        session2.close()
+
+
+# ===========================================================================
+# D2. Public reset functions
+# ===========================================================================
+
+
+class TestResetFunctions:
+    """Tests for reset_active_batch and reset_active_batch_session."""
+
+    def test_reset_active_batch_restores_previous_value(self):
+
+        token = _active_batch.set("qbraid:batch:test-123")
+        assert get_active_batch() == "qbraid:batch:test-123"
+
+        reset_active_batch(token)
+        assert get_active_batch() is None
+
+    def test_reset_active_batch_session_restores_previous_value(self):
+
+        sentinel = MagicMock()
+        token = _active_batch_session.set(sentinel)
+        assert get_active_batch_session() is sentinel
+
+        reset_active_batch_session(token)
+        assert get_active_batch_session() is None
 
 
 # ===========================================================================
