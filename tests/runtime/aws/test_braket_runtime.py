@@ -21,6 +21,7 @@ Unit tests for BraketProvider class
 import datetime
 import importlib.util
 import json
+import logging
 import warnings
 from unittest.mock import MagicMock, Mock, patch
 
@@ -867,6 +868,33 @@ def test_get_partial_measurement_qubits_from_tags_without_partial_measurements(m
     assert result is None
 
     mock_client.get_quantum_task.assert_called_once_with(quantumTaskArn="task1")
+
+
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_mismatch_returns_none(mock_boto_client, caplog):
+    """If the tag's qubits are not all present in the result's measured qubits, the method
+    must log a warning and return ``None`` instead of crashing with ``ValueError``. This
+    degraded-but-inspectable path lets users still load results from tasks whose submitted
+    QASM dropped measurements upstream (e.g. the multi-register collision bug in
+    ``pad_measurements``)."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {
+        "tags": {"partial_measurement_qubits": "0/1/2/3/4/5/6/7/8/9"}
+    }
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    # Mimics the corrupted task the bug was reported on: tag says 0..9 are partial,
+    # but Braket's ``measured_qubits`` only contains the qubits that survived submission.
+    all_measurement_qubits = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+    with caplog.at_level(logging.WARNING, logger="qbraid"):
+        result = braket_task._get_partial_measurement_qubits_from_tags(all_measurement_qubits)
+
+    assert result is None
+    assert any("partial measurement" in record.message.lower() for record in caplog.records)
 
 
 @patch("boto3.client")

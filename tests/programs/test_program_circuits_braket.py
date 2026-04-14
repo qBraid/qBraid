@@ -22,6 +22,7 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
+from braket.circuits.measure import Measure
 
 from qbraid.programs import ProgramTypeError
 from qbraid.programs.gate_model.braket import BraketCircuit
@@ -287,6 +288,96 @@ def test_transform_with_other_provider():
     )
     assert measurement_count == 1
     assert not hasattr(qprogram.program, "partial_measurement_qubits")
+
+
+def _measure_target_indices(circuit: Circuit) -> list[int]:
+    return [
+        instr.operator._target_index
+        for instr in circuit.instructions
+        if isinstance(instr.operator, Measure)
+    ]
+
+
+def _force_measure_target_index(circuit: Circuit, qubit: int, target_index: int) -> None:
+    # Simulate what ``Circuit.from_ir`` does when the source QASM uses a literal bit index
+    # that does not match Braket's own counter-based convention for ``Measure._target_index``.
+    for instr in circuit.instructions:
+        if isinstance(instr.operator, Measure) and int(instr.target[0]) == qubit:
+            instr.operator._target_index = target_index
+            return
+    raise AssertionError(f"no measure instruction targeting qubit {qubit}")
+
+
+def test_pad_measurements_rebases_multi_register_collision():
+    """Multiple classical registers in the source QASM collapse into colliding
+    ``_target_index`` values after ``Circuit.from_ir``. ``pad_measurements`` must detect
+    the internal collision and rebase every existing measure so the final QASM emits a
+    unique classical bit per measurement."""
+    circuit = Circuit().h(0).h(1).h(2).h(3).measure(0).measure(1).measure(2).measure(3)
+    # Emulate: a[0]=q[0], a[1]=q[1], b[0]=q[2], b[1]=q[3] — indices collide across registers
+    _force_measure_target_index(circuit, 0, 0)
+    _force_measure_target_index(circuit, 1, 1)
+    _force_measure_target_index(circuit, 2, 0)
+    _force_measure_target_index(circuit, 3, 1)
+
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    assert _measure_target_indices(qprogram.program) == [0, 1, 2, 3]
+    assert qprogram.program.partial_measurement_qubits == [0, 1, 2, 3]
+
+
+def test_pad_measurements_rebases_when_padding_would_collide():
+    """When an existing measure's ``_target_index`` lies within the range that Braket's
+    counter-based ``.measure()`` will assign to padded measures, those indices collide.
+    ``pad_measurements`` must rebase the existing measure before padding."""
+    circuit = Circuit().h(0).h(5).measure(0)
+    # User wrote ``c[5] = measure q[0]`` — target_index 5 will clash with the padded
+    # measure for qubit 5, which Braket's counter assigns to index 5 as well.
+    _force_measure_target_index(circuit, 0, 5)
+
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    target_indices = _measure_target_indices(qprogram.program)
+    assert len(target_indices) == len(set(target_indices))
+    assert max(target_indices) < qprogram.program.qubit_count
+    assert qprogram.program.partial_measurement_qubits == [0]
+
+
+def test_pad_measurements_rebases_out_of_range_target_index():
+    """A user-written ``_target_index`` greater than or equal to ``qubit_count`` produces
+    invalid QASM, because Braket emits ``bit[qubit_count] b``. ``pad_measurements`` must
+    rebase such measures even when there is no direct collision."""
+    circuit = Circuit().h(0).h(1).h(2).h(3).measure(0)
+    # User wrote ``c[10] = measure q[0]`` on a 4-qubit circuit — out of Braket's emission range.
+    _force_measure_target_index(circuit, 0, 10)
+
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    target_indices = _measure_target_indices(qprogram.program)
+    assert all(idx < qprogram.program.qubit_count for idx in target_indices)
+    assert len(target_indices) == len(set(target_indices))
+
+
+def test_pad_measurements_preserves_safe_user_labels():
+    """When the existing measures' ``_target_index`` values are unique, in range, and
+    do not overlap with the slots Braket's counter will assign to padded measures,
+    ``pad_measurements`` must leave them untouched so user-chosen bit labels round-trip
+    through serialization unchanged."""
+    circuit = Circuit().h(0).h(1).h(2).h(3).measure(0).measure(1)
+    # Sequential, in-range, no overlap with padded range [2, 3] — safe to preserve.
+    _force_measure_target_index(circuit, 0, 0)
+    _force_measure_target_index(circuit, 1, 1)
+
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+
+    target_indices = _measure_target_indices(qprogram.program)
+    assert target_indices[:2] == [0, 1]  # preserved, not rebased
+    assert len(target_indices) == 4
+    assert len(set(target_indices)) == 4
 
 
 def test_replace_i_with_rz_zero():
