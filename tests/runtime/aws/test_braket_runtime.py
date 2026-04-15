@@ -897,6 +897,29 @@ def test_get_partial_measurement_qubits_from_tags_mismatch_returns_none(mock_bot
     assert any("partial measurement" in record.message.lower() for record in caplog.records)
 
 
+@pytest.mark.parametrize(
+    "tag_value",
+    ["", "/", "//"],
+    ids=["empty_string", "single_separator", "double_separator"],
+)
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_empty_tag_returns_none(
+    mock_boto_client, tag_value
+):
+    """An empty or separator-only ``partial_measurement_qubits`` tag must be treated as
+    absent rather than crashing with ``ValueError`` from ``int("")``."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {"tags": {"partial_measurement_qubits": tag_value}}
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    result = braket_task._get_partial_measurement_qubits_from_tags([0, 1, 2])
+
+    assert result is None
+
+
 @patch("boto3.client")
 def test_get_partial_measurement_qubits_from_tags_complex_mapping(mock_boto_client):
     """Test partial measurement qubit mapping with non-contiguous qubits."""
