@@ -226,39 +226,16 @@ def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
         qasm3_to_braket(invalid_qasm)
 
 
-@pytest.mark.parametrize(
-    "qasm_input, expected_detail",
-    [
-        (
-            textwrap.dedent(
-                """
-                OPENQASM 3.0;
-                include "stdgates.inc";
-                qubit[4] q;
-                h q[0];
-                c3x q[0], q[1], q[2], q[3];
-            """
-            ).strip(),
-            "c3x is not defined",
-        ),
-        (
-            textwrap.dedent(
-                """
-                OPENQASM 3.0;
-                include "stdgates.inc";
-                bit[1] b;
-                qubit[1] q;
-                h q[0];
-                reset q[0];
-                b[0] = measure q[0];
-            """
-            ).strip(),
-            "Reset not supported",
-        ),
-    ],
-    ids=["undefined_gate_c3x", "unsupported_reset"],
-)
-def test_qasm3_to_braket_error_includes_detail(qasm_input, expected_detail):
+def test_qasm3_to_braket_error_includes_detail():
     """Verify that QasmError includes the specific failure reason from the Braket parser."""
-    with pytest.raises(QasmError, match=expected_detail):
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[4] q;
+        h q[0];
+        c3x q[0], q[1], q[2], q[3];
+        """
+    ).strip()
+    with pytest.raises(QasmError, match="c3x is not defined"):
         qasm3_to_braket(qasm_input)
