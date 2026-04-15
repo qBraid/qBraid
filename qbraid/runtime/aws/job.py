@@ -183,7 +183,13 @@ class BraketQuantumTask(QuantumJob):
 
         # Parse the partial measurement qubit indices from the tag string (e.g., "0/2/3")
         partial_measurement_qubits_str = response["tags"]["partial_measurement_qubits"]
-        partial_measurement_qubits = [int(q) for q in partial_measurement_qubits_str.split("/")]
+        if not partial_measurement_qubits_str:
+            return None
+        partial_measurement_qubits = [
+            int(q) for q in partial_measurement_qubits_str.split("/") if q
+        ]
+        if not partial_measurement_qubits:
+            return None
 
         missing = [q for q in partial_measurement_qubits if q not in all_measurement_qubits]
         if missing:

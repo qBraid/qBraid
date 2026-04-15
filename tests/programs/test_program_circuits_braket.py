@@ -16,6 +16,7 @@
 Unit tests for qbraid.programs.braket.BraketCircuit
 
 """
+import re
 from itertools import chain, combinations
 from unittest.mock import Mock
 
@@ -23,6 +24,7 @@ import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
 from braket.circuits.measure import Measure
+from braket.circuits.serialization import IRType
 
 from qbraid.programs import ProgramTypeError
 from qbraid.programs.gate_model.braket import BraketCircuit
@@ -298,6 +300,18 @@ def _measure_target_indices(circuit: Circuit) -> list[int]:
     ]
 
 
+def _assert_serialized_qasm_has_unique_bits(
+    qprogram: BraketCircuit, expected_measures: int
+) -> None:
+    """Emit OpenQASM from the Braket Circuit and verify the measurement declarations
+    map to unique classical bit indices, one per measure, all within ``qubit_count``."""
+    source = qprogram.program.to_ir(IRType.OPENQASM).source
+    bit_indices = [int(m) for m in re.findall(r"b\[(\d+)\]\s*=\s*measure\b", source)]
+    assert len(bit_indices) == expected_measures
+    assert len(set(bit_indices)) == expected_measures
+    assert all(idx < qprogram.program.qubit_count for idx in bit_indices)
+
+
 def _force_measure_target_index(circuit: Circuit, qubit: int, target_index: int) -> None:
     # Simulate what ``Circuit.from_ir`` does when the source QASM uses a literal bit index
     # that does not match Braket's own counter-based convention for ``Measure._target_index``.
@@ -325,6 +339,7 @@ def test_pad_measurements_rebases_multi_register_collision():
 
     assert _measure_target_indices(qprogram.program) == [0, 1, 2, 3]
     assert qprogram.program.partial_measurement_qubits == [0, 1, 2, 3]
+    _assert_serialized_qasm_has_unique_bits(qprogram, expected_measures=4)
 
 
 def test_pad_measurements_rebases_when_padding_would_collide():
@@ -343,6 +358,9 @@ def test_pad_measurements_rebases_when_padding_would_collide():
     assert len(target_indices) == len(set(target_indices))
     assert max(target_indices) < qprogram.program.qubit_count
     assert qprogram.program.partial_measurement_qubits == [0]
+    _assert_serialized_qasm_has_unique_bits(
+        qprogram, expected_measures=qprogram.program.qubit_count
+    )
 
 
 def test_pad_measurements_rebases_out_of_range_target_index():
@@ -359,6 +377,9 @@ def test_pad_measurements_rebases_out_of_range_target_index():
     target_indices = _measure_target_indices(qprogram.program)
     assert all(idx < qprogram.program.qubit_count for idx in target_indices)
     assert len(target_indices) == len(set(target_indices))
+    _assert_serialized_qasm_has_unique_bits(
+        qprogram, expected_measures=qprogram.program.qubit_count
+    )
 
 
 def test_pad_measurements_preserves_safe_user_labels():
@@ -378,6 +399,7 @@ def test_pad_measurements_preserves_safe_user_labels():
     assert target_indices[:2] == [0, 1]  # preserved, not rebased
     assert len(target_indices) == 4
     assert len(set(target_indices)) == 4
+    _assert_serialized_qasm_has_unique_bits(qprogram, expected_measures=4)
 
 
 def test_replace_i_with_rz_zero():
