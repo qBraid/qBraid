@@ -640,18 +640,127 @@ class TestSetup:
     """
 
     def test_setup_does_not_rebuild_qcs_client(self, mock_qcs_client: MagicMock) -> None:
-        """setup() must NOT call build_qcs_client; the client is set in __init__."""
+        """setup() must NOT call build_qcs_client; the client is set in __init__.
+
+        Also: when no URL kwargs are passed, the QCSClient instance must
+        be the *same* object (no rebuild path triggered).
+        """
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with (
             patch(f"{_PROVIDER_MODULE}.build_qcs_client") as mock_build,
+            patch(f"{_PROVIDER_MODULE}.QCSClient") as mock_qcs_client_cls,
             patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=True),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(start_quilc=False, start_qvm=False)
 
         mock_build.assert_not_called()
+        mock_qcs_client_cls.assert_not_called()
         assert provider._qcs_client is mock_qcs_client
+
+    def test_setup_rebuilds_qcs_client_when_quilc_endpoint_passed(
+        self, mock_qcs_client: MagicMock
+    ) -> None:
+        """A quilc_endpoint kwarg must trigger a QCSClient rebuild with the new URL."""
+        provider = RigettiProvider(qcs_client=mock_qcs_client)
+        original_client = provider._qcs_client
+
+        with (
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client") as mock_build,
+            patch.object(provider, "_register_cleanup"),
+        ):
+            new_client = MagicMock(name="NewQCSClient")
+            new_client.grpc_api_url = "https://grpc.qcs.rigetti.com"
+            mock_build.return_value = new_client
+            provider.setup(quilc_endpoint="tcp://other:5555", start_quilc=False)
+
+        mock_build.assert_called_once()
+        # The quilc_url override must be forwarded to the builder.
+        assert mock_build.call_args.kwargs["quilc_url"] == "tcp://other:5555"
+        # qvm_url and grpc_api_url should fall back to the original client's values.
+        assert mock_build.call_args.kwargs["qvm_url"] == original_client.qvm_url
+        assert mock_build.call_args.kwargs["grpc_api_url"] == original_client.grpc_api_url
+        # The provider must now hold the *new* client.
+        assert provider._qcs_client is new_client
+        assert provider._qcs_client is not original_client
+
+    def test_setup_rebuilds_qcs_client_when_qvm_endpoint_passed(
+        self, mock_qcs_client: MagicMock
+    ) -> None:
+        """A qvm_endpoint kwarg must trigger a QCSClient rebuild with the new URL."""
+        provider = RigettiProvider(qcs_client=mock_qcs_client)
+        original_client = provider._qcs_client
+
+        with (
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client") as mock_build,
+            patch.object(provider, "_register_cleanup"),
+        ):
+            new_client = MagicMock(name="NewQCSClient")
+            new_client.grpc_api_url = "https://grpc.qcs.rigetti.com"
+            mock_build.return_value = new_client
+            provider.setup(qvm_endpoint="http://other:5000", start_quilc=False)
+
+        mock_build.assert_called_once()
+        assert mock_build.call_args.kwargs["qvm_url"] == "http://other:5000"
+        assert mock_build.call_args.kwargs["quilc_url"] == original_client.quilc_url
+        assert mock_build.call_args.kwargs["grpc_api_url"] == original_client.grpc_api_url
+        assert provider._qcs_client is new_client
+
+    def test_setup_rebuilds_qcs_client_and_execution_options_when_grpc_endpoint_passed(
+        self, mock_qcs_client: MagicMock
+    ) -> None:
+        """A grpc_endpoint kwarg must rebuild both the QCSClient and ExecutionOptions."""
+        provider = RigettiProvider(qcs_client=mock_qcs_client)
+        original_options = provider._execution_options
+
+        with (
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client") as mock_build,
+            patch.object(
+                provider,
+                "_build_execution_options",
+                wraps=provider._build_execution_options,
+            ) as spy_build_opts,
+            patch.object(provider, "_register_cleanup"),
+        ):
+            new_client = MagicMock(name="NewQCSClient")
+            new_client.grpc_api_url = "grpc://override.example.com:9999"
+            mock_build.return_value = new_client
+            provider.setup(
+                grpc_endpoint="grpc://override.example.com:9999",
+                start_quilc=False,
+            )
+
+        mock_build.assert_called_once()
+        assert mock_build.call_args.kwargs["grpc_api_url"] == "grpc://override.example.com:9999"
+        # ExecutionOptions must have been rebuilt at least once after the
+        # client swap (the constructor's call happens in __init__ before
+        # the spy is installed, so we only assert "called", not "called once").
+        spy_build_opts.assert_called()
+        # And the cached options must now be a *new* object.
+        assert provider._execution_options is not original_options
+
+    def test_setup_preserves_oauth_session_on_rebuild(self, mock_qcs_client: MagicMock) -> None:
+        """The new QCSClient must reuse the original client's oauth_session."""
+        # Pin the oauth_session to a sentinel so we can assert identity.
+        sentinel_session = MagicMock(name="OAuthSession")
+        mock_qcs_client.oauth_session = sentinel_session
+
+        provider = RigettiProvider(qcs_client=mock_qcs_client)
+
+        with (
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client") as mock_build,
+            patch.object(provider, "_register_cleanup"),
+        ):
+            new_client = MagicMock(name="NewQCSClient")
+            new_client.grpc_api_url = "https://grpc.qcs.rigetti.com"
+            mock_build.return_value = new_client
+            provider.setup(quilc_endpoint="tcp://other:5555", start_quilc=False)
+
+        mock_build.assert_called_once()
+        # build_qcs_client receives the original oauth_session as the first
+        # positional argument so the new client reuses authentication.
+        assert mock_build.call_args.args[0] is sentinel_session
 
     def test_setup_skips_quilc_when_endpoint_provided(self, mock_qcs_client: MagicMock) -> None:
         """When quilc_endpoint is given, no local quilc process should be started."""
@@ -660,6 +769,8 @@ class TestSetup:
         with (
             patch(f"{_PROVIDER_MODULE}.is_port_in_use") as mock_port,
             patch.object(provider, "_start_quilc") as mock_start,
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client"),
+            patch.object(provider, "_build_execution_options"),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
@@ -729,6 +840,8 @@ class TestSetup:
 
         with (
             patch.object(provider, "_start_qvm") as mock_start,
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client"),
+            patch.object(provider, "_build_execution_options"),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(

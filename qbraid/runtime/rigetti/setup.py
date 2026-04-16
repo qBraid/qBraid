@@ -27,7 +27,6 @@ import shutil
 import socket
 import time
 from pathlib import Path
-from typing import Optional
 
 from qcs_sdk.client import AuthServer, OAuthSession, QCSClient, RefreshToken
 
@@ -44,32 +43,52 @@ class RigettiProviderError(QbraidRuntimeError):
     """Class for errors raised during Rigetti provider setup."""
 
 
-def build_qcs_client(  # pylint: disable=too-many-arguments
+def build_oauth_session(
     refresh_token: str,
-    client_id: Optional[str] = None,
-    issuer: Optional[str] = None,
-    grpc_api_url: Optional[str] = None,
-    quilc_url: Optional[str] = None,
-    qvm_url: Optional[str] = None,
-) -> QCSClient:
-    """Build a QCSClient with the given credentials and URL configuration."""
+    client_id: str | None = None,
+    issuer: str | None = None,
+) -> OAuthSession:
+    """Build an ``OAuthSession`` from credentials.
+
+    When both ``client_id`` and ``issuer`` are provided, a custom
+    ``AuthServer`` is constructed; otherwise ``AuthServer.default()``
+    is used.
+    """
     if client_id and issuer:
         auth_server = AuthServer(client_id=client_id, issuer=issuer)
     else:
         auth_server = AuthServer.default()
 
-    kwargs: dict = {
-        "oauth_session": OAuthSession(
-            RefreshToken(refresh_token=refresh_token),
-            auth_server,
-        ),
-    }
+    return OAuthSession(
+        RefreshToken(refresh_token=refresh_token),
+        auth_server,
+    )
+
+
+def build_qcs_client(
+    oauth_session: OAuthSession,
+    *,
+    grpc_api_url: str | None = None,
+    quilc_url: str | None = None,
+    qvm_url: str | None = None,
+    api_url: str | None = None,
+) -> QCSClient:
+    """Build a ``QCSClient`` from a pre-constructed ``OAuthSession``.
+
+    URL kwargs that are ``None`` are omitted so the qcs_sdk's own
+    defaults apply. Callers that want to preserve specific URLs should
+    pass them explicitly (e.g. when rebuilding a client to honour URL
+    overrides).
+    """
+    kwargs: dict = {"oauth_session": oauth_session}
     if grpc_api_url is not None:
         kwargs["grpc_api_url"] = grpc_api_url
     if quilc_url is not None:
         kwargs["quilc_url"] = quilc_url
     if qvm_url is not None:
         kwargs["qvm_url"] = qvm_url
+    if api_url is not None:
+        kwargs["api_url"] = api_url
 
     return QCSClient(**kwargs)
 
@@ -81,7 +100,7 @@ def is_port_in_use(port: int, host: str = "127.0.0.1") -> bool:
         return sock.connect_ex((host, port)) == 0
 
 
-def find_binary(name: str) -> Optional[Path]:
+def find_binary(name: str) -> Path | None:
     """Find a binary on PATH or in ~/.qbraid/rigetti/bin/."""
     which_result = shutil.which(name)
     if which_result:

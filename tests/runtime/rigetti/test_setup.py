@@ -31,6 +31,7 @@ pytestmark = pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 if pyquil_found:
     from qbraid.runtime.rigetti.setup import (
         RigettiProviderError,
+        build_oauth_session,
         build_qcs_client,
         download_forest_sdk,
         find_binary,
@@ -41,39 +42,36 @@ if pyquil_found:
 _SETUP_MODULE = "qbraid.runtime.rigetti.setup"
 
 
-class TestBuildQcsClient:
-    """Tests for the standalone function build_qcs_client."""
+class TestBuildOAuthSession:
+    """Tests for ``build_oauth_session`` (credentials -> OAuthSession)."""
 
-    def test_build_qcs_client_uses_default_auth_server_when_no_client_id(self) -> None:
+    def test_uses_default_auth_server_when_no_client_id(self) -> None:
         """When client_id is None, AuthServer.default() should be used."""
         with (
             patch(f"{_SETUP_MODULE}.AuthServer") as mock_auth_cls,
             patch(f"{_SETUP_MODULE}.OAuthSession") as mock_oauth_cls,
             patch(f"{_SETUP_MODULE}.RefreshToken") as mock_rt_cls,
-            patch(f"{_SETUP_MODULE}.QCSClient") as mock_qcs_cls,
         ):
             fake_auth = MagicMock(name="DefaultAuthServer")
             mock_auth_cls.default.return_value = fake_auth
             mock_rt_cls.return_value = MagicMock(name="RefreshToken")
             mock_oauth_cls.return_value = MagicMock(name="OAuthSession")
-            mock_qcs_cls.return_value = MagicMock(name="QCSClient")
 
-            build_qcs_client(refresh_token=DUMMY_TOKEN)
+            build_oauth_session(refresh_token=DUMMY_TOKEN)
 
             mock_auth_cls.default.assert_called_once()
             mock_auth_cls.assert_not_called()
 
-    def test_build_qcs_client_uses_default_auth_server_when_no_issuer(self) -> None:
+    def test_uses_default_auth_server_when_no_issuer(self) -> None:
         """When issuer is None, AuthServer.default() should be used."""
         with (
             patch(f"{_SETUP_MODULE}.AuthServer") as mock_auth_cls,
             patch(f"{_SETUP_MODULE}.OAuthSession"),
             patch(f"{_SETUP_MODULE}.RefreshToken"),
-            patch(f"{_SETUP_MODULE}.QCSClient"),
         ):
             mock_auth_cls.default.return_value = MagicMock()
 
-            build_qcs_client(
+            build_oauth_session(
                 refresh_token=DUMMY_TOKEN,
                 client_id=DUMMY_CLIENT_ID,
                 issuer=None,
@@ -82,17 +80,16 @@ class TestBuildQcsClient:
             mock_auth_cls.default.assert_called_once()
             mock_auth_cls.assert_not_called()
 
-    def test_build_qcs_client_uses_custom_auth_server_when_both_provided(self) -> None:
+    def test_uses_custom_auth_server_when_both_provided(self) -> None:
         """When both client_id and issuer are given, AuthServer(client_id, issuer) is used."""
         with (
             patch(f"{_SETUP_MODULE}.AuthServer") as mock_auth_cls,
             patch(f"{_SETUP_MODULE}.OAuthSession"),
             patch(f"{_SETUP_MODULE}.RefreshToken"),
-            patch(f"{_SETUP_MODULE}.QCSClient"),
         ):
             mock_auth_cls.return_value = MagicMock(name="CustomAuth")
 
-            build_qcs_client(
+            build_oauth_session(
                 refresh_token=DUMMY_TOKEN,
                 client_id=DUMMY_CLIENT_ID,
                 issuer=DUMMY_ISSUER,
@@ -101,24 +98,40 @@ class TestBuildQcsClient:
             mock_auth_cls.assert_called_once_with(client_id=DUMMY_CLIENT_ID, issuer=DUMMY_ISSUER)
             mock_auth_cls.default.assert_not_called()
 
-    def test_build_qcs_client_passes_url_kwargs(self) -> None:
-        """URL parameters should be forwarded to QCSClient constructor."""
+    def test_returns_oauth_session_built_from_refresh_token(self) -> None:
+        """The OAuthSession constructor receives a RefreshToken + AuthServer."""
         with (
             patch(f"{_SETUP_MODULE}.AuthServer") as mock_auth_cls,
             patch(f"{_SETUP_MODULE}.OAuthSession") as mock_oauth_cls,
-            patch(f"{_SETUP_MODULE}.RefreshToken"),
-            patch(f"{_SETUP_MODULE}.QCSClient") as mock_qcs_cls,
+            patch(f"{_SETUP_MODULE}.RefreshToken") as mock_rt_cls,
         ):
-            mock_auth_cls.default.return_value = MagicMock()
+            fake_auth = MagicMock(name="AuthServer")
+            fake_rt = MagicMock(name="RefreshToken")
             fake_session = MagicMock(name="OAuthSession")
+            mock_auth_cls.default.return_value = fake_auth
+            mock_rt_cls.return_value = fake_rt
             mock_oauth_cls.return_value = fake_session
 
+            result = build_oauth_session(refresh_token=DUMMY_TOKEN)
+
+            mock_rt_cls.assert_called_once_with(refresh_token=DUMMY_TOKEN)
+            mock_oauth_cls.assert_called_once_with(fake_rt, fake_auth)
+            assert result is fake_session
+
+
+class TestBuildQcsClient:
+    """Tests for ``build_qcs_client`` (OAuthSession + URLs -> QCSClient)."""
+
+    def test_passes_oauth_session_and_url_kwargs(self) -> None:
+        """URL parameters and the oauth_session must be forwarded to QCSClient."""
+        with patch(f"{_SETUP_MODULE}.QCSClient") as mock_qcs_cls:
+            fake_session = MagicMock(name="OAuthSession")
             grpc = "https://custom-grpc:443"
             quilc = "tcp://custom-quilc:5555"
             qvm = "http://custom-qvm:5000"
 
             build_qcs_client(
-                refresh_token=DUMMY_TOKEN,
+                fake_session,
                 grpc_api_url=grpc,
                 quilc_url=quilc,
                 qvm_url=qvm,
@@ -131,26 +144,32 @@ class TestBuildQcsClient:
                 qvm_url=qvm,
             )
 
-    def test_build_qcs_client_omits_url_kwargs_when_none(self) -> None:
+    def test_omits_url_kwargs_when_none(self) -> None:
         """When URL params are None they should not appear in QCSClient kwargs."""
-        with (
-            patch(f"{_SETUP_MODULE}.AuthServer") as mock_auth_cls,
-            patch(f"{_SETUP_MODULE}.OAuthSession") as mock_oauth_cls,
-            patch(f"{_SETUP_MODULE}.RefreshToken"),
-            patch(f"{_SETUP_MODULE}.QCSClient") as mock_qcs_cls,
-        ):
-            mock_auth_cls.default.return_value = MagicMock()
+        with patch(f"{_SETUP_MODULE}.QCSClient") as mock_qcs_cls:
             fake_session = MagicMock(name="OAuthSession")
-            mock_oauth_cls.return_value = fake_session
 
             build_qcs_client(
-                refresh_token=DUMMY_TOKEN,
+                fake_session,
                 grpc_api_url=None,
                 quilc_url=None,
                 qvm_url=None,
             )
 
             mock_qcs_cls.assert_called_once_with(oauth_session=fake_session)
+
+    def test_forwards_api_url_when_provided(self) -> None:
+        """An explicit api_url kwarg must be forwarded to QCSClient."""
+        with patch(f"{_SETUP_MODULE}.QCSClient") as mock_qcs_cls:
+            fake_session = MagicMock(name="OAuthSession")
+            api = "https://api.qcs.rigetti.com"
+
+            build_qcs_client(fake_session, api_url=api)
+
+            mock_qcs_cls.assert_called_once_with(
+                oauth_session=fake_session,
+                api_url=api,
+            )
 
 
 class TestIsPortInUse:

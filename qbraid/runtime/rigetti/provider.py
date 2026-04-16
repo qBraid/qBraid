@@ -48,6 +48,7 @@ from .setup import (
     DEFAULT_QUILC_URL,
     DEFAULT_QVM_PORT,
     DEFAULT_QVM_URL,
+    build_oauth_session,
     build_qcs_client,
     download_forest_sdk,
     find_binary,
@@ -81,10 +82,13 @@ class RigettiProvider(QuantumProvider):
                     "A Rigetti refresh token is required."
                     " Set it via RIGETTI_REFRESH_TOKEN or pass a QCSClient directly."
                 )
-            self._qcs_client = build_qcs_client(
+            oauth_session = build_oauth_session(
                 refresh_token=refresh_token,
                 client_id=os.getenv("RIGETTI_CLIENT_ID"),
                 issuer=os.getenv("RIGETTI_ISSUER"),
+            )
+            self._qcs_client = build_qcs_client(
+                oauth_session,
                 grpc_api_url=os.getenv("QCS_GRPC_ENDPOINT", DEFAULT_GRPC_API_URL),
                 quilc_url=os.getenv("QCS_QUILC_ENDPOINT", DEFAULT_QUILC_URL),
                 qvm_url=os.getenv("QCS_QVM_ENDPOINT", DEFAULT_QVM_URL),
@@ -125,7 +129,9 @@ class RigettiProvider(QuantumProvider):
             try:
                 proc.wait(timeout=5)
             except TimeoutExpired:
-                logger.warning("Process %d did not exit in time, sending SIGKILL", proc.pid)
+                logger.warning(
+                    "Process %d did not exit in time, sending SIGKILL", proc.pid
+                )
                 proc.kill()
             setattr(self, attr, None)
 
@@ -147,39 +153,83 @@ class RigettiProvider(QuantumProvider):
         signal.signal(signal.SIGTERM, self._signal_handler)
         self._cleanup_registered = True
 
-    def setup(
+    def setup(  # pylint: disable=too-many-arguments
         self,
         *,
         quilc_endpoint: str | None = None,
         qvm_endpoint: str | None = None,
+        grpc_endpoint: str | None = None,
         start_quilc: bool = True,
         start_qvm: bool = False,
     ) -> None:
         """Manage local quilc / qvm helper processes and register cleanup.
 
-        Credentials and the ``QCSClient`` are bootstrapped in ``__init__``;
-        this method only handles the (optional) lifecycle of local
-        ``quilc`` and ``qvm`` binaries used during compilation and
-        simulation.
+        Credentials are bootstrapped in ``__init__`` and never re-collected
+        here. If any of ``quilc_endpoint``, ``qvm_endpoint``, or
+        ``grpc_endpoint`` is provided, the underlying ``QCSClient`` is
+        rebuilt with those URL overrides while reusing the existing OAuth
+        session (so callers do not re-authenticate). URLs not provided
+        retain their current values on the client.
 
         Args:
             quilc_endpoint: A pre-existing quilc endpoint to use (e.g.
-                ``tcp://host:5555``). When provided, no local quilc
-                process is started.
+                ``tcp://host:5555``). When provided, the QCSClient's
+                ``quilc_url`` is updated and no local quilc process is
+                started.
             qvm_endpoint: A pre-existing QVM endpoint (e.g.
-                ``http://host:5000``). When provided, no local qvm
-                process is started.
+                ``http://host:5000``). When provided, the QCSClient's
+                ``qvm_url`` is updated and no local qvm process is
+                started.
+            grpc_endpoint: An override for the QCS gRPC endpoint used by
+                ``submit`` / ``retrieve_results`` / ``cancel_job``. When
+                provided, the QCSClient is rebuilt and the cached
+                ``ExecutionOptions`` are refreshed.
             start_quilc: Start a local quilc process if no endpoint is
                 given and quilc is not already running on the default port.
             start_qvm: Start a local qvm process if no endpoint is given
                 and qvm is not already running on the default port.
         """
+        # --- Apply URL overrides by rebuilding the QCSClient (preserving auth) ---
+        # The QCS SDK's ``QCSClient`` URLs are immutable on a constructed
+        # instance; downstream calls (translate, submit, retrieve_results,
+        # the quilc compiler client) all read URLs off the client. To
+        # honour URL overrides we rebuild the client via the shared
+        # ``build_qcs_client`` helper, reusing the existing OAuth session
+        # (``QCSClient.oauth_session`` returns a copy per the qcs_sdk
+        # stubs, which is safe to pass back into a new client). URLs not
+        # overridden retain their existing values so the rebuild never
+        # silently clears them. Execution options derive from the gRPC
+        # URL, so refresh them whenever the client is rebuilt.
+        if (
+            quilc_endpoint is not None
+            or qvm_endpoint is not None
+            or grpc_endpoint is not None
+        ):
+            current = self._qcs_client
+            # current is bound be non-null as we instantiate it in the
+            # constructor when no client is provided, so we can safely read
+            # its properties
+            self._qcs_client = build_qcs_client(
+                current.oauth_session,
+                grpc_api_url=grpc_endpoint
+                if grpc_endpoint is not None
+                else current.grpc_api_url,
+                quilc_url=quilc_endpoint
+                if quilc_endpoint is not None
+                else current.quilc_url,
+                qvm_url=qvm_endpoint if qvm_endpoint is not None else current.qvm_url,
+                api_url=current.api_url,
+            )
+            self._execution_options = self._build_execution_options()
+
         # --- Handle quilc ---
         if quilc_endpoint:
             logger.info("Using provided quilc endpoint: %s", quilc_endpoint)
         elif start_quilc:
             if is_port_in_use(DEFAULT_QUILC_PORT):
-                logger.info("quilc already running on port %d, skipping.", DEFAULT_QUILC_PORT)
+                logger.info(
+                    "quilc already running on port %d, skipping.", DEFAULT_QUILC_PORT
+                )
             else:
                 binary = find_binary("quilc")
                 if binary is None:
@@ -191,7 +241,9 @@ class RigettiProvider(QuantumProvider):
             logger.info("Using provided qvm endpoint: %s", qvm_endpoint)
         elif start_qvm:
             if is_port_in_use(DEFAULT_QVM_PORT):
-                logger.info("qvm already running on port %d, skipping.", DEFAULT_QVM_PORT)
+                logger.info(
+                    "qvm already running on port %d, skipping.", DEFAULT_QVM_PORT
+                )
             else:
                 binary = find_binary("qvm")
                 if binary is None:
@@ -225,7 +277,9 @@ class RigettiProvider(QuantumProvider):
             device_id=quantum_processor_id,
             simulator=False,
             experiment_type=ExperimentType.GATE_MODEL,
-            program_spec=ProgramSpec(pyquil.Program, serialize=lambda program: program.out()),
+            program_spec=ProgramSpec(
+                pyquil.Program, serialize=lambda program: program.out()
+            ),
             num_qubits=num_qubits,
             provider_name="rigetti",
         )
