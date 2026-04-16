@@ -129,9 +129,7 @@ class RigettiProvider(QuantumProvider):
             try:
                 proc.wait(timeout=5)
             except TimeoutExpired:
-                logger.warning(
-                    "Process %d did not exit in time, sending SIGKILL", proc.pid
-                )
+                logger.warning("Process %d did not exit in time, sending SIGKILL", proc.pid)
                 proc.kill()
             setattr(self, attr, None)
 
@@ -200,23 +198,15 @@ class RigettiProvider(QuantumProvider):
         # overridden retain their existing values so the rebuild never
         # silently clears them. Execution options derive from the gRPC
         # URL, so refresh them whenever the client is rebuilt.
-        if (
-            quilc_endpoint is not None
-            or qvm_endpoint is not None
-            or grpc_endpoint is not None
-        ):
+        if quilc_endpoint is not None or qvm_endpoint is not None or grpc_endpoint is not None:
             current = self._qcs_client
             # current is bound be non-null as we instantiate it in the
             # constructor when no client is provided, so we can safely read
             # its properties
             self._qcs_client = build_qcs_client(
                 current.oauth_session,
-                grpc_api_url=grpc_endpoint
-                if grpc_endpoint is not None
-                else current.grpc_api_url,
-                quilc_url=quilc_endpoint
-                if quilc_endpoint is not None
-                else current.quilc_url,
+                grpc_api_url=grpc_endpoint if grpc_endpoint is not None else current.grpc_api_url,
+                quilc_url=quilc_endpoint if quilc_endpoint is not None else current.quilc_url,
                 qvm_url=qvm_endpoint if qvm_endpoint is not None else current.qvm_url,
                 api_url=current.api_url,
             )
@@ -227,9 +217,7 @@ class RigettiProvider(QuantumProvider):
             logger.info("Using provided quilc endpoint: %s", quilc_endpoint)
         elif start_quilc:
             if is_port_in_use(DEFAULT_QUILC_PORT):
-                logger.info(
-                    "quilc already running on port %d, skipping.", DEFAULT_QUILC_PORT
-                )
+                logger.info("quilc already running on port %d, skipping.", DEFAULT_QUILC_PORT)
             else:
                 binary = find_binary("quilc")
                 if binary is None:
@@ -241,9 +229,7 @@ class RigettiProvider(QuantumProvider):
             logger.info("Using provided qvm endpoint: %s", qvm_endpoint)
         elif start_qvm:
             if is_port_in_use(DEFAULT_QVM_PORT):
-                logger.info(
-                    "qvm already running on port %d, skipping.", DEFAULT_QVM_PORT
-                )
+                logger.info("qvm already running on port %d, skipping.", DEFAULT_QVM_PORT)
             else:
                 binary = find_binary("qvm")
                 if binary is None:
@@ -277,9 +263,7 @@ class RigettiProvider(QuantumProvider):
             device_id=quantum_processor_id,
             simulator=False,
             experiment_type=ExperimentType.GATE_MODEL,
-            program_spec=ProgramSpec(
-                pyquil.Program, serialize=lambda program: program.out()
-            ),
+            program_spec=ProgramSpec(pyquil.Program, serialize=lambda program: program.out()),
             num_qubits=num_qubits,
             provider_name="rigetti",
         )
