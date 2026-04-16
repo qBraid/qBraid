@@ -30,7 +30,6 @@ import logging
 import os
 import signal
 from subprocess import DEVNULL, Popen, TimeoutExpired
-from typing import Optional
 
 import pyquil
 from qcs_sdk.client import QCSClient
@@ -69,8 +68,8 @@ class RigettiProvider(QuantumProvider):
         qcs_client: QCSClient | None = None,
     ):
         self._qcs_client = qcs_client
-        self._quilc_process: Optional[Popen] = None
-        self._qvm_process: Optional[Popen] = None
+        self._quilc_process: Popen | None = None
+        self._qvm_process: Popen | None = None
         self._cleanup_registered = False
         self._previous_sigint = None
         self._previous_sigterm = None
@@ -130,7 +129,7 @@ class RigettiProvider(QuantumProvider):
                 proc.kill()
             setattr(self, attr, None)
 
-    def _signal_handler(self, signum: int, frame) -> None:  # pylint: disable=unused-argument
+    def _signal_handler(self, signum: int, _frame) -> None:
         """Handle SIGINT/SIGTERM by cleaning up, then re-raising."""
         self._cleanup()
         if signum == signal.SIGINT:
@@ -148,74 +147,33 @@ class RigettiProvider(QuantumProvider):
         signal.signal(signal.SIGTERM, self._signal_handler)
         self._cleanup_registered = True
 
-    def setup(  # pylint: disable=too-many-arguments
+    def setup(
         self,
         *,
-        refresh_token: Optional[str] = None,
-        client_id: Optional[str] = None,
-        issuer: Optional[str] = None,
-        quilc_endpoint: Optional[str] = None,
-        qvm_endpoint: Optional[str] = None,
-        grpc_endpoint: Optional[str] = None,
+        quilc_endpoint: str | None = None,
+        qvm_endpoint: str | None = None,
         start_quilc: bool = True,
         start_qvm: bool = False,
-        interactive: bool = True,
     ) -> None:
-        """Set up credentials and optionally start quilc/qvm processes.
+        """Manage local quilc / qvm helper processes and register cleanup.
+
+        Credentials and the ``QCSClient`` are bootstrapped in ``__init__``;
+        this method only handles the (optional) lifecycle of local
+        ``quilc`` and ``qvm`` binaries used during compilation and
+        simulation.
 
         Args:
-            refresh_token: Rigetti QCS refresh token. Falls back to
-                ``RIGETTI_REFRESH_TOKEN`` env var, then interactive prompt.
-            client_id: OAuth client ID. Falls back to ``RIGETTI_CLIENT_ID``.
-            issuer: OAuth issuer URL. Falls back to ``RIGETTI_ISSUER``.
-            quilc_endpoint: Quilc RPCQ endpoint (e.g. ``tcp://host:5555``).
-                If provided, no local quilc process is started.
-            qvm_endpoint: QVM endpoint (e.g. ``http://host:5000``).
-                If provided, no local qvm process is started.
-            grpc_endpoint: QCS gRPC endpoint override.
-            start_quilc: Start a local quilc process if no endpoint is given
-                and quilc is not already running.
+            quilc_endpoint: A pre-existing quilc endpoint to use (e.g.
+                ``tcp://host:5555``). When provided, no local quilc
+                process is started.
+            qvm_endpoint: A pre-existing QVM endpoint (e.g.
+                ``http://host:5000``). When provided, no local qvm
+                process is started.
+            start_quilc: Start a local quilc process if no endpoint is
+                given and quilc is not already running on the default port.
             start_qvm: Start a local qvm process if no endpoint is given
-                and qvm is not already running.
-            interactive: If True, prompt for missing credentials via input().
+                and qvm is not already running on the default port.
         """
-        # --- Gather credentials ---
-        refresh_token = refresh_token or os.getenv("RIGETTI_REFRESH_TOKEN")
-        if not refresh_token:
-            if interactive:
-                refresh_token = input("Enter your Rigetti QCS refresh token: ").strip()
-            if not refresh_token:
-                raise ValueError(
-                    "A Rigetti refresh token is required. "
-                    "Pass it via refresh_token=, set RIGETTI_REFRESH_TOKEN, "
-                    "or run with interactive=True."
-                )
-
-        client_id = client_id or os.getenv("RIGETTI_CLIENT_ID")
-        issuer = issuer or os.getenv("RIGETTI_ISSUER")
-        if interactive and not client_id:
-            client_id = input("Enter your Rigetti client ID (or press Enter to skip): ").strip()
-            client_id = client_id or None
-        if interactive and not issuer:
-            issuer = input("Enter your Rigetti issuer URL (or press Enter to skip): ").strip()
-            issuer = issuer or None
-
-        # --- Resolve URLs ---
-        quilc_url = quilc_endpoint or os.getenv("QCS_QUILC_ENDPOINT", DEFAULT_QUILC_URL)
-        qvm_url = qvm_endpoint or os.getenv("QCS_QVM_ENDPOINT", DEFAULT_QVM_URL)
-        grpc_api_url = grpc_endpoint or os.getenv("QCS_GRPC_ENDPOINT", DEFAULT_GRPC_API_URL)
-
-        # --- Rebuild QCSClient ---
-        self._qcs_client = build_qcs_client(
-            refresh_token=refresh_token,
-            client_id=client_id,
-            issuer=issuer,
-            grpc_api_url=grpc_api_url,
-            quilc_url=quilc_url,
-            qvm_url=qvm_url,
-        )
-        self._execution_options = self._build_execution_options()
-
         # --- Handle quilc ---
         if quilc_endpoint:
             logger.info("Using provided quilc endpoint: %s", quilc_endpoint)
@@ -281,7 +239,6 @@ class RigettiProvider(QuantumProvider):
                 RigettiDevice(
                     profile=profile,
                     qcs_client=self._qcs_client,
-                    execution_options=self._execution_options,
                 )
             )
         return devices
@@ -291,5 +248,4 @@ class RigettiProvider(QuantumProvider):
         return RigettiDevice(
             profile=profile,
             qcs_client=self._qcs_client,
-            execution_options=self._execution_options,
         )

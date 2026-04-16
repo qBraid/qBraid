@@ -27,11 +27,19 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
+from qcs_sdk import RegisterMap
+from qcs_sdk.client import QCSClient
 from qcs_sdk.qpu import QPUResultData, ReadoutValues
-from qcs_sdk.qpu.api import QpuApiError, cancel_job, retrieve_results
+from qcs_sdk.qpu.api import (
+    ExecutionOptions,
+    ExecutionResults,
+    QpuApiError,
+    cancel_job,
+    retrieve_results,
+)
 
 from qbraid.runtime import JobStateError
 from qbraid.runtime.enums import JobStatus
@@ -53,35 +61,57 @@ class RigettiJobError(QbraidRuntimeError):
 class RigettiJob(QuantumJob):
     """Rigetti job class."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
-        job_id: str | int,
-        device: RigettiDevice,
-        num_shots: int = 1,
-        ro_sources: Optional[dict] = None,
+        job_id: str,
+        num_shots: int,
+        device: RigettiDevice | None = None,
+        qcs_client: QCSClient | None = None,
+        ro_sources: dict[str, str] | None = None,
+        execution_options: ExecutionOptions | None = None,
         **kwargs: Any,
     ):
+        """Initialize a RigettiJob.
+
+        Args:
+            job_id: The QCS job identifier returned by ``qpu_submit`` (a string).
+            num_shots: Required. Number of shots that the job was submitted
+                with; used downstream by parsers and result formatting.
+            device: The originating ``RigettiDevice``. May be ``None`` when
+                rehydrating a job by ID alone, in which case ``qcs_client``
+                must be provided.
+            qcs_client: An authenticated ``QCSClient``. When ``None``, the
+                ``client`` property falls back to ``device.client``.
+            ro_sources: Mapping from declared memory references (e.g.
+                ``"ro[0]"``) to the readout buffer keys returned by
+                ``ExecutionResults.buffers``. Sourced from
+                ``TranslationResult.ro_sources``.
+            execution_options: The ``ExecutionOptions`` used at submission
+                time. Reused for ``cancel`` and ``retrieve_results`` so the
+                job hits the same gRPC endpoint that accepted it.
+        """
         super().__init__(job_id=job_id, device=device, **kwargs)
+        self._qcs_client = qcs_client
         self._num_shots = num_shots
         self._ro_sources = ro_sources or {}
+        self._execution_options = execution_options
         self._status = JobStatus.INITIALIZING
-        self._cached_results = None
+        self._cached_results: ExecutionResults | None = None
 
     @property
-    def _client(self):
-        return self._device._qcs_client
+    def client(self) -> QCSClient:
+        """Return the authenticated ``QCSClient`` used by this job.
 
-    @property
-    def execution_duration_microseconds(self) -> int | None:
-        """Actual QPU execution time in microseconds.
-
-        Populated as a side effect of ``status()`` / ``result()`` when they
-        call ``retrieve_results``. Returns ``None`` if the job has not yet
-        produced a cached result.
+        Prefers the explicit client passed at construction, falling back to
+        the device's client. Raises ``RigettiJobError`` if neither is set.
         """
-        if self._cached_results is None:
-            return None
-        return self._cached_results.execution_duration_microseconds
+        if self._qcs_client is not None:
+            return self._qcs_client
+        if self._device is not None:
+            return self._device.client
+        raise RigettiJobError(
+            f"RigettiJob {self.id} has no QCSClient: pass qcs_client= or device=."
+        )
 
     def status(self) -> JobStatus:
         """Return the current status of the Rigetti job.
@@ -102,9 +132,9 @@ class RigettiJob(QuantumJob):
             # or running, or in some other non-terminal state
             self._cached_results = retrieve_results(
                 job_id=str(self.id),
-                quantum_processor_id=self._device.id,
-                client=self._client,
-                execution_options=self._device._execution_options,
+                quantum_processor_id=self.device.id,
+                client=self.client,
+                execution_options=self._execution_options,
             )
             self._status = JobStatus.COMPLETED
         except QpuApiError as err:
@@ -128,13 +158,13 @@ class RigettiJob(QuantumJob):
             logger.info(
                 "Attempting to cancel Rigetti job %s on device %s",
                 self.id,
-                self._device.id,
+                self.device.id,
             )
             cancel_job(
                 job_id=str(self.id),
-                quantum_processor_id=self._device.id,
-                client=self._client,
-                execution_options=self._device._execution_options,
+                quantum_processor_id=self.device.id,
+                client=self.client,
+                execution_options=self._execution_options,
             )
         except QpuApiError as exc:
             self._status = previous_status
@@ -147,10 +177,10 @@ class RigettiJob(QuantumJob):
         logger.info(
             "Successfully cancelled Rigetti job %s on device %s",
             self.id,
-            self._device.id,
+            self.device.id,
         )
 
-    def _build_register_map(self, execution_results):
+    def _build_register_map(self, execution_results: ExecutionResults) -> RegisterMap:
         """Build a ``RegisterMap`` from raw execution results and ro_sources.
 
         Constructs a ``QPUResultData`` object and calls ``to_register_map()``
@@ -166,7 +196,7 @@ class RigettiJob(QuantumJob):
         )
         return qpu_result_data.to_register_map()
 
-    def _parse_results(self, execution_results) -> GateModelResultData:
+    def _parse_results(self, execution_results: ExecutionResults) -> GateModelResultData:
         """Parse raw execution results into GateModelResultData.
 
         Uses ``QPUResultData.to_register_map()`` to convert raw buffers
@@ -214,7 +244,7 @@ class RigettiJob(QuantumJob):
         counts = {m: measurements.count(m) for m in set(measurements)}
         return GateModelResultData(measurement_counts=counts)
 
-    def result(self, timeout: Optional[int] = None) -> Result:
+    def result(self, timeout: int | None = None) -> Result[GateModelResultData]:
         """Return the result of the Rigetti job.
 
         Raises:
@@ -224,16 +254,28 @@ class RigettiJob(QuantumJob):
         if self._cached_results is None:
             self._cached_results = retrieve_results(
                 job_id=str(self.id),
-                quantum_processor_id=self._device.id,
-                client=self._client,
-                execution_options=self._device._execution_options,
+                quantum_processor_id=self.device.id,
+                client=self.client,
+                execution_options=self._execution_options,
             )
-        result_data = self._parse_results(self._cached_results)
+
+        try:
+            result_data = self._parse_results(self._cached_results)
+        except RigettiJobError:
+            # Already a RigettiJobError; let it propagate unchanged so the
+            # original message (e.g. "No declared registers") is preserved.
+            raise
+        except Exception as exc:
+            # Wrap any other parser-side failure so the docstring's
+            # "Raises: RigettiJobError" contract holds.
+            raise RigettiJobError(f"Failed to parse execution results for job {self.id}.") from exc
 
         self._status = JobStatus.COMPLETED
         return Result[GateModelResultData](
-            device_id=self._device.id,
+            device_id=self.device.id,
             job_id=self.id,
             success=True,
             data=result_data,
+            execution_duration_microseconds=(self._cached_results.execution_duration_microseconds),
+            ro_sources=dict(self._ro_sources),
         )

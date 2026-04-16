@@ -23,8 +23,9 @@ Module defining Rigetti device class
 
 from __future__ import annotations
 
+import socket
 from multiprocessing.pool import ThreadPool
-from typing import Optional, Union
+from urllib.parse import urlparse
 
 import pyquil
 from qcs_sdk.client import QCSClient
@@ -41,6 +42,10 @@ from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import RigettiJob, RigettiJobError
 
+# Short timeout (seconds) for the quilc TCP reachability probe so that
+# transform() fails fast instead of hanging when the quilc server is down.
+_QUILC_PROBE_TIMEOUT_S = 2.0
+
 
 class RigettiDeviceError(QbraidRuntimeError):
     """Class for errors raised while processing a Rigetti device."""
@@ -53,18 +58,29 @@ class RigettiDevice(QuantumDevice):
         self,
         profile: TargetProfile,
         qcs_client: QCSClient,
-        execution_options: ExecutionOptions | None = None,
     ):
         """Initialize a RigettiDevice.
 
         Args:
             profile: A TargetProfile object (constructed by RigettiProvider).
-            execution_options: ExecutionOptions built by RigettiProvider. If None,
-                the SDK default (Gateway strategy) is used.
+            qcs_client: An authenticated QCSClient used for QCS API calls.
+
+        ``ExecutionOptions`` are not stored on the device. Instead, callers
+        pass an ``execution_options=`` kwarg to ``run()`` / ``submit()`` so
+        each job can use a different connection strategy without forcing
+        re-instantiation of the device.
         """
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
-        self._execution_options = execution_options
+
+    @property
+    def client(self) -> QCSClient:
+        """Return the QCSClient associated with this device."""
+        return self._qcs_client
+
+    def __str__(self) -> str:
+        """String representation of the RigettiDevice object."""
+        return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self) -> DeviceStatus:
         """
@@ -81,22 +97,50 @@ class RigettiDevice(QuantumDevice):
             ) from e
         return DeviceStatus.ONLINE
 
-    def transform(self, run_input):
+    def _probe_quilc_reachable(self) -> None:
+        """Verify that the configured quilc endpoint accepts TCP connections.
+
+        ``compile_program`` will hang indefinitely if quilc is not running,
+        which makes ``run()`` look frozen. We perform a short TCP connect
+        probe (default 2s) against the host:port from
+        ``self._qcs_client.quilc_url`` and raise ``RigettiDeviceError`` on
+        failure so users get an immediate, actionable error.
+        """
+        quilc_url = self._qcs_client.quilc_url
+        parsed = urlparse(quilc_url)
+        host = parsed.hostname
+        port = parsed.port
+        if not host or not port:
+            # Can't introspect a non-standard URL; skip the probe
+            return
+
+        try:
+            with socket.create_connection((host, port), timeout=_QUILC_PROBE_TIMEOUT_S):
+                pass
+        except OSError as exc:
+            raise RigettiDeviceError(
+                f"quilc not reachable at {quilc_url}. "
+                "Start a local quilc server or set QCS_QUILC_ENDPOINT to "
+                "an available endpoint before calling run()."
+            ) from exc
+
+    def transform(self, run_input: pyquil.Program) -> pyquil.Program:
         """Compile a Quil program into the QPU's native gate set via quilc.
 
-        Accepts either a ``pyquil.Program`` object or a serialized Quil
-        string. Returns the same type as the input: ``Program`` in,
-        ``Program`` out; ``str`` in, ``str`` out.
+        Per the ``QuantumDevice.transform`` contract, the input/output type
+        must match: ``Program`` in, ``Program`` out. Quil-string lowering
+        is handled by ``ProgramSpec.serialize`` (configured by the provider
+        as ``lambda program: program.out()``).
 
         Raises:
-            RigettiDeviceError: If quilc compilation fails.
+            RigettiDeviceError: If quilc is unreachable or compilation fails.
         """
-        is_program = isinstance(run_input, pyquil.Program)
-        quil_str = run_input.out() if is_program else run_input
+        # Fail fast if quilc isn't running, instead of hanging in compile_program.
+        self._probe_quilc_reachable()
 
         try:
             compilation_result = compile_program(
-                quil=quil_str,
+                quil=run_input.out(),
                 target=TargetDevice.from_isa(
                     get_instruction_set_architecture(
                         quantum_processor_id=self.id, client=self._qcs_client
@@ -112,28 +156,32 @@ class RigettiDevice(QuantumDevice):
                 "compiler is running and accessible"
             ) from e
 
-        if is_program:
-            return pyquil.Program(compiled_quil)
-        return compiled_quil
+        return pyquil.Program(compiled_quil)
 
-    def _submit(self, run_input: str, shots: Optional[int] = None) -> RigettiJob:
+    def _submit(
+        self,
+        run_input: str,
+        shots: int,
+        execution_options: ExecutionOptions | None = None,
+    ) -> RigettiJob:
         """
         Submit a Quil program to the Rigetti QPU.
 
         Args:
             run_input: A serialized Quil program string (produced by prepare()).
-            shots: Number of shots for the job.
+            shots: Number of shots for the job (must be > 0).
+            execution_options: Optional ``ExecutionOptions``. ``None`` falls back to
+                the qcs_sdk default (Gateway connection strategy).
         """
-        num_shots = shots
-        if num_shots is None or num_shots <= 0:
+        if shots is None or shots <= 0:
             raise RigettiJobError(
-                f"Shots > 0 must be specified for Rigetti QPU jobs, current value: {num_shots}."
+                f"Shots > 0 must be specified for Rigetti QPU jobs, current value: {shots}."
             )
 
         try:
             translation_result = translate(
                 native_quil=run_input,
-                num_shots=num_shots,
+                num_shots=shots,
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
             )
@@ -149,33 +197,46 @@ class RigettiDevice(QuantumDevice):
                 patch_values={},
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
-                execution_options=self._execution_options,
+                execution_options=execution_options,
             )
         except SubmissionError as e:
             raise RigettiJobError("Failed to submit job to Rigetti QCS.") from e
 
         return RigettiJob(
             job_id=job_id,
+            num_shots=shots,
             device=self,
-            num_shots=num_shots,
+            qcs_client=self._qcs_client,
             ro_sources=translation_result.ro_sources,
+            execution_options=execution_options,
         )
 
     # pylint: disable-next=arguments-differ
     def submit(
         self,
-        run_input: Union[str, list[str]],
-        shots: Optional[int] = None,
-    ) -> Union[RigettiJob, list[RigettiJob]]:
+        run_input: str | list[str],
+        shots: int,
+        execution_options: ExecutionOptions | None = None,
+    ) -> RigettiJob | list[RigettiJob]:
         """
         Submit one or more jobs to the Rigetti device.
+
+        Args:
+            run_input: A serialized Quil program string (or a list of them).
+            shots: Number of shots per job (must be > 0).
+            execution_options: Optional ``ExecutionOptions`` applied to every
+                job in this submission. ``None`` falls back to the qcs_sdk
+                default (Gateway connection strategy).
         """
         if isinstance(run_input, list):
             with ThreadPool(5) as pool:
-                quantum_jobs = pool.map(lambda job: self._submit(job, shots), run_input)
+                quantum_jobs = pool.map(
+                    lambda job: self._submit(job, shots, execution_options=execution_options),
+                    run_input,
+                )
                 return quantum_jobs
 
-        return self._submit(run_input, shots)
+        return self._submit(run_input, shots, execution_options=execution_options)
 
     def live_qubits(self) -> list[int]:
         """

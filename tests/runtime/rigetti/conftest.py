@@ -79,8 +79,8 @@ def rigetti_job(rigetti_device):
 
     return RigettiJob(
         job_id=DUMMY_JOB_ID,
-        device=rigetti_device,
         num_shots=3,
+        device=rigetti_device,
         ro_sources=DEFAULT_RO_SOURCES,
     )
 

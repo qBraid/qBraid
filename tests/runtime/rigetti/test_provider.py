@@ -376,7 +376,7 @@ class TestRigettiProviderGetDevices:
             devices = provider.get_devices()
 
         for device in devices:
-            assert device._qcs_client is mock_qcs_client
+            assert device.client is mock_qcs_client
 
 
 class TestRigettiProviderGetDevice:
@@ -422,7 +422,7 @@ class TestRigettiProviderGetDevice:
         ):
             device = provider.get_device(DEVICE_ID)
 
-        assert device._qcs_client is mock_qcs_client
+        assert device.client is mock_qcs_client
 
     def test_get_device_calls_build_profile_once(
         self, mock_qcs_client: MagicMock, qpu_profile: TargetProfile
@@ -632,92 +632,40 @@ class TestRegisterCleanup:
 
 
 class TestSetup:
-    """Tests for RigettiProvider.setup — the main orchestration method."""
+    """Tests for RigettiProvider.setup -- local quilc/qvm process management.
 
-    def test_setup_with_explicit_credentials_rebuilds_client(
-        self, mock_qcs_client: MagicMock
-    ) -> None:
-        """Passing refresh_token explicitly should rebuild _qcs_client."""
-        provider = RigettiProvider(qcs_client=mock_qcs_client)
-        fake_new_client = MagicMock(name="NewQCSClient")
+    Credentials and the QCSClient are bootstrapped once in __init__; setup()
+    is purely concerned with the optional lifecycle of the local quilc and
+    qvm helper binaries plus cleanup-handler registration.
+    """
 
-        with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=fake_new_client,
-            ) as mock_build,
-            patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=True),
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
-            patch.object(provider, "_register_cleanup"),
-        ):
-            provider.setup(
-                refresh_token=DUMMY_TOKEN,
-                client_id=DUMMY_CLIENT_ID,
-                issuer=DUMMY_ISSUER,
-                start_quilc=False,
-                start_qvm=False,
-                interactive=False,
-            )
-
-        mock_build.assert_called_once()
-        assert provider._qcs_client is fake_new_client
-
-    def test_setup_interactive_prompts_for_missing_token(
-        self, mock_qcs_client: MagicMock, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When interactive=True and token is missing, input() should be called."""
-        monkeypatch.delenv("RIGETTI_REFRESH_TOKEN", raising=False)
-        monkeypatch.delenv("RIGETTI_CLIENT_ID", raising=False)
-        monkeypatch.delenv("RIGETTI_ISSUER", raising=False)
+    def test_setup_does_not_rebuild_qcs_client(self, mock_qcs_client: MagicMock) -> None:
+        """setup() must NOT call build_qcs_client; the client is set in __init__."""
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with (
-            patch("builtins.input", side_effect=["my-token", "", ""]) as mock_input,
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
+            patch(f"{_PROVIDER_MODULE}.build_qcs_client") as mock_build,
             patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=True),
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
-            provider.setup(interactive=True, start_quilc=False, start_qvm=False)
+            provider.setup(start_quilc=False, start_qvm=False)
 
-        # input() should have been called at least once for the token
-        assert mock_input.call_count >= 1
-        first_prompt = mock_input.call_args_list[0][0][0]
-        assert "refresh token" in first_prompt.lower()
-
-    def test_setup_non_interactive_raises_without_token(
-        self, mock_qcs_client: MagicMock, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When interactive=False and no token available, raise ValueError."""
-        monkeypatch.delenv("RIGETTI_REFRESH_TOKEN", raising=False)
-        provider = RigettiProvider(qcs_client=mock_qcs_client)
-
-        with pytest.raises(ValueError, match="refresh token"):
-            provider.setup(interactive=False, start_quilc=False, start_qvm=False)
+        mock_build.assert_not_called()
+        assert provider._qcs_client is mock_qcs_client
 
     def test_setup_skips_quilc_when_endpoint_provided(self, mock_qcs_client: MagicMock) -> None:
         """When quilc_endpoint is given, no local quilc process should be started."""
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
             patch(f"{_PROVIDER_MODULE}.is_port_in_use") as mock_port,
             patch.object(provider, "_start_quilc") as mock_start,
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
-                refresh_token=DUMMY_TOKEN,
                 quilc_endpoint="tcp://remote:5555",
                 start_quilc=True,
                 start_qvm=False,
-                interactive=False,
             )
 
         mock_port.assert_not_called()
@@ -728,21 +676,11 @@ class TestSetup:
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
             patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=True),
             patch.object(provider, "_start_quilc") as mock_start,
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
-            provider.setup(
-                refresh_token=DUMMY_TOKEN,
-                start_quilc=True,
-                start_qvm=False,
-                interactive=False,
-            )
+            provider.setup(start_quilc=True, start_qvm=False)
 
         mock_start.assert_not_called()
 
@@ -756,22 +694,12 @@ class TestSetup:
         fake_binary = Path("/usr/local/bin/quilc")
 
         with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
             patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=False),
             patch(f"{_PROVIDER_MODULE}.find_binary", return_value=fake_binary),
             patch.object(provider, "_start_quilc") as mock_start,
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
-            provider.setup(
-                refresh_token=DUMMY_TOKEN,
-                start_quilc=True,
-                start_qvm=False,
-                interactive=False,
-            )
+            provider.setup(start_quilc=True, start_qvm=False)
 
         mock_start.assert_called_once_with(fake_binary)
 
@@ -782,26 +710,16 @@ class TestSetup:
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
             patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=False),
             patch(f"{_PROVIDER_MODULE}.find_binary", return_value=None),
             patch(
                 f"{_PROVIDER_MODULE}.download_forest_sdk",
                 side_effect=RigettiProviderError("not found"),
             ) as mock_download,
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             with pytest.raises(RigettiProviderError):
-                provider.setup(
-                    refresh_token=DUMMY_TOKEN,
-                    start_quilc=True,
-                    start_qvm=False,
-                    interactive=False,
-                )
+                provider.setup(start_quilc=True, start_qvm=False)
 
         mock_download.assert_called_once()
 
@@ -810,20 +728,13 @@ class TestSetup:
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
         with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
             patch.object(provider, "_start_qvm") as mock_start,
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
             provider.setup(
-                refresh_token=DUMMY_TOKEN,
                 qvm_endpoint="http://remote:5000",
                 start_quilc=False,
                 start_qvm=True,
-                interactive=False,
             )
 
         mock_start.assert_not_called()
@@ -838,22 +749,12 @@ class TestSetup:
         fake_binary = Path("/usr/local/bin/qvm")
 
         with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
             patch(f"{_PROVIDER_MODULE}.is_port_in_use", return_value=False),
             patch(f"{_PROVIDER_MODULE}.find_binary", return_value=fake_binary),
             patch.object(provider, "_start_qvm") as mock_start,
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
             patch.object(provider, "_register_cleanup"),
         ):
-            provider.setup(
-                refresh_token=DUMMY_TOKEN,
-                start_quilc=False,
-                start_qvm=True,
-                interactive=False,
-            )
+            provider.setup(start_quilc=False, start_qvm=True)
 
         mock_start.assert_called_once_with(fake_binary)
 
@@ -861,45 +762,7 @@ class TestSetup:
         """setup() should always call _register_cleanup at the end."""
         provider = RigettiProvider(qcs_client=mock_qcs_client)
 
-        with (
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
-            patch.object(provider, "_register_cleanup") as mock_register,
-        ):
-            provider.setup(
-                refresh_token=DUMMY_TOKEN,
-                start_quilc=False,
-                start_qvm=False,
-                interactive=False,
-            )
+        with patch.object(provider, "_register_cleanup") as mock_register:
+            provider.setup(start_quilc=False, start_qvm=False)
 
         mock_register.assert_called_once()
-
-    def test_setup_interactive_prompts_for_client_id_and_issuer(
-        self, mock_qcs_client: MagicMock, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
-        """When interactive=True and client_id/issuer are missing, prompt for them."""
-        monkeypatch.delenv("RIGETTI_REFRESH_TOKEN", raising=False)
-        monkeypatch.delenv("RIGETTI_CLIENT_ID", raising=False)
-        monkeypatch.delenv("RIGETTI_ISSUER", raising=False)
-        provider = RigettiProvider(qcs_client=mock_qcs_client)
-
-        with (
-            patch(
-                "builtins.input",
-                side_effect=[DUMMY_TOKEN, DUMMY_CLIENT_ID, DUMMY_ISSUER],
-            ) as mock_input,
-            patch(
-                f"{_PROVIDER_MODULE}.build_qcs_client",
-                return_value=MagicMock(),
-            ),
-            patch.object(provider, "_build_execution_options", return_value=MagicMock()),
-            patch.object(provider, "_register_cleanup"),
-        ):
-            provider.setup(interactive=True, start_quilc=False, start_qvm=False)
-
-        # Three prompts: token, client_id, issuer
-        assert mock_input.call_count == 3

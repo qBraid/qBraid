@@ -83,7 +83,7 @@ class TestRigettiDeviceStatus:
         ) as mock_list_qpus:
             rigetti_device.status()
 
-        mock_list_qpus.assert_called_once_with(client=rigetti_device._qcs_client)
+        mock_list_qpus.assert_called_once_with(client=rigetti_device.client)
 
     def test_status_other_exceptions_propagate(self, rigetti_device: RigettiDevice) -> None:
         """Exceptions other than ListQuantumProcessorsError must not be caught."""
@@ -141,7 +141,7 @@ class TestRigettiDeviceLiveQubits:
 
         mock_get_isa.assert_called_once_with(
             quantum_processor_id=DEVICE_ID,
-            client=rigetti_device._qcs_client,
+            client=rigetti_device.client,
         )
 
     def test_live_qubits_empty_when_no_nodes(self, rigetti_device: RigettiDevice) -> None:
@@ -189,59 +189,11 @@ def _mock_compile_pipeline(compiled_quil: str = "COMPILED_QUIL"):
 class TestRigettiDeviceTransform:
     """Tests for RigettiDevice.transform (compilation only).
 
-    transform() accepts both pyquil.Program and str inputs and returns
-    the same type: Program in → Program out, str in → str out.
+    Per the QuantumDevice.transform contract, the input/output type must
+    match. RigettiDevice.transform accepts a pyquil.Program and returns
+    a pyquil.Program. Quil-string lowering happens in ProgramSpec.serialize
+    (configured by the provider), not in transform.
     """
-
-    def test_transform_str_calls_compile_program(self, rigetti_device: RigettiDevice) -> None:
-        """transform(str) must invoke compile_program with the Quil string."""
-        fake_comp = _mock_compile_pipeline()
-        quil_str = "DECLARE ro BIT[1]\nMEASURE 0 ro[0]\n"
-
-        with (
-            patch(
-                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
-                return_value=MagicMock(),
-            ),
-            patch(
-                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
-                return_value=MagicMock(),
-            ) as mock_from_isa,
-            patch(
-                "qbraid.runtime.rigetti.device.compile_program",
-                return_value=fake_comp,
-            ) as mock_compile,
-        ):
-            rigetti_device.transform(quil_str)
-
-        mock_compile.assert_called_once()
-        call_kwargs = mock_compile.call_args
-        assert call_kwargs.kwargs["quil"] == quil_str
-        assert call_kwargs.kwargs["target"] == mock_from_isa.return_value
-
-    def test_transform_str_returns_str(self, rigetti_device: RigettiDevice) -> None:
-        """transform(str) must return the compiled Quil as a str."""
-        compiled_quil = "RZ(pi/2) 0\nMEASURE 0 ro[0]\n"
-        fake_comp = _mock_compile_pipeline(compiled_quil=compiled_quil)
-
-        with (
-            patch(
-                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
-                return_value=MagicMock(),
-            ),
-            patch(
-                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
-                return_value=MagicMock(),
-            ),
-            patch(
-                "qbraid.runtime.rigetti.device.compile_program",
-                return_value=fake_comp,
-            ),
-        ):
-            result = rigetti_device.transform("H 0\nMEASURE 0 ro[0]\n")
-
-        assert isinstance(result, str)
-        assert result == compiled_quil
 
     def test_transform_program_serializes_before_compile(
         self, rigetti_device: RigettiDevice
@@ -258,6 +210,7 @@ class TestRigettiDeviceTransform:
         fake_comp = _mock_compile_pipeline()
 
         with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
             patch(
                 "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
                 return_value=MagicMock(),
@@ -277,7 +230,7 @@ class TestRigettiDeviceTransform:
         assert mock_compile.call_args.kwargs["quil"] == expected_quil_str
 
     def test_transform_program_returns_program(self, rigetti_device: RigettiDevice) -> None:
-        """transform(Program) must return a pyquil.Program, not a string."""
+        """transform(Program) must return a pyquil.Program."""
         # pylint: disable=import-outside-toplevel
         import pyquil
         import pyquil.gates
@@ -289,6 +242,7 @@ class TestRigettiDeviceTransform:
         fake_comp = _mock_compile_pipeline(compiled_quil=compiled_quil)
 
         with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
             patch(
                 "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
                 return_value=MagicMock(),
@@ -310,14 +264,80 @@ class TestRigettiDeviceTransform:
         self, rigetti_device: RigettiDevice
     ) -> None:
         """A compilation failure must be wrapped in RigettiDeviceError."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
         with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
             patch(
                 "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
                 side_effect=RuntimeError("ISA unavailable"),
             ),
             pytest.raises(RigettiDeviceError, match="Compilation failed"),
         ):
-            rigetti_device.transform("H 0")
+            rigetti_device.transform(program)
+
+    def test_transform_raises_when_quilc_unreachable(self, rigetti_device: RigettiDevice) -> None:
+        """transform() must fail fast with RigettiDeviceError if quilc is unreachable."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.socket.create_connection",
+                side_effect=OSError("connection refused"),
+            ),
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+            pytest.raises(RigettiDeviceError, match="quilc not reachable"),
+        ):
+            rigetti_device.transform(program)
+
+        mock_compile.assert_not_called()
+
+    def test_transform_quilc_probe_skipped_for_malformed_url(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A malformed quilc URL (no host/port) skips the probe rather than raising."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        rigetti_device.client.quilc_url = "not-a-real-url"
+        fake_comp = _mock_compile_pipeline()
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.socket.create_connection",
+            ) as mock_connect,
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ),
+        ):
+            rigetti_device.transform(program)
+
+        mock_connect.assert_not_called()
 
 
 # ===========================================================================
@@ -329,8 +349,8 @@ def _mock_submit_pipeline(
     rigetti_device: RigettiDevice,
     quil_str: str,
     shots: int,
-    job_id: str = DUMMY_JOB_ID,
     ro_sources: dict | None = None,
+    execution_options=None,
 ):
     """Patch translate and qpu_submit, then call submit.
 
@@ -351,10 +371,10 @@ def _mock_submit_pipeline(
         ) as mock_translate,
         patch(
             "qbraid.runtime.rigetti.device.qpu_submit",
-            return_value=job_id,
+            return_value=DUMMY_JOB_ID,
         ) as mock_qpu_submit,
     ):
-        job = rigetti_device.submit(quil_str, shots=shots)
+        job = rigetti_device.submit(quil_str, shots=shots, execution_options=execution_options)
 
     return job, mock_translate, mock_qpu_submit
 
@@ -406,7 +426,7 @@ class TestRigettiDeviceSubmit:
             native_quil=quil_str,
             num_shots=shots,
             quantum_processor_id=DEVICE_ID,
-            client=rigetti_device._qcs_client,
+            client=rigetti_device.client,
         )
 
     def test_submit_calls_qpu_submit_with_correct_args(self, rigetti_device: RigettiDevice) -> None:
@@ -414,13 +434,41 @@ class TestRigettiDeviceSubmit:
         quil_str, shots = self._make_quil(shots=1)
         _, _, mock_submit = _mock_submit_pipeline(rigetti_device, quil_str, shots)
 
+        # execution_options defaults to None when not passed at submit-time;
+        # qcs_sdk falls back to the Gateway connection strategy.
         mock_submit.assert_called_once_with(
             program="TRANSLATED_BINARY",
             patch_values={},
             quantum_processor_id=DEVICE_ID,
-            client=rigetti_device._qcs_client,
-            execution_options=rigetti_device._execution_options,
+            client=rigetti_device.client,
+            execution_options=None,
         )
+
+    def test_submit_forwards_execution_options_to_qpu_submit(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A custom execution_options kwarg on submit() must reach qpu_submit."""
+        quil_str, shots = self._make_quil(shots=1)
+        custom_opts = MagicMock(name="ExecutionOptions")
+
+        _, _, mock_submit = _mock_submit_pipeline(
+            rigetti_device, quil_str, shots, execution_options=custom_opts
+        )
+
+        assert mock_submit.call_args.kwargs["execution_options"] is custom_opts
+
+    def test_submit_stores_execution_options_on_returned_job(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """The RigettiJob returned by submit() must carry the execution_options."""
+        quil_str, shots = self._make_quil(shots=1)
+        custom_opts = MagicMock(name="ExecutionOptions")
+
+        job, _, _ = _mock_submit_pipeline(
+            rigetti_device, quil_str, shots, execution_options=custom_opts
+        )
+
+        assert job._execution_options is custom_opts
 
     def test_submit_raises_rigetti_job_error_on_submission_error(
         self, rigetti_device: RigettiDevice
@@ -468,14 +516,22 @@ class TestRigettiDeviceSubmit:
 
         assert job._num_shots == shots
 
-    def test_submit_raises_rigetti_job_error_when_shots_not_provided(
+    def test_submit_requires_shots(self, rigetti_device: RigettiDevice) -> None:
+        """submit() declares shots as a required positional/keyword argument."""
+        quil_str, _ = self._make_quil()
+
+        # Omitting shots is a Python-level signature violation.
+        with pytest.raises(TypeError, match="shots"):
+            rigetti_device.submit(quil_str)  # pylint: disable=missing-kwoa
+
+    def test_submit_raises_rigetti_job_error_when_shots_not_positive(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """_submit must raise RigettiJobError when shots is not specified."""
+        """_submit must raise RigettiJobError when shots <= 0."""
         quil_str, _ = self._make_quil()
 
         with pytest.raises(RigettiJobError, match="Shots"):
-            rigetti_device.submit(quil_str)
+            rigetti_device.submit(quil_str, shots=0)
 
     def test_submit_passes_ro_sources_to_job(self, rigetti_device: RigettiDevice) -> None:
         """The RigettiJob returned by _submit must carry translation_result.ro_sources."""
@@ -549,3 +605,8 @@ def test_rigetti_device_str_repr(rigetti_device: RigettiDevice) -> None:
     text = str(rigetti_device)
     assert "RigettiDevice" in text
     assert DEVICE_ID in text
+
+
+def test_rigetti_device_str_format(rigetti_device: RigettiDevice) -> None:
+    """__str__ must follow the SDK convention: ClassName('device_id')."""
+    assert str(rigetti_device) == f"RigettiDevice('{DEVICE_ID}')"

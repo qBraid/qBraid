@@ -17,6 +17,28 @@ Types of changes:
 
 ### Added
 - Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; requires local [quilc](https://github.com/quil-lang/quilc) and [QVM](https://github.com/quil-lang/qvm) binaries for compilation and simulation — install the [Forest SDK](https://qcs.rigetti.com/sdk-downloads) before use ([#1127](https://github.com/qBraid/qBraid/pull/1127))
+
+  ```python
+  import pyquil
+  import pyquil.gates
+
+  from qbraid.runtime.rigetti import RigettiProvider
+
+  provider = RigettiProvider()
+  device = provider.get_device("Ankaa-3")
+
+  # Bell state on qubits 0 and 1, measured into a 2-bit register
+  program = pyquil.Program()
+  ro = program.declare("ro", "BIT", 2)
+  program.inst(pyquil.gates.H(0))
+  program.inst(pyquil.gates.CNOT(0, 1))
+  program.inst(pyquil.gates.MEASURE(0, ro[0]))
+  program.inst(pyquil.gates.MEASURE(1, ro[1]))
+
+  job = device.run(program, shots=100)
+  result = job.result()
+  print(result.data.get_counts())
+  ```
 - Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))

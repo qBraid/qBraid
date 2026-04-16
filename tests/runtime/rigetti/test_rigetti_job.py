@@ -27,6 +27,7 @@ import pytest
 
 from qbraid.runtime import GateModelResultData, Result
 from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .conftest import DEVICE_ID, DUMMY_JOB_ID
 
@@ -117,21 +118,41 @@ class TestRigettiJobProperties:
         """The job's device must carry the correct processor ID."""
         assert rigetti_job._device.id == DEVICE_ID
 
-    def test_client_property_mirrors_device_client(
+    def test_client_property_falls_back_to_device_client(
         self, rigetti_job: RigettiJob, mock_qcs_client: MagicMock
     ) -> None:
-        """_client must return the device's _qcs_client."""
-        assert rigetti_job._client is mock_qcs_client
+        """When no explicit qcs_client was passed, .client falls back to device.client."""
+        assert rigetti_job.client is mock_qcs_client
+
+    def test_client_property_prefers_explicit_qcs_client(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """An explicit qcs_client passed at construction takes precedence over the device's."""
+        explicit_client = MagicMock(name="ExplicitQCSClient")
+        job = RigettiJob(
+            job_id="x",
+            num_shots=1,
+            device=rigetti_device,
+            qcs_client=explicit_client,
+        )
+        assert job.client is explicit_client
+
+    def test_client_property_raises_when_neither_set(self) -> None:
+        """When neither qcs_client nor device is provided, .client raises RigettiJobError."""
+        job = RigettiJob(job_id="x", num_shots=1)
+        with pytest.raises(RigettiJobError, match="QCSClient"):
+            _ = job.client
 
     def test_num_shots_stored_correctly(self, rigetti_device: RigettiDevice) -> None:
         """num_shots kwarg must be stored as _num_shots."""
-        job = RigettiJob(job_id="x", device=rigetti_device, num_shots=42)
+        job = RigettiJob(job_id="x", num_shots=42, device=rigetti_device)
         assert job._num_shots == 42
 
-    def test_num_shots_defaults_to_one(self, rigetti_device: RigettiDevice) -> None:
-        """When num_shots is omitted the default must be 1."""
-        job = RigettiJob(job_id="x", device=rigetti_device)
-        assert job._num_shots == 1
+    def test_num_shots_is_required(self, rigetti_device: RigettiDevice) -> None:
+        """num_shots is a required argument; constructing without it must TypeError."""
+        with pytest.raises(TypeError):
+            # pylint: disable-next=no-value-for-parameter
+            RigettiJob(job_id="x", device=rigetti_device)
 
     def test_initial_status_is_initializing(self, rigetti_job: RigettiJob) -> None:
         """A freshly created job must have INITIALIZING status."""
@@ -140,30 +161,26 @@ class TestRigettiJobProperties:
     def test_ro_sources_stored_correctly(self, rigetti_device: RigettiDevice) -> None:
         """ro_sources kwarg must be stored as _ro_sources."""
         ro_sources = {"ro[0]": "q0_ro", "ro[1]": "q1_ro"}
-        job = RigettiJob(job_id="x", device=rigetti_device, num_shots=1, ro_sources=ro_sources)
+        job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device, ro_sources=ro_sources)
         assert job._ro_sources == ro_sources
 
     def test_ro_sources_defaults_to_empty_dict(self, rigetti_device: RigettiDevice) -> None:
         """When ro_sources is omitted the default must be an empty dict."""
-        job = RigettiJob(job_id="x", device=rigetti_device)
+        job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device)
         assert job._ro_sources == {}
 
-    def test_execution_duration_microseconds_none_when_no_cached_results(
+    def test_execution_options_stored_at_submission_time(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """Property returns None before status()/result() populate _cached_results."""
-        job = RigettiJob(job_id="x", device=rigetti_device)
-        assert job.execution_duration_microseconds is None
+        """An execution_options kwarg passed to __init__ must be stored on the job."""
+        opts = MagicMock(name="ExecutionOptions")
+        job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device, execution_options=opts)
+        assert job._execution_options is opts
 
-    def test_execution_duration_microseconds_reads_from_cached_results(
-        self, rigetti_device: RigettiDevice
-    ) -> None:
-        """Property forwards the cached ExecutionResults attribute."""
-        job = RigettiJob(job_id="x", device=rigetti_device)
-        cached = MagicMock()
-        cached.execution_duration_microseconds = 1_500_000
-        job._cached_results = cached
-        assert job.execution_duration_microseconds == 1_500_000
+    def test_execution_options_defaults_to_none(self, rigetti_device: RigettiDevice) -> None:
+        """When execution_options is omitted, the job stores None (SDK default)."""
+        job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device)
+        assert job._execution_options is None
 
 
 # ===========================================================================
@@ -197,9 +214,27 @@ class TestRigettiJobStatus:
         mock_retrieve.assert_called_once_with(
             job_id=str(rigetti_job.id),
             quantum_processor_id=DEVICE_ID,
-            client=rigetti_job._client,
-            execution_options=rigetti_job._device._execution_options,
+            client=rigetti_job.client,
+            execution_options=rigetti_job._execution_options,
         )
+
+    def test_status_uses_jobs_own_execution_options(self, rigetti_device: RigettiDevice) -> None:
+        """status() must pass the per-job execution_options (set at submit time)."""
+        opts = MagicMock(name="ExecutionOptions")
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            num_shots=3,
+            device=rigetti_device,
+            execution_options=opts,
+        )
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=MagicMock(),
+        ) as mock_retrieve:
+            job.status()
+
+        assert mock_retrieve.call_args.kwargs["execution_options"] is opts
 
     def test_status_reflects_manual_internal_change(self, rigetti_job: RigettiJob) -> None:
         """Changing _status directly must be visible through status()."""
@@ -249,8 +284,23 @@ class TestRigettiJobCancel:
             job_id=DUMMY_JOB_ID,
             quantum_processor_id=DEVICE_ID,
             client=mock_qcs_client,
-            execution_options=rigetti_job._device._execution_options,
+            execution_options=rigetti_job._execution_options,
         )
+
+    def test_cancel_uses_jobs_own_execution_options(self, rigetti_device: RigettiDevice) -> None:
+        """cancel() must pass the per-job execution_options (set at submit time)."""
+        opts = MagicMock(name="ExecutionOptions")
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            num_shots=3,
+            device=rigetti_device,
+            execution_options=opts,
+        )
+
+        with patch("qbraid.runtime.rigetti.job.cancel_job") as mock_cancel:
+            job.cancel()
+
+        assert mock_cancel.call_args.kwargs["execution_options"] is opts
 
     def test_cancel_sets_status_to_cancelled_on_success(self, rigetti_job: RigettiJob) -> None:
         """A successful cancel must transition status to CANCELLED."""
@@ -413,7 +463,7 @@ class TestRigettiJobParseResults:
         exec_results.buffers = {}
         exec_results.memory = {}
 
-        job = RigettiJob(job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1)
+        job = RigettiJob(job_id=DUMMY_JOB_ID, num_shots=1, device=rigetti_device)
         # job._ro_sources is {} by default
 
         with pytest.raises(RigettiJobError, match="No declared registers"):
@@ -738,9 +788,52 @@ class TestRigettiJobResult:
         mock_retrieve.assert_called_with(
             job_id=str(DUMMY_JOB_ID),
             quantum_processor_id=DEVICE_ID,
-            client=job._client,
-            execution_options=rigetti_device._execution_options,
+            client=job.client,
+            execution_options=job._execution_options,
         )
+
+    def test_result_details_include_execution_duration_microseconds(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """result().details must surface execution_duration_microseconds."""
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
+        exec_results.execution_duration_microseconds = 1_500_000
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ):
+            res = job.result()
+
+        assert res.details["execution_duration_microseconds"] == 1_500_000
+
+    def test_result_details_include_ro_sources(self, rigetti_device: RigettiDevice) -> None:
+        """result().details must include the ro_sources mapping."""
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ):
+            res = job.result()
+
+        assert res.details["ro_sources"] == job._ro_sources
+
+    def test_result_wraps_unexpected_parser_failure_as_rigetti_job_error(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Non-RigettiJobError exceptions from _parse_results must surface as RigettiJobError."""
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1]])
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.job.retrieve_results",
+                return_value=exec_results,
+            ),
+            patch.object(job, "_parse_results", side_effect=ValueError("internal parser bug")),
+            pytest.raises(RigettiJobError, match="Failed to parse execution results"),
+        ):
+            job.result()
 
     def test_result_raises_on_qpu_api_error(self, rigetti_job: RigettiJob) -> None:
         """A QpuApiError from retrieve_results must propagate (not be caught)."""
@@ -822,3 +915,47 @@ def test_rigetti_job_repr(rigetti_job: RigettiJob) -> None:
     r = repr(rigetti_job)
     assert "RigettiJob" in r
     assert DUMMY_JOB_ID in r
+
+
+# ===========================================================================
+# Job – deviceless construction (J1: device may be None)
+# ===========================================================================
+
+
+class TestRigettiJobWithoutDevice:
+    """Tests for RigettiJob constructed with ``device=None``.
+
+    A deviceless job is allowed (e.g. when rehydrating by ID) but the
+    device-dependent methods (status, cancel, result) must surface a
+    clean ``ResourceNotFoundError`` from the base ``QuantumJob.device``
+    property instead of an opaque ``AttributeError``.
+    """
+
+    def test_status_raises_resource_not_found_when_no_device(
+        self, mock_qcs_client: MagicMock
+    ) -> None:
+        """status() must raise ResourceNotFoundError when device is None."""
+        job = RigettiJob(job_id="x", num_shots=1, qcs_client=mock_qcs_client)
+        with pytest.raises(ResourceNotFoundError, match="associated device"):
+            job.status()
+
+    def test_cancel_raises_resource_not_found_when_no_device(
+        self, mock_qcs_client: MagicMock
+    ) -> None:
+        """cancel() must raise ResourceNotFoundError when device is None."""
+        job = RigettiJob(job_id="x", num_shots=1, qcs_client=mock_qcs_client)
+        with pytest.raises(ResourceNotFoundError, match="associated device"):
+            job.cancel()
+
+    def test_result_raises_resource_not_found_when_no_device(
+        self, mock_qcs_client: MagicMock
+    ) -> None:
+        """result() must raise ResourceNotFoundError when device is None.
+
+        ``result()`` calls ``wait_for_final_state`` -> ``status()``, which
+        accesses ``self.device.id`` first, so ``ResourceNotFoundError``
+        propagates out of ``result()`` before any retrieval is attempted.
+        """
+        job = RigettiJob(job_id="x", num_shots=1, qcs_client=mock_qcs_client)
+        with pytest.raises(ResourceNotFoundError, match="associated device"):
+            job.result()
