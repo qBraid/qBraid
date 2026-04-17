@@ -25,16 +25,22 @@ from __future__ import annotations
 
 import socket
 from multiprocessing.pool import ThreadPool
+from typing import Any, Union
 from urllib.parse import urlparse
 
 import pyquil
 from qcs_sdk.client import QCSClient
-from qcs_sdk.compiler.quilc import QuilcClient, TargetDevice, compile_program
+from qcs_sdk.compiler.quilc import (
+    CompilerOpts,
+    QuilcClient,
+    TargetDevice,
+    compile_program,
+)
 from qcs_sdk.qpu import ListQuantumProcessorsError, list_quantum_processors
 from qcs_sdk.qpu.api import ExecutionOptions, SubmissionError
 from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
-from qcs_sdk.qpu.translation import translate
+from qcs_sdk.qpu.translation import TranslationOptions, translate
 
 from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus
@@ -72,6 +78,7 @@ class RigettiDevice(QuantumDevice):
         """
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
+        self._compiler_options: CompilerOpts | None = None
 
     @property
     def client(self) -> QCSClient:
@@ -88,7 +95,9 @@ class RigettiDevice(QuantumDevice):
         """
         try:
             # Otherwise, check if the quantum processor ID is in the list of available processors
-            quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
+            quantum_processor_ids = set(
+                list_quantum_processors(client=self._qcs_client)
+            )
             if self.id not in quantum_processor_ids:
                 return DeviceStatus.OFFLINE
         except ListQuantumProcessorsError as e:
@@ -124,6 +133,47 @@ class RigettiDevice(QuantumDevice):
                 "an available endpoint before calling run()."
             ) from exc
 
+    @staticmethod
+    def _parse_runtime_options(
+        runtime_options: dict[str, Any] | None,
+    ) -> tuple[CompilerOpts | None, TranslationOptions | None]:
+        """Extract known compiler/translation keys from a runtime_options dict.
+
+        Recognized compiler keys are mapped to ``CompilerOpts``, and recognized
+        translation keys are mapped to ``TranslationOptions.v2()``.
+        Unrecognized keys are silently ignored.
+
+        Returns:
+            A ``(compiler_opts, translation_opts)`` tuple.  Either element is
+            ``None`` when the corresponding keys are absent.
+        """
+        if not runtime_options:
+            return None, None
+
+        # --- Compiler options ---
+        compiler_timeout = runtime_options.get("compiler_timeout")
+        compiler_opts = (
+            CompilerOpts(timeout=compiler_timeout)
+            if compiler_timeout is not None
+            else None
+        )
+
+        # --- Translation options (v2 only, targeting Ankaa / Cepheus) ---
+        translation_keys = {
+            "prepend_default_calibrations",
+            "passive_reset_delay_seconds",
+            "allow_unchecked_pointer_arithmetic",
+            "allow_frame_redefinition",
+        }
+        translation_kwargs = {
+            k: runtime_options[k] for k in translation_keys if k in runtime_options
+        }
+        translation_opts = (
+            TranslationOptions.v2(**translation_kwargs) if translation_kwargs else None
+        )
+
+        return compiler_opts, translation_opts
+
     def transform(self, run_input: pyquil.Program) -> pyquil.Program:
         """Compile a Quil program into the QPU's native gate set via quilc.
 
@@ -132,11 +182,18 @@ class RigettiDevice(QuantumDevice):
         is handled by ``ProgramSpec.serialize`` (configured by the provider
         as ``lambda program: program.out()``).
 
+        When called via ``run(runtime_options=...)``, the transient
+        ``self._compiler_options`` attribute supplies ``CompilerOpts`` to
+        ``compile_program()``.  Direct callers get the qcs_sdk defaults.
+
         Raises:
             RigettiDeviceError: If quilc is unreachable or compilation fails.
         """
         # Fail fast if quilc isn't running, instead of hanging in compile_program.
         self._probe_quilc_reachable()
+
+        # Transient attribute set by run(); falls back to None for direct callers.
+        compiler_options: CompilerOpts | None = getattr(self, "_compiler_options", None)
 
         try:
             compilation_result = compile_program(
@@ -147,6 +204,7 @@ class RigettiDevice(QuantumDevice):
                     )
                 ),
                 client=QuilcClient.new_rpcq(self._qcs_client.quilc_url),
+                options=compiler_options,
             )
             compiled_quil = compilation_result.program.to_quil()
         except Exception as e:
@@ -163,6 +221,7 @@ class RigettiDevice(QuantumDevice):
         run_input: str,
         shots: int,
         execution_options: ExecutionOptions | None = None,
+        translation_options: TranslationOptions | None = None,
     ) -> RigettiJob:
         """
         Submit a Quil program to the Rigetti QPU.
@@ -172,6 +231,8 @@ class RigettiDevice(QuantumDevice):
             shots: Number of shots for the job (must be > 0).
             execution_options: Optional ``ExecutionOptions``. ``None`` falls back to
                 the qcs_sdk default (Gateway connection strategy).
+            translation_options: Optional ``TranslationOptions`` forwarded to
+                ``translate()``. ``None`` uses the qcs_sdk default backend.
         """
         if shots is None or shots <= 0:
             raise RigettiJobError(
@@ -184,6 +245,7 @@ class RigettiDevice(QuantumDevice):
                 num_shots=shots,
                 quantum_processor_id=self.id,
                 client=self._qcs_client,
+                translation_options=translation_options,
             )
         except Exception as e:
             raise RigettiJobError(
@@ -217,6 +279,7 @@ class RigettiDevice(QuantumDevice):
         run_input: str | list[str],
         shots: int,
         execution_options: ExecutionOptions | None = None,
+        translation_options: TranslationOptions | None = None,
     ) -> RigettiJob | list[RigettiJob]:
         """
         Submit one or more jobs to the Rigetti device.
@@ -227,16 +290,82 @@ class RigettiDevice(QuantumDevice):
             execution_options: Optional ``ExecutionOptions`` applied to every
                 job in this submission. ``None`` falls back to the qcs_sdk
                 default (Gateway connection strategy).
+            translation_options: Optional ``TranslationOptions`` applied to
+                every job in this submission. ``None`` uses the qcs_sdk
+                default translation backend.
         """
         if isinstance(run_input, list):
             with ThreadPool(5) as pool:
                 quantum_jobs = pool.map(
-                    lambda job: self._submit(job, shots, execution_options=execution_options),
+                    lambda job: self._submit(
+                        job,
+                        shots,
+                        execution_options=execution_options,
+                        translation_options=translation_options,
+                    ),
                     run_input,
                 )
                 return quantum_jobs
 
-        return self._submit(run_input, shots, execution_options=execution_options)
+        return self._submit(
+            run_input,
+            shots,
+            execution_options=execution_options,
+            translation_options=translation_options,
+        )
+
+    def run(
+        self,
+        run_input: Union[pyquil.Program, list[pyquil.Program]],
+        *args,
+        runtime_options: dict[str, Any] | None = None,
+        **kwargs,
+    ) -> Union[RigettiJob, list[RigettiJob]]:
+        """Run a quantum job (or batch) on this Rigetti device.
+
+        Accepts an optional ``runtime_options`` dict whose keys are
+        mapped to quilc ``CompilerOpts`` and QCS ``TranslationOptions``
+        internally.  Users never need to import qcs_sdk types.
+
+        Recognised keys
+        ~~~~~~~~~~~~~~~~
+        * ``"compiler_timeout"`` (*float*) – quilc compilation timeout
+          in seconds (default 30).
+        * ``"prepend_default_calibrations"`` (*bool*) – v2 translation
+          option; if ``False``, skip default calibrations.
+        * ``"passive_reset_delay_seconds"`` (*float*) – delay between
+          passive resets.
+        * ``"allow_unchecked_pointer_arithmetic"`` (*bool*) – disable
+          runtime memory bounds checking (authorized access).
+        * ``"allow_frame_redefinition"`` (*bool*) – allow frames to
+          differ from Rigetti defaults (authorized access).
+
+        Any other keys are silently ignored.
+
+        All remaining ``*args`` / ``**kwargs`` (e.g. ``shots``,
+        ``execution_options``) are forwarded to ``submit()``.
+        """
+        compiler_opts, translation_opts = self._parse_runtime_options(runtime_options)
+
+        is_single_input = not isinstance(run_input, list)
+        run_input_list = [run_input] if is_single_input else run_input
+
+        # Stash compiler_options so transform() can pick them up.
+        # transform() is called inside apply_runtime_profile() which
+        # does not accept extra kwargs.
+        self._compiler_options = compiler_opts
+        try:
+            run_input_compat = [
+                self.apply_runtime_profile(program) for program in run_input_list
+            ]
+        finally:
+            self._compiler_options = None
+
+        run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
+
+        return self.submit(
+            run_input_compat, *args, translation_options=translation_opts, **kwargs
+        )
 
     def live_qubits(self) -> list[int]:
         """

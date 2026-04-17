@@ -34,8 +34,12 @@ rigetti_deps_found = (
 pytestmark = pytest.mark.skipif(not rigetti_deps_found, reason="Rigetti dependencies not installed")
 
 if rigetti_deps_found:
+    import pyquil
+    import pyquil.gates
+    from qcs_sdk.compiler.quilc import CompilerOpts
     from qcs_sdk.qpu import ListQuantumProcessorsError
     from qcs_sdk.qpu.api import SubmissionError
+    from qcs_sdk.qpu.translation import TranslationOptions
 
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
     from qbraid.runtime.rigetti.device import RigettiDeviceError
@@ -427,6 +431,7 @@ class TestRigettiDeviceSubmit:
             num_shots=shots,
             quantum_processor_id=DEVICE_ID,
             client=rigetti_device.client,
+            translation_options=None,
         )
 
     def test_submit_calls_qpu_submit_with_correct_args(self, rigetti_device: RigettiDevice) -> None:
@@ -610,3 +615,346 @@ def test_rigetti_device_str_repr(rigetti_device: RigettiDevice) -> None:
 def test_rigetti_device_str_format(rigetti_device: RigettiDevice) -> None:
     """__str__ must follow the SDK convention: ClassName('device_id')."""
     assert str(rigetti_device) == f"RigettiDevice('{DEVICE_ID}')"
+
+
+# ===========================================================================
+# Device – _parse_runtime_options
+# ===========================================================================
+
+
+class TestParseRuntimeOptions:
+    """Tests for RigettiDevice._parse_runtime_options."""
+
+    def test_none_returns_none_tuple(self) -> None:
+        """None input returns (None, None)."""
+        assert RigettiDevice._parse_runtime_options(None) == (None, None)
+
+    def test_empty_dict_returns_none_tuple(self) -> None:
+        """Empty dict returns (None, None)."""
+        assert RigettiDevice._parse_runtime_options({}) == (None, None)
+
+    def test_compiler_timeout_builds_compiler_opts(self) -> None:
+        """compiler_timeout key produces a CompilerOpts instance."""
+        compiler_opts, translation_opts = RigettiDevice._parse_runtime_options(
+            {"compiler_timeout": 60.0}
+        )
+        assert isinstance(compiler_opts, CompilerOpts)
+        assert translation_opts is None
+
+    def test_translation_keys_build_translation_opts(self) -> None:
+        """Translation keys produce a TranslationOptions instance."""
+        compiler_opts, translation_opts = RigettiDevice._parse_runtime_options(
+            {"prepend_default_calibrations": False, "passive_reset_delay_seconds": 100e-6}
+        )
+        assert compiler_opts is None
+        assert isinstance(translation_opts, TranslationOptions)
+
+    def test_both_compiler_and_translation_keys(self) -> None:
+        """Both compiler and translation keys produce both option types."""
+        compiler_opts, translation_opts = RigettiDevice._parse_runtime_options(
+            {
+                "compiler_timeout": 120.0,
+                "prepend_default_calibrations": True,
+            }
+        )
+        assert isinstance(compiler_opts, CompilerOpts)
+        assert isinstance(translation_opts, TranslationOptions)
+
+    def test_unknown_keys_are_silently_ignored(self) -> None:
+        """Unrecognized keys do not cause errors."""
+        compiler_opts, translation_opts = RigettiDevice._parse_runtime_options(
+            {"unknown_key": "some_value", "another_key": 42}
+        )
+        assert compiler_opts is None
+        assert translation_opts is None
+
+
+# ===========================================================================
+# Device – transform with compiler options
+# ===========================================================================
+
+
+class TestRigettiDeviceTransformWithCompilerOptions:
+    """Tests for transient _compiler_options flowing into compile_program."""
+
+    def test_transform_passes_compiler_options_to_compile_program(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """When _compiler_options is set, compile_program must receive options=."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        opts = CompilerOpts(timeout=60.0)
+        rigetti_device._compiler_options = opts
+        fake_comp = _mock_compile_pipeline()
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+        ):
+            rigetti_device.transform(program)
+
+        assert mock_compile.call_args.kwargs["options"] is opts
+
+    def test_transform_defaults_to_none_options(self, rigetti_device: RigettiDevice) -> None:
+        """Without _compiler_options set, compile_program receives options=None."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        fake_comp = _mock_compile_pipeline()
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+        ):
+            rigetti_device.transform(program)
+
+        assert mock_compile.call_args.kwargs["options"] is None
+
+
+# ===========================================================================
+# Device – submit with translation options
+# ===========================================================================
+
+
+class TestRigettiDeviceSubmitTranslationOptions:
+    """Tests for translation_options flowing through submit / _submit."""
+
+    def _make_quil(self) -> str:
+        """Build a minimal Quil string for submission tests."""
+        p = pyquil.Program()
+        p.inst(pyquil.gates.RZ(0.5, 0))
+        p.inst(pyquil.gates.MEASURE(0, None))
+        return p.out()
+
+    def test_submit_forwards_translation_options_to_translate(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """translate() receives the translation_options kwarg."""
+        quil_str = self._make_quil()
+        mock_translation_opts = MagicMock(name="TranslationOptions")
+
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ) as mock_translate,
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+        ):
+            rigetti_device.submit(quil_str, shots=1, translation_options=mock_translation_opts)
+
+        assert mock_translate.call_args.kwargs["translation_options"] is mock_translation_opts
+
+    def test_submit_batch_forwards_translation_options_to_each_translate(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Each translate() call in a batch gets the same translation_options."""
+        quil_strings = [self._make_quil(), self._make_quil()]
+        mock_translation_opts = MagicMock(name="TranslationOptions")
+
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ) as mock_translate,
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+        ):
+            rigetti_device.submit(quil_strings, shots=1, translation_options=mock_translation_opts)
+
+        assert mock_translate.call_count == 2
+        for call in mock_translate.call_args_list:
+            assert call.kwargs["translation_options"] is mock_translation_opts
+
+
+# ===========================================================================
+# Device – run with runtime_options
+# ===========================================================================
+
+
+class TestRigettiDeviceRunRuntimeOptions:
+    """Tests for the run() override with runtime_options dict."""
+
+    def test_run_forwards_compiler_opts_to_transform(self, rigetti_device: RigettiDevice) -> None:
+        """runtime_options compiler keys must reach compile_program via transform."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        fake_comp = _mock_compile_pipeline()
+
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+        ):
+            rigetti_device.run(program, shots=1, runtime_options={"compiler_timeout": 60.0})
+
+        compiler_opts_passed = mock_compile.call_args.kwargs["options"]
+        assert compiler_opts_passed is not None
+
+    def test_run_forwards_translation_opts_to_translate(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """runtime_options translation keys must reach translate()."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        fake_comp = _mock_compile_pipeline()
+
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ) as mock_translate,
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+        ):
+            rigetti_device.run(
+                program,
+                shots=1,
+                runtime_options={"prepend_default_calibrations": False},
+            )
+
+        translation_opts_passed = mock_translate.call_args.kwargs["translation_options"]
+        assert translation_opts_passed is not None
+
+    def test_run_cleans_up_compiler_options_on_error(self, rigetti_device: RigettiDevice) -> None:
+        """_compiler_options must be None after apply_runtime_profile raises."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        with (
+            patch.object(
+                rigetti_device,
+                "apply_runtime_profile",
+                side_effect=RuntimeError("boom"),
+            ),
+            pytest.raises(RuntimeError, match="boom"),
+        ):
+            rigetti_device.run(program, shots=1, runtime_options={"compiler_timeout": 60.0})
+
+        assert getattr(rigetti_device, "_compiler_options", None) is None
+
+    def test_run_no_options_backward_compat(self, rigetti_device: RigettiDevice) -> None:
+        """run() with no runtime_options must work identically to before."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        fake_comp = _mock_compile_pipeline()
+
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ) as mock_translate,
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+        ):
+            job = rigetti_device.run(program, shots=1)
+
+        assert isinstance(job, RigettiJob)
+        assert mock_compile.call_args.kwargs["options"] is None
+        assert mock_translate.call_args.kwargs["translation_options"] is None
