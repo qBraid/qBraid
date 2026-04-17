@@ -1,36 +1,47 @@
-# Copyright (C) 2026 qBraid
+# Copyright 2026 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining OriginQ provider class.
 
 """
+from __future__ import annotations
+
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
-from qbraid.transpiler.conversions.qasm2.qasm2_extras import qasm2_to_pyqpanda3
 
-from .device import SIMULATOR_BACKENDS, OriginDevice
+from .device import OriginDevice
 
 if TYPE_CHECKING:
-    from pyqpanda3.qcloud import QCloudBackend
+    from pyqpanda3.qcloud import QCloudBackend, QCloudService
 
 logger = logging.getLogger(__name__)
 
+SIMULATOR_BACKENDS: dict[str, int] = {
+    "full_amplitude": 35,
+    "partial_amplitude": 68,
+    "single_amplitude": 200,
+}
 
-def _resolve_api_key(explicit_key: Optional[str] = None) -> str:
+
+def _resolve_api_key(explicit_key: str | None = None) -> str:
     """Resolve the OriginQ API key from explicit input or environment variable."""
     if explicit_key:
         return explicit_key
@@ -44,7 +55,7 @@ def _resolve_api_key(explicit_key: Optional[str] = None) -> str:
     )
 
 
-def _get_service(api_key: str):
+def _get_service(api_key: str) -> QCloudService:
     """Return a QCloudService instance for the given API key."""
     # pylint: disable-next=import-outside-toplevel
     from pyqpanda3 import qcloud as qcloud_module
@@ -52,37 +63,25 @@ def _get_service(api_key: str):
     return qcloud_module.QCloudService(api_key=api_key)
 
 
-def _get_qcloud_job(job_id: str, service: Optional[Any] = None):
-    """Instantiate a QCloudJob after ensuring the service is configured."""
-    # pylint: disable-next=import-outside-toplevel
-    from pyqpanda3 import qcloud as qcloud_module
-
-    if service is None:
-        api_key = _resolve_api_key()
-        service = _get_service(api_key)
-    return qcloud_module.QCloudJob(job_id)
-
-
-def _infer_num_qubits(backend: QCloudBackend, backend_name: str, *, simulator: bool) -> int | None:
+def _infer_num_qubits(backend: QCloudBackend) -> int | None:
     """Infer qubit count from chip info or simulator mapping."""
-    if simulator:
+    backend_name = backend.name()
+    if backend_name.endswith("amplitude"):
         return SIMULATOR_BACKENDS.get(backend_name)
-    try:
-        chip_info = backend.chip_info()
-        return chip_info.qubits_num()
-    except Exception:
-        logger.debug("Unable to determine qubit count from chip info", exc_info=True)
-        return None
+    chip_info = backend.chip_info()
+    return chip_info.qubits_num()
 
 
-def _infer_basis_gates(backend: QCloudBackend, *, simulator: bool) -> list[str] | None:
+def _infer_basis_gates(backend: QCloudBackend) -> list[str] | None:
     """Infer basis gates from chip info for hardware devices."""
-    if simulator:
+    backend_name = backend.name()
+    if backend_name.endswith("amplitude"):
         return None
+
     try:
         chip_info = backend.chip_info()
         return chip_info.get_basic_gates()
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         logger.debug("Unable to determine basis gates from chip info", exc_info=True)
         return None
 
@@ -90,35 +89,31 @@ def _infer_basis_gates(backend: QCloudBackend, *, simulator: bool) -> list[str] 
 class OriginProvider(QuantumProvider):
     """OriginQ QCloud provider class."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: str | None = None):
         self._api_key = _resolve_api_key(api_key)
         self._service = None
 
     @property
-    def service(self):
+    def service(self) -> QCloudService:
         """Return the QCloudService instance, creating it on first access."""
         if self._service is None:
             self._service = _get_service(self._api_key)
         return self._service
 
-    def _build_profile(
-        self,
-        backend: QCloudBackend,
-        device_id: str,
-        backend_name: str,
-    ) -> TargetProfile:
+    def _build_profile(self, backend: QCloudBackend) -> TargetProfile:
         """Build a TargetProfile from an OriginQ backend."""
         # pylint: disable-next=import-outside-toplevel
         from pyqpanda3.core import QProg
 
-        simulator = backend_name in SIMULATOR_BACKENDS
+        device_id = backend.name()
+        simulator = device_id in SIMULATOR_BACKENDS
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
             experiment_type=ExperimentType.GATE_MODEL,
-            num_qubits=_infer_num_qubits(backend, backend_name, simulator=simulator),
-            program_spec=ProgramSpec(QProg, alias="pyqpanda3", serialize=qasm2_to_pyqpanda3),
-            basis_gates=_infer_basis_gates(backend, simulator=simulator),
+            num_qubits=_infer_num_qubits(backend),
+            program_spec=ProgramSpec(QProg, alias="pyqpanda3"),
+            basis_gates=_infer_basis_gates(backend),
             provider_name="origin",
         )
 
@@ -128,14 +123,13 @@ class OriginProvider(QuantumProvider):
         device_id = device_id.strip()
         backend = self.service.backend(device_id)
         return OriginDevice(
-            profile=self._build_profile(backend, device_id, device_id),
+            profile=self._build_profile(backend),
             backend=backend,
-            backend_name=device_id,
             service=self.service,
         )
 
     @cached_method
-    def get_devices(self, *, hardware_only: Optional[bool] = None, **kwargs) -> list[OriginDevice]:
+    def get_devices(self, *, hardware_only: bool | None = None) -> list[OriginDevice]:
         """Get a list of available OriginQ devices."""
         catalog = self.service.backends()
         device_ids: set[str] = set()

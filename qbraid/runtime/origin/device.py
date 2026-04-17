@@ -1,12 +1,16 @@
-# Copyright (C) 2026 qBraid
+# Copyright 2026 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining OriginQ device class.
@@ -15,10 +19,12 @@ Module defining OriginQ device class.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.profile import TargetProfile
 
 from .job import OriginJob
 
@@ -28,11 +34,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SIMULATOR_BACKENDS: dict[str, int] = {
-    "full_amplitude": 35,
-    "partial_amplitude": 68,
-    "single_amplitude": 200,
-}
+
+class OriginDeviceError(QbraidRuntimeError):
+    """Exception raised by OriginDevice."""
 
 
 class OriginDevice(QuantumDevice):
@@ -40,58 +44,87 @@ class OriginDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile,
-        backend: QCloudBackend,
-        backend_name: str,
-        service: Optional[QCloudService] = None,
+        profile: TargetProfile,
+        service: QCloudService,
+        backend: QCloudBackend | None = None,
+        **kwargs,
     ):
-        super().__init__(profile=profile)
-        self._backend = backend
-        self._backend_name = backend_name
+        super().__init__(profile=profile, **kwargs)
         self._service = service
+        self._backend = backend
 
     @property
-    def backend(self) -> Any:
+    def service(self) -> QCloudService:
+        """Return the underlying QCloudService."""
+        return self._service
+
+    @property
+    def backend(self) -> QCloudBackend:
         """Return the underlying QCloudBackend."""
+        if self._backend is None:
+            self._backend = self.service.backend(self.id)
         return self._backend
 
-    @property
-    def backend_name(self) -> str:
-        """Return the OriginQ backend name."""
-        return self._backend_name
+    def __str__(self):
+        """String representation of the OriginDevice object."""
+        return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self) -> DeviceStatus:
         """Return the current status of the OriginQ device."""
-        # OriginQ does not expose health endpoints; assume online when instantiated.
-        return DeviceStatus.ONLINE
+        catalog = self.service.backends()
+        for backend_id, available in catalog.items():
+            if backend_id == self.id:
+                return DeviceStatus.ONLINE if available else DeviceStatus.OFFLINE
+        raise OriginDeviceError(f"Device '{self.id}' not found in service catalog.")
 
-    def submit(
-        self, run_input: Union[QProg, list[QProg]], *, shots: int, **kwargs
-    ) -> Union[OriginJob, list[OriginJob]]:
-        """Submit a quantum program or list of programs to the OriginQ device."""
-        is_single = not isinstance(run_input, list)
-        inputs = [run_input] if is_single else run_input
+    def _submit_single(self, run_input: QProg, shots: int) -> OriginJob:
+        """Submit a single quantum program."""
+        backend = self.backend
 
-        nshots = int(shots)
-        jobs = []
-        for qprog in inputs:
-            if self._backend_name in SIMULATOR_BACKENDS:
-                backend_job = self._backend.run(qprog, nshots)
-            else:
-                # pylint: disable-next=import-outside-toplevel
-                from pyqpanda3 import qcloud as qcloud_module
+        if self.profile.simulator:
+            qcloud_job = backend.run(run_input, shots)
+        else:
+            # pylint: disable-next=import-outside-toplevel
+            from pyqpanda3.qcloud import QCloudOptions
 
-                options = qcloud_module.QCloudOptions()
-                backend_job = self._backend.run(qprog, nshots, options)
+            options = QCloudOptions()
+            qcloud_job = backend.run(run_input, shots, options)
 
-            job_id = backend_job.job_id()
-            jobs.append(
-                OriginJob(
-                    job_id=job_id,
-                    device=self,
-                    backend_job=backend_job,
-                    service=self._service,
-                )
-            )
+        return OriginJob(
+            job_id=qcloud_job.job_id(),
+            device=self,
+            job=qcloud_job,
+            service=self.service,
+        )
 
-        return jobs[0] if is_single else jobs
+    def submit(  # pylint: disable=arguments-differ
+        self, run_input: QProg | list[QProg], shots: int
+    ) -> OriginJob | list[OriginJob]:
+        """Submit a quantum program or list of programs to the OriginQ device.
+
+        For simulator backends, batch input (``list[QProg]``) is submitted as
+        individual jobs since the pyqpanda3 SDK only supports batch submission
+        on hardware (QPU) backends.
+
+        For QPU backends, batch input is submitted as a single job via the SDK's
+        native batch API.
+        """
+        if not isinstance(run_input, list):
+            return self._submit_single(run_input, shots)
+
+        if self.profile.simulator:
+            return [self._submit_single(prog, shots) for prog in run_input]
+
+        # QPU batch: single job containing all programs
+        # pylint: disable-next=import-outside-toplevel
+        from pyqpanda3.qcloud import QCloudOptions
+
+        options = QCloudOptions()
+        qcloud_job = self.backend.run(run_input, shots, options)
+
+        return OriginJob(
+            job_id=qcloud_job.job_id(),
+            device=self,
+            job=qcloud_job,
+            service=self.service,
+        )

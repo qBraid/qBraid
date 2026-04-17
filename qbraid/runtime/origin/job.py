@@ -1,19 +1,26 @@
-# Copyright (C) 2026 qBraid
+# Copyright 2026 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining OriginQ job class.
 
 """
+from __future__ import annotations
+
+import json
 import logging
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -21,48 +28,44 @@ from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
+if TYPE_CHECKING:
+    from pyqpanda3.qcloud import QCloudJob, QCloudResult, QCloudService
+    from pyqpanda3.qcloud.qcloud import JobStatus as OriginJobStatus
+
+    from qbraid.runtime.origin.device import OriginDevice
+
 logger = logging.getLogger(__name__)
 
-_STATUS_LOOKUP = {
-    "FINISH": JobStatus.COMPLETED,
+_ORIGIN_STATUS_MAP: dict[str, JobStatus] = {
     "FINISHED": JobStatus.COMPLETED,
-    "COMPLETED": JobStatus.COMPLETED,
     "WAITING": JobStatus.QUEUED,
     "QUEUING": JobStatus.QUEUED,
-    "QUEUED": JobStatus.QUEUED,
     "COMPUTING": JobStatus.RUNNING,
-    "RUNNING": JobStatus.RUNNING,
-    "EXECUTING": JobStatus.RUNNING,
     "FAILED": JobStatus.FAILED,
-    "ERROR": JobStatus.FAILED,
 }
+
+
+def _map_origin_status(origin_status: OriginJobStatus) -> JobStatus:
+    """Convert an OriginQ SDK JobStatus enum to a qBraid JobStatus.
+
+    The pyqpanda3 JobStatus enum members have a ``name`` attribute
+    (e.g. ``"FINISHED"``). We map via the string name so that the
+    SDK enum does not need to be imported at module level.
+
+    Raises:
+        ValueError: If the status name is not in the known mapping.
+    """
+    name = origin_status.name
+    if name not in _ORIGIN_STATUS_MAP:
+        raise ValueError(
+            f"Unknown OriginQ job status '{name}'. "
+            f"Expected one of: {', '.join(_ORIGIN_STATUS_MAP)}"
+        )
+    return _ORIGIN_STATUS_MAP[name]
 
 
 class OriginJobError(QbraidRuntimeError):
     """Class for errors raised while processing an OriginQ job."""
-
-
-def _normalize_status(origin_status: Any) -> str:
-    """Convert various SDK status representations to a comparable uppercase string."""
-    if hasattr(origin_status, "name"):
-        candidate = origin_status.name
-    elif hasattr(origin_status, "value"):
-        candidate = origin_status.value
-    else:
-        candidate = origin_status
-
-    normalized = str(candidate).strip().upper()
-    if normalized.startswith("JOBSTATUS."):
-        normalized = normalized.split(".", 1)[1]
-    if normalized.startswith("JOB_"):
-        normalized = normalized[4:]
-    return normalized
-
-
-def _map_status(origin_status: Any) -> JobStatus:
-    """Map OriginQ status to qBraid JobStatus."""
-    normalized = _normalize_status(origin_status)
-    return _STATUS_LOOKUP.get(normalized, JobStatus.UNKNOWN)
 
 
 class OriginJob(QuantumJob):
@@ -71,70 +74,136 @@ class OriginJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        *,
-        device: Optional[Any] = None,
-        backend_job: Optional[Any] = None,
-        service: Optional[Any] = None,
-        **kwargs,
+        device: OriginDevice | None = None,
+        job: QCloudJob | None = None,
+        service: QCloudService | None = None,
+        **kwargs: Any,
     ) -> None:
         super().__init__(job_id=job_id, device=device, **kwargs)
-        self._backend_job = backend_job
+        self._job = self._get_job(job_id, job)
         self._service = service
 
-    def _get_backend_job(self):
-        """Return the cached backend job, or reconstruct it from the job ID."""
-        if self._backend_job is not None:
-            return self._backend_job
+    @staticmethod
+    def _get_job(job_id: str, job: QCloudJob | None = None) -> QCloudJob:
+        """Return the QCloud job, or reconstruct it from the job ID."""
+        if job is not None:
+            if job.job_id() != job_id:
+                raise OriginJobError(f"QCloud job {job.job_id()} does not match job ID {job_id}")
+            return job
+
         try:
             # pylint: disable-next=import-outside-toplevel
-            from qbraid.runtime.origin.provider import _get_qcloud_job
+            from pyqpanda3.qcloud import QCloudJob as _QCloudJob
 
-            self._backend_job = _get_qcloud_job(self.id, service=self._service)
+            return _QCloudJob(job_id)
         except Exception as exc:
-            raise OriginJobError(f"Unable to retrieve OriginQ job {self.id}") from exc
-        return self._backend_job
+            raise OriginJobError(f"Unable to retrieve OriginQ job {job_id}") from exc
 
     def status(self) -> JobStatus:
         """Return the current status of the OriginQ job."""
         try:
-            raw_status = self._get_backend_job().status()
-        except Exception:
-            logger.debug("Unable to retrieve job status for %s", self.id, exc_info=True)
-            return JobStatus.UNKNOWN
-        return _map_status(raw_status)
+            origin_status = self._job.status()
+        except Exception as exc:
+            raise OriginJobError(f"Unable to retrieve job status for {self.id}") from exc
+
+        status = _map_origin_status(origin_status)
+        self._cache_metadata["status"] = status
+        return status
 
     def cancel(self) -> None:
         """Cancel the OriginQ job. Not supported by the QCloud SDK."""
         raise OriginJobError("OriginQ does not support job cancellation.")
 
-    def result(self) -> Result:
-        """Return the result of the OriginQ job."""
-        self.wait_for_final_state()
-        backend_job = self._get_backend_job()
+    @staticmethod
+    def _extract_results(
+        origin_result: QCloudResult,
+    ) -> tuple[
+        dict[str, int] | list[dict[str, int]] | None,
+        dict[str, float] | list[dict[str, float]] | None,
+    ]:
+        """Extract measurement counts and probabilities from a QCloudResult.
 
-        success = self.status() == JobStatus.COMPLETED
+        For single-circuit jobs, returns a single dict.
+        For batch jobs (multiple circuits), returns a list of dicts.
+
+        The pyqpanda3 SDK raises ``RuntimeError`` when the result type
+        doesn't match the accessor (e.g. calling ``get_counts_list`` on
+        a probability-based result), so we attempt each independently.
+        """
+        counts: dict[str, int] | list[dict[str, int]] | None = None
+        probabilities: dict[str, float] | list[dict[str, float]] | None = None
 
         try:
-            result_obj = backend_job.result()
+            counts_list: list[dict[str, int]] = origin_result.get_counts_list()
+            if counts_list:
+                counts = counts_list[0] if len(counts_list) == 1 else counts_list
+        except RuntimeError:
+            pass
+
+        try:
+            probs_list: list[dict[str, float]] = origin_result.get_probs_list()
+            if probs_list:
+                probabilities = probs_list[0] if len(probs_list) == 1 else probs_list
+        except RuntimeError:
+            pass
+
+        return counts, probabilities
+
+    @staticmethod
+    def _parse_origin_data(raw: str) -> dict[str, Any]:
+        """Parse the JSON string returned by ``QCloudResult.origin_data()``.
+
+        The API response has the structure::
+
+            {"success": bool, "code": int, "message": str, "obj": { ... }}
+
+        Returns the inner ``obj`` dict (task metadata) with the
+        top-level ``success`` flag merged in.
+
+        Raises:
+            OriginJobError: If the response cannot be parsed or has
+                an unexpected structure.
+        """
+        data: dict[str, Any] = json.loads(raw)
+        assert isinstance(data, dict), f"Expected dict from origin_data, got {type(data).__name__}"
+
+        obj = data.get("obj", {})
+        assert isinstance(obj, dict), f"Expected 'obj' to be a dict, got {type(obj).__name__}"
+
+        result: dict[str, Any] = dict(obj)
+
+        success = data.get("success")
+        if success is not None:
+            result["success"] = success
+
+        return result
+
+    def result(self) -> Result[GateModelResultData]:
+        """Return the result of the OriginQ job."""
+        self.wait_for_final_state()
+
+        try:
+            origin_result: QCloudResult = self._job.result()
         except Exception as exc:
             raise OriginJobError(f"Failed to fetch results for OriginQ job {self.id}") from exc
 
-        counts = result_obj.get_counts()
-        if not counts:
-            try:
-                counts_list = result_obj.get_counts_list()
-            except Exception:
-                counts_list = []
-            if counts_list:
-                counts = counts_list[0]
-        counts = counts or {}
+        metadata = self._parse_origin_data(origin_result.origin_data())
 
-        normalized = {str(key): int(value) for key, value in counts.items()}
-        device_id = self._device.profile.device_id if self._device else "origin"
+        success = metadata.pop("success", None)
+        assert isinstance(
+            success, bool
+        ), f"Expected 'success' to be bool, got {type(success).__name__}"
 
-        return Result(
+        counts, probabilities = self._extract_results(origin_result)
+        device_id = self._device.id if self._device else "origin"
+
+        return Result[GateModelResultData](
             device_id=device_id,
             job_id=self.id,
             success=success,
-            data=GateModelResultData(measurement_counts=normalized),
+            data=GateModelResultData(
+                measurement_counts=counts,
+                measurement_probabilities=probabilities,
+            ),
+            **metadata,
         )
