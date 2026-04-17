@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -55,7 +59,7 @@ def target_profile_openqasm(valid_program_spec) -> TargetProfile:
 def target_profile_ahs(valid_program_spec) -> list[TargetProfile]:
     """Fixture to provide a valid TargetProfile instance with AHS action type."""
     return create_target_profile(
-        experiment_type=ExperimentType.AHS, basis_gates=None, program_spec=valid_program_spec
+        experiment_type=ExperimentType.ANALOG, basis_gates=None, program_spec=valid_program_spec
     )
 
 
@@ -137,7 +141,7 @@ def test_target_profile_ahs_len(target_profile_ahs):
 
 def test_target_profile_bad_basis_gates_raises(valid_program_spec):
     """Test raising ValueError when giving basis_gates with non-OPENQASM action type."""
-    for experiment_type in [ExperimentType.AHS, None]:
+    for experiment_type in [ExperimentType.ANALOG, None]:
         with pytest.raises(ValidationError):
             create_target_profile(
                 experiment_type=experiment_type,

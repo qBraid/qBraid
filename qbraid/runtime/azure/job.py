@@ -1,22 +1,27 @@
-# Copyright (C) 2025 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining AzureQuantumJob class
 
 """
+
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.workspace import Workspace
 
 from qbraid._logging import logger
@@ -25,7 +30,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import AhsResultData, GateModelResultData
+from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
 from .io_format import OutputDataFormat
 
@@ -74,18 +79,31 @@ class AzureQuantumJob(QuantumJob):
         return status_map.get(status, JobStatus.UNKNOWN)
 
     @staticmethod
-    def _make_estimator_result(data: dict[str, Any]) -> MicrosoftEstimatorResult:
-        """Create a MicrosoftEstimatorResult from the given data.
+    def _make_estimator_result(data: dict[str, Any]) -> dict[str, Any]:
+        """Create a resource estimator result dict from the given data.
+
+        .. deprecated::
+            The ``microsoft.resource-estimates.v1`` output format is no longer handled by
+            azure-quantum >= 3.x. This method exists only for backward-compatible retrieval
+            of jobs submitted with older SDK versions and will be removed in v0.12.
 
         Args:
             data (dict): The data to create the result from.
 
         Returns:
-            MicrosoftEstimatorResult: The result created from the data.
+            dict: The resource estimator result data.
 
         Raises:
             RuntimeError: If the job execution failed.
         """
+        warnings.warn(
+            "AzureQuantumJob._make_estimator_result is deprecated and will be removed in the "
+            "v0.12. The 'microsoft.resource-estimates.v1' output format is no longer "
+            "handled by azure-quantum >= 3.x. Retrieve estimator results directly via "
+            "job.get_results() instead.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if not data["success"]:
             error_data = data["error_data"]
             raise RuntimeError(
@@ -93,14 +111,13 @@ class AzureQuantumJob(QuantumJob):
                 f"({error_data['code']}: {error_data['message']})"
             )
 
-        result_data = data["data"]
-        return MicrosoftEstimatorResult(result_data)
+        return data["data"]
 
-    def result(self) -> Union[Result, MicrosoftEstimatorResult]:
+    def result(self) -> Union[Result, dict[str, Any]]:
         """Return the result of the Azure job.
 
         Returns:
-            Union[Result, MicrosoftEstimatorResult]: The result of the job.
+            Union[Result, dict]: The result of the job.
         """
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
@@ -112,6 +129,9 @@ class AzureQuantumJob(QuantumJob):
         success = job.details.status == "Succeeded"
         details = job.details.as_dict()
 
+        # Deprecated: backward-compatible path for jobs submitted with azure-quantum < 3.x.
+        # The microsoft.estimator backend still exists but no longer produces this output format.
+        # Will be removed in v0.12.
         if job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
             return self._make_estimator_result(
                 {
@@ -127,7 +147,7 @@ class AzureQuantumJob(QuantumJob):
             )
         builder = AzureResultBuilder(job)
         if job.details.output_data_format == OutputDataFormat.PASQAL.value:
-            data = AhsResultData(measurement_counts=builder.get_counts())
+            data = AnalogResultData(measurement_counts=builder.get_counts())
         else:
             data = GateModelResultData(measurement_counts=builder.get_counts())
         return Result(

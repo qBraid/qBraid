@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for transforming and extracting data from OpenQASM programs.
@@ -33,6 +37,7 @@ from .compat import (
     convert_qasm_pi_to_decimal,
     insert_gate_def,
     normalize_qasm_gate_params,
+    remove_empty_registers,
     remove_stdgates_include,
     replace_gate_names,
 )
@@ -43,6 +48,7 @@ __all__ = [
     "insert_gate_def",
     "replace_gate_names",
     "add_stdgates_include",
+    "remove_empty_registers",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",

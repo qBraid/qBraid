@@ -1,17 +1,22 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining IonQ device class
 
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -82,7 +87,7 @@ class IonQDevice(QuantumDevice):
         if status in ["available", "running"]:
             return DeviceStatus.ONLINE
 
-        if status in ["unavailable", "reserved", "calibrating"]:
+        if status in ["unavailable", "reserved", "calibrating", "degraded"]:
             return DeviceStatus.UNAVAILABLE
 
         if status == "retired":
@@ -94,9 +99,11 @@ class IonQDevice(QuantumDevice):
         raise ValueError(f"Unrecognized device status: {status}")
 
     def avg_queue_time(self) -> int:
-        """Return the average queue time for the IonQ device."""
+        """Return the average queue time for the IonQ device (in minutes)."""
         device_data = self.session.get_device(self.id)
-        return device_data["average_queue_time"]
+        milliseconds = device_data["average_queue_time"]
+        minutes = milliseconds / 60000
+        return int(minutes)
 
     def transform(self, run_input: QasmStringType) -> QasmStringType:
         """Transform the input to the IonQ device."""
@@ -146,7 +153,7 @@ class IonQDevice(QuantumDevice):
         self,
         run_input: Union[IonQDictType, list[IonQDictType]],
         shots: int,
-        preflight: bool = False,
+        dry_run: bool = False,
         name: Optional[str] = None,
         noise: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
@@ -158,18 +165,20 @@ class IonQDevice(QuantumDevice):
             self._squash_multicircuit_input(run_input) if isinstance(run_input, list) else run_input
         )
         job_data = {
-            "target": self.id,
+            "backend": self.id,
             "shots": shots,
-            "preflight": preflight,
+            "dry_run": dry_run,
             "input": ionq_input,
+            "type": "ionq.multi-circuit.v1" if isinstance(run_input, list) else "ionq.circuit.v1",
             **kwargs,
         }
         optional_fields = {
             "name": name,
             "noise": noise,
             "metadata": metadata,
-            "error_mitigation": error_mitigation,
         }
+        if error_mitigation is not None:
+            job_data["settings"] = {"error_mitigation": error_mitigation}
         job_data.update({key: value for key, value in optional_fields.items() if value is not None})
         serialized_data = json.dumps(job_data)
         job_data = self.session.create_job(serialized_data)

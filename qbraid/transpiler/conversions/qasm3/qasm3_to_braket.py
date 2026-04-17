@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for converting Braket circuits to/from OpenQASM 3
@@ -17,10 +21,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyqasm
+from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
-    convert_qasm_pi_to_decimal,
     remove_stdgates_include,
     replace_gate_names,
 )
@@ -44,6 +48,7 @@ def transform_notation(qasm3: str) -> str:
     """
     replacements = {
         "cx": "cnot",
+        "ccx": "ccnot",
         "sdg": "si",
         "tdg": "ti",
         "sx": "v",
@@ -55,7 +60,6 @@ def transform_notation(qasm3: str) -> str:
 
     qasm3 = remove_stdgates_include(qasm3)
     qasm3 = replace_gate_names(qasm3, replacements)
-    qasm3 = convert_qasm_pi_to_decimal(qasm3)
     return qasm3
 
 
@@ -73,14 +77,25 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         ProgramConversionError: If qasm to braket conversion fails
 
     """
-    module = pyqasm.loads(qasm)
-    module.unroll()
-    qasm = pyqasm.dumps(module)
+    prior_errors: list[tuple[str, BaseException]] = []
 
-    qasm = transform_notation(qasm)
+    try:
+        module = pyqasm.loads(qasm)
+        module.unroll()
+        qasm = pyqasm.dumps(module)
+    except ValidationError as err:
+        prior_errors.append(("PyQASM validation", err))
+
+    try:
+        qasm = transform_notation(qasm)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        prior_errors.append(("Transform", err))
 
     try:
         program = braket_openqasm.Program(source=qasm)
         return braket_circuits.Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
-        raise QasmError("Error converting qasm3 string to braket circuit") from err
+        msg = f"Error converting qasm3 string to braket circuit: {err}"
+        if prior_errors:
+            msg += ". Prior errors: " + "; ".join(f"{label}: {e}" for label, e in prior_errors)
+        raise QasmError(msg) from err

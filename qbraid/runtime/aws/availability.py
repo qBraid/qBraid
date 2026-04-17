@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for calculating Amazon Braket device availability.
@@ -14,7 +18,6 @@ Module for calculating Amazon Braket device availability.
 """
 
 import datetime
-from typing import Optional
 
 from braket.aws import AwsDevice
 from braket.device_schema import DeviceExecutionWindow, ExecutionDay
@@ -69,7 +72,7 @@ def _calculate_day_factor(day: int, start_time: datetime.time, end_time: datetim
 
 def _calculate_future_time(
     available_time: int, current_datetime_utc: datetime.datetime
-) -> tuple[str, str]:
+) -> tuple[str, datetime.datetime]:
     """
     Calculates future time from the current datetime in UTC and the available time in seconds.
 
@@ -79,7 +82,7 @@ def _calculate_future_time(
 
     Returns:
         tuple: A tuple containing available time in "HH:MM:SS" format and
-               future UTC datetime in ISO 8601 format "YYYY-MM-DDTHH:MM:SSZ".
+               future UTC datetime in datetime.datetime format.
     """
     hours = available_time // 3600
     minutes = (available_time // 60) % 60
@@ -88,19 +91,26 @@ def _calculate_future_time(
 
     time_delta = datetime.timedelta(hours=hours, minutes=minutes, seconds=seconds)
     future_time = current_datetime_utc + time_delta
-    utc_datetime_str = future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    return available_time_hms, utc_datetime_str
+    return available_time_hms, future_time
 
 
-def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
-    """Returns hr/min/sec until device is next available, or empty string if device is offline."""
+def next_available_time(device: AwsDevice) -> tuple[bool, str, datetime.datetime | None]:
+    """Provides device availability status. Indicates current availability,
+    time remaining (hours, minutes, seconds) until next availability or
+    unavailability, and future UTC datetime of next change in availability status.
 
+    Returns:
+        tuple[bool, str, Optional[datetime.datetime]]: Current device availability, hr/min/sec until
+            availability switch, future UTC datetime of availability switch
+    """
     is_available_result = False
     available_time = None
 
     if device.status != "ONLINE":
         return False, "", None
+
+    if not device.properties:
+        device.refresh_metadata()
 
     if device.is_available:
         return True, "", None
@@ -146,7 +156,5 @@ def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
     if available_time is None:
         return is_available_result, "", None
 
-    available_time_hms, utc_datetime_str = _calculate_future_time(
-        available_time, current_datetime_utc
-    )
-    return is_available_result, available_time_hms, utc_datetime_str
+    available_time_hms, utc_datetime = _calculate_future_time(available_time, current_datetime_utc)
+    return is_available_result, available_time_hms, utc_datetime

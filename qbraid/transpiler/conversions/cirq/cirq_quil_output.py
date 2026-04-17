@@ -1,20 +1,21 @@
-# Copyright (C) 2024 qBraid
-# Copyright (C) 2022 The Cirq Developers
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. This specific file, adapted from Cirq, is dual-licensed under both the
-# Apache License, Version 2.0, and the GPL v3. You may not use this file except in
-# compliance with the applicable license. You may obtain a copy of the Apache License at
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# This file includes code adapted from Cirq (https://github.com/quantumlib/Cirq)
-# with modifications by qBraid. The original copyright notice is included above.
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# qbraid: skip-header
+# Portions of this file are adapted from Cirq
+# (https://github.com/quantumlib/Cirq/blob/v1.4.0/cirq-rigetti/cirq_rigetti/quil_output.py),
+# with modifications by qBraid. The original Apache-2.0 License notice is available at:
+# https://github.com/quantumlib/Cirq/blob/v1.4.0/LICENSE
 
 """
 Module defining qBraid Cirq QuilOutput.
@@ -446,6 +447,17 @@ class QuilOutput:
             qubit_id_map=self.qubit_id_map, measurement_id_map=self.measurement_id_map
         )
 
+        # Pre-compute per-key total bit counts and per-operation bit offsets.
+        # This handles the case where multiple single-qubit MeasurementGate
+        # operations share the same key (e.g. from braket -> cirq conversion).
+        self._measurement_key_total_bits: dict[str, int] = {}
+        self._measurement_op_bit_offset: dict[int, int] = {}  # id(op) -> starting bit offset
+        for m_op in self.measurements:
+            key = protocols.measurement_key_name(m_op)
+            offset = self._measurement_key_total_bits.get(key, 0)
+            self._measurement_op_bit_offset[id(m_op)] = offset
+            self._measurement_key_total_bits[key] = offset + len(m_op.qubits)
+
     def _generate_qubit_ids(self) -> dict["cirq.Qid", str]:
         return {qubit: str(i) for i, qubit in enumerate(self.qubits)}
 
@@ -472,11 +484,36 @@ class QuilOutput:
         return self.rename_defgates("".join(output))
 
     def _op_to_maybe_quil(self, op: cirq.Operation) -> Optional[str]:
+        # Measurements need special handling to apply the global bit offset
+        # when multiple ops share a key (e.g. separate single-qubit measurements).
+        if isinstance(op.gate, ops.MeasurementGate):
+            return self._measurement_gate_with_offset(op)
+
         for gate_type, supported_gate in SUPPORTED_GATES.items():
             if isinstance(op.gate, gate_type):
-                quil: Callable[[cirq.Operation, QuilFormatter], Optional[str]] = supported_gate
-                return quil(op, self.formatter)
+                quil_fn: Callable[[cirq.Operation, QuilFormatter], Optional[str]] = supported_gate
+                return quil_fn(op, self.formatter)
         return None
+
+    def _measurement_gate_with_offset(self, op: cirq.Operation) -> str:
+        """Render a MeasurementGate using the pre-computed global bit offset."""
+        gate = cast(ops.MeasurementGate, op.gate)
+        bit_offset = self._measurement_op_bit_offset.get(id(op), 0)
+        invert_mask = gate.invert_mask
+        if len(invert_mask) < len(op.qubits):
+            invert_mask = invert_mask + (False,) * (len(op.qubits) - len(invert_mask))
+        lines = []
+        for i, (qubit, inv) in enumerate(zip(op.qubits, invert_mask)):
+            if inv:
+                lines.append(
+                    self.formatter.format("X {0} # Inverting for following measurement\n", qubit)
+                )
+            lines.append(
+                self.formatter.format(
+                    "MEASURE {0} {1:meas}[{2}]\n", qubit, gate.key, bit_offset + i
+                )
+            )
+        return "".join(lines)
 
     def _op_to_quil(self, op: cirq.Operation) -> str:
         quil_str = self._op_to_maybe_quil(op)
@@ -493,7 +530,8 @@ class QuilOutput:
                 if key in measurements_declared:
                     continue
                 measurements_declared.add(key)
-                output_func(f"DECLARE {self.measurement_id_map[key]} BIT[{len(m.qubits)}]\n")
+                total_bits = self._measurement_key_total_bits[key]
+                output_func(f"DECLARE {self.measurement_id_map[key]} BIT[{total_bits}]\n")
             output_func("\n")
 
         def keep(op: "cirq.Operation") -> bool:
@@ -519,7 +557,9 @@ class QuilOutput:
             return QuilTwoQubitGate(mat).on(*op.qubits)  # pragma: no cover
 
         def on_stuck(bad_op):
-            return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
+            if not repr(bad_op).startswith("cirq.global_phase_operation"):
+                return ValueError(f"Cannot output operation as QUIL: {bad_op!r}")
+            return None
 
         for main_op in self.operations:
             decomposed = protocols.decompose(
@@ -527,7 +567,8 @@ class QuilOutput:
             )
 
             for decomposed_op in decomposed:
-                output_func(self._op_to_quil(decomposed_op))
+                if not repr(decomposed_op).startswith("cirq.global_phase_operation"):
+                    output_func(self._op_to_quil(decomposed_op))
 
     def rename_defgates(self, output: str) -> str:
         """A function for renaming the DEFGATEs within the QUIL output. This

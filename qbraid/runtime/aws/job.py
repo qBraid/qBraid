@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining BraketQuantumTask Class
@@ -27,7 +31,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import AhsResultData, GateModelResultData
+from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
 from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
@@ -96,7 +100,10 @@ class BraketQuantumTask(QuantumJob):
 
         result_mapping = {
             GateModelQuantumTaskResult: (BraketGateModelResultBuilder, GateModelResultData),
-            AnalogHamiltonianSimulationQuantumTaskResult: (BraketAhsResultBuilder, AhsResultData),
+            AnalogHamiltonianSimulationQuantumTaskResult: (
+                BraketAhsResultBuilder,
+                AnalogResultData,
+            ),
         }
 
         builder_class, data_class = result_mapping.get(type(bk_result), (None, None))
@@ -104,9 +111,24 @@ class BraketQuantumTask(QuantumJob):
         if not builder_class or not data_class:
             raise ValueError(f"Unsupported result type: {type(bk_result).__name__}")
 
+        # Retrieve partial measurement qubit information from job tags
+        if isinstance(bk_result, GateModelQuantumTaskResult) and hasattr(
+            bk_result, "measured_qubits"
+        ):
+            partial_measurement_qubits = self._get_partial_measurement_qubits_from_tags(
+                bk_result.measured_qubits
+            )
+            builder: BraketGateModelResultBuilder = builder_class(
+                bk_result, partial_measurement_qubits
+            )
+        else:
+            builder: BraketGateModelResultBuilder | BraketAhsResultBuilder = builder_class(
+                bk_result
+            )
+
         result_data = {
-            "measurement_counts": builder_class(bk_result).get_counts() if success else None,
-            "measurements": builder_class(bk_result).measurements() if success else None,
+            "measurement_counts": builder.get_counts() if success else None,
+            "measurements": builder.measurements() if success else None,
         }
 
         data = data_class(**result_data)
@@ -133,3 +155,52 @@ class BraketQuantumTask(QuantumJob):
         """Return the cost of the job."""
         decimal_cost = self._get_cost(self.id)
         return float(decimal_cost)
+
+    def _get_partial_measurement_qubits_from_tags(
+        self, all_measurement_qubits: list[int]
+    ) -> list[int] | None:
+        """
+        Retrieve partial measurement qubit indices from quantum task tags.
+
+        This method queries the AWS Braket service to get the quantum task metadata
+        and extracts the partial measurement qubit information that was stored as tags
+        during task submission. It then maps these qubit indices to their positions
+        in the measurement results array.
+
+        Args:
+            all_measurement_qubits: List of all qubits that were measured in the circuit,
+                in the order they appear in the measurement results.
+
+        Returns:
+            List of indices corresponding to the positions of partial measurement qubits
+            in the measurement results array, or None if no partial measurements were used.
+        """
+        braket_client = self._task._aws_session.braket_client
+        response = braket_client.get_quantum_task(quantumTaskArn=self._task.id)
+
+        if "partial_measurement_qubits" not in response["tags"]:
+            return None
+
+        # Parse the partial measurement qubit indices from the tag string (e.g., "0/2/3")
+        partial_measurement_qubits_str = response["tags"]["partial_measurement_qubits"]
+        if not partial_measurement_qubits_str:
+            return None
+        partial_measurement_qubits = [
+            int(q) for q in partial_measurement_qubits_str.split("/") if q
+        ]
+        if not partial_measurement_qubits:
+            return None
+
+        missing = [q for q in partial_measurement_qubits if q not in all_measurement_qubits]
+        if missing:
+            logger.warning(
+                "Partial measurement qubits %s from task tag are not present in the result's "
+                "measured qubits %s; skipping partial-measurement filtering. This usually means "
+                "the submitted circuit lost measurements during transpilation.",
+                missing,
+                all_measurement_qubits,
+            )
+            return None
+
+        # Map the original qubit indices to their positions in the measurement results array
+        return [all_measurement_qubits.index(q) for q in partial_measurement_qubits]

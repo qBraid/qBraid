@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining AnalogHamiltonianProgram Class
@@ -17,6 +21,8 @@ from __future__ import annotations
 import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.program import QuantumProgram
 
@@ -55,9 +61,12 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
     def to_dict(self) -> dict:
         """Return the dictionary representation of the program."""
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        return {"ahs": json.dumps(self, cls=AHSEncoder)}
+        return Program(
+            format="analog",
+            data=json.dumps(self, cls=AnalogHamiltonianEncoder),
+        )
 
     def __eq__(self, other: Any) -> bool:
         """Check if two programs are equal."""
@@ -66,7 +75,7 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
         return self.to_dict() == other.to_dict()
 
 
-class AHSEncoder(json.JSONEncoder):
+class AnalogHamiltonianEncoder(json.JSONEncoder):
     """Class for encoding AnalogHamiltonianProgram objects to dictionaries.
 
     Example:
@@ -74,8 +83,8 @@ class AHSEncoder(json.JSONEncoder):
     .. code-block:: python
 
         >>> import json
-        >>> from qbraid.programs.ahs import AHSEncoder
-        >>> json_str = json.dumps(ahs_program, cls=AHSEncoder)
+        >>> from qbraid.programs.analog import AnalogHamiltonianEncoder
+        >>> json_str = json.dumps(ahs_program, cls=AnalogHamiltonianEncoder)
 
     """
 

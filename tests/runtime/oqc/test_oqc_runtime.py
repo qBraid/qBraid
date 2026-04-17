@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name,unused-argument
 
@@ -158,8 +162,8 @@ TOSHIKO_EXEC_ESTIMATE = {
 def online_window() -> str:
     """Return a window start time for an online QPU."""
     now = datetime.datetime.now()
-    start_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:00:00"
-    end_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:59:59"
+    start_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:00:00"
+    end_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:59:59"
     return start_time, end_time
 
 
@@ -445,8 +449,7 @@ def test_oqc_device_status_from_window_unavailable(lucy_sim_data, toshiko_data):
         provider = OQCProvider(token="fake_token")
 
         now = datetime.datetime.now()
-        year, month, day = now.year, now.month, now.day
-        window = f"{year + 1}-{month}-{day} 00:50:00"
+        window = f"{now.year + 1}-{now.month:02d}-{now.day:02d} 00:50:00"
         mock_client.return_value.get_next_window.return_value = window
         unavailable_device = provider.get_device(lucy_sim_data["id"])
         assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
@@ -626,10 +629,18 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     assert device.status() == DeviceStatus.ONLINE
 
     shots = 100
+    timeout = 120
     job = device.run(program, shots=shots)
     assert isinstance(job, OQCJob)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=timeout)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"OQC job did not complete within {timeout} seconds")
     assert job.qpu_id == LUCY_SIM_ID
     assert job.is_terminal_state()
     assert job.status() == JobStatus.COMPLETED

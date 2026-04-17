@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining OpenQasm3Program class.
@@ -18,6 +22,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pyqasm
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
@@ -80,7 +85,7 @@ class OpenQasm3Program(GateModelProgram):
     @property
     def depth(self) -> int:
         """Return the unrolled circuit depth (i.e., length of critical path)."""
-        return self._module.depth()
+        return self._module.depth(decompose_native_gates=False)
 
     def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
@@ -116,6 +121,9 @@ class OpenQasm3Program(GateModelProgram):
             self._program = normalize_qasm_gate_params(transformed_qasm)
             self._module.validate()
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        return {"openQasm": pyqasm.dumps(self.module)}
+        return Program(
+            format="qasm3",
+            data=pyqasm.dumps(self.module),
+        )

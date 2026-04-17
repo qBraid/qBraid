@@ -1,17 +1,22 @@
-# Copyright (C) 2025 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
+
 from __future__ import annotations
 
 import json
@@ -19,7 +24,6 @@ import os
 import warnings
 from typing import TYPE_CHECKING, Optional
 
-from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
 from azure.quantum.target import Target
 from qbraid_core._import import LazyLoader
@@ -45,17 +49,20 @@ DEVICE_NUM_QUBITS = {
     "ionq.qpu.aria-1": 25,
     "ionq.qpu.aria-2": 25,
     "ionq.qpu.forte": 32,
+    "ionq.qpu.forte-1": 36,
+    "ionq.qpu.forte-enterprise-1": 36,
     "quantinuum.sim.h1-1sc": 20,
     "quantinuum.sim.h2-1sc": 56,
     "quantinuum.sim.h2-2sc": 56,
     "quantinuum.sim.h1-1e": 20,
-    "quantinuum.sim.h2-1e": 32,
-    "quantinuum.sim.h2-2e": 32,
+    "quantinuum.sim.h2-1e": 56,
+    "quantinuum.sim.h2-2e": 56,
     "quantinuum.qpu.h1-1": 20,
     "quantinuum.qpu.h2-1": 56,
     "quantinuum.qpu.h2-2": 56,
     "rigetti.sim.qvm": None,
     "rigetti.qpu.ankaa-3": 84,
+    "rigetti.qpu.cepheus-1-36q": 36,
     "pasqal.sim.emu-tn": 100,
     "pasqal.qpu.fresnel": 100,
 }
@@ -78,36 +85,21 @@ class AzureQuantumProvider(QuantumProvider):
         workspace (Workspace): The configured Azure Quantum workspace.
     """
 
-    def __init__(
-        self,
-        workspace: Optional[Workspace] = None,
-        credential: Optional[ClientSecretCredential] = None,
-    ):
+    def __init__(self, workspace: Optional[Workspace] = None):
         """
-        Initializes an AzureQuantumProvider instance with a specified Workspace. It sets the
-        credential for the workspace if it is not already set and a credential is provided.
+        Initializes an AzureQuantumProvider instance with a specified Workspace.
 
         Args:
             workspace (Workspace, optional): An Azure Quantum Workspace object. If not provided,
-                will be initialized with the provided credential or from environment variables.
-            credential (ClientSecretCredential, optional): Optional credential to be used
-                if the workspace lacks one.
+                will be initialized from the ``AZURE_QUANTUM_CONNECTION_STRING`` environment
+                variable, or via default Azure authentication.
         """
-        if not workspace:
+        if workspace is None:
             connection_str = os.getenv("AZURE_QUANTUM_CONNECTION_STRING")
-            workspace = (
-                Workspace.from_connection_string(connection_str) if connection_str else Workspace()
-            )
-
-        if not workspace.credential:
-            if credential:
-                workspace.credential = credential
+            if connection_str:
+                workspace = Workspace.from_connection_string(connection_str)
             else:
-                warnings.warn(
-                    "No credential provided; interactive authentication via a "
-                    "web browser may be required. To avoid interactive authentication, "
-                    "provide a ClientSecretCredential."
-                )
+                workspace = Workspace()  # pragma: no cover
         workspace.append_user_agent("qbraid")
         self._workspace = workspace
 
@@ -150,7 +142,7 @@ class AzureQuantumProvider(QuantumProvider):
     def _get_experiment_type(input_data_format: InputDataFormat) -> ExperimentType:
         """Get the experiment type based on the input data format."""
         if input_data_format == InputDataFormat.PASQAL:
-            return ExperimentType.AHS
+            return ExperimentType.ANALOG
         return ExperimentType.GATE_MODEL
 
     def _build_profile(self, target: Target) -> TargetProfile:

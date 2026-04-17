@@ -46,6 +46,7 @@ extensions = [
 autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = [
+    "autoqasm",
     "boto3",
     "braket",
     "cirq",
@@ -66,6 +67,8 @@ autodoc_mock_imports = [
     "pandas",
     "pyqpanda3",
     "pulser",
+    "pyqubo",
+    "azure",
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True

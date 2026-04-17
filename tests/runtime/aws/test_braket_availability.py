@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -71,7 +75,7 @@ class FakeAwsDevice(AwsDevice):
     def __init__(self, online, available):
         self._is_available = available
         self._status = "ONLINE" if online else "OFFLINE"
-        self._properties = TestProperties()
+        self._properties = None
 
     @property
     def is_available(self):
@@ -99,6 +103,10 @@ class FakeAwsDevice(AwsDevice):
     @properties.setter
     def properties(self, value):
         self._properties = value
+
+    def refresh_metadata(self):
+        """Refresh metadata of the device."""
+        self._properties = TestProperties()
 
 
 def test_next_available_time_offline():
@@ -135,7 +143,8 @@ def test_next_available_random(mock_utc_datetime):  # pylint: disable=unused-arg
     device.properties.service.executionWindows = [execution_window]
 
     result = next_available_time(device)
-    assert result == (False, "00:30:00", "2024-07-01T16:00:00Z")
+    next_available_datetime = datetime.datetime(2024, 7, 1, 16, 0, 0, tzinfo=datetime.timezone.utc)
+    assert result == (False, "00:30:00", next_available_datetime)
 
 
 def test_next_available_time_no_execution_window():
@@ -213,7 +222,8 @@ def test_next_available_time_midnight(mock_utc_datetime):  # pylint: disable=unu
     device.properties.service.executionWindows = [execution_window]
 
     result = next_available_time(device)
-    assert result == (True, "17:00:00", "2024-07-10T22:00:00Z")
+    next_available_datetime = datetime.datetime(2024, 7, 10, 22, 0, 0, tzinfo=datetime.timezone.utc)
+    assert result == (True, "17:00:00", next_available_datetime)
 
 
 def test_calculate_day_factor():

@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Unit tests for submissions to IonQ devices via qBraid native runtime.
@@ -17,7 +21,9 @@ import warnings
 
 import pytest
 
-from qbraid import GateModelResultData, QbraidProvider
+from qbraid import GateModelResultData, QbraidJob, QbraidProvider
+
+DEFAULT_TIMEOUT = 120
 
 
 @pytest.mark.remote
@@ -44,13 +50,23 @@ def test_qiskit_ionq_workflow():
             qiskit_circuit_transpiled = qiskit.transpile(qiskit_circuit, qiskit_ionq_backend)
 
         provider = QbraidProvider()
-        device = provider.get_device("ionq_simulator")
+        device = provider.get_device("azure:ionq:sim:simulator")
 
         shots = 10
-        job = device.run(qiskit_circuit_transpiled, shots=shots)
-        job.wait_for_final_state()
+        job: QbraidJob = device.run(qiskit_circuit_transpiled, shots=shots)
 
+        # pylint: disable=no-member
+        try:
+            job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+        except TimeoutError:
+            try:
+                job.cancel()
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+            pytest.skip(f"IonQ job did not complete within {DEFAULT_TIMEOUT} seconds")
         result = job.result()
+        # pylint: enable=no-member
+
         assert result.success
         assert isinstance(result.data, GateModelResultData)
 

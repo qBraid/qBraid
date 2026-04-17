@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module providing unified interface for interacting with
@@ -37,7 +41,6 @@ Functions
     load_job
     get_providers
     load_provider
-    display_jobs_from_data
 
 Classes
 --------
@@ -53,8 +56,8 @@ Classes
     Result
     ResultData
     GateModelResultData
-    AhsResultData
-    AhsShotResult
+    AnalogResultData
+    AnalogShotResult
     AnnealingResultData
 
 Exceptions
@@ -75,7 +78,6 @@ Exceptions
 import importlib
 from typing import TYPE_CHECKING
 
-from ._display import display_jobs_from_data
 from .device import QuantumDevice
 from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
@@ -93,8 +95,8 @@ from .profile import TargetProfile
 from .provider import QuantumProvider
 from .result import Result
 from .result_data import (
-    AhsResultData,
-    AhsShotResult,
+    AnalogResultData,
+    AnalogShotResult,
     AnnealingResultData,
     GateModelResultData,
     ResultData,
@@ -106,7 +108,6 @@ __all__ = [
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
-    "display_jobs_from_data",
     "load_job",
     "get_providers",
     "load_provider",
@@ -126,8 +127,8 @@ __all__ = [
     "Result",
     "ResultData",
     "GateModelResultData",
-    "AhsResultData",
-    "AhsShotResult",
+    "AnalogResultData",
+    "AnalogShotResult",
     "AnnealingResultData",
     "ValidationLevel",
     "PROVIDERS",
@@ -163,8 +164,8 @@ _lazy = {
     ],
     "native": [
         "Session",
-        "QbraidSession",
-        "QbraidClient",
+        "QbraidSessionV1",
+        "QbraidClientV1",
         "QbraidProvider",
         "QbraidDevice",
         "QbraidJob",
@@ -187,11 +188,11 @@ if TYPE_CHECKING:
     from .ionq import IonQJob as IonQJob
     from .ionq import IonQProvider as IonQProvider
     from .ionq import IonQSession as IonQSession
-    from .native import QbraidClient as QbraidClient
+    from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
     from .native import QbraidJob as QbraidJob
     from .native import QbraidProvider as QbraidProvider
-    from .native import QbraidSession as QbraidSession
+    from .native import QbraidSessionV1 as QbraidSessionV1
     from .native import QirRunner as QirRunner
     from .native import Session as Session
     from .oqc import OQCDevice as OQCDevice

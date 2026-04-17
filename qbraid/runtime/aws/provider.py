@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for configuring provider credentials and authentication.
@@ -16,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 import boto3
@@ -23,8 +28,6 @@ from boto3.session import Session
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice, AwsSession
 from braket.circuits import Circuit
-from qbraid_core.services.quantum import quantum_lib_proxy_state
-from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid._caching import cached_method
 from qbraid.exceptions import QbraidError
@@ -71,6 +74,41 @@ class BraketProvider(QuantumProvider):
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
         self.aws_session_token = aws_session_token
 
+    @staticmethod
+    def aws_configure(
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        region: str | None = None,
+    ) -> None:
+        """
+        Initializes and populates AWS configuration and credentials files.
+
+        Args:
+            aws_access_key_id (str, optional): AWS access key ID. Defaults to None.
+            aws_secret_access_key (str, optional): AWS secret access key. Defaults to None.
+            region (str, optional): AWS region. Defaults to None.
+        """
+        aws_dir = Path.home() / ".aws"
+        config_path = aws_dir / "config"
+        credentials_path = aws_dir / "credentials"
+        aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID", "MYACCESSKEY")
+        aws_secret_access_key = aws_secret_access_key or os.getenv(
+            "AWS_SECRET_ACCESS_KEY", "MYSECRETKEY"
+        )
+        region = region or os.getenv("AWS_REGION", "us-east-1")
+
+        aws_dir.mkdir(exist_ok=True)
+        if not config_path.exists():
+            config_content = f"[default]\nregion = {region}\noutput = json\n"
+            config_path.write_text(config_content)
+        if not credentials_path.exists():
+            credentials_content = (
+                f"[default]\n"
+                f"aws_access_key_id = {aws_access_key_id}\n"
+                f"aws_secret_access_key = {aws_secret_access_key}\n"
+            )
+            credentials_path.write_text(credentials_content)
+
     def save_config(
         self,
         aws_access_key_id: Optional[str] = None,
@@ -80,7 +118,7 @@ class BraketProvider(QuantumProvider):
         """Save the current configuration."""
         aws_access_key_id = aws_access_key_id or self.aws_access_key_id
         aws_secret_access_key = aws_secret_access_key or self.aws_secret_access_key
-        aws_configure(
+        BraketProvider.aws_configure(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             **kwargs,
@@ -108,7 +146,7 @@ class BraketProvider(QuantumProvider):
 
     def _get_aws_session(self, region_name: Optional[str] = None) -> braket.aws.AwsSession:
         """Returns the AwsSession provider."""
-        region_name = region_name or self._get_default_region()
+        region_name = region_name or os.environ.get("AWS_REGION") or self._get_default_region()
         default_bucket = self._get_s3_default_bucket()
 
         boto_session = Session(
@@ -117,7 +155,9 @@ class BraketProvider(QuantumProvider):
             aws_secret_access_key=self.aws_secret_access_key,
             aws_session_token=self.aws_session_token,
         )
-        braket_client = boto_session.client("braket", region_name=region_name)
+        braket_client = boto_session.client(
+            "braket", region_name=region_name, endpoint_url=os.environ.get("BRAKET_ENDPOINT")
+        )
         return AwsSession(
             boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
         )
@@ -133,19 +173,20 @@ class BraketProvider(QuantumProvider):
         paradigm: dict = capabilities.get("paradigm", {})
         action: dict = capabilities.get("action", {})
         num_qubits = paradigm.get("qubitCount")
+        basis_gates = paradigm.get("nativeGateSet", None)
         if action.get("braket.ir.openqasm.program") is not None:
             experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:
-            experiment_type = ExperimentType.AHS
+            experiment_type = ExperimentType.ANALOG
             program_spec = program_spec or ProgramSpec(
                 AnalogHamiltonianSimulation, alias="braket_ahs"
             )
         else:
             raise QbraidError(
                 f"TargetProfile cannot be created for device '{device.arn}' as it does not "
-                f"support 'braket.ir.openqasm.program' program types. Please verify device "
-                f"capabilities or select a different, compatible device."
+                "support 'braket.ir.openqasm.program' or 'braket.ir.ahs.program' types. "
+                "Please verify device capabilities or select a different, compatible device."
             )
         return TargetProfile(
             simulator=simulator,
@@ -154,6 +195,7 @@ class BraketProvider(QuantumProvider):
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,
+            basis_gates=basis_gates,
             **kwargs,
         )
 
@@ -231,15 +273,6 @@ class BraketProvider(QuantumProvider):
             QbraidError: If the function is called within a qBraid quantum job environment
                          where AWS S3 requests are not supported.
         """
-        try:
-            jobs_state = quantum_lib_proxy_state("braket")
-            jobs_enabled = jobs_state.get("enabled", False)
-        except ValueError:
-            jobs_enabled = False
-
-        if jobs_enabled:
-            raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
-
         region_names = (
             region_names
             if region_names is not None and len(region_names) > 0

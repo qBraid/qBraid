@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -15,17 +19,16 @@ Unit tests for qbraid.programs.qasm.OpenQasm2Program
 
 """
 import textwrap
-from unittest.mock import MagicMock
 
 import openqasm3.ast
 import pytest
 from openqasm3.parser import parse
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.loader import load_program
 from qbraid.programs.registry import unregister_program_type
-from qbraid.programs.typer import Qasm2String
 
 from ..fixtures.qasm2.circuits import qasm2_bell, qasm2_shared15
 
@@ -92,16 +95,6 @@ def test_num_classical_bits(simple_qasm):
     assert OpenQasm2Program(simple_qasm).num_clbits == 2
 
 
-def test_remove_measurements_via_transform(simple_qasm):
-    """Test removing measurements via transform method"""
-    device = MagicMock()
-    device.id = "quera_qasm_simulator"
-    qprogram = OpenQasm2Program(simple_qasm)
-    qprogram.transform(device=device)
-    assert qprogram._module.has_measurements() is False
-    assert isinstance(qprogram.program, Qasm2String)
-
-
 def test_load_qasm2_program_from_parsed_obj(simple_qasm):
     """Test loading a qasm2 program from a openqasm3.ast.Program object"""
     parsed_program = parse(simple_qasm)
@@ -109,3 +102,14 @@ def test_load_qasm2_program_from_parsed_obj(simple_qasm):
 
     qbraid_program = load_program(parsed_program)
     assert isinstance(qbraid_program, OpenQasm2Program)
+
+
+def test_qasm2_program_serialize(simple_qasm):
+    """Test serialize method of OpenQasm2Program"""
+    qbraid_program = OpenQasm2Program(simple_qasm)
+    serialized = qbraid_program.serialize()
+
+    assert isinstance(serialized, Program)
+    assert serialized.format == "qasm2"
+    assert "OPENQASM 2.0" in serialized.data
+    assert "h q[0]" in serialized.data

@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for configuring IBM provider credentials and authentication.
@@ -54,16 +58,17 @@ class QiskitRuntimeProvider(QuantumProvider):
         Initializes the QiskitRuntimeProvider object with IBM Quantum credentials.
 
         Args:
-            token (str, optional): IBM Cloud API key or IBM Quantum API token.
+            token (str, optional): IBM Cloud API key.
             instance (str, optional): The service instance to use.
-                For ``ibm_cloud``, this is the Cloud Resource Name (CRN) or the service name.
-                For ``ibm_quantum``, this is the hub/group/project in that format.
-            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum`` or ``local``.
+                This is the Cloud Resource Name (CRN) or the service name. If set, it will define
+                a default instance for service instantiation. If not set, the service will fetch
+                all instances accessible within the account.
+            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum_platform`` or ``local``.
                 If ``local``, uses testing mode and primitive queries will run on local simulator.
         """
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
         self.instance = instance or os.getenv("QISKIT_IBM_INSTANCE")
-        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum_platform")
         self._runtime_service = QiskitRuntimeService(
             channel=self.channel, token=self.token, instance=self.instance, **kwargs
         )

@@ -9,7 +9,7 @@ description = "Platform-agnostic quantum runtime framework."
 authors = [{name = "qBraid Development Team"}, {email = "contact@qbraid.com"}]
 readme = "README.md"
 keywords = ["qbraid", "quantum", "openqasm", "runtime"]
-license = "GPL-3.0-only"
+license = "Apache-2.0"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
@@ -35,35 +35,33 @@ requires-python = ">=3.10"
 
 [project.urls]
 Homepage = "https://sdk.qbraid.com/"
-Documentation = "https://docs.qbraid.com/sdk"
+Documentation = "https://docs.qbraid.com/v2/sdk"
 "Source Code" = "https://github.com/qBraid/qBraid"
 "Bug Tracker" = "https://github.com/qBraid/qBraid/issues"
 Discord = "https://discord.gg/TPBU2sa8Et"
-"Launch on Lab" = "https://account.qbraid.com/?gitHubUrl=https://github.com/qBraid/qBraid.git"
 
 [project.optional-dependencies]
-azure = ["azure-quantum>=2.0,<2.3", "azure-storage-blob>=12.20,<13.0", "azure-identity>=1.17,<2.0"]
+azure = ["azure-quantum>=3.6.0,<4.0"]
 bloqade = ["bloqade-analog>=0.16.1,<0.17.0"]
-braket = ["amazon-braket-sdk>=1.83.0,<1.94.0", "pytket-braket>=0.30,<0.43"]
-cirq = ["cirq-core>=1.3,<1.5", "cirq-ionq>=1.3,<1.5", "ply>=3.6", "attrs>=21.3.0"]
-cudaq = ["cudaq>=0.9.0"]
+braket = ["amazon-braket-sdk>=1.83.0,<1.111.0", "pytket-braket>=0.30,<0.47"]
+cirq = ["cirq-core>=1.3,<1.7", "cirq-ionq>=1.3,<1.7", "ply>=3.6", "attrs>=21.3.0"]
+cudaq = ["cudaq>=0.9.0,<0.14.0"]
 ionq = ["qiskit-ionq>=0.5.12"]
 oqc = ["oqc-qcaas-client>=3.11.0"]
 origin = ["pyqpanda3"]
-pennylane = ["pennylane<0.42"]
+pennylane = ["pennylane>=0.43"]
+pulser = ["pulser-core>=1.4.0,<1.8.0", "pulser-simulation>=1.4.0,<1.8.0"]
 pyqubo = ["pyqubo>=1.4.0"]
-pyquil = ["pyquil>=4.4", "qcs-sdk-python>=0.21.12"]
+pyquil = ["pyquil>=4.4", "qcs-sdk-python>=0.21.12,<0.21.23"]
 pytket = ["pytket>=1.31"]
-qir = ["qbraid-qir>=0.2.0,<=0.3.2", "qbraid-core[runner]>=0.1.39"]
-qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.25.0,<0.41", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
-quera = ["flair-visual[vis]>=0.5.3", "pandas"]
+qir = ["qbraid-qir>=0.2.0,<=0.5.1"]
+qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.39.0,<0.42", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
-docs = ["sphinx>=7.2,<8.3", "sphinx-autodoc-typehints>=1.24,<3.2", "sphinx-rtd-theme>=1.3,<3.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
 qubo = "qbraid.programs.annealing.qubo:QuboProgram"
 cpp_pyqubo = "qbraid.programs.annealing.cpp_pyqubo:PyQuboModel"
-braket_ahs = "qbraid.programs.ahs.braket_ahs:BraketAHS"
+braket_ahs = "qbraid.programs.analog.braket_ahs:BraketAHS"
 braket = "qbraid.programs.gate_model.braket:BraketCircuit"
 cirq = "qbraid.programs.gate_model.cirq:CirqCircuit"
 ionq = "qbraid.programs.gate_model.ionq:IonQProgram"
@@ -162,7 +160,7 @@ output = "build/coverage/coverage.xml"
 
 [tool.black]
 line-length = 100
-target-version = ['py310', 'py311', 'py312']
+target-version = ['py310', 'py311', 'py312', 'py313']
 include = '\.pyi?$'
 exclude = '''
 /(

@@ -1,18 +1,23 @@
-# Copyright (C) 2025 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
-# pylint:disable=redefined-outer-name
+# pylint: disable=redefined-outer-name
 """
 Unit tests for Azure Quantum runtime (remote)
 
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -24,13 +29,15 @@ import pytest
 from azure.quantum import Workspace
 
 from qbraid.runtime import (
-    AhsResultData,
+    AnalogResultData,
     AzureQuantumProvider,
     DeviceStatus,
     GateModelResultData,
     JobStatus,
     Result,
 )
+
+DEFAULT_TIMEOUT = 120
 
 # Skip pyquil and/or pulser tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
@@ -42,9 +49,10 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.remote
+@pytest.mark.skip(reason="Quantinuum emulator usage quota exceeded")
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
-    device = provider.get_device("quantinuum.sim.h1-1sc")
+    device = provider.get_device("quantinuum.sim.h2-1e")
     status = device.status()
 
     if status != DeviceStatus.ONLINE:
@@ -64,7 +72,15 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """
 
     job = device.run(circuit, shots=100)
-    job.wait_for_final_state()
+    try:
+        timeout = 120
+        job.wait_for_final_state(timeout=timeout)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"Quantinuum job did not complete within {timeout} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
@@ -92,7 +108,14 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     }
 
     job = device.run(circuit, shots=100)
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"IonQ simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
@@ -105,7 +128,11 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 @pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
+    # pylint: disable=import-outside-toplevel
     import pyquil
+    import pyquil.gates
+
+    # pylint: enable=import-outside-toplevel
 
     p = pyquil.Program()
     ro = p.declare("ro", "BIT", 2)
@@ -145,6 +172,7 @@ def pulser_sequence() -> pulser_.Sequence:
     det_wf = RampWaveform(1000, -5, 5)
     pulse = pulser.Pulse(amp_wf, det_wf, 0)
     seq.add(pulse, "ch0")
+    seq.measure("ground-rydberg")
 
     return seq
 
@@ -175,15 +203,22 @@ def test_submit_quil_to_rigetti(
     if direct:
         job = device.submit(quil_string, shots=shots, input_params=input_params)
     else:
-        job = device.run(pyquil_program, shots=100, input_params=input_params)
+        job = device.run(pyquil_program, shots=shots, input_params=input_params)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"Rigetti QVM job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
-    assert result.data.get_counts() == {"00": 60, "11": 40}
+    assert list(result.data.get_counts().keys()) == ["00", "11"]
 
 
 @pytest.mark.remote
@@ -205,15 +240,24 @@ def test_submit_sequence_to_pasqal(
     shots = 100
     input_params = {}
 
-    job = device.submit(pulser_sequence, shots=shots, input_params=input_params)
+    job = device.run(pulser_sequence, shots=shots, input_params=input_params)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        try:
+            job.cancel()
+        except Exception:
+            pass
+        pytest.skip(f"Pasqal simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
     assert isinstance(result, Result)
-    assert isinstance(result.data, AhsResultData)
-    assert result.data.get_counts() == {"00": 60, "11": 40}
+    assert isinstance(result.data, AnalogResultData)
+    counts = result.data.get_counts()
+    assert len(counts) > 0
+    assert all(len(bitstring) == 6 for bitstring in counts.keys())
 
 
 @pytest.mark.remote

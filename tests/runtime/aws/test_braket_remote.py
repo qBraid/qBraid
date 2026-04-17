@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -23,6 +27,8 @@ from braket.tracking.tracker import Tracker
 
 from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.tracker import get_quantum_task_cost
+
+DEFAULT_TIMEOUT = 120
 
 
 @pytest.fixture
@@ -62,7 +68,15 @@ def test_get_quantum_task_cost_simulator(braket_circuit):
     device = provider.get_device("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
 
     with Tracker() as tracker:
-        task = device.run(braket_circuit, shots=2)
+        task = device.run(braket_circuit, shots=100)
+        try:
+            task.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+        except TimeoutError:
+            try:
+                task.cancel()
+            except Exception:  # pylint: disable=broad-exception-caught
+                pass
+            pytest.skip(f"Simulator job did not complete within {DEFAULT_TIMEOUT} seconds")
         task.result()
 
     expected = tracker.simulator_tasks_cost()
@@ -82,7 +96,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_no_meas):
     region_name = AwsDevice.get_device_region(braket_most_busy.id)
     aws_session = provider._get_aws_session(region_name)
 
-    qbraid_job = braket_most_busy.run(braket_no_meas, shots=10)
+    qbraid_job = braket_most_busy.run(braket_no_meas, shots=100)
     qbraid_job.cancel()
 
     task_arn = qbraid_job.id
@@ -116,7 +130,7 @@ def test_get_quantum_task_cost_region_mismatch(braket_most_busy, braket_circuit)
         pytest.skip("No AWS QPU devices available")
 
     braket_device = braket_most_busy._device
-    task = braket_device.run(braket_circuit, shots=10)
+    task = braket_device.run(braket_circuit, shots=100)
     task.cancel()
 
     task_arn = task.id

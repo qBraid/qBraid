@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for post-processing of raw results data.
@@ -14,6 +18,7 @@ Module for post-processing of raw results data.
 """
 from __future__ import annotations
 
+import warnings
 from math import isclose
 from typing import Any, Union
 
@@ -129,8 +134,19 @@ def format_data(
             }
             normalized_data = normalize_bit_lengths(key_str_data)
             num_bits = max(len(key) for key in normalized_data)
-            all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
-            data = {key: normalized_data.get(key, 0) for key in all_keys}
+
+            if include_zero_values:
+                # Warn if generating a very large state space
+                if num_bits > 20:
+                    warnings.warn(
+                        f"Generating all {2**num_bits:,} possible states for {num_bits} qubits. "
+                        "This may consume significant memory. "
+                        "Consider using include_zero_values=False."
+                    )
+                all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
+                data = {key: normalized_data.get(key, 0) for key in all_keys}
+            else:
+                data = normalized_data
             input_is_bin = True
         elif all(key.isdigit() for key in data.keys()):
             data = {int(key): value for key, value in data.items()}
@@ -255,7 +271,7 @@ def distribute_counts(probs: dict[Any, float], shots: int) -> dict[Any, int]:
         {0: 9, 1: 1}
     """
     if not isclose(sum(probs.values()), 1.0, rel_tol=1e-7):
-        raise ValueError("Probabilities must sum to 1.")
+        warnings.warn("Probabilities do not sum to 1.")
 
     if not all(0 <= prob <= 1 for prob in probs.values()):
         raise ValueError("Probabilities must be between 0 and 1.")

@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module containing models for schema-conformant ResultData classes.
@@ -16,19 +20,16 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Optional, Type, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
 
 import numpy as np
 
 from qbraid.programs import ExperimentType
 
 from .postprocess import counts_to_probabilities, normalize_data
-from .schemas.experiment import (
-    AhsExperimentMetadata,
-    AnnealingExperimentMetadata,
-    ExperimentMetadata,
-    GateModelExperimentMetadata,
-)
+
+if TYPE_CHECKING:
+    import qbraid_core.services.runtime.schemas
 
 ResultDataType = TypeVar("ResultDataType", bound="ResultData")
 
@@ -59,23 +60,19 @@ class ResultData(ABC):
         """Creates a new ResultData instance from a dictionary."""
 
     @classmethod
-    @overload
-    def from_object(cls, model: GateModelExperimentMetadata, **kwargs) -> GateModelResultData: ...
-
-    @classmethod
-    @overload
-    def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData: ...
-
-    @classmethod
-    @overload
-    def from_object(cls, model: AhsExperimentMetadata, **kwargs) -> AhsResultData: ...
-
-    @classmethod
     def from_object(
-        cls: Type[ResultDataType], model: ExperimentMetadata, **kwargs
+        cls: Type[ResultDataType],
+        result: qbraid_core.services.runtime.schemas.Result,
+        experiment_type: ExperimentType,
     ) -> ResultDataType:
-        """Creates a new ResultData instance from an ExperimentMetadata object."""
-        return cls.from_dict(model.model_dump(**kwargs))
+        """Creates a new ResultData instance from a qbraid_core runtime Result object."""
+        result_data_cls: Type[ResultDataType] | None = _EXPERIMENT_TYPE_TO_RESULT_DATA.get(
+            experiment_type
+        )
+        if result_data_cls is None:
+            raise ValueError(f"Unsupported experiment_type: '{experiment_type.name}'")
+
+        return result_data_cls.from_dict(result.resultData)
 
 
 class GateModelResultData(ResultData):
@@ -113,9 +110,19 @@ class GateModelResultData(ResultData):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> GateModelResultData:
         """Creates a new GateModelResult instance from a dictionary."""
-        measurement_counts = data.pop("measurement_counts", data.pop("measurementCounts", None))
-        measurements = data.pop("measurements", None)
-        measurement_probabilities = data.pop("measurement_probabilities", None)
+        known = {
+            "measurement_counts",
+            "measurementCounts",
+            "measurements",
+            "measurement_probabilities",
+            "measurementProbabilities",
+        }
+        measurement_counts = data.get("measurement_counts", data.get("measurementCounts"))
+        measurements = data.get("measurements")
+        measurement_probabilities = data.get(
+            "measurement_probabilities", data.get("measurementProbabilities")
+        )
+        rest = {k: v for k, v in data.items() if k not in known}
 
         if isinstance(measurements, list):
             measurements = np.array(measurements, dtype=object)
@@ -124,7 +131,7 @@ class GateModelResultData(ResultData):
             measurement_counts=measurement_counts,
             measurements=measurements,
             measurement_probabilities=measurement_probabilities,
-            **data,
+            **rest,
         )
 
     @property
@@ -222,6 +229,7 @@ class GateModelResultData(ResultData):
             "measurement_counts": counts,
             "measurement_probabilities": probabilities,
             "measurements": self._measurements,
+            **self._unscoped_data,
         }
         self._cache["to_dict"] = data
 
@@ -253,7 +261,7 @@ class GateModelResultData(ResultData):
 
 
 @dataclass
-class AhsShotResult:
+class AnalogShotResult:
     """Class for storing the results of a single shot in an analog Hamiltonian simulation job."""
 
     success: bool
@@ -268,7 +276,7 @@ class AhsShotResult:
         )
 
     def __eq__(self, other):
-        if not isinstance(other, AhsShotResult):
+        if not isinstance(other, AnalogShotResult):
             return False
         return (
             self.success == other.success
@@ -287,7 +295,7 @@ class AhsShotResult:
         }
 
     @classmethod
-    def from_dict(cls, data: dict[str, Union[bool, Optional[list[int]]]]) -> AhsShotResult:
+    def from_dict(cls, data: dict[str, Union[bool, Optional[list[int]]]]) -> AnalogShotResult:
         """Create an instance from a dictionary, converting lists to numpy arrays."""
         return cls(
             success=data["success"],
@@ -300,24 +308,26 @@ class AhsShotResult:
         )
 
 
-class AhsResultData(ResultData):
+class AnalogResultData(ResultData):
     """Class for storing and accessing the results of an analog Hamiltonian simulation job."""
 
     def __init__(
         self,
         measurement_counts: Optional[dict[str, int]] = None,
-        measurements: Optional[list[AhsShotResult]] = None,
+        measurements: Optional[list[AnalogShotResult]] = None,
+        **kwargs,
     ):
         self._measurement_counts = measurement_counts
         self._measurements = measurements
+        self._unscoped_data = kwargs
 
     @property
     def experiment_type(self) -> ExperimentType:
         """Returns the experiment type."""
-        return ExperimentType.AHS
+        return ExperimentType.ANALOG
 
     @property
-    def measurements(self) -> Optional[list[AhsShotResult]]:
+    def measurements(self) -> Optional[list[AnalogShotResult]]:
         """Returns the measurements data of the run."""
         return self._measurements
 
@@ -326,30 +336,35 @@ class AhsResultData(ResultData):
         return self._measurement_counts
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> AhsResultData:
-        """Creates a new AhsResultData instance from a dictionary."""
+    def from_dict(cls, data: dict[str, Any]) -> AnalogResultData:
+        """Creates a new AnalogResultData instance from a dictionary."""
+        known = {"measurement_counts", "measurementCounts", "measurements"}
         measurements = data.get("measurements")
         if measurements is not None:
             if not isinstance(measurements, list):
                 raise ValueError("'measurements' must be a list or None.")
             if not all(isinstance(shot, dict) for shot in measurements):
                 raise ValueError("Each item in 'measurements' must be a dictionary.")
-            measurements = [AhsShotResult.from_dict(shot) for shot in measurements]
+            measurements = [AnalogShotResult.from_dict(shot) for shot in measurements]
 
+        measurement_counts = data.get("measurement_counts", data.get("measurementCounts"))
+        rest = {k: v for k, v in data.items() if k not in known}
         return cls(
+            measurement_counts=measurement_counts,
             measurements=measurements,
-            measurement_counts=data.get("measurement_counts", data.get("measurementCounts")),
+            **rest,
         )
 
     def to_dict(self) -> dict[str, Any]:
-        """Converts the AhsResultData instance to a dictionary."""
+        """Converts the AnalogResultData instance to a dictionary."""
         return {
             "measurement_counts": self._measurement_counts,
             "measurements": self._measurements,
+            **self._unscoped_data,
         }
 
     def __eq__(self, other):
-        if not isinstance(other, AhsResultData):
+        if not isinstance(other, AnalogResultData):
             return False
 
         if self._measurement_counts != other._measurement_counts:
@@ -365,18 +380,26 @@ class AhsResultData(ResultData):
         return all(s1 == s2 for s1, s2 in zip(self._measurements, other._measurements))
 
     def __repr__(self) -> str:
-        """Return a string representation of the AhsResultData instance."""
-        return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={self._measurements})"  # pylint: disable=line-too-long
+        """Return a string representation of the AnalogResultData instance."""
+        return (
+            f"{self.__class__.__name__}"
+            f"(measurement_counts={self._measurement_counts}, "
+            f"measurements={self._measurements})"
+        )
 
 
 class AnnealingResultData(ResultData):
     """Class for storing and accessing the results of an annealing job."""
 
     def __init__(
-        self, solutions: Optional[list[dict[str, Any]]] = None, num_solutions: Optional[int] = None
+        self,
+        solutions: Optional[list[dict[str, Any]]] = None,
+        num_solutions: Optional[int] = None,
+        **kwargs,
     ):
         self._solutions = solutions
         self._num_solutions = num_solutions
+        self._unscoped_data = kwargs
 
     @property
     def experiment_type(self) -> ExperimentType:
@@ -408,4 +431,12 @@ class AnnealingResultData(ResultData):
         return {
             "solutions": self.solutions,
             "num_solutions": self.num_solutions,
+            **self._unscoped_data,
         }
+
+
+_EXPERIMENT_TYPE_TO_RESULT_DATA = {
+    ExperimentType.GATE_MODEL: GateModelResultData,
+    ExperimentType.ANALOG: AnalogResultData,
+    ExperimentType.ANNEALING: AnnealingResultData,
+}

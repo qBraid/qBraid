@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Unit tests for qbraid.programs.cirq.CirqCircuit
@@ -332,3 +336,13 @@ def test_transform_no_effect():
     device = Mock()
     program.transform(device)
     assert program.program == circuit
+
+
+def test_cirq_circuit_depth():
+    """Test that depth property returns the length of circuit with operations."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    program = CirqCircuit(circuit)
+
+    # The depth should be the number of moments in a circuit created from all operations
+    assert program.depth == len(cirq.Circuit(circuit.all_operations()))

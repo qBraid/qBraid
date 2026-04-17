@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Unit tests for OpenQASM 3 conversions
@@ -14,9 +18,12 @@ Unit tests for OpenQASM 3 conversions
 """
 import braket.circuits
 import numpy as np
+import pytest
 import qiskit
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs.exceptions import QasmError
+from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import qasm3_to_cirq
 from qbraid.transpiler.converter import transpile
 
 
@@ -86,3 +93,10 @@ def test_braket_to_qiskit_vi_sxdg():
     qasm3_program = transpile(circuit, "qasm3")
     qiskit_circuit = transpile(qasm3_program, "qiskit")
     assert circuits_allclose(circuit, qiskit_circuit, strict_gphase=False)
+
+
+def test_qasm3_to_cirq_raises_for_invalid_qasm():
+    """Test that qasm3_to_cirq raises QasmError for unsupported QASM."""
+    invalid_qasm = "OPENQASM 2.0;\nqreg q[1];\nbarrier q;"
+    with pytest.raises(QasmError):
+        qasm3_to_cirq(invalid_qasm)

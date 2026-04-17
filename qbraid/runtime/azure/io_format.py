@@ -1,12 +1,16 @@
-# Copyright (C) 2025 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining input and output data formats for Azure Quantum.
@@ -33,6 +37,11 @@ class OutputDataFormat(Enum):
     MICROSOFT_V2 = "microsoft.quantum-results.v2"
     IONQ = "ionq.quantum-results.v1"
     QUANTINUUM = "honeywell.quantum-results.v1"
+    # Deprecated: azure-quantum >= 3.x no longer recognises "microsoft.resource-estimates.v1" as
+    # a handled output format — job.get_results() falls through to raw JSON for this format string.
+    # The microsoft.estimator backend is still available, but results are now returned differently.
+    # This value is retained solely for backward-compatible parsing of jobs submitted with older
+    # SDK versions. Support will be removed in v0.12.
     RESOURCE_ESTIMATOR = "microsoft.resource-estimates.v1"
     RIGETTI = "rigetti.quil-results.v1"
     PASQAL = "pasqal.pulser-results.v1"

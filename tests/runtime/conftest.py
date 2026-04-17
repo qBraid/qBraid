@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name,import-outside-toplevel
 
@@ -31,7 +35,6 @@ from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 from ._resources import (
     DEVICE_DATA_AQUILA,
     DEVICE_DATA_QIR,
-    DEVICE_DATA_QUERA_QASM,
     MockClient,
     MockDevice,
 )
@@ -153,12 +156,6 @@ def device_data_qir():
 
 
 @pytest.fixture
-def device_data_quera():
-    """Return a dictionary of device data for the QuEra QASM simulator."""
-    return DEVICE_DATA_QUERA_QASM
-
-
-@pytest.fixture
 def device_data_aquila():
     """Return a dictionary of device data for the QuEra Aquila QPU."""
     return DEVICE_DATA_AQUILA
@@ -209,11 +206,11 @@ def mock_provider(mock_client):
 def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
-        device_id="qbraid_qir_simulator",
+        device_id="qbraid:qbraid:sim:qir-sv",
         simulator=True,
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
-        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
+        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid:qbraid:sim:qir-sv"),
         noise_models=NoiseModelSet.from_iterable(["ideal"]),
     )
 

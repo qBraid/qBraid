@@ -17,49 +17,245 @@ Types of changes:
 
 ### Added
 - Added OriginQ QCloud provider integration (`qbraid.runtime.origin`) with `OriginProvider`, `OriginDevice`, and `OriginJob` classes. ([#1148](https://github.com/qBraid/qBraid/pull/1148))
+- Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
+- Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
+- Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 
 ### Improved / Modified
-- Removed legacy `pkg_resources` logic for loading entry points (`qbraid._entrypoints`), as support for Python 3.9 has been dropped and the project now requires Python 3.10 or higher. ([#1002](https://github.com/qBraid/qBraid/issues/1002))
+- Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
+- Added `ccx` → `ccnot` gate mapping in QASM3-to-Braket conversion
+- Updated PennyLane-to-QASM2 conversion to use `pennylane.to_openqasm()` module-level function, replacing the removed `QuantumTape.to_openqasm()` instance method ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Added credential validation check in Azure Quantum test workspace fixture to skip tests when `resource_id` or `credential` are not fully configured ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
+- Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
+- Simplified `test_qasm3_to_braket_error_includes_detail` test by removing reset case and converting from parametrized test to single case testing only the `c3x` undefined gate error ([#1161](https://github.com/qBraid/qBraid/pull/1161))
 
 ### Deprecated
+- `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 
 ### Removed
 
 ### Fixed
+- Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
+- Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Fixed classical bit collisions in Braket `pad_measurements` method by detecting internal collisions, padding collisions, and out-of-range indices; rebases existing measures to sequential indices when necessary to ensure valid QASM output ([#1160](https://github.com/qBraid/qBraid/pull/1160))
+- Fixed `BraketQuantumTask._get_partial_measurement_qubits_from_tags` to return `None` and log warning when tag qubits are missing from result measurements, preventing crashes during result processing ([#1160](https://github.com/qBraid/qBraid/pull/1160))
 
 ### Dependencies
+- Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
+- Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
+- Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
+- Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
+
+## [0.11.1] - 2026-02-24
+
+### Added
+- Added `IonQJob.cost()` method to retrieve job cost information from the IonQ API ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+
+### Improved / Modified
+- Updated IonQ provider to use v0.4 API, including support for multi-circuit jobs, updated job status mappings (`running` → `started`), and enhanced measurement probability transformations ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+- Added `degraded` status handling for IonQ devices ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+- Refactored `QbraidJob.result()` to use `qbraid_core.services.runtime.schemas.Result` directly: removed dependency on `ExperimentMetadata` classes, added single `ResultData.from_object(result, experiment_type)` that builds from the core Result’s `resultData`, and pass `time_stamps` and `cost` through as Result details instead of metadata dump ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+- Refactored `ResultData` subclasses to handle API camelCase keys (`measurementCounts`, `numSolutions`, etc.) in their `from_dict` implementations; `GateModelResultData.from_dict` now uses `.get()` and a known-keys filter instead of mutating a copy ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+- QASM3-to-Braket conversion now supports QASM3 strings with physical qubits via a try/except workaround when PyQASM validation or transform fails ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+
+### Removed
+- Removed `qbraid.runtime.experiment` module (`ExperimentMetadata`, `GateModelExperimentMetadata`, `AnnealingExperimentMetadata`, `AhsExperimentMetadata`) and related tests; native job results now rely on the core Result schema and `ResultData.from_object` only ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+
+### Fixed
+- Fixed IonQ job submission to use updated API field names (`target` → `backend`) and proper job type specification ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+- Fixed error mitigation parameter handling for IonQ jobs, now correctly nested under `settings` ([#1121](https://github.com/qBraid/qBraid/pull/1121))
+
+### Dependencies
+- Add upper bound on `pulser-core` and `pulser-simulation` dev dependencies to >=1.4.0,<1.7.0 ([#1122](https://github.com/qBraid/qBraid/pull/1122))
+- Increased upper bound on `qbraid-qir` dependency from <=0.5.0 to <=0.5.1 ([#1123](https://github.com/qBraid/qBraid/pull/1123))
+
+## [0.11.0] - 2026-02-08
+
+## Improved / Modified
+
+Introduced several changes primarily focused on standardizing program serialization using the new `Program` schema from `qbraid-core`, refactoring the analog/ahs program modules, and updating dependencies for compatibility with qBraid Platform V2:
+
+- All `serialize` methods in program classes (`analog`, `annealing`, `gate_model`, etc.) now return a `Program` object from `qbraid_core.services.runtime.schemas`, replacing custom dictionary formats. This ensures a consistent API for program submission across all quantum program types.
+- The `ahs` module has been renamed to `analog`, with all relevant class and import names updated (e.g., `AHSEncoder` → `AnalogHamiltonianEncoder`). This includes file renames and updates to `__init__.py`, ensuring clarity and alignment with terminology.
+- The `ExperimentType`, `JobStatus`, and `DeviceStatus` enums are now imported directly from `qbraid_core`, removing the local definition and reducing duplication.
+
+### Dependencies
+- Upgraded to `qbraid-core>=0.2.0` to support qBraid Platform migration to V2 endpoints. See [migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
+
+## [0.10.2] - 2026-02-08
+
+### Deprecated
+- Deprecated qBraid V1 quantum jobs endpoints in favor of new V2 endpoints. See the [API migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
+
+**Which SDK version do I need?**
+
+| Use case | Install |
+|----------|--------|
+| Access legacy jobs (read results from a downloaded JSON file) | `pip install qbraid==0.10.2` |
+| Submit new quantum jobs through qBraid | `pip install qbraid>=0.11.0` |
+
+**Accessing legacy jobs:** Download your jobs data from https://account-v2.qbraid.com/quantum-jobs, then use qBraid-SDK 0.10.2 to load and inspect results:
+
+```python
+from qbraid.runtime import QbraidProvider, QbraidJob
+
+provider = QbraidProvider(legacy_jobs_path="/path/to/legacy-qbraid-jobs.json")
+
+job = QbraidJob("qbraid_device_id-jovyan-qjob-123abcmel6e9scpfm1zg", client=provider.client)
+
+print(job.status())
+# <COMPLETED: 'job has successfully run'>
+
+result = job.result()
+
+print(result.details["metadata"]["openQasm"])
+# 'OPENQASM 2.0;\ninclude "qelib1.inc";\n\nqreg q[1];\ncreg c[1];\n\nmeasure q[0] -> c[0];'
+
+print(result.data.get_counts())
+# {'0': 99, '1': 1}
+```
+
+**Submitting new jobs:** As of February 8th, job submission via the native *QbraidProvider* requires qBraid-SDK 0.11.0 or later. Versions below 0.11.0 can no longer submit jobs to qBraid devices.
+
+These changes apply only to job submission and management via the qBraid API. The AWS, Azure, IonQ, and OQC runtime providers are unaffected.
+
+Read more: [qBraid V2 platform migration](https://docs.qbraid.com/home/migration).
+
+## [0.10.1] - 2026-01-13
+
+### Added
+- Added `AzureQuantumDevice.avg_queue_time()` method which returns int average queue time in min ([#1097](https://github.com/qBraid/qBraid/pull/1097))
+
+### Improved / Modified
+- Added a transformation for programs targeting IonQ devices, converting all `i` gates to `rz(0)`. This transformation is useful because IonQ devices do not support the identity gate directly. ([#1102](https://github.com/qBraid/qBraid/pull/1102))
+- Updated number of shots used in Amazon Braket remote tests to minimum of 100 to match new lower bound of providers like IonQ (enforced by AWS, server-side) ([#1089](https://github.com/qBraid/qBraid/pull/1089))
+- Updated QASM2 to QASM3 transpiler weight from 0.7 to 1.0 to reflect improved conversion reliability. ([#1082](https://github.com/qBraid/qBraid/pull/1082))
+- For Amazon Braket devices, users can now use environment variables to define region name (`"AWS_REGION"`) and endpoint url (`"BRAKET_ENDPOINT"`). This is useful when an application wraps over qBraid and does not have direct access to qBraid Provider class or AwsSession class. ([#1100](https://github.com/qBraid/qBraid/pull/1100))
+
+### Removed
+- Removed `qbraid-core[runner]` dependency from `qbraid[qir]` extra. The only additional package that was being installed was `psutil` in order to support a function that tracks memory usage during a subprocess call to `qir-runner`. But people are mainly interested in this "extra" for the `qbraid-qir` conversions, and since this is outside of that scope, better to take it out and keep the dependencies lean. ([#1083](https://github.com/qBraid/qBraid/pull/1083))
+
+### Fixed
+- Fixed `OQCDevice.get_next_window()` method with more robust ISO datetime string handling ([#1097](https://github.com/qBraid/qBraid/pull/1097))
+- Fixed `BraketQuantumTask.result()` to correctly handle `AnalogHamiltonianSimulationQuantumTaskResult` given the fact the partial measurement qubits aren't applicable to that job/result type. ([#1097](https://github.com/qBraid/qBraid/pull/1097))
+- Fixed OQC runtime tests by padding the date-time month/day with leading zero to ensure valid ISO format ([#1103](https://github.com/qBraid/qBraid/pull/1103))
+
+### Dependencies
+- Updated `qbraid-core` requirement from >=0.1.39 to >=0.1.44,<0.2.0 ([#1108](https://github.com/qBraid/qBraid/pull/1108))
+
+## [0.10.0] - 2025-10-14
+
+### Improved / Modified
+- Support circuits that use non-contiguous qubit indices on IonQ device and simulators through Amazon Braket. A measurement is added to every unused qubit up to the max qubit index. The results are filtered such that it only returns the results for the original measurements. ([#1059](https://github.com/qBraid/qBraid/pull/1059))
+- Change project license from GPL-3.0 to Apache-2.0. ([#1064](https://github.com/qBraid/qBraid/pull/1064))
+
+### Dependencies
+- Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.6 to >=1.3,<1.7 ([#1063](https://github.com/qBraid/qBraid/pull/1063))
+
+## [0.9.10] - 2025-09-16
+
+### Improved / Modified
+- Updated the `QasmParser` and transpilation from Cirq to PyQuil to be compatible with Cirq 1.5. Also, added testing for new behavior in Cirq 1.5.([#1049](https://github.com/qBraid/qBraid/pull/1049))
+
+### Dependencies
+- Updated `cirq-core` and `cirq-ionq` requirements from >=1.3,<1.5 to >=1.3,<1.6 ([#1049](https://github.com/qBraid/qBraid/pull/1049))
+- Update `qiskit-ibm-runtime` dependency from `>=0.25.0,<0.42` to `>=0.39.0,<0.42` ([#1052](https://github.com/qBraid/qBraid/pull/1052))
+
+## [0.9.9] - 2025-09-01
+
+### Added
+- Added opaque `runtime_options` (dict) argument to `QbraidDevice.submit()` to include in job payload ([#1017](https://github.com/qBraid/qBraid/issues/1017))
+- Added `Equal1SimulationMetadata` and `Equal1SimulatorResultData` classes to support processing of Equal 1 simulator v0.2.2 job data including base64 encoded "compiledOut" ([#1017](https://github.com/qBraid/qBraid/issues/1017))
+
+### Improved / Modified
+- Skip remote Azure provider tests that now require payed plan ([#1024](https://github.com/qBraid/qBraid/pull/1024))
+- Adds support for partial measurements on IonQ and Amazon Braket devices by automatically padding circuits with measurements on all qubits while tracking and filtering results to show only the originally measured qubits. ([#1028](https://github.com/qBraid/qBraid/pull/1028))
+- Replaced `execution_mode` and `device_name` fields in the `Equal1SimulationMetadata` class with `ir_type` and `noise_model` to match data returned by Equal1 simulator v0.3.0 ([#1035](https://github.com/qBraid/qBraid/pull/1035))
+- Moved decoding logic from `Equal1SimulatorResultData` class to the `Equal1SimulationMetadata` schema, ensuring that compiled outputs are automatically decoded when metadata is instantiated. For `equal1_simulator` jobs, the `base64` decoded compiled output will now be accessible from a `Result` object as follows ([#1040](https://github.com/qBraid/qBraid/pull/1040)):
+
+```python
+result = job.result()
+
+compiled_output = result.details['metadata']['compiledOutput']
+```
+
+### Deprecated
+
+### Removed
+- Removed `benchmarking` module from `tests` as not relevant or used ([#1026](https://github.com/qBraid/qBraid/pull/1026))
+
+### Fixed
+- Fixed bug that returned a single job instead of a list of jobs after batch job submission in the native provider runtime for QuEra Aquila using Bloqade Analog ([#1026](https://github.com/qBraid/qBraid/pull/1026))
+- Fixed the `boto3.client` initialization by adding the region_name parameter in `_get_partial_measurement_qubits_from_tags` method ([#1034](https://github.com/qBraid/qBraid/pull/1034))
+- Fixed bug that resulted in `AttributeError: 'NoneType' object has no attribute 'service'` when checking `BraketDevice.availability_window()`. Now ensures that `AwsDevice.properties` is defined using `refresh_metadata()` before proceeding with availability check. ([#1041](https://github.com/qBraid/qBraid/pull/1041))
+
+### Dependencies
+- Reset Cirq dependency extra upper-bound to <1.5 ([#1026](https://github.com/qBraid/qBraid/pull/1026))
+- Updated `pyqasm` requirement from >=0.3.2,<0.5 to >=0.5.0,<0.6.0 ([#1032](https://github.com/qBraid/qBraid/pull/1032))
+- Updated `pennylane` requirement from <0.42 to >=0.42.3,<0.43 ([#1034](https://github.com/qBraid/qBraid/pull/1034))
+
+## [0.9.8] - 2025-07-22
+
+### Improved / Modified
+
+- Removed legacy `pkg_resources` logic for loading entry points (`qbraid._entrypoints`), as support for Python 3.9 has been dropped and the project now requires Python 3.10 or higher. ([#1002](https://github.com/qBraid/qBraid/issues/1002))
+- Populated basis gates property in profile of AWS Braket provider device ([#1003](https://github.com/qBraid/qBraid/pull/1003))
+- Emit a `UserWarning` instead of raising a `ValueError` when checking for the sum of result probabilities from job to be equal
+to 1 ([#1004](https://github.com/qBraid/qBraid/pull/1004)).
+- House keeping updates ([#1012](https://github.com/qBraid/qBraid/pull/1012))
+  - Removed deprecated modules (`qbraid.programs.circuits`, `qbraid.runtime.qiskit`, and `qbraid.runtime.braket`)
+  - Updated readme, contributing, citation, and various project config files.
+- Updated `QiskitRuntimeProvider` default channel to `ibm_quantum_platform` in preparation for the sunsetting of the IBM Quantum channel in favor of IBM Cloud. See `qiskit-ibm-runtime` updated instructions for [account setup](https://github.com/Qiskit/qiskit-ibm-runtime/blob/0.40.1/README.md#account-setup). ([#1011](https://github.com/qBraid/qBraid/pull/1011))
+- Implemented `autoqasm_to_qasm3` conversion extra in transpiler for support of AutoQASM to QASM3 conversion. Added `"autoqasm"` program type to program registry. ([#1013](https://github.com/qBraid/qBraid/pull/1013))
+
+### Fixed
+
+- Fixed handling of IBM job results for different creg names. Specifically, generalized `measurements()` and `get_counts()` methods in `QiskitGateModelResultBuilder` to account for mixed classical register names, and for classical register names other than "c" and "meas". ([#1011](https://github.com/qBraid/qBraid/pull/1011))
+
+### Dependencies
+
 - Updated `qiskit-ibm-runtime` requirement from <0.39,>=0.25.0 to >=0.25.0,<0.41 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Updated `pydantic` requirement from >2.0.0 to >2.0.0,<=2.11.1 ([#991](https://github.com/qBraid/qBraid/pull/991))
 - Remove `qiskit-qir` (deprecated) from `qbraid[qir]` dependency extras ([#1001](https://github.com/qBraid/qBraid/pull/1001))
+- Updated `amazon-braket-sdk` requirement from >=1.83.0,<1.94.0 to >=1.83.0,<1.96.0 ([#1018](https://github.com/qBraid/qBraid/pull/1018))
 
 ## [0.9.7] - 2025-06-13
 
 ### Added
+
 - Added `CudaQKernel.serialize` method that converts cudaq program to QIR string for `run_input` compatible format for `QbraidDevice.submit`. ([#972](https://github.com/qBraid/qBraid/pull/972))
 - Added support for batch jobs for devices from Azure provider. The `AzureQuantumDevice.submit` method now accepts single and batched `qbraid.programs.QPROGRAM` inputs. ([#953](https://github.com/qBraid/qBraid/issues/953))
 - Added `ax_margins` argument to `plot_conversion_graph` to prevent possible clipping. ([#993](https://github.com/qBraid/qBraid/pull/993))
 
 ### Improved / Modified
+
 - Updated `TimeStamps` schema to auto-compute `executionDuration` from `createdAt` and `endedAt` if not explicitly provided. ([#983](https://github.com/qBraid/qBraid/pull/983))
 - Enhanced `TimeStamps` to accept both `datetime.datetime` objects for `createdAt` and `endedAt` (previously only accepted ISO-formatted strings). ([#983](https://github.com/qBraid/qBraid/pull/983))
 - Added a `measurement_probabilties` argument to the `GateModelResultData` class. ([#785](https://github.com/qBraid/qBraid/issues/785))
 
 ### Removed
+
 - Removed `queue_position` from result details, as it is always `None` and not applicable. ([#983](https://github.com/qBraid/qBraid/pull/983))
 
 ### Fixed
+
 - Fixed lazy importing bug in `plot_histogram` method ([#972](https://github.com/qBraid/qBraid/pull/972))
 - Fixed bug which caused all `braket` conversions to be unavailable if `cirq` was not installed due to an eager top-level import in `braket_to_cirq.py` which should have been done lazily ([#982](https://github.com/qBraid/qBraid/pull/982))
 - Made Pulser unit test version-agnostic to support any installed Pulser version. ([#983](https://github.com/qBraid/qBraid/pull/983))
 - Fixed the bug that included unregistered program type in `ConversionGraph`. ([#986](https://github.com/qBraid/qBraid/pull/986))
 
 ### Dependencies
+
 - Migrated to `setuptools>=77` due to TOML-table based `project.license` deprecation in favor of SPDX expression in compliance with [PEP 639](https://peps.python.org/pep-0639) ([#973](https://github.com/qBraid/qBraid/pull/973))
 - Bumped `qbraid-core` dependency to v0.1.39 ([#975](https://github.com/qBraid/qBraid/pull/975))
 
 ## [0.9.6] - 2025-05-02
 
 ### Added
+
 - Added `QbraidJob.async_result()` to support async result retrieval using `await`. ([#945](https://github.com/qBraid/qBraid/pull/945))
 - Added `QbraidDevice.set_target_program_type`, allowing you to set a specific `ProgramSpec` (from `TargetProfile`) alias as the default ([#952](https://github.com/qBraid/qBraid/pull/952)). For example, if a device supports both "qasm2" and "qasm3", you can now restrict transpilation to one format:
 
@@ -134,6 +330,7 @@ result.data.get_counts()  # {'100110': 1}
 - Added support for transpiling between [pyqpanda3](https://pyqpanda-toturial.readthedocs.io/) and QASM2 with `pyqpanda3` program type ([#963](https://github.com/qBraid/qBraid/pull/963))
 
 ### Improved / Modified
+
 - Prepped tests for supporting `qiskit>=2.0` ([#955](https://github.com/qBraid/qBraid/pull/955))
 - Updated the `qbraid.runtime.aws.BraketProvider` to include an `aws_session_token` during initialization. Users can now choose to supply their temporary AWS credentials instead of permanent account secrets to access AWS - ([#968](https://github.com/qBraid/qBraid/pull/968))
 
@@ -153,20 +350,24 @@ print(provider.get_devices())
 ```
 
 ### Removed
+
 - Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `strict` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
 
 ### Fixed
+
 - Fixed Amazon Braket remote test by changing catch `JobStateError` to `TimeoutError` ([#948](https://github.com/qBraid/qBraid/pull/948))
 - Fixed upper bound of html length check in pytket circuit drawer test ([#950](https://github.com/qBraid/qBraid/pull/950))
 - Fixed simulator check for Azure target profiles ([#956](https://github.com/qBraid/qBraid/pull/956))
 
 ### Dependencies
+
 - Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
 - Updated `pyqasm` dependency to `>=0.3.2, <0.4.0` ([#964](https://github.com/qBraid/qBraid/pull/964))
 
 ## [0.9.5] - 2025-03-26
 
 ### Added
+
 - Added `qbraid.runtime.get_providers()` and corresponding `qbraid.runtime.PROVIDERS` which is a list of the provider aliases that can be passed to the `qbraid.runtime.load_job()`function. ([#887](https://github.com/qBraid/qBraid/pull/887))
 
 ```python
@@ -180,6 +381,7 @@ print(provider.get_devices())
 - Added `pytest.skip` statements to Azure remote tests to skip them when the relevant device is not online. ([#934](https://github.com/qBraid/qBraid/pull/934))
 
 ### Improved / Modified
+
 - Disabled validation step in remote (native) IonQ runtime test when constructing `IonQDict` via `qiskit-ionq` ([#915](https://github.com/qBraid/qBraid/pull/915))
 - Enabled loading `azure.quantum.Workspace` from `AZURE_QUANTUM_CONNECTION_STRING` environment variable in `AzureQuantumProvider` class ([#915](https://github.com/qBraid/qBraid/pull/915))
 - Populated basis gates property in profile of IBM Quantum provider backends ([#930](https://github.com/qBraid/qBraid/pull/930))
@@ -194,15 +396,18 @@ print(provider.get_devices())
 - Updated `qbraid._logging` so that `logging.basicConfig` is only set if `LOG_LEVEL` environment variable is defined. ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ### Removed
-- Removed `qasm3_drawer` function  in favor of `pyqasm.draw` ([#943](https://github.com/qBraid/qBraid/pull/943))
+
+- Removed `qasm3_drawer` function in favor of `pyqasm.draw` ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ### Fixed
+
 - Updated `bump-version.yml` to track `qbraid/_version.py` instead of `pyproject.toml`. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Fixed bug where `BraketQuantumTask._task.arn` undefined if instaniated without `AwsQuantumTask` object ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Fixed bug where doing `repr(result)` would cause `result.details['opeQasm']` to be set to `...` ([#919](https://github.com/qBraid/qBraid/pull/919))
 - Loosened relative tolerance for `distribute_counts` function in requiring probs to sum to 1 from default 1e-9 to 1e-7 ([#933](https://github.com/qBraid/qBraid/pull/933))
 
 ### Dependencies
+
 - Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
 - Migrated from `bloqade` to `bloqade-analog` ([#920](https://github.com/qBraid/qBraid/pull/920))
 - Added `pyqasm[visualization]` to optional dependencies ([#943](https://github.com/qBraid/qBraid/pull/943))
@@ -210,6 +415,7 @@ print(provider.get_devices())
 ## [0.9.4] - 2025-02-20
 
 ### Added
+
 - Added `qibo` to dynamic `QPROGRAM_REGISTRY` imports ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Fixed `plt.show` / `plt.save_fig` bug in `plot conversion_graph` ([#893](https://github.com/qBraid/qBraid/pull/893))
 - Added [IonQ Forte Enterpres](https://ionq.com/quantum-systems/forte-enterprise) devices to `IonQProvider` runtime tests ([#894](https://github.com/qBraid/qBraid/pull/894))
@@ -227,7 +433,7 @@ circuit_out = translate(circuit_in, "qasm3", "braket", "cirq")
 
 - Added logger `DEBUG` statements to QuantumDevice that track with the steps in job submission runtime ([#906](https://github.com/qBraid/qBraid/pull/906))
 - Expanded list of natively supported hardware vendors to include Rigetti, OQC, and IQM ([#906](https://github.com/qBraid/qBraid/pull/906))
-- Added `qbraid.runtime.load_provider` function to allow instantiating provider via a single interface using entrypoints based on provider name  ([#906](https://github.com/qBraid/qBraid/pull/906))
+- Added `qbraid.runtime.load_provider` function to allow instantiating provider via a single interface using entrypoints based on provider name ([#906](https://github.com/qBraid/qBraid/pull/906))
 
 ```python
 from qbraid.runtime import load_provider, QbraidProvider
@@ -239,18 +445,21 @@ assert isintance(provider, QbraidProvider)
 ```
 
 ### Improved / Modified
--  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
+
+- Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Improved `plot_runtime_conversion_scheme` by removing edges not within `ConversionScheme.max_path_depth` ([#893](https://github.com/qBraid/qBraid/pull/893))
 - Updated native runtime `QbraidProvider` and `QbraidDevice` to support list of `ProgramSpec` loaded from API "runInputTypes" of type `list[str]` instead of single "runPackage" of type `str`. ([#896](https://github.com/qBraid/qBraid/pull/896))
 - Updated `qasm3_to_ionq`: no longer need to check if `pyqasm` is installed as it is now a core project dependency ([#905](https://github.com/qBraid/qBraid/pull/905))
 
 ### Fixed
+
 - Handling of empty counts dict in `format_counts` pre-processing function ([#899](https://github.com/qBraid/qBraid/pull/899))
 - Skipping NEC remote tests if device is not online ([#899](https://github.com/qBraid/qBraid/pull/899))
 
 ## [0.9.3] - 2025-01-27
 
 ### Added
+
 - Added `cudaq` to `QPROGRAM_REGISTRY` dynamic import list ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qiskit_ionq` conversion to transpiler and refactored `IonQDevice._apply_qiskit_ionq_conversion` accordingly ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qbraid.runtime.load_job` function that uses entrypoints to load provider job class and create instance with job id ([#883](https://github.com/qBraid/qBraid/pull/883))
@@ -266,15 +475,18 @@ qbraid_braket_task = load_job("<task_arn>", "aws") # qbraid.runtime.BraketQuantu
 - Added `QuantumProgram.serialize` method to streamline creation of `ProgramSpec` classes in `QbraidProvider` ([#883](https://github.com/qBraid/qBraid/pull/883))
 
 ### Improved / Modified
+
 - Switched all `QbraidJob` sub-classes to only require `job_id` as positional argument, and any other args that used to be required for auth can now be loaded with credentials from environment variables ([#883](https://github.com/qBraid/qBraid/pull/883))
 - Allow some minimum tolerance when checking for the sum of result probabilities from job to be equal to 1 ([#889](https://github.com/qBraid/qBraid/pull/889))
 
 ### Fixed
+
 - Updated plot conversion graph test to account for rustworkx v0.16.0 release ([#880](https://github.com/qBraid/qBraid/pull/882))
 
 ## [0.9.2] - 2025-01-23
 
 ### Added
+
 - Added `id` gate to list of supported IonQ gates (but is still skipped in `IonQDict` conversion step) ([#880](https://github.com/qBraid/qBraid/pull/880))
 - Added `qiskit-ionq` integration into `IonQDevice.run` method so that if user has `qiskit-ionq` installed, we just go directly through their native `qiskit.QuantumCircuit` $\rightarrow$ `IonQDict` conversion rather than using our own. ([#880](https://github.com/qBraid/qBraid/pull/880))
 
@@ -297,9 +509,11 @@ job = device.run(circuit, shots=100, gateset=GateSet.NATIVE, ionq_compiler_synth
 If `qiskit-ionq` not installed, the above code will fail. But with `qiskit-ionq` installed, it will work.
 
 ### Improved / Modified
+
 - Improved `IonQDevice.transform` method with try/except logic using `pyqasm.unroll` ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Fixed
+
 - Fixed type checking in transpiler `weight` and `requires_extras` annotations / decorators ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ## [0.9.1] - 2025-01-14

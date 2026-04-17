@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -28,6 +32,7 @@ from qbraid.runtime.exceptions import (
     ResourceNotFoundError,
 )
 from qbraid.runtime.native.job import QbraidJob
+from qbraid.runtime.result_data import ResultData
 
 from ._resources import JOB_DATA_QIR
 
@@ -105,34 +110,36 @@ class FakeQbraidClient:
 
     def __init__(
         self,
-        *args,
+        *_args,
         init_status="FAILED",
         init_status_text="Some error message",
         fail_cancel=False,
-        **kwargs,
+        **_kwargs,
     ):
-        super().__init__(*args, **kwargs)
         self._job_data = JOB_DATA_QIR.copy()
         self._job_data["status"] = init_status
-        self._job_data["statusText"] = init_status_text
+        self._job_data["statusMsg"] = init_status_text
         self._fail_cancel = fail_cancel
 
-    def get_job(self, job_id):  # pylint: disable=unused-argument
+    def get_job(self, job_qrn):  # pylint: disable=unused-argument
         """Get the job data."""
+        # pylint: disable=import-outside-toplevel
+        from qbraid_core.services.runtime.schemas import RuntimeJob
+
         status_data_copy = self._job_data.copy()
         if self._job_data["status"] == "CANCELLING":
-            self._job_data["statusText"] = ""
+            self._job_data["statusMsg"] = None
             self._job_data["status"] = "CANCELLED"
-        return status_data_copy
+        return RuntimeJob.model_validate(status_data_copy)
 
-    def cancel_job(self, qbraid_id):  # pylint: disable=unused-argument
+    def cancel_job(self, job_qrn):  # pylint: disable=unused-argument
         """Cancel a job."""
         if self._fail_cancel:
             self._job_data["status"] = "COMPLETED"
-            self._job_data["statusText"] = ""
+            self._job_data["statusMsg"] = None
         else:
             self._job_data["status"] = "CANCELLING"
-            self._job_data["statusText"] = ""
+            self._job_data["statusMsg"] = None
 
 
 @pytest.fixture
@@ -263,7 +270,7 @@ def test_set_job_status_message():
 
 
 def test_set_job_status_from_status_text(mock_job):
-    """Test that a status message is set correctly from statusText job data recieved from client."""
+    """Test that a status message is set correctly from statusMsg job data received from client."""
     status = mock_job.status()
     assert status == JobStatus.FAILED
     assert status.status_message == "Some error message"
@@ -277,8 +284,6 @@ def test_job_status_enum_call_method():
 
 
 def test_job_get_result_cls_raises_for_mismatch_expt_type():
-    """Test that get_result_data_cls raises a ValueError for unsupported experiment type."""
-    with pytest.raises(
-        ValueError, match="Unsupported device_id 'aws_sv1' or experiment_type 'PHOTONIC'"
-    ):
-        QbraidJob.get_result_data_cls("aws_sv1", ExperimentType.PHOTONIC)
+    """Test that ResultData.from_object raises a ValueError for unsupported experiment type."""
+    with pytest.raises(ValueError, match="Unsupported experiment_type: 'OTHER'"):
+        ResultData.from_object(None, ExperimentType.OTHER)

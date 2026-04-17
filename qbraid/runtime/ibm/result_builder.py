@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining QiskitGateModelResultBuilder Class
@@ -45,8 +49,7 @@ class QiskitGateModelResultBuilder:
     def measurements(self) -> Optional[np.ndarray | list[np.ndarray]]:
         """Return measurements a 2D numpy array"""
         if isinstance(self._result, PrimitiveResult):
-            attr = "c" if hasattr(self._result[0].data, "c") else "meas"
-            meas = [getattr(pub_result.data, attr).array for pub_result in self._result]
+            meas = [pub_result.join_data().array for pub_result in self._result]
             return meas[0] if len(meas) == 1 else meas
 
         num_circuits = len(self._result.results)
@@ -69,7 +72,6 @@ class QiskitGateModelResultBuilder:
     def get_counts(self) -> dict[str, int] | list[dict[str, int]]:
         """Returns the histogram data of the run"""
         if isinstance(self._result, PrimitiveResult):
-            attr = "c" if hasattr(self._result[0].data, "c") else "meas"
-            counts = [getattr(pub_result.data, attr).get_counts() for pub_result in self._result]
+            counts = [pub_result.join_data().get_counts() for pub_result in self._result]
             return counts[0] if len(counts) == 1 else counts
         return self._result.get_counts()

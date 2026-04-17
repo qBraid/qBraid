@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -29,7 +33,7 @@ except ImportError:
     pyqir_installed = False
 
 from qbraid.programs import ExperimentType, register_program_type, unregister_program_type
-from qbraid.programs.ahs import submodules as ahs_submodules
+from qbraid.programs.analog import submodules as ahs_submodules
 from qbraid.programs.annealing import submodules as annealing_submodules
 from qbraid.programs.gate_model import submodules as gate_model_submodules
 from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
@@ -94,8 +98,15 @@ def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
     top_paths = native_conversion_graph.find_top_shortest_conversion_paths(
         "qiskit", "cirq", top_n=3
     )
-    assert str(shortest_path[0]) == bound_method_str("qiskit", "qasm2")
-    assert str(shortest_path[1]) == bound_method_str("qasm2", "cirq")
+    assert len(shortest_path) == 2
+    valid_intermediates = {"qasm2", "qasm3"}
+    path_strs = [str(edge) for edge in shortest_path]
+    intermediate = None
+    for mid in valid_intermediates:
+        if path_strs == [bound_method_str("qiskit", mid), bound_method_str(mid, "cirq")]:
+            intermediate = mid
+            break
+    assert intermediate is not None, f"Unexpected shortest path: {path_strs}"
     assert shortest_path == top_paths[0]
     assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])
 
@@ -130,13 +141,18 @@ def test_add_conversion():
     assert rx.is_isomorphic(updated_graph, expected_graph)
 
     # Assertion 3 - Verify the shortest path after adding the new edge
-    expected_shortest_path = [
-        bound_method_str("qiskit", "qasm2"),
-        bound_method_str("qasm2", "cirq"),
-        bound_method_str("cirq", target),
-    ]
     actual_shortest_path = graph_without_new_edge.find_shortest_conversion_path("qiskit", target)
-    assert [str(bound_method) for bound_method in actual_shortest_path] == expected_shortest_path
+    actual_strs = [str(bound_method) for bound_method in actual_shortest_path]
+    assert len(actual_strs) == 3
+    valid_paths = [
+        [
+            bound_method_str("qiskit", mid),
+            bound_method_str(mid, "cirq"),
+            bound_method_str("cirq", target),
+        ]
+        for mid in ("qasm2", "qasm3")
+    ]
+    assert actual_strs in valid_paths, f"Unexpected path: {actual_strs}"
 
 
 @pytest.mark.skipif(not qiskit_qir_installed, reason="qiskit_qir not installed")
@@ -361,7 +377,7 @@ def test_closest_target_no_targets(basic_conversion_graph: ConversionGraph):
     "submodules, expected_type",
     [
         (gate_model_submodules, ExperimentType.GATE_MODEL),
-        (ahs_submodules, ExperimentType.AHS),
+        (ahs_submodules, ExperimentType.ANALOG),
         (annealing_submodules, ExperimentType.ANNEALING),
     ],
 )

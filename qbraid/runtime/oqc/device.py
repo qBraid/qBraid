@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Device class for OQC devices.
@@ -18,14 +22,14 @@ import datetime
 from typing import TYPE_CHECKING, Optional, Union
 
 import pyqasm
-from qcaas_client.client import QPUTask
-from qcaas_client.compiler_config import (
+from qcaas_client.client import (
     CompilerConfig,
-    MetricsType,
+    QPUTask,
     QuantumResultsFormat,
     Tket,
     TketOptimizations,
 )
+from qcaas_client.compiler_config import MetricsType  # type: ignore
 
 from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
@@ -116,7 +120,7 @@ class OQCDevice(QuantumDevice):
 
         try:
             start_time = self.get_next_window()
-            now = datetime.datetime.now()
+            now = datetime.datetime.now(datetime.timezone.utc)
 
             if now > start_time:  # TODO: does this comparison correctly account for timezones?
                 return DeviceStatus.ONLINE
@@ -132,11 +136,14 @@ class OQCDevice(QuantumDevice):
         Note: Currently only AWS windows are defined.
         """
         try:
+            # NOTE: get_next_window returns str not datetime.datetime
             start_time = self._client.get_next_window(self.id)
+            # start_time will be a string of the format: '2025-12-19T00:50:00Z'
         except Exception as next_window_err:  # pylint: disable=broad-exception-caught
             try:
                 exec_estimates = self._client.get_qpu_execution_estimates(qpu_ids=self.id)
-                start_time = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
+                start_time: str = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
+                # start_time will be a string of the format: '2025-12-19 00:50:00'
             except Exception as exec_est_error:  # pylint: disable=broad-exception-caught
                 logger.error(exec_est_error)
                 raise ResourceNotFoundError(
@@ -144,7 +151,9 @@ class OQCDevice(QuantumDevice):
                     "Note: Currently only AWS windows are defined."
                 ) from next_window_err
 
-        return datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
+        return datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00")).replace(
+            tzinfo=datetime.timezone.utc
+        )
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""

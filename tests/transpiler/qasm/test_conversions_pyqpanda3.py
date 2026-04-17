@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=expression-not-assigned
 """
@@ -20,7 +24,6 @@ import numpy as np
 import pytest
 
 from qbraid import transpile
-from qbraid.interface import circuits_allclose
 
 pyqpanda3 = pytest.importorskip("pyqpanda3")
 
@@ -50,29 +53,21 @@ def test_openqasm2_to_pyqpanda3():
     assert np.allclose(u_obs, u_expected)
 
 
-# Skip test as pyqpanda3 generates qasm with a creg of size 0 even
-# though there are no classical bits in the circuit. pyqasm, which parses
-# this output for circuits_allclose, errors that creg size must be > 0.
-@pytest.mark.skip
 def test_pyqpanda3_to_openqasm2():
     """Test converting a pyqpanda3 QProg to OpenQASM2"""
 
     prog = pyqpanda3.core.QProg()
     prog << pyqpanda3.core.RX(0, 3.1415926) << pyqpanda3.core.CNOT(0, 2)
 
-    expected = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[3];
-    rx(3.14159260) q[0];
-    cx q[0],q[2];
-    """
-
     res = transpile(prog, target="qasm2")
-    assert circuits_allclose(res, expected)
+    round_tripped = transpile(res, target="pyqpanda3")
+
+    # pylint: disable=no-value-for-parameter
+    u_orig = pyqpanda3.quantum_info.Unitary(prog.to_circuit()).ndarray()
+    u_rt = pyqpanda3.quantum_info.Unitary(round_tripped.to_circuit()).ndarray()
+    assert np.allclose(u_orig, u_rt)
 
 
-# Until the above is supported, compare the QASM strings directly
 def test_pyqpanda3_to_openqasm2_str_cmp():
     """Test converting a pyqpanda3 QProg to OpenQASM2"""
 
@@ -83,7 +78,6 @@ def test_pyqpanda3_to_openqasm2_str_cmp():
     OPENQASM 2.0;
     include "qelib1.inc";
     qreg q[3];
-    creg c[0];
     rx(3.14159260) q[0];
     cx q[0],q[2];
     """

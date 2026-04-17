@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module containing OpenQASM to IonQ JSON conversion function
@@ -147,7 +151,21 @@ def _parse_angle(angle: str, gate_name: str) -> float:
 # pylint: disable-next=too-many-statements
 def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dict[str, Any]]:
     program_qubits = program.module._qubit_registers.items()
-    original_program: openqasm3.ast.Program = program.module.original_program
+
+    original = program.module.original_program
+
+    # Use the original AST when it contains top-level gate operations (the common case).
+    # Fall back to the unrolled AST only when gates are hidden inside compound
+    # statements (for-loops, subroutine calls, etc.) and thus invisible at the top level.
+    has_top_level_gates = any(isinstance(s, openqasm3.ast.QuantumGate) for s in original.statements)
+    if has_top_level_gates:
+        ast_program = original
+    else:
+        unrolled = program.module.unrolled_ast
+        if unrolled is not None and len(unrolled.statements) > 0:
+            ast_program = unrolled
+        else:
+            ast_program = original
 
     gates: list[dict[str, Any]] = []
 
@@ -155,7 +173,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
     non_zz_native_gates = set(IONQ_NATIVE_GATES) - {"zz"}
 
     # pylint: disable-next=too-many-nested-blocks
-    for statement in original_program.statements:
+    for statement in ast_program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
             name = statement.name.name.lower()
 
@@ -403,6 +421,13 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
     """
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
 
+    # Unroll compound statements (for-loops, custom gates, etc.) so that
+    # _parse_gates can see all individual gate operations at the top level.
+    try:
+        program.module.unroll()
+    except Exception:  # pylint: disable=broad-exception-caught
+        pass
+
     if program._module.has_measurements():
         warnings.warn(
             "Circuit contains measurement gates, which will be ignored "
@@ -413,7 +438,10 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
     gates = _parse_gates(program)
 
     if len(gates) == 0:
-        raise ProgramConversionError("Failed to parse gate data from OpenQASM string.")
+        raise ProgramConversionError(
+            "No gate operations found in OpenQASM program. "
+            "Ensure the circuit contains supported gate operations."
+        )
 
     gateset = IonQProgram.determine_gateset(gates)
 

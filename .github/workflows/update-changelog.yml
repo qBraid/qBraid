@@ -1,0 +1,264 @@
+# Copyright 2025 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Update Changelog
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  update-changelog:
+    runs-on: ubuntu-latest
+    if: >-
+      github.event.issue.pull_request &&
+      contains(github.event.comment.body, '/update-changelog') &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: React to comment with eyes
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'eyes'
+            });
+
+      - name: Get PR metadata
+        id: pr_meta
+        uses: actions/github-script@v9
+        with:
+          script: |
+            const pr = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number
+            });
+            core.setOutput('head_ref', pr.data.head.ref);
+            core.setOutput('head_sha', pr.data.head.sha);
+            core.setOutput('pr_number', context.issue.number);
+            core.setOutput('pr_title', pr.data.title);
+            core.setOutput('is_fork', pr.data.head.repo.fork);
+
+      - name: Abort if fork PR
+        if: steps.pr_meta.outputs.is_fork == 'true'
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: "Sorry, `/update-changelog` can't push to fork branches. Please update the changelog manually."
+            });
+            core.setFailed('Cannot push to fork branches');
+
+      - name: Get PR diff
+        if: steps.pr_meta.outputs.is_fork != 'true'
+        id: diff
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
+        run: |
+          DIFF=$(gh pr diff "$PR_NUMBER" --repo "$GITHUB_REPOSITORY" || echo "Failed to get diff")
+          DIFF=$(echo "$DIFF" | head -c 100000)
+          EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+          echo "diff<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
+          echo "$DIFF" >> "$GITHUB_OUTPUT"
+          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+      - name: Get current CHANGELOG.md from PR branch
+        if: steps.pr_meta.outputs.is_fork != 'true'
+        id: current
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ steps.pr_meta.outputs.head_ref }}
+        run: |
+          CHANGELOG=$(gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$HEAD_REF" \
+            --jq '.content' | base64 -d)
+
+          CHANGELOG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$HEAD_REF" \
+            --jq '.sha')
+
+          SECTION=$(python3 -c "
+          import re, sys
+          content = sys.stdin.read()
+          match = re.search(r'(## \[Unreleased\].*?)(?=\n## \[)', content, re.DOTALL)
+          if match:
+              print(match.group(1))
+          else:
+              print('## [Unreleased]')
+          " <<< "$CHANGELOG")
+
+          EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+          echo "section<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
+          echo "$SECTION" >> "$GITHUB_OUTPUT"
+          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+          echo "full_changelog<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG" >> "$GITHUB_OUTPUT"
+          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+          echo "changelog_sha=$CHANGELOG_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Call Claude API for changelog entries
+        if: steps.pr_meta.outputs.is_fork != 'true'
+        id: claude
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
+          PR_TITLE: ${{ steps.pr_meta.outputs.pr_title }}
+          PR_DIFF: ${{ steps.diff.outputs.diff }}
+          CURRENT_SECTION: ${{ steps.current.outputs.section }}
+        run: |
+          PROMPT=$(cat <<'PROMPT_EOF'
+          You are updating a CHANGELOG.md for a Python project. You will be given:
+          1. The current [Unreleased] section of the changelog (which may already have entries from other PRs)
+          2. A git diff from a pull request
+          3. The PR number and title
+
+          Your task: Output the complete updated [Unreleased] section, incorporating new entries for this PR's changes.
+
+          FORMAT RULES:
+          - Start with exactly: ## [Unreleased]
+          - Include ALL 6 category headers in this exact order, each as ### level:
+            ### Added
+            ### Improved / Modified
+            ### Deprecated
+            ### Removed
+            ### Fixed
+            ### Dependencies
+          - Each entry is a bullet: - Description ([#NUMBER](https://github.com/qBraid/qBraid/pull/NUMBER))
+          - Preserve ALL existing entries from other PRs (different PR numbers). Do not remove or modify them.
+          - If this PR number already has entries, replace them with your new analysis.
+          - Reference specific class names, methods, modules, and parameters from the diff.
+          - Keep descriptions concise but informative (one to two sentences each).
+          - Leave category sections empty (just the header, no bullets) if there are no entries for them.
+          - Do NOT include any text before "## [Unreleased]" or after the last category section.
+          - Do NOT wrap the output in markdown code fences.
+          PROMPT_EOF
+          )
+
+          REQUEST_BODY=$(jq -n \
+            --arg prompt "$PROMPT" \
+            --arg pr_number "$PR_NUMBER" \
+            --arg pr_title "$PR_TITLE" \
+            --arg diff "$PR_DIFF" \
+            --arg current "$CURRENT_SECTION" \
+            '{
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 4096,
+              messages: [{
+                role: "user",
+                content: ($prompt + "\n\nCURRENT [Unreleased] SECTION:\n" + $current + "\n\nPR #" + $pr_number + ": " + $pr_title + "\n\nDIFF:\n" + $diff)
+              }]
+            }')
+
+          RESPONSE=$(curl -s -X POST https://api.anthropic.com/v1/messages \
+            -H "Content-Type: application/json" \
+            -H "x-api-key: $ANTHROPIC_API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -d "$REQUEST_BODY")
+
+          CHANGELOG_CONTENT=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+
+          if [ -z "$CHANGELOG_CONTENT" ]; then
+            ERROR=$(echo "$RESPONSE" | jq -r '.error.message // .type // "Unknown error"')
+            echo "::error::Claude API error: $ERROR"
+            exit 1
+          fi
+
+          EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
+          echo "changelog<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
+          echo "$CHANGELOG_CONTENT" >> "$GITHUB_OUTPUT"
+          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+
+      - name: Update CHANGELOG.md via API
+        if: steps.pr_meta.outputs.is_fork != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_REF: ${{ steps.pr_meta.outputs.head_ref }}
+          PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
+          NEW_SECTION: ${{ steps.claude.outputs.changelog }}
+          FULL_CHANGELOG: ${{ steps.current.outputs.full_changelog }}
+          CHANGELOG_SHA: ${{ steps.current.outputs.changelog_sha }}
+        run: |
+          UPDATED=$(python3 -c "
+          import os, re, base64, json
+          new_section = os.environ['NEW_SECTION'].strip()
+          content = os.environ['FULL_CHANGELOG']
+          pattern = r'## \[Unreleased\].*?(?=\n## \[)'
+          replacement = new_section + '\n'
+          updated = re.sub(pattern, replacement, content, count=1, flags=re.DOTALL)
+          encoded = base64.b64encode(updated.encode()).decode()
+          print(encoded)
+          ")
+
+          if [ -z "$UPDATED" ]; then
+            echo "::error::Failed to generate updated changelog"
+            exit 1
+          fi
+
+          jq -n \
+            --arg message "Update changelog for PR #$PR_NUMBER" \
+            --arg content "$UPDATED" \
+            --arg sha "$CHANGELOG_SHA" \
+            --arg branch "$HEAD_REF" \
+            --arg name "qbraidTeam" \
+            --arg email "qbraid.team@qbraid.com" \
+            '{
+              message: $message,
+              content: $content,
+              sha: $sha,
+              branch: $branch,
+              committer: { name: $name, email: $email }
+            }' | gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md" \
+              --method PUT \
+              --input -
+
+      - name: React to comment with rocket
+        if: steps.pr_meta.outputs.is_fork != 'true' && success()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id: context.payload.comment.id,
+              content: 'rocket'
+            });
+
+      - name: Post error comment on failure
+        if: steps.pr_meta.outputs.is_fork != 'true' && failure()
+        uses: actions/github-script@v9
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '❌ Failed to update changelog. Check the [workflow run](' +
+                `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}` +
+                ') for details.'
+            });

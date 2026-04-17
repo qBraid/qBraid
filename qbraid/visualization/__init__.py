@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for visualizing quantum programs, experimental results,
@@ -26,7 +30,6 @@ Functions
     plot_runtime_conversion_scheme
     circuit_drawer
     plot_atomic_register
-    animate_qpu_state
 
 Exceptions
 -----------
@@ -40,7 +43,6 @@ Exceptions
 from .ahs import plot_atomic_register
 from .draw_circuit import circuit_drawer
 from .exceptions import VisualizationError
-from .flair_animations import animate_qpu_state
 from .plot_conversions import plot_conversion_graph, plot_runtime_conversion_scheme
 from .plot_counts import plot_distribution, plot_histogram
 
@@ -51,6 +53,5 @@ __all__ = [
     "plot_runtime_conversion_scheme",
     "circuit_drawer",
     "plot_atomic_register",
-    "animate_qpu_state",
     "VisualizationError",
 ]

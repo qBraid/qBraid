@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining BraketDeviceWrapper Class
@@ -14,11 +18,13 @@ Module defining BraketDeviceWrapper Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+import datetime
+from typing import TYPE_CHECKING
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
+from braket.circuits.measure import Measure
 
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
 from qbraid.runtime.device import QuantumDevice
@@ -33,8 +39,6 @@ if TYPE_CHECKING:
     import braket.aws
 
     import qbraid.runtime
-    import qbraid.runtime.aws
-    import qbraid.transpiler
 
 
 class BraketDevice(QuantumDevice):
@@ -43,7 +47,7 @@ class BraketDevice(QuantumDevice):
     def __init__(
         self,
         profile: qbraid.runtime.TargetProfile,
-        session: Optional[braket.aws.AwsSession] = None,
+        session: braket.aws.AwsSession | None = None,
     ):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
@@ -71,7 +75,7 @@ class BraketDevice(QuantumDevice):
 
         return DeviceStatus.OFFLINE
 
-    def availability_window(self) -> tuple[bool, str, str]:
+    def availability_window(self) -> tuple[bool, str, datetime.datetime | None]:
         """Provides device availability status. Indicates current availability,
         time remaining (hours, minutes, seconds) until next availability or
         unavailability, and future UTC datetime of next change in availability status.
@@ -94,8 +98,8 @@ class BraketDevice(QuantumDevice):
         return total_queued
 
     def transform(
-        self, run_input: Union[Circuit, AnalogHamiltonianSimulation]
-    ) -> Union[Circuit, AnalogHamiltonianSimulation]:
+        self, run_input: Circuit | AnalogHamiltonianSimulation
+    ) -> Circuit | AnalogHamiltonianSimulation:
         """Transpile a circuit for the device."""
         program = run_input
 
@@ -105,14 +109,28 @@ class BraketDevice(QuantumDevice):
         if experiment_type == ExperimentType.GATE_MODEL and not isinstance(program, Circuit):
             raise DeviceProgramTypeMismatchError(program, str(Circuit), experiment_type)
 
-        if experiment_type == ExperimentType.AHS and not isinstance(
+        if experiment_type == ExperimentType.ANALOG and not isinstance(
             program, AnalogHamiltonianSimulation
         ):
             raise DeviceProgramTypeMismatchError(
                 program, str(AnalogHamiltonianSimulation), experiment_type
             )
 
-        if provider == "IONQ":
+        # Use Tket to transform circuits for IonQ to support a bigger gateset. The transformation
+        # only applies when no measurement is presented and the circuit only use contiguous qubits.
+        has_contiguous_qubits = False
+        includes_measurement = False
+        if isinstance(run_input, Circuit):
+            includes_measurement = any(
+                isinstance(instruction.operator, Measure) for instruction in run_input.instructions
+            )
+            has_contiguous_qubits = max(run_input.qubits) + 1 == run_input.qubit_count
+        if (
+            provider == "IONQ"
+            and isinstance(run_input, Circuit)
+            and not includes_measurement
+            and has_contiguous_qubits
+        ):
             graph = self.scheme.conversion_graph
             if (
                 graph is not None
@@ -130,21 +148,24 @@ class BraketDevice(QuantumDevice):
                 )
                 program = braket_transformed
 
-        else:
-            qprogram = load_program(program)
-            qprogram.transform(self)
-            program = qprogram.program
+        qprogram = load_program(program)
+        qprogram.transform(self)
+        program = qprogram.program
 
         return program
 
     def submit(
         self,
-        run_input: Union[
-            Circuit, AnalogHamiltonianSimulation, list[Circuit], list[AnalogHamiltonianSimulation]
-        ],
+        run_input: (
+            Circuit
+            | AnalogHamiltonianSimulation
+            | list[Circuit]
+            | list[AnalogHamiltonianSimulation]
+        ),
         *args,
+        tags: dict[str, str] | None = None,
         **kwargs,
-    ) -> Union[BraketQuantumTask, list[BraketQuantumTask]]:
+    ) -> BraketQuantumTask | list[BraketQuantumTask]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -152,6 +173,7 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
+            tags (dict[str, str]): A dictionary of tags to associate with the job.
             shots (int): The number of times to run the task on the device.
 
         Returns:
@@ -160,11 +182,27 @@ class BraketDevice(QuantumDevice):
         """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
-        aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
-        tasks = [
-            BraketQuantumTask(task.id, task=task, device=self._device)
-            for task in aws_quantum_task_batch.tasks
-        ]
+
+        if any(hasattr(circuit, "partial_measurement_qubits") for circuit in run_input):
+            # Extract partial measurement qubit information and add as tags for job tracking
+            tasks = []
+            tags = tags or {}
+            for circuit in run_input:
+                current_tags = tags.copy()
+                if hasattr(circuit, "partial_measurement_qubits"):
+                    partial_measurement_qubits: list[int] = circuit.partial_measurement_qubits
+                    # Convert qubit indices to a string format for tagging (e.g., "0/2/3")
+                    tag_value = "/".join([str(x) for x in partial_measurement_qubits])
+                    current_tags["partial_measurement_qubits"] = tag_value
+                task = self._device.run(circuit, *args, tags=current_tags, **kwargs)
+                tasks.append(BraketQuantumTask(task.id, task=task, device=self._device))
+        else:
+            aws_quantum_task_batch = self._device.run_batch(run_input, *args, tags=tags, **kwargs)
+            tasks = [
+                BraketQuantumTask(task.id, task=task, device=self._device)
+                for task in aws_quantum_task_batch.tasks
+            ]
+
         if is_single_input:
             return tasks[0]
         return tasks

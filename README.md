@@ -16,11 +16,11 @@
   <a href="https://pepy.tech/project/qbraid">
     <img src="https://static.pepy.tech/badge/qbraid" alt="Downloads"/>
   </a>
-  <a href="https://www.gnu.org/licenses/gpl-3.0.html">
+  <a href="http://www.apache.org/licenses/LICENSE-2.0">
     <img src="https://img.shields.io/github/license/qBraid/qbraid.svg" alt="License"/>
   </a>
-  <a href="https://doi.org/10.5281/zenodo.12627597">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.12627597.svg" alt="DOI">
+  <a href="https://doi.org/10.5281/zenodo.12627596">
+    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.12627596.svg" alt="DOI">
   </a>
 </p>
 
@@ -30,23 +30,21 @@ This Python-based tool streamlines the full lifecycle management of quantum jobs
 
 By addressing the full scope of client-side software requirements necessary for secure submission and management of quantum jobs, the qBraid-SDK vastly reduces the overhead and redundancy typically associated with the development of internal pipelines and cross-platform integrations in quantum computing.
 
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
-
 ---
 
 ![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
 
 ## Resources
 
-- [User Guide](https://docs.qbraid.com/sdk/user-guide/)
-- [API Reference](https://sdk.qbraid.com/en/stable/api/qbraid.html)
+- [User Guide](https://docs.qbraid.com/v2/sdk/user-guide/)
+- [API Reference](https://sdk.qbraid.com/qBraid/api/qbraid.html)
 - [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
 
 ## Installation & Setup
 
 For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
-[install an environment](https://docs.qbraid.com/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid, AWS, IonQ, QuEra, and NEC. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) and [pricing](https://docs.qbraid.com/home/pricing) for more.
+[install an environment](https://docs.qbraid.com/v2/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/v2/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, AQT, QuEra, Rigetti, Pasqal, and IQM, as well as on-demand simulators from qBraid, AWS, IonQ, QuEra, Quantinuum, Rigetti, and Pasqal. See [qBraid Quantum Jobs](https://docs.qbraid.com/v2/lab/user-guide/quantum-jobs) and [pricing](https://docs.qbraid.com/v2/home/pricing) for more.
 
 ### Local install
 
@@ -55,6 +53,10 @@ The qBraid-SDK, and all of its dependencies, can be installed using pip:
 ```bash
 pip install qbraid
 ```
+
+> _Warning:_ `qbraid` versions &lt;0.11 are *not* compatible with [qBraid API V2](https://docs.qbraid.com/v2/api-reference/user-guide/overview). See [migration guide](https://docs.qbraid.com/v2/api-reference/rest/migration).
+>
+> To ensure compatibility with the new platform, use `qbraid>=0.11.0`.
 
 You can also [install from source](CONTRIBUTING.md#installing-from-source) by cloning this repository and running a pip install command in the root directory of the repository:
 
@@ -66,7 +68,7 @@ pip install .
 
 > _Note:_ The qBraid-SDK requires Python 3.10 or greater.
 
-To use [qBraid Runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ionq), [OQCProvider](https://docs.qbraid.com/sdk/user-guide/runtime_oqc), and [AzureQuantumProvider](https://docs.qbraid.com/sdk/user-guide/providers/azure), as applicable.
+To use [qBraid Runtime](https://docs.qbraid.com/v2/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_ionq), [OQCProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_oqc), and [AzureQuantumProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/azure), as applicable.
 
 ## Quickstart
 
@@ -103,11 +105,16 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'cpp_pyqubo': cpp_pyqubo.Model,
  'qasm2': str,
  'qasm3': str,
+ 'qasm2_kirin': str,
  'ionq': qbraid.programs.typer.IonQDict,
  'qubo': qbraid.programs.typer.QuboCoefficientsDict,
  'bloqade': bloqade.analog.builder.assign.BatchAssign,
  'cudaq': cudaq.kernel.kernel_builder.PyKernel,
- 'qibo': qibo.models.circuit.Circuit}
+ 'qibo': qibo.models.circuit.Circuit,
+ 'stim': stim._stim_sse2.Circuit,
+ 'pulser': pulser.sequence.sequence.Sequence,
+ 'pyqpanda3': pyqpanda3.core.QProg,
+ 'autoqasm': autoqasm.program.program.Program}
 ```
 
 Pass any registered quantum program along with a target package from
@@ -133,17 +140,17 @@ Behind the scenes, the qBraid-SDK uses [rustworkx](https://www.rustworkx.org/) t
 directional graph that maps all possible conversions between supported program types:
 
 ```python
-from qbraid import ConversionGraph, ExperimentType
+from qbraid import ConversionGraph
 
 # Loads native conversions from QPROGRAM_REGISTRY
 graph = ConversionGraph()
 
-graph.plot(experiment_type=ExperimentType.GATE_MODEL,legend=True)
+graph.plot(legend=True)
 ```
 
-<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.3.png" style="width: 65%;">
+<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.7.png" style="width: 65%;">
 
-You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
+You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/v2/sdk/user-guide/transpiler#conversion-graph):
 
 ```python
 from unittest.mock import Mock
@@ -166,7 +173,7 @@ graph.plot(seed=20, k=3, legend=True)
 
 ### QbraidProvider
 
-Run experiements using on-demand simulators provided by qBraid. Retrieve a list of available devices:
+Run experiments using on-demand simulators provided by qBraid. Retrieve a list of available devices:
 
 ```python
 from qbraid import QbraidProvider
@@ -178,7 +185,7 @@ devices = provider.get_devices()
 Or, instantiate a known device by ID and submit quantum jobs from any supported program type:
 
 ```python
-device = provider.get_device("qbraid_qir_simulator")
+device = provider.get_device("qbraid:qbraid:sim:qir-sv")
 jobs = device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
 
 results = [job.result() for job in jobs]
@@ -212,28 +219,6 @@ plot_histogram(batch_counts)
 - For discussions, and specific questions about the qBraid-SDK [join our discord community](https://discord.gg/TPBU2sa8Et)
 - For questions that are more suited for a forum, post to [QCSE](https://quantumcomputing.stackexchange.com/) with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
 
-## Launch on qBraid
-
-The "Launch on qBraid" button (top) can be added to any public GitHub
-repository. Clicking on it automaically opens qBraid Lab, and performs a
-`git clone` of the project repo into your account's home directory. Copy the
-code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub
-info.
-
-Use the badge in your project's `README.md`:
-
-```markdown
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git)
-```
-
-Use the badge in your project's `README.rst`:
-
-```rst
-.. image:: https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png
-    :target: https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
-    :width: 150px
-```
-
 ## License
 
-[GNU General Public License v3.0](LICENSE)
+[Apache-2.0 License](LICENSE)

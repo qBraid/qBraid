@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining input / output types for a quantum backend:
@@ -112,6 +116,8 @@ def _get_class(module: str):
         return pulser.sequence.sequence.Sequence  # type: ignore # noqa: F821
     if module == "pyqpanda3":  # pragma: no cover
         return pyqpanda3.core.QProg  # type: ignore # noqa: F821
+    if module == "autoqasm":
+        return autoqasm.program.program.Program  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -133,7 +139,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
-    ["bloqade.analog.builder.assign", "qibo", "stim", "pyqir", "pulser", "pyqpanda3"]
+    ["bloqade.analog.builder.assign", "qibo", "stim", "pyqir", "pulser", "pyqpanda3", "autoqasm"]
 )
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES

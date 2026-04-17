@@ -19,4 +19,3 @@ Submodules
    oqc
    origin
    native
-   schemas

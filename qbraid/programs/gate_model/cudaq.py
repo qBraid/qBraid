@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module defining CudaQKernel Class
@@ -17,6 +21,7 @@ from __future__ import annotations
 import base64
 
 import cudaq
+from qbraid_core.services.runtime.schemas import Program
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -49,7 +54,10 @@ class CudaQKernel(GateModelProgram):
         """Return the number of classical bits in the circuit."""
         return 0
 
-    def serialize(self) -> dict[str, str]:
+    def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
         qir: str = cudaq.translate(self.program, format="qir-base")
-        return {"qir": base64.b64encode(qir.encode("utf-8")).decode("utf-8")}
+        return Program(
+            format="qir.ll",
+            data=base64.b64encode(qir.encode("utf-8")).decode("utf-8"),
+        )

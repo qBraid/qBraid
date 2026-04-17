@@ -1,12 +1,16 @@
-# Copyright (C) 2024 qBraid
+# Copyright 2025 qBraid
 #
-# This file is part of the qBraid-SDK
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 # pylint: disable=redefined-outer-name
 
@@ -28,8 +32,8 @@ from braket.ahs.pattern import Pattern
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ProgramTypeError, load_program
-from qbraid.programs.ahs import AHSEncoder
-from qbraid.programs.ahs.braket_ahs import BraketAHS, BraketAHSDecoder, BraketAHSEncoder
+from qbraid.programs.analog import AnalogHamiltonianEncoder
+from qbraid.programs.analog.braket_ahs import BraketAHS, BraketAHSDecoder, BraketAHSEncoder
 
 
 @pytest.fixture
@@ -239,22 +243,23 @@ def test_braket_ahs_wrapper_attributes(ahs_program, register_data, hamiltonian_d
 
 
 def test_ahs_program_encoding(ahs_program, ahs_data):
-    """Test that AHSEncoder correctly encodes AnalogHamiltonianProgram."""
+    """Test that AnalogHamiltonianEncoder correctly encodes AnalogHamiltonianProgram."""
     program = BraketAHS(ahs_program)
-    encoded_json = json.dumps(program, cls=AHSEncoder)
+    encoded_json = json.dumps(program, cls=AnalogHamiltonianEncoder)
     assert json.loads(encoded_json) == ahs_data
 
 
 def test_non_supported_type_encoding():
     """Test that encoding a non-supported type raises a TypeError."""
     with pytest.raises(TypeError):
-        json.dumps({1, 2, 3}, cls=AHSEncoder)
+        json.dumps({1, 2, 3}, cls=AnalogHamiltonianEncoder)
 
 
 def test_fallback_to_superclass():
-    """Test that types not handled by AHSEncoder but supported by JSONEncoder are encoded."""
+    """Test that types not handled by AnalogHamiltonianEncoder but supported by
+    JSONEncoder are encoded."""
     data = {"key": [1, 2, 3]}
-    encoded_json = json.dumps(data, cls=AHSEncoder)
+    encoded_json = json.dumps(data, cls=AnalogHamiltonianEncoder)
     assert json.loads(encoded_json) == data
 
 
