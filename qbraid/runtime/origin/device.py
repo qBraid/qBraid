@@ -112,10 +112,11 @@ class OriginDevice(QuantumDevice):
         if not isinstance(run_input, list):
             return self._submit_single(run_input, shots)
 
+        # Simulator: fan out to individual jobs (SDK only supports native batch on QPU)
         if self.profile.simulator:
             return [self._submit_single(prog, shots) for prog in run_input]
 
-        # QPU batch: single job containing all programs
+        # QPU: single job containing all programs
         # pylint: disable-next=import-outside-toplevel
         from pyqpanda3.qcloud import QCloudOptions
 

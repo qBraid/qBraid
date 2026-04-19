@@ -375,7 +375,6 @@ class TestOriginJob:
         job = OriginJob(job_id="abc-123", device=mock_device, service=mock_service)
         assert job.id == "abc-123"
         assert job._device is mock_device
-        assert job._service is mock_service
 
     def test_create_from_job_id_only(self):
         """Reconstruct job from just an ID (requires pyqpanda3 runtime import)."""
@@ -386,7 +385,6 @@ class TestOriginJob:
             job = OriginJob(job_id="abc-123")
             assert job.id == "abc-123"
             assert job._device is None
-            assert job._service is None
 
     def test_status_completed(self):
         mock_job = _make_mock_qcloud_job(status_name="FINISHED")
@@ -558,7 +556,7 @@ class TestOriginJob:
 
         assert result.success is False
 
-    def test_result_missing_success_raises(self):
+    def test_result_missing_success_falls_back_to_status(self):
         mock_job = _make_mock_qcloud_job(
             origin_data=json.dumps({"obj": {}}),
             counts_list_error=True,
@@ -568,8 +566,9 @@ class TestOriginJob:
         mock_device.id = "full_amplitude"
 
         job = OriginJob(job_id="test-123", device=mock_device, job=mock_job)
-        with pytest.raises(AssertionError, match="Expected 'success' to be bool"):
-            job.result()
+        result = job.result()
+
+        assert result.success is True
 
     def test_result_malformed_origin_data_raises(self):
         mock_job = _make_mock_qcloud_job(
@@ -605,8 +604,9 @@ class TestOriginJob:
         job = OriginJob(job_id="test-123", device=mock_device, job=mock_job)
         result = job.result()
 
-        assert result._details["totalTime"] == 5000
-        assert result._details["queueTime"] == 100
+        obj = result._details["obj"]
+        assert obj["totalTime"] == 5000
+        assert obj["queueTime"] == 100
 
     def test_repr(self):
         mock_job = MagicMock()
@@ -614,39 +614,6 @@ class TestOriginJob:
         job = OriginJob(job_id="test-123", job=mock_job)
         assert "test-123" in repr(job)
         assert "OriginJob" in repr(job)
-
-
-# --- Parse origin data ---
-
-
-class TestParseOriginData:
-    def test_valid_json(self):
-        raw = json.dumps({"success": True, "code": 10000, "obj": {"taskId": "abc", "totalTime": 1}})
-        result = OriginJob._parse_origin_data(raw)
-        assert result["success"] is True
-        assert result["taskId"] == "abc"
-        assert result["totalTime"] == 1
-        assert "code" not in result  # top-level fields other than success are dropped
-
-    def test_invalid_json_raises(self):
-        with pytest.raises(json.JSONDecodeError):
-            OriginJob._parse_origin_data("not json")
-
-    def test_no_success_field(self):
-        raw = json.dumps({"code": 10000, "obj": {"taskId": "abc"}})
-        result = OriginJob._parse_origin_data(raw)
-        assert "success" not in result
-        assert result["taskId"] == "abc"
-
-    def test_missing_obj_defaults_to_empty(self):
-        raw = json.dumps({"success": True, "code": 10000})
-        result = OriginJob._parse_origin_data(raw)
-        assert result == {"success": True}
-
-    def test_non_dict_obj_raises(self):
-        raw = json.dumps({"success": True, "obj": "not a dict"})
-        with pytest.raises(AssertionError, match="Expected 'obj' to be a dict"):
-            OriginJob._parse_origin_data(raw)
 
 
 # --- Extract results ---
@@ -719,3 +686,75 @@ class TestExtractResults:
         counts, probs = OriginJob._extract_results(mock_result)
         assert counts == {"00": 500, "11": 500}
         assert probs == {"00": 0.5, "11": 0.5}
+
+
+# --- _get_job reconstruction path ---
+
+
+class TestGetJobReconstruction:
+    @patch("pyqpanda3.qcloud.QCloudJob")
+    @patch("pyqpanda3.qcloud.QCloudService")
+    def test_get_job_no_service_creates_service_from_env(
+        self, mock_service_cls, mock_job_cls, monkeypatch
+    ):
+        monkeypatch.setenv("ORIGIN_API_KEY", "test-key")
+        mock_qcloud_job = MagicMock()
+        mock_job_cls.return_value = mock_qcloud_job
+
+        result = OriginJob._get_job("job-123", job=None, service=None)
+
+        mock_service_cls.assert_called_once_with("test-key")
+        mock_job_cls.assert_called_once_with("job-123")
+        assert result is mock_qcloud_job
+
+    @patch("pyqpanda3.qcloud.QCloudJob")
+    @patch("pyqpanda3.qcloud.QCloudService")
+    def test_get_job_with_service_skips_env(self, mock_service_cls, mock_job_cls):
+        mock_qcloud_job = MagicMock()
+        mock_job_cls.return_value = mock_qcloud_job
+        mock_service = MagicMock()
+
+        result = OriginJob._get_job("job-123", job=None, service=mock_service)
+
+        mock_service_cls.assert_not_called()
+        mock_job_cls.assert_called_once_with("job-123")
+        assert result is mock_qcloud_job
+
+    @patch("pyqpanda3.qcloud.QCloudJob")
+    @patch("pyqpanda3.qcloud.QCloudService")
+    def test_get_job_reconstruction_failure_raises(self, mock_service_cls, mock_job_cls):
+        mock_job_cls.side_effect = RuntimeError("connection failed")
+
+        with pytest.raises(OriginJobError, match="Unable to retrieve OriginQ job"):
+            OriginJob._get_job("bad-id", job=None, service=MagicMock())
+
+
+# --- _get_service ---
+
+
+class TestGetService:
+    @patch("pyqpanda3.qcloud.QCloudService")
+    def test_get_service(self, mock_service_cls):
+        from qbraid.runtime.origin.provider import _get_service
+
+        mock_instance = MagicMock()
+        mock_service_cls.return_value = mock_instance
+
+        result = _get_service("my-api-key")
+
+        mock_service_cls.assert_called_once_with(api_key="my-api-key")
+        assert result is mock_instance
+
+
+# --- _infer_basis_gates exception path ---
+
+
+class TestInferBasisGates:
+    def test_infer_basis_gates_exception_returns_none(self):
+        from qbraid.runtime.origin.provider import _infer_basis_gates
+
+        mock_backend = MagicMock()
+        mock_backend.name.return_value = "WK_C180"
+        mock_backend.chip_info.side_effect = RuntimeError("unavailable")
+
+        assert _infer_basis_gates(mock_backend) is None

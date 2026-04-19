@@ -320,5 +320,5 @@ def test_result_metadata(completed_job_context):
 
     result = reconstructed.result()
     details = result._details
-    assert "taskId" in details
-    assert details["taskId"] == job_id
+    assert "obj" in details
+    assert details["obj"]["taskId"] == job_id

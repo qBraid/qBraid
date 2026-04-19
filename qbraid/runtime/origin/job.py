@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
@@ -80,11 +81,12 @@ class OriginJob(QuantumJob):
         **kwargs: Any,
     ) -> None:
         super().__init__(job_id=job_id, device=device, **kwargs)
-        self._job = self._get_job(job_id, job)
-        self._service = service
+        self._job = self._get_job(job_id, job, service)
 
     @staticmethod
-    def _get_job(job_id: str, job: QCloudJob | None = None) -> QCloudJob:
+    def _get_job(
+        job_id: str, job: QCloudJob | None = None, service: QCloudService | None = None
+    ) -> QCloudJob:
         """Return the QCloud job, or reconstruct it from the job ID."""
         if job is not None:
             if job.job_id() != job_id:
@@ -92,8 +94,16 @@ class OriginJob(QuantumJob):
             return job
 
         try:
-            # pylint: disable-next=import-outside-toplevel
+            # pylint: disable=import-outside-toplevel
             from pyqpanda3.qcloud import QCloudJob as _QCloudJob
+            from pyqpanda3.qcloud import QCloudService as _QCloudService
+
+            # pylint: enable=import-outside-toplevel
+
+            if service is None:
+                # QCloudService must be initialized before QCloudJob
+                # in order to correctly configure HTTP URL
+                _QCloudService(os.getenv("ORIGIN_API_KEY"))
 
             return _QCloudJob(job_id)
         except Exception as exc:
@@ -101,6 +111,9 @@ class OriginJob(QuantumJob):
 
     def status(self) -> JobStatus:
         """Return the current status of the OriginQ job."""
+        if self._cache_metadata.get("status") in JobStatus.terminal_states():
+            return self._cache_metadata["status"]
+
         try:
             origin_status = self._job.status()
         except Exception as exc:
@@ -137,46 +150,17 @@ class OriginJob(QuantumJob):
             counts_list: list[dict[str, int]] = origin_result.get_counts_list()
             if counts_list:
                 counts = counts_list[0] if len(counts_list) == 1 else counts_list
-        except RuntimeError:
-            pass
+        except RuntimeError as exc:
+            logger.error("Failed to extract counts from OriginQ job: %s", exc)
 
         try:
             probs_list: list[dict[str, float]] = origin_result.get_probs_list()
             if probs_list:
                 probabilities = probs_list[0] if len(probs_list) == 1 else probs_list
-        except RuntimeError:
-            pass
+        except RuntimeError as exc:
+            logger.error("Failed to extract probabilities from OriginQ job: %s", exc)
 
         return counts, probabilities
-
-    @staticmethod
-    def _parse_origin_data(raw: str) -> dict[str, Any]:
-        """Parse the JSON string returned by ``QCloudResult.origin_data()``.
-
-        The API response has the structure::
-
-            {"success": bool, "code": int, "message": str, "obj": { ... }}
-
-        Returns the inner ``obj`` dict (task metadata) with the
-        top-level ``success`` flag merged in.
-
-        Raises:
-            OriginJobError: If the response cannot be parsed or has
-                an unexpected structure.
-        """
-        data: dict[str, Any] = json.loads(raw)
-        assert isinstance(data, dict), f"Expected dict from origin_data, got {type(data).__name__}"
-
-        obj = data.get("obj", {})
-        assert isinstance(obj, dict), f"Expected 'obj' to be a dict, got {type(obj).__name__}"
-
-        result: dict[str, Any] = dict(obj)
-
-        success = data.get("success")
-        if success is not None:
-            result["success"] = success
-
-        return result
 
     def result(self) -> Result[GateModelResultData]:
         """Return the result of the OriginQ job."""
@@ -187,12 +171,8 @@ class OriginJob(QuantumJob):
         except Exception as exc:
             raise OriginJobError(f"Failed to fetch results for OriginQ job {self.id}") from exc
 
-        metadata = self._parse_origin_data(origin_result.origin_data())
-
-        success = metadata.pop("success", None)
-        assert isinstance(
-            success, bool
-        ), f"Expected 'success' to be bool, got {type(success).__name__}"
+        metadata: dict[str, Any] = json.loads(origin_result.origin_data())
+        success: bool = metadata.pop("success", self.status() == JobStatus.COMPLETED)
 
         counts, probabilities = self._extract_results(origin_result)
         device_id = self._device.id if self._device else "origin"
