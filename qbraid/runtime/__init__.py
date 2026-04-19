@@ -147,6 +147,13 @@ _lazy = {
         "IonQDevice",
         "IonQJob",
     ],
+    "iqm": [
+        "IQMSession",
+        "IQMProvider",
+        "IQMDevice",
+        "IQMJob",
+        "IQMJobError",
+    ],
     "oqc": [
         "OQCProvider",
         "OQCDevice",
@@ -179,6 +186,11 @@ if TYPE_CHECKING:
     from .ibm import QiskitBackend as QiskitBackend
     from .ibm import QiskitJob as QiskitJob
     from .ibm import QiskitRuntimeProvider as QiskitRuntimeProvider
+    from .iqm import IQMDevice as IQMDevice
+    from .iqm import IQMJob as IQMJob
+    from .iqm import IQMJobError as IQMJobError
+    from .iqm import IQMProvider as IQMProvider
+    from .iqm import IQMSession as IQMSession
     from .ionq import IonQDevice as IonQDevice
     from .ionq import IonQJob as IonQJob
     from .ionq import IonQProvider as IonQProvider
