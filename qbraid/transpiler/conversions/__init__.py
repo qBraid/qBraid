@@ -35,6 +35,7 @@ Submodules
    pytket
    qiskit
    cudaq
+   openfermion
 
 """
 import importlib
@@ -75,7 +76,6 @@ def _update_registered_conversions() -> None:
                 if callable(getattr(sub_module, name))
                 and inspect.isfunction(getattr(sub_module, name))
             ]
-
             # Add functions to the current namespace
             for name in function_names:
                 p1, p2 = name.split("_to_")
