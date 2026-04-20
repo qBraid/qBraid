@@ -24,17 +24,24 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from qbraid.runtime.enums import DeviceStatus, JobStatus
-from qbraid.runtime.origin import OriginDevice, OriginJob, OriginProvider
-from qbraid.runtime.origin.device import OriginDeviceError
-from qbraid.runtime.origin.job import (
+pytest.importorskip("pyqpanda3", reason="pyqpanda3 is not installed.")
+
+# pylint: disable=wrong-import-position
+from qbraid.runtime.enums import DeviceStatus, JobStatus  # noqa: E402
+from qbraid.runtime.origin import OriginDevice, OriginJob, OriginProvider  # noqa: E402
+from qbraid.runtime.origin.device import OriginDeviceError  # noqa: E402
+from qbraid.runtime.origin.job import (  # noqa: E402
     _ORIGIN_STATUS_MAP,
     OriginJobError,
     _map_origin_status,
 )
-from qbraid.runtime.origin.provider import _get_service, _infer_basis_gates, _resolve_api_key
-from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import GateModelResultData
+from qbraid.runtime.origin.provider import (  # noqa: E402
+    _get_service,
+    _infer_basis_gates,
+    _resolve_api_key,
+)
+from qbraid.runtime.result import Result  # noqa: E402
+from qbraid.runtime.result_data import GateModelResultData  # noqa: E402
 
 # --- API key resolution ---
 
