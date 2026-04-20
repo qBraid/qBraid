@@ -16,6 +16,33 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added OriginQ QCloud provider integration (`qbraid.runtime.origin`) with `OriginProvider`, `OriginDevice`, and `OriginJob` classes. Supports single-circuit submission on simulators and QPU backends, and batch submission (`list[QProg]`) on QPU backends. Simulator batch input automatically fans out to individual jobs. ([#1148](https://github.com/qBraid/qBraid/pull/1148))
+
+  ```python
+  from pyqpanda3.core import QProg, H, CNOT, measure
+  from qbraid.runtime.origin import OriginProvider
+
+  provider = OriginProvider(api_key="YOUR_API_KEY")  # or set ORIGIN_API_KEY env var
+
+  # List available devices
+  devices = provider.get_devices()
+
+  # Get a specific simulator device
+  device = provider.get_device("full_amplitude")
+
+  # Build a Bell state circuit
+  prog = QProg(2)
+  q = prog.qubits()
+  prog << H(q[0]) << CNOT(q[0], q[1]) << measure(0, 0) << measure(1, 1)
+
+  # Submit and wait for results
+  job = device.run(prog, shots=1000)
+  job.wait_for_final_state()
+
+  result = job.result()
+  print(result.data.get_probabilities())
+  # {'00': 0.515, '11': 0.485}
+  ```
 - Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))

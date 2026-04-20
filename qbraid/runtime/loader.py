@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     from qbraid.runtime.ionq import IonQJob, IonQProvider
     from qbraid.runtime.native import QbraidJob, QbraidProvider
     from qbraid.runtime.oqc import OQCJob, OQCProvider
+    from qbraid.runtime.origin import OriginJob, OriginProvider
 
 
 class JobLoaderError(QbraidError):
@@ -64,6 +65,10 @@ def load_job(job_id: str, provider: Literal["ionq"], **kwargs) -> IonQJob: ...
 
 @overload
 def load_job(job_id: str, provider: Literal["oqc"], **kwargs) -> OQCJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["origin"], **kwargs) -> OriginJob: ...
 
 
 @overload
@@ -131,6 +136,10 @@ def load_provider(provider_name: Literal["ionq"], **kwargs) -> IonQProvider: ...
 
 @overload
 def load_provider(provider_name: Literal["oqc"], **kwargs) -> OQCProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["origin"], **kwargs) -> OriginProvider: ...
 
 
 @overload
