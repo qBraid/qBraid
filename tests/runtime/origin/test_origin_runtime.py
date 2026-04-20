@@ -32,7 +32,7 @@ from qbraid.runtime.origin.job import (
     OriginJobError,
     _map_origin_status,
 )
-from qbraid.runtime.origin.provider import _resolve_api_key
+from qbraid.runtime.origin.provider import _get_service, _infer_basis_gates, _resolve_api_key
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
@@ -747,7 +747,7 @@ class TestGetJobReconstruction:
 
     @patch("pyqpanda3.qcloud.QCloudJob")
     @patch("pyqpanda3.qcloud.QCloudService")
-    def test_get_job_reconstruction_failure_raises(self, mock_service_cls, mock_job_cls):
+    def test_get_job_reconstruction_failure_raises(self, _mock_service_cls, mock_job_cls):
         mock_job_cls.side_effect = RuntimeError("connection failed")
 
         with pytest.raises(OriginJobError, match="Unable to retrieve OriginQ job"):
@@ -760,8 +760,6 @@ class TestGetJobReconstruction:
 class TestGetService:
     @patch("pyqpanda3.qcloud.QCloudService")
     def test_get_service(self, mock_service_cls):
-        from qbraid.runtime.origin.provider import _get_service
-
         mock_instance = MagicMock()
         mock_service_cls.return_value = mock_instance
 
@@ -776,8 +774,6 @@ class TestGetService:
 
 class TestInferBasisGates:
     def test_infer_basis_gates_exception_returns_none(self):
-        from qbraid.runtime.origin.provider import _infer_basis_gates
-
         mock_backend = MagicMock()
         mock_backend.name.return_value = "WK_C180"
         mock_backend.chip_info.side_effect = RuntimeError("unavailable")
