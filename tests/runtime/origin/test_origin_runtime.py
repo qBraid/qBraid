@@ -421,6 +421,19 @@ class TestOriginJob:
         with pytest.raises(OriginJobError, match="Unable to retrieve job status"):
             job.status()
 
+    def test_status_cluster_failure_maps_to_failed(self):
+        """pyqpanda3 raises RuntimeError for cluster-level failures; map to FAILED."""
+        mock_job = MagicMock()
+        mock_job.job_id.return_value = "test-123"
+        mock_job.status.side_effect = RuntimeError(
+            "query qcloud task failed: Error: the task was failed on cluster: 202"
+        )
+
+        job = OriginJob(job_id="test-123", job=mock_job)
+        assert job.status() == JobStatus.FAILED
+        # Subsequent calls should return the cached terminal status
+        assert job.status() == JobStatus.FAILED
+
     def test_cancel_raises(self):
         mock_job = MagicMock()
         mock_job.job_id.return_value = "test-123"
@@ -526,6 +539,18 @@ class TestOriginJob:
 
         job = OriginJob(job_id="test-123", job=mock_job)
         with pytest.raises(OriginJobError, match="Failed to fetch results"):
+            job.result()
+
+    def test_result_cluster_failure_raises(self):
+        """A job that failed on the cluster should raise a clean error from result()."""
+        mock_job = MagicMock()
+        mock_job.job_id.return_value = "test-123"
+        mock_job.status.side_effect = RuntimeError(
+            "query qcloud task failed: Error: the task was failed on cluster: 202"
+        )
+
+        job = OriginJob(job_id="test-123", job=mock_job)
+        with pytest.raises(OriginJobError, match="failed on the cluster"):
             job.result()
 
     def test_result_no_counts_no_probs(self):

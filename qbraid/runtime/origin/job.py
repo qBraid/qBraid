@@ -116,6 +116,13 @@ class OriginJob(QuantumJob):
 
         try:
             origin_status = self._job.status()
+        except RuntimeError as exc:
+            # pyqpanda3 raises RuntimeError when a job fails on the cluster
+            # rather than returning a terminal FAILED status from status().
+            if "failed on cluster" in str(exc):
+                self._cache_metadata["status"] = JobStatus.FAILED
+                return JobStatus.FAILED
+            raise OriginJobError(f"Unable to retrieve job status for {self.id}") from exc
         except Exception as exc:
             raise OriginJobError(f"Unable to retrieve job status for {self.id}") from exc
 
@@ -165,6 +172,9 @@ class OriginJob(QuantumJob):
     def result(self) -> Result[GateModelResultData]:
         """Return the result of the OriginQ job."""
         self.wait_for_final_state()
+
+        if self.status() == JobStatus.FAILED:
+            raise OriginJobError(f"OriginQ job {self.id} failed on the cluster.")
 
         try:
             origin_result: QCloudResult = self._job.result()
