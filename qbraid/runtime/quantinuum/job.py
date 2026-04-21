@@ -28,6 +28,8 @@ from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
 if TYPE_CHECKING:
+    from qnexus.models.references import ExecuteJobRef
+
     from qbraid.runtime.quantinuum.device import QuantinuumDevice
 
 logger = logging.getLogger(__name__)
@@ -60,13 +62,13 @@ class QuantinuumJob(QuantumJob):
         self,
         job_id: str,
         device: QuantinuumDevice | None = None,
-        job: Any | None = None,
+        job: ExecuteJobRef | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(job_id=job_id, device=device, **kwargs)
         self._job = job
 
-    def _get_ref(self) -> Any:
+    def _get_ref(self) -> ExecuteJobRef:
         """Return the cached qnexus job reference, or look it up by ID."""
         if self._job is not None:
             return self._job
@@ -98,6 +100,22 @@ class QuantinuumJob(QuantumJob):
 
         self._cache_metadata["status"] = status
         return status
+
+    def _resolve_device_id(self, ref: ExecuteJobRef) -> str:
+        """Resolve the target device name for a job.
+
+        Prefers the device this job was constructed with, then tries to read
+        the device name from the NEXUS job's ``backend_config_store`` (set to
+        a ``QuantinuumConfig`` when the job was dispatched via qBraid).
+        Falls back to the generic ``"quantinuum"`` label if neither is set.
+        """
+        if self._device is not None:
+            return self._device.id
+        backend_config = getattr(ref, "backend_config_store", None)
+        device_name = getattr(backend_config, "device_name", None)
+        if device_name:
+            return str(device_name)
+        return "quantinuum"
 
     def cancel(self) -> None:
         """Cancel the Quantinuum job."""
@@ -181,7 +199,7 @@ class QuantinuumJob(QuantumJob):
             all_counts.append({"".join(map(str, k)): v for k, v in counts.items()})
 
         measurement_counts = all_counts[0] if len(all_counts) == 1 else all_counts
-        device_id = self._device.id if self._device else "quantinuum"
+        device_id = self._resolve_device_id(ref)
 
         return Result[GateModelResultData](
             device_id=device_id,

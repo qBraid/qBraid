@@ -114,12 +114,13 @@ class TestQuantinuumProvider:
 
 
 def _make_device(device_id: str = "H1-1E", simulator: bool = True):
-    """Helper to create a QuantinuumDevice with mocked dependencies."""
+    """Helper to create a QuantinuumDevice with a mocked profile."""
     backend_info = _make_backend_info()
     profile = MagicMock()
     profile.device_id = device_id
     profile.simulator = simulator
-    device = QuantinuumDevice(profile=profile, backend_info=backend_info)
+    profile.backend_info = backend_info
+    device = QuantinuumDevice(profile=profile)
     # QuantumDevice.id is a property that returns profile.device_id
     type(device).id = property(lambda self: self.profile.device_id)
     return device
@@ -133,7 +134,7 @@ class TestQuantinuumDevice:
 
     def test_backend_info_accessor(self):
         device = _make_device()
-        assert device.backend_info is device._backend_info
+        assert device.backend_info is device.profile.backend_info
 
     @patch("qnexus.devices.status")
     @patch("qnexus.models.QuantinuumConfig")
@@ -171,29 +172,6 @@ class TestQuantinuumDevice:
         mock_status.return_value = "OFFLINE"  # any other value
         device = _make_device()
         assert device.status() == DeviceStatus.OFFLINE
-
-    def test_transform_single_pytket_circuit(self):
-        # pylint: disable-next=import-outside-toplevel
-        from pytket import Circuit
-
-        device = _make_device()
-        circuit = Circuit(2)
-        result = device.transform(circuit)
-        assert result == [circuit]
-
-    def test_transform_list_of_pytket_circuits(self):
-        # pylint: disable-next=import-outside-toplevel
-        from pytket import Circuit
-
-        device = _make_device()
-        circuits = [Circuit(2), Circuit(3)]
-        result = device.transform(circuits)
-        assert result == circuits
-
-    def test_transform_unsupported_type_raises(self):
-        device = _make_device()
-        with pytest.raises(TypeError, match="Unsupported run_input type"):
-            device.transform(12345)
 
 
 # --- Job ---
@@ -338,6 +316,37 @@ class TestQuantinuumJob:
         job = QuantinuumJob(job_id="job-123", job=mock_ref)
         with pytest.raises(QuantinuumJobError, match="No results available"):
             job.result()
+
+    @patch("qnexus.jobs.results")
+    def test_result_derives_device_id_from_job_metadata(self, mock_results):
+        """When no device is attached, prefer the device_name recorded on the job ref."""
+        download = MagicMock()
+        download.get_counts.return_value = {(0, 0): 10}
+        result_item = MagicMock()
+        result_item.download_result.return_value = download
+        mock_results.return_value = [result_item]
+
+        mock_ref = SimpleNamespace(
+            last_status="COMPLETED",
+            backend_config_store=SimpleNamespace(device_name="H2-1"),
+        )
+        job = QuantinuumJob(job_id="job-123", job=mock_ref)
+        result = job.result()
+        assert result.device_id == "H2-1"
+
+    @patch("qnexus.jobs.results")
+    def test_result_falls_back_to_generic_device_id(self, mock_results):
+        """Fallback label when neither device nor backend_config_store is available."""
+        download = MagicMock()
+        download.get_counts.return_value = {(0, 0): 10}
+        result_item = MagicMock()
+        result_item.download_result.return_value = download
+        mock_results.return_value = [result_item]
+
+        mock_ref = SimpleNamespace(last_status="COMPLETED")
+        job = QuantinuumJob(job_id="job-123", job=mock_ref)
+        result = job.result()
+        assert result.device_id == "quantinuum"
 
 
 # Silence unused-import warnings from conditional imports referenced only in tests.

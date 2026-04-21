@@ -66,6 +66,8 @@ def _build_profile(device_id: str, backend_info: BackendInfo) -> TargetProfile:
         num_qubits=len(backend_info.architecture.nodes),
         program_spec=ProgramSpec(Circuit, alias="pytket"),
         provider_name="quantinuum",
+        # Extras: accessible via ``device.profile.backend_info``.
+        backend_info=backend_info,
     )
 
 
@@ -83,24 +85,14 @@ class QuantinuumProvider(QuantumProvider):
         """Get a specific Quantinuum device."""
         device_id = device_id.strip()
         backend_info = _get_backend_info(device_id)
-        return QuantinuumDevice(
-            profile=_build_profile(device_id, backend_info),
-            backend_info=backend_info,
-        )
+        return QuantinuumDevice(profile=_build_profile(device_id, backend_info))
 
     @cached_method
-    def get_devices(self, **kwargs) -> list[QuantinuumDevice]:  # pylint: disable=unused-argument
-        """Get a list of available Quantinuum devices.
-
-        ``kwargs`` is accepted for interface compatibility with the base
-        :class:`~qbraid.runtime.QuantumProvider.get_devices` signature; the
-        NEXUS API does not currently expose additional filtering parameters.
-        """
+    def get_devices(self) -> list[QuantinuumDevice]:  # pylint: disable=arguments-differ
+        """Get a list of available Quantinuum devices."""
         # pylint: disable-next=import-outside-toplevel
         import qnexus as qnx
 
         df = qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
-        device_ids = [
-            str(row.get("device_name") or row.get("name") or "").strip() for _, row in df.iterrows()
-        ]
+        device_ids = [str(row["device_name"]).strip() for _, row in df.iterrows()]
         return [self.get_device(device_id) for device_id in device_ids if device_id]

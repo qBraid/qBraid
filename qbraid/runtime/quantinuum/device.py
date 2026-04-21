@@ -22,7 +22,7 @@ import logging
 import os
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -31,7 +31,7 @@ from qbraid.runtime.exceptions import QbraidRuntimeError
 from .job import QuantinuumJob
 
 if TYPE_CHECKING:
-    from pytket.backends.backendinfo import BackendInfo
+    from pytket.circuit import Circuit
 
     from qbraid.runtime.profile import TargetProfile
 
@@ -45,19 +45,13 @@ class QuantinuumDeviceError(QbraidRuntimeError):
 class QuantinuumDevice(QuantumDevice):
     """Quantinuum NEXUS device interface."""
 
-    def __init__(
-        self,
-        profile: TargetProfile,
-        backend_info: BackendInfo,
-        **kwargs,
-    ):
+    def __init__(self, profile: TargetProfile, **kwargs):
         super().__init__(profile=profile, **kwargs)
-        self._backend_info = backend_info
 
     @property
-    def backend_info(self) -> BackendInfo:
-        """Return the pytket BackendInfo for this device."""
-        return self._backend_info
+    def backend_info(self):
+        """Return the pytket BackendInfo for this device (from the profile)."""
+        return self.profile.backend_info
 
     def __str__(self):
         """String representation of the QuantinuumDevice object."""
@@ -65,11 +59,11 @@ class QuantinuumDevice(QuantumDevice):
 
     def status(self) -> DeviceStatus:
         """Return the current status of the Quantinuum device."""
-        # pylint: disable-next=import-outside-toplevel
+        # pylint: disable=import-outside-toplevel
         import qnexus as qnx
-
-        # pylint: disable-next=import-outside-toplevel
         from qnexus.client.devices import DeviceStateEnum
+
+        # pylint: enable=import-outside-toplevel
 
         cfg = qnx.models.QuantinuumConfig(device_name=self.id)
         status = qnx.devices.status(cfg)
@@ -79,47 +73,10 @@ class QuantinuumDevice(QuantumDevice):
             return DeviceStatus.UNAVAILABLE
         return DeviceStatus.OFFLINE
 
-    def transform(self, run_input):
-        """Coerce input to a list of pytket ``Circuit`` objects."""
-        # pylint: disable-next=import-outside-toplevel
-        from pytket import Circuit
-
-        if isinstance(run_input, (list, tuple)):
-            return [item for c in run_input for item in self.transform(c)]
-        if isinstance(run_input, Circuit):
-            return [run_input]
-
-        try:
-            # pylint: disable=import-outside-toplevel
-            from pytket.extensions.qiskit import qiskit_to_tk
-            from qiskit import QuantumCircuit
-
-            # pylint: enable=import-outside-toplevel
-
-            if isinstance(run_input, QuantumCircuit):
-                return [qiskit_to_tk(run_input)]
-        except ImportError:
-            pass
-
-        raise TypeError(
-            f"Unsupported run_input type {type(run_input)}; "
-            "expected pytket.Circuit or qiskit.QuantumCircuit"
-        )
-
-    def run(self, run_input, *args, **kwargs):
-        """Run a quantum program on this device.
-
-        Overridden to avoid the base class iterating single pytket circuits
-        as sequences; batching is handled inside :meth:`submit`.
-        """
-        return self.submit(run_input, *args, **kwargs)
-
-    # pylint: disable-next=arguments-differ
-    def submit(
+    def submit(  # pylint: disable=arguments-differ
         self,
-        run_input,
-        shots: int | None = None,
-        **_: Any,
+        run_input: Circuit | list[Circuit],
+        shots: int = 1000,
     ) -> QuantinuumJob:
         """Compile and submit a pytket circuit (or batch) to the Quantinuum device.
 
@@ -127,14 +84,19 @@ class QuantinuumDevice(QuantumDevice):
         separate job stages. This method blocks while waiting for the
         compilation step to finish, then returns a :class:`QuantinuumJob`
         referencing the asynchronous execution job.
-        """
-        # pylint: disable-next=import-outside-toplevel
-        import qnexus as qnx
 
-        # pylint: disable-next=import-outside-toplevel
+        The ``run_input`` is assumed to already be in pytket ``Circuit`` form;
+        the qBraid transpiler pipeline (invoked via the base class ``run``)
+        handles any upstream format conversions (e.g. ``qiskit.QuantumCircuit``
+        → ``Circuit``) based on the device's :class:`TargetProfile`.
+        """
+        # pylint: disable=import-outside-toplevel
+        import qnexus as qnx
         from qnexus.models.language import Language
 
-        circuits_list = self.transform(run_input)
+        # pylint: enable=import-outside-toplevel
+
+        circuits = run_input if isinstance(run_input, list) else [run_input]
 
         project = qnx.projects.get_or_create(
             name=os.getenv("QUANTINUUM_NEXUS_PROJECT_NAME", "qbraid")
@@ -147,7 +109,7 @@ class QuantinuumDevice(QuantumDevice):
 
         circuit_refs = [
             qnx.circuits.upload(name=unique(f"circuit-{i}"), circuit=c, project=project)
-            for i, c in enumerate(circuits_list)
+            for i, c in enumerate(circuits)
         ]
 
         opt = int(os.getenv("QUANTINUUM_NEXUS_OPT_LEVEL", "1"))
@@ -159,25 +121,16 @@ class QuantinuumDevice(QuantumDevice):
             project=project,
         )
         # NOTE: blocking wait during dispatch; compilation time depends on queue and program size.
-        logger.info(
-            "Waiting for Quantinuum compilation job %s to complete...",
-            getattr(compile_job, "id", getattr(compile_job, "job_id", str(compile_job))),
-        )
+        logger.info("Waiting for Quantinuum compilation job %s to complete...", compile_job.id)
         qnx.jobs.wait_for(compile_job)
         compiled_refs = [item.get_output() for item in qnx.jobs.results(compile_job)]
 
-        nshots = int(shots or 1000)
         execute_job = qnx.start_execute_job(
             programs=compiled_refs,
             name=unique("execute"),
-            n_shots=[nshots] * len(compiled_refs),
+            n_shots=[shots] * len(compiled_refs),
             backend_config=backend_config,
             project=project,
             language=Language.QIR,
         )
-        job_id = (
-            getattr(execute_job, "id", None)
-            or getattr(execute_job, "job_id", None)
-            or str(execute_job)
-        )
-        return QuantinuumJob(job_id=str(job_id), device=self, job=execute_job)
+        return QuantinuumJob(job_id=str(execute_job.id), device=self, job=execute_job)

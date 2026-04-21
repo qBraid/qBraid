@@ -25,9 +25,10 @@ Functions
 
    pytket_to_braket
    pytket_to_qasm2
+   pytket_to_qiskit
 
 """
-from .pytket_extras import pytket_to_braket
+from .pytket_extras import pytket_to_braket, pytket_to_qiskit
 from .pytket_to_qasm2 import pytket_to_qasm2
 
-__all__ = ["pytket_to_braket", "pytket_to_qasm2"]
+__all__ = ["pytket_to_braket", "pytket_to_qasm2", "pytket_to_qiskit"]
