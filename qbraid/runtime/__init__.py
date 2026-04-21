@@ -158,6 +158,11 @@ _lazy = {
         "RigettiDevice",
         "RigettiJob",
     ],
+    "origin": [
+        "OriginProvider",
+        "OriginDevice",
+        "OriginJob",
+    ],
     "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
@@ -202,6 +207,9 @@ if TYPE_CHECKING:
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider
+    from .origin import OriginDevice as OriginDevice
+    from .origin import OriginJob as OriginJob
+    from .origin import OriginProvider as OriginProvider
 
 
 def __getattr__(name):

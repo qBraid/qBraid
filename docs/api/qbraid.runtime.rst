@@ -17,5 +17,6 @@ Submodules
    azure
    ionq
    oqc
-   rigetti
+   origin
    native
+   rigetti
