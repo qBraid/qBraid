@@ -163,6 +163,11 @@ _lazy = {
         "OQCDevice",
         "OQCJob",
     ],
+    "origin": [
+        "OriginProvider",
+        "OriginDevice",
+        "OriginJob",
+    ],
     "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
@@ -204,6 +209,9 @@ if TYPE_CHECKING:
     from .oqc import OQCDevice as OQCDevice
     from .oqc import OQCJob as OQCJob
     from .oqc import OQCProvider as OQCProvider
+    from .origin import OriginDevice as OriginDevice
+    from .origin import OriginJob as OriginJob
+    from .origin import OriginProvider as OriginProvider
 
 
 def __getattr__(name):
