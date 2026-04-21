@@ -95,13 +95,11 @@ class RigettiDevice(QuantumDevice):
         """
         try:
             # Otherwise, check if the quantum processor ID is in the list of available processors
-            quantum_processor_ids = set(
-                list_quantum_processors(client=self._qcs_client)
-            )
+            quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
             if self.id not in quantum_processor_ids:
                 return DeviceStatus.OFFLINE
         except ListQuantumProcessorsError as e:
-            raise RigettiDeviceError(
+            raise RigettiDeviceError(  # pylint: disable=bad-exception-cause
                 "Failed to retrieve quantum processor list from Rigetti QCS."
             ) from e
         return DeviceStatus.ONLINE
@@ -153,9 +151,7 @@ class RigettiDevice(QuantumDevice):
         # --- Compiler options ---
         compiler_timeout = runtime_options.get("compiler_timeout")
         compiler_opts = (
-            CompilerOpts(timeout=compiler_timeout)
-            if compiler_timeout is not None
-            else None
+            CompilerOpts(timeout=compiler_timeout) if compiler_timeout is not None else None
         )
 
         # --- Translation options (v2 only, targeting Ankaa / Cepheus) ---
@@ -355,17 +351,13 @@ class RigettiDevice(QuantumDevice):
         # does not accept extra kwargs.
         self._compiler_options = compiler_opts
         try:
-            run_input_compat = [
-                self.apply_runtime_profile(program) for program in run_input_list
-            ]
+            run_input_compat = [self.apply_runtime_profile(program) for program in run_input_list]
         finally:
             self._compiler_options = None
 
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
 
-        return self.submit(
-            run_input_compat, *args, translation_options=translation_opts, **kwargs
-        )
+        return self.submit(run_input_compat, *args, translation_options=translation_opts, **kwargs)
 
     def live_qubits(self) -> list[int]:
         """
