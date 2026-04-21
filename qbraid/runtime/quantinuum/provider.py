@@ -35,12 +35,17 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def _get_backend_info(device_name: str) -> BackendInfo:
-    """Fetch the pytket BackendInfo for a Quantinuum device from the NEXUS API."""
+def _fetch_quantinuum_devices_df():
+    """Return the NEXUS Quantinuum devices dataframe."""
     # pylint: disable-next=import-outside-toplevel
     import qnexus as qnx
 
-    df = qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
+    return qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
+
+
+def _get_backend_info(device_name: str) -> BackendInfo:
+    """Fetch the pytket BackendInfo for a specific Quantinuum device."""
+    df = _fetch_quantinuum_devices_df()
     matching_rows = df.loc[df["device_name"] == device_name]
 
     if matching_rows.empty:
@@ -89,10 +94,18 @@ class QuantinuumProvider(QuantumProvider):
 
     @cached_method
     def get_devices(self) -> list[QuantinuumDevice]:  # pylint: disable=arguments-differ
-        """Get a list of available Quantinuum devices."""
-        # pylint: disable-next=import-outside-toplevel
-        import qnexus as qnx
+        """Get a list of available Quantinuum devices.
 
-        df = qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
-        device_ids = [str(row["device_name"]).strip() for _, row in df.iterrows()]
-        return [self.get_device(device_id) for device_id in device_ids if device_id]
+        Issues a single call to ``qnx.devices.get_all`` and builds each
+        :class:`QuantinuumDevice` from the returned dataframe rows, avoiding
+        the N+1 pattern that would otherwise re-fetch the device list inside
+        :meth:`get_device` for each entry.
+        """
+        df = _fetch_quantinuum_devices_df()
+        devices: list[QuantinuumDevice] = []
+        for _, row in df.iterrows():
+            device_id = str(row["device_name"]).strip()
+            if not device_id:
+                continue
+            devices.append(QuantinuumDevice(profile=_build_profile(device_id, row["backend_info"])))
+        return devices

@@ -109,21 +109,42 @@ class TestQuantinuumProvider:
         with pytest.raises(ResourceNotFoundError, match="not found"):
             provider.get_device("H9-9")
 
+    @patch("qnexus.devices.get_all")
+    def test_get_devices_makes_single_remote_call(self, mock_get_all):
+        """Regression test: ``get_devices`` must not re-fetch the device list
+        once per row (the earlier N+1 pattern that round-tripped through
+        ``get_device``/``_get_backend_info``)."""
+        backend_info = _make_backend_info()
+        row_a = {"device_name": "H1-1E", "backend_info": backend_info}
+        row_b = {"device_name": "H2-1", "backend_info": backend_info}
+
+        df_mock = MagicMock()
+        df_mock.iterrows.return_value = iter([(0, row_a), (1, row_b)])
+        mock_get_all.return_value.df.return_value = df_mock
+
+        provider = QuantinuumProvider()
+        devices = provider.get_devices()
+
+        assert {d.id for d in devices} == {"H1-1E", "H2-1"}
+        # Single API call for the entire list, not one-per-row.
+        mock_get_all.assert_called_once()
+
 
 # --- Device ---
 
 
 def _make_device(device_id: str = "H1-1E", simulator: bool = True):
-    """Helper to create a QuantinuumDevice with a mocked profile."""
+    """Helper to create a QuantinuumDevice with a mocked profile.
+
+    The base :class:`QuantumDevice.id` property reads ``self.profile.device_id``,
+    so we just configure the mocked profile accordingly.
+    """
     backend_info = _make_backend_info()
     profile = MagicMock()
     profile.device_id = device_id
     profile.simulator = simulator
     profile.backend_info = backend_info
-    device = QuantinuumDevice(profile=profile)
-    # QuantumDevice.id is a property that returns profile.device_id
-    type(device).id = property(lambda self: self.profile.device_id)
-    return device
+    return QuantinuumDevice(profile=profile)
 
 
 class TestQuantinuumDevice:
