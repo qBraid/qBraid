@@ -88,15 +88,13 @@ class QuantinuumJob(QuantumJob):
 
         try:
             ref = self._get_ref()
-            last_status = getattr(ref, "last_status", None)
+            last_status = ref.last_status
         except Exception as exc:
             raise QuantinuumJobError(f"Unable to retrieve job status for {self.id}") from exc
 
         status = _map_quantinuum_status(last_status)
-        if status == JobStatus.FAILED:
-            last_message = getattr(ref, "last_message", None)
-            if last_message:
-                logger.error("Quantinuum job %s failed: %s", self.id, last_message)
+        if status == JobStatus.FAILED and ref.last_message:
+            logger.error("Quantinuum job %s failed: %s", self.id, ref.last_message)
 
         self._cache_metadata["status"] = status
         return status
@@ -105,16 +103,19 @@ class QuantinuumJob(QuantumJob):
         """Resolve the target device name for a job.
 
         Prefers the device this job was constructed with, then tries to read
-        the device name from the NEXUS job's ``backend_config_store`` (set to
-        a ``QuantinuumConfig`` when the job was dispatched via qBraid).
+        the device name from the NEXUS job's ``backend_config`` when it is a
+        :class:`~quantinuum_schemas.models.backend_config.QuantinuumConfig`
+        (other ``BackendConfig`` subclasses do not expose ``device_name``).
         Falls back to the generic ``"quantinuum"`` label if neither is set.
         """
+        # pylint: disable-next=import-outside-toplevel
+        from quantinuum_schemas.models.backend_config import QuantinuumConfig
+
         if self._device is not None:
             return self._device.id
-        backend_config = getattr(ref, "backend_config_store", None)
-        device_name = getattr(backend_config, "device_name", None)
-        if device_name:
-            return str(device_name)
+        backend_config = ref.backend_config
+        if isinstance(backend_config, QuantinuumConfig):
+            return backend_config.device_name
         return "quantinuum"
 
     def cancel(self) -> None:
@@ -148,13 +149,13 @@ class QuantinuumJob(QuantumJob):
         if self.status() != JobStatus.COMPLETED:
             return None
         ref = self._get_ref()
-        last_status_detail = getattr(ref, "last_status_detail", None)
+        last_status_detail = ref.last_status_detail
         if last_status_detail is None:
             raise QuantinuumJobError(
                 f"Execution time not available for {self.id}: last_status_detail is missing"
             )
-        completed_time = getattr(last_status_detail, "completed_time", None)
-        running_time = getattr(last_status_detail, "running_time", None)
+        completed_time = last_status_detail.completed_time
+        running_time = last_status_detail.running_time
         if completed_time is None or running_time is None:
             raise QuantinuumJobError(
                 f"Execution time not available for {self.id}: "
@@ -174,9 +175,8 @@ class QuantinuumJob(QuantumJob):
 
         if self.status() == JobStatus.FAILED:
             ref = self._get_ref()
-            last_message = getattr(ref, "last_message", None)
             raise QuantinuumJobError(
-                f"Quantinuum job {self.id} failed: {last_message or 'no error message'}"
+                f"Quantinuum job {self.id} failed: {ref.last_message or 'no error message'}"
             )
 
         ref = self._get_ref()

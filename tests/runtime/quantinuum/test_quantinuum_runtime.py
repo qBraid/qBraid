@@ -229,10 +229,23 @@ class TestQuantinuumJob:
         mock_ref.last_status = "RUNNING"
         assert job.status() == JobStatus.COMPLETED
 
-    def test_status_unknown_on_missing_attribute(self):
-        mock_ref = SimpleNamespace()  # no last_status attribute
+    def test_status_unknown_on_unrecognized_value(self):
+        """An unexpected ``last_status`` string maps to UNKNOWN rather than raising."""
+        mock_ref = SimpleNamespace(last_status="SOMETHING_UNEXPECTED")
         job = QuantinuumJob(job_id="job-123", job=mock_ref)
         assert job.status() == JobStatus.UNKNOWN
+
+    def test_status_wraps_ref_lookup_errors(self):
+        """Exceptions raised when accessing the job ref are wrapped as QuantinuumJobError."""
+
+        class BadRef:
+            @property
+            def last_status(self):
+                raise RuntimeError("connection lost")
+
+        job = QuantinuumJob(job_id="job-123", job=BadRef())
+        with pytest.raises(QuantinuumJobError, match="Unable to retrieve job status"):
+            job.status()
 
     @patch("qnexus.jobs.cancel")
     def test_cancel(self, mock_cancel):
@@ -341,6 +354,9 @@ class TestQuantinuumJob:
     @patch("qnexus.jobs.results")
     def test_result_derives_device_id_from_job_metadata(self, mock_results):
         """When no device is attached, prefer the device_name recorded on the job ref."""
+        # pylint: disable-next=import-outside-toplevel
+        from quantinuum_schemas.models.backend_config import QuantinuumConfig
+
         download = MagicMock()
         download.get_counts.return_value = {(0, 0): 10}
         result_item = MagicMock()
@@ -349,7 +365,7 @@ class TestQuantinuumJob:
 
         mock_ref = SimpleNamespace(
             last_status="COMPLETED",
-            backend_config_store=SimpleNamespace(device_name="H2-1"),
+            backend_config=QuantinuumConfig(device_name="H2-1"),
         )
         job = QuantinuumJob(job_id="job-123", job=mock_ref)
         result = job.result()
@@ -357,14 +373,17 @@ class TestQuantinuumJob:
 
     @patch("qnexus.jobs.results")
     def test_result_falls_back_to_generic_device_id(self, mock_results):
-        """Fallback label when neither device nor backend_config_store is available."""
+        """Fallback label when backend_config is not a QuantinuumConfig."""
+        # pylint: disable-next=import-outside-toplevel
+        from quantinuum_schemas.models.backend_config import AerConfig
+
         download = MagicMock()
         download.get_counts.return_value = {(0, 0): 10}
         result_item = MagicMock()
         result_item.download_result.return_value = download
         mock_results.return_value = [result_item]
 
-        mock_ref = SimpleNamespace(last_status="COMPLETED")
+        mock_ref = SimpleNamespace(last_status="COMPLETED", backend_config=AerConfig())
         job = QuantinuumJob(job_id="job-123", job=mock_ref)
         result = job.result()
         assert result.device_id == "quantinuum"

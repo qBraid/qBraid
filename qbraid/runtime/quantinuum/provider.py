@@ -102,10 +102,9 @@ class QuantinuumProvider(QuantumProvider):
         :meth:`get_device` for each entry.
         """
         df = _fetch_quantinuum_devices_df()
-        devices: list[QuantinuumDevice] = []
-        for _, row in df.iterrows():
-            device_id = str(row["device_name"]).strip()
-            if not device_id:
-                continue
-            devices.append(QuantinuumDevice(profile=_build_profile(device_id, row["backend_info"])))
-        return devices
+        return [
+            QuantinuumDevice(
+                profile=_build_profile(row["device_name"], row["backend_info"]),
+            )
+            for _, row in df.iterrows()
+        ]

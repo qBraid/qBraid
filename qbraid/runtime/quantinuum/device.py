@@ -77,6 +77,8 @@ class QuantinuumDevice(QuantumDevice):
         self,
         run_input: Circuit | list[Circuit],
         shots: int = 1000,
+        project_name: str | None = None,
+        optimisation_level: int | None = None,
     ) -> QuantinuumJob:
         """Compile and submit a pytket circuit (or batch) to the Quantinuum device.
 
@@ -87,8 +89,19 @@ class QuantinuumDevice(QuantumDevice):
 
         The ``run_input`` is assumed to already be in pytket ``Circuit`` form;
         the qBraid transpiler pipeline (invoked via the base class ``run``)
-        handles any upstream format conversions (e.g. ``qiskit.QuantumCircuit``
-        → ``Circuit``) based on the device's :class:`TargetProfile`.
+        handles any upstream format conversions based on the device's
+        :class:`TargetProfile`.
+
+        Args:
+            run_input: pytket ``Circuit`` or a list thereof to execute.
+            shots: Number of shots per circuit. Defaults to 1000.
+            project_name: NEXUS project name to scope the compile and execute
+                jobs under. Falls back to the ``QUANTINUUM_NEXUS_PROJECT_NAME``
+                environment variable, and ultimately to ``"qbraid"``.
+            optimisation_level: pytket optimisation level (0-2) passed to the
+                NEXUS compile stage. Falls back to the
+                ``QUANTINUUM_NEXUS_OPT_LEVEL`` environment variable, and
+                ultimately to ``1``.
         """
         # pylint: disable=import-outside-toplevel
         import qnexus as qnx
@@ -98,9 +111,18 @@ class QuantinuumDevice(QuantumDevice):
 
         circuits = run_input if isinstance(run_input, list) else [run_input]
 
-        project = qnx.projects.get_or_create(
-            name=os.getenv("QUANTINUUM_NEXUS_PROJECT_NAME", "qbraid")
+        resolved_project_name = (
+            project_name
+            if project_name is not None
+            else os.getenv("QUANTINUUM_NEXUS_PROJECT_NAME", "qbraid")
         )
+        resolved_opt_level = (
+            optimisation_level
+            if optimisation_level is not None
+            else int(os.getenv("QUANTINUUM_NEXUS_OPT_LEVEL", "1"))
+        )
+
+        project = qnx.projects.get_or_create(name=resolved_project_name)
         backend_config = qnx.QuantinuumConfig(device_name=self.id)
 
         def unique(label: str) -> str:
@@ -112,11 +134,10 @@ class QuantinuumDevice(QuantumDevice):
             for i, c in enumerate(circuits)
         ]
 
-        opt = int(os.getenv("QUANTINUUM_NEXUS_OPT_LEVEL", "1"))
         compile_job = qnx.start_compile_job(
             programs=circuit_refs,
             name=unique("compile"),
-            optimisation_level=opt,
+            optimisation_level=resolved_opt_level,
             backend_config=backend_config,
             project=project,
         )
