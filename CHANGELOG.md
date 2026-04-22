@@ -48,7 +48,6 @@ Types of changes:
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added CodeRabbit configuration file (`.coderabbit.yaml`) to disable automatic code review functionality ([#1162](https://github.com/qBraid/qBraid/pull/1162))
 - Added `@overload` method signatures to `QbraidDevice.submit` method to provide type hints for single `Program` vs `list[Program]` input types ([#1164](https://github.com/qBraid/qBraid/pull/1164))
-- Added comprehensive test for failed job result handling with `MockClientWithFailedJob` and `test_job_result_failed` ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -58,8 +57,7 @@ Types of changes:
 - Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
 - Simplified `test_qasm3_to_braket_error_includes_detail` test by removing reset case and converting from parametrized test to single case testing only the `c3x` undefined gate error ([#1161](https://github.com/qBraid/qBraid/pull/1161))
-- Updated type annotations throughout `qbraid.runtime` to use modern union syntax (`|` instead of `Union`) and removed unnecessary imports ([#1164](https://github.com/qBraid/qBraid/pull/1164))
-- Enhanced `QuantumDevice.submit` docstring to clarify that run_input should match the device's accepted program spec ([#1164](https://github.com/qBraid/qBraid/pull/1164))
+- Modernized type annotations throughout `qbraid.runtime` by replacing `Optional[]` and `Union[]` with PEP 604 syntax using `|` operator ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -71,7 +69,7 @@ Types of changes:
 - Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Fixed classical bit collisions in Braket `pad_measurements` method by detecting internal collisions, padding collisions, and out-of-range indices; rebases existing measures to sequential indices when necessary to ensure valid QASM output ([#1160](https://github.com/qBraid/qBraid/pull/1160))
 - Fixed `BraketQuantumTask._get_partial_measurement_qubits_from_tags` to return `None` and log warning when tag qubits are missing from result measurements, preventing crashes during result processing ([#1160](https://github.com/qBraid/qBraid/pull/1160))
-- Fixed `QbraidJob.result` method to handle failed jobs by creating a `CoreResult` with empty `resultData` instead of calling `get_job_result`, preventing crashes when processing failed job results ([#1164](https://github.com/qBraid/qBraid/pull/1164))
+- Fixed `QbraidJob.result` method to handle failed jobs by creating a `qbraid_core.services.runtime.schemas.Result` with empty `resultData` instead of calling `get_job_result`, preventing crashes when processing failed job results ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Dependencies
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
