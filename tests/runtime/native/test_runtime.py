@@ -17807,4 +17807,6 @@ def test_job_result_failed():
     assert result.job_id == FAILED_GET_JOB.jobQrn
     assert result.device_id == FAILED_GET_JOB.deviceQrn
     assert isinstance(result.data, GateModelResultData)
+    assert result.data.measurement_counts is None
+    assert result.data.measurements is None
     assert result.details.get("status") == JobStatus.FAILED
