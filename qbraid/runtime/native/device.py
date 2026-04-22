@@ -20,7 +20,7 @@ Module defining QbraidDevice class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, overload
 
 from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
@@ -84,6 +84,29 @@ class QbraidDevice(QuantumDevice):
             raise ValueError(f"Noise model '{noise_model}' not supported by device.")
 
         return self.profile.noise_models.get(noise_model).name
+
+    # pylint: disable=too-many-arguments
+    @overload
+    def submit(
+        self,
+        run_input: Program,
+        shots: int | None = None,
+        name: str | None = None,
+        tags: dict[str, str | int | bool] | None = None,
+        runtime_options: dict[str, Any] | None = None,
+    ) -> QbraidJob: ...
+
+    @overload
+    def submit(
+        self,
+        run_input: list[Program],
+        shots: int | None = None,
+        name: str | None = None,
+        tags: dict[str, str | int | bool] | None = None,
+        runtime_options: dict[str, Any] | None = None,
+    ) -> list[QbraidJob]: ...
+
+    # pylint: enable=too-many-arguments
 
     # pylint: disable-next=too-many-arguments
     def submit(
