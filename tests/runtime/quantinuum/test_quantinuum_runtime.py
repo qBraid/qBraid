@@ -129,6 +129,17 @@ class TestQuantinuumProvider:
         # Single API call for the entire list, not one-per-row.
         mock_get_all.assert_called_once()
 
+    def test_provider_is_hashable(self):
+        """``QuantinuumProvider`` instances must be hashable for ``cached_method``."""
+        provider_a = QuantinuumProvider()
+        provider_b = QuantinuumProvider()
+
+        # ``hash()`` succeeds and each instance is independent.
+        assert hash(provider_a) == hash(provider_a)
+        assert hash(provider_a) != hash(provider_b)
+        # Usable as a dict key / set member.
+        assert len({provider_a, provider_b}) == 2
+
 
 # --- Device ---
 
@@ -193,6 +204,86 @@ class TestQuantinuumDevice:
         mock_status.return_value = "OFFLINE"  # any other value
         device = _make_device()
         assert device.status() == DeviceStatus.OFFLINE
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_runs_full_compile_execute_pipeline(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """``submit`` must upload circuits, compile, fetch compiled refs, then execute."""
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+        execute_job_id = "00000000-0000-0000-0000-000000000001"
+        mock_execute.return_value = MagicMock(id=execute_job_id)
+
+        device = _make_device()
+        circuit = Circuit(2)
+        job = device.submit(circuit, shots=500)
+
+        # One circuit uploaded.
+        assert mock_upload.call_count == 1
+        # Compile then execute.
+        mock_compile.assert_called_once()
+        mock_execute.assert_called_once()
+        _, execute_kwargs = mock_execute.call_args
+        assert execute_kwargs["n_shots"] == [500]
+        assert isinstance(job, QuantinuumJob)
+        assert job.id == execute_job_id
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_accepts_project_and_opt_level_kwargs(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """``submit`` should honor ``project_name``/``optimisation_level`` kwargs."""
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+        mock_execute.return_value = MagicMock(id="job-id")
+
+        device = _make_device()
+        device.submit(Circuit(2), shots=100, project_name="my-proj", optimisation_level=2)
+
+        mock_get_or_create.assert_called_once_with(name="my-proj")
+        _, compile_kwargs = mock_compile.call_args
+        assert compile_kwargs["optimisation_level"] == 2
 
 
 # --- Job ---
@@ -261,6 +352,30 @@ class TestQuantinuumJob:
         job = QuantinuumJob(job_id="job-123", job=mock_ref)
         with pytest.raises(QuantinuumJobError, match="Failed to cancel"):
             job.cancel()
+
+    @patch("qnexus.jobs.get")
+    def test_get_ref_lazily_fetches_when_job_is_none(self, mock_get):
+        """When no job ref was supplied, ``_get_ref`` should look it up by ID."""
+        fetched_ref = SimpleNamespace(last_status="QUEUED")
+        mock_get.return_value = fetched_ref
+
+        job = QuantinuumJob(job_id="job-123")
+        ref = job._get_ref()  # pylint: disable=protected-access
+
+        mock_get.assert_called_once_with(id="job-123")
+        assert ref is fetched_ref
+        # Cached for subsequent calls.
+        assert job._get_ref() is fetched_ref  # pylint: disable=protected-access
+        mock_get.assert_called_once()
+
+    @patch("qnexus.jobs.get")
+    def test_get_ref_wraps_remote_errors(self, mock_get):
+        """Remote lookup failures are surfaced as QuantinuumJobError."""
+        mock_get.side_effect = RuntimeError("nexus down")
+
+        job = QuantinuumJob(job_id="job-123")
+        with pytest.raises(QuantinuumJobError, match="Unable to retrieve Quantinuum job"):
+            job._get_ref()  # pylint: disable=protected-access
 
     def test_execution_time_not_completed(self):
         mock_ref = SimpleNamespace(last_status="RUNNING")
@@ -349,6 +464,15 @@ class TestQuantinuumJob:
         mock_ref = SimpleNamespace(last_status="COMPLETED")
         job = QuantinuumJob(job_id="job-123", job=mock_ref)
         with pytest.raises(QuantinuumJobError, match="No results available"):
+            job.result()
+
+    @patch("qnexus.jobs.results")
+    def test_result_wraps_remote_errors(self, mock_results):
+        """Errors from ``qnx.jobs.results`` should surface as QuantinuumJobError."""
+        mock_results.side_effect = RuntimeError("nexus timeout")
+        mock_ref = SimpleNamespace(last_status="COMPLETED")
+        job = QuantinuumJob(job_id="job-123", job=mock_ref)
+        with pytest.raises(QuantinuumJobError, match="Failed to fetch results"):
             job.result()
 
     @patch("qnexus.jobs.results")
