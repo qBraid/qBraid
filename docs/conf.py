@@ -69,6 +69,8 @@ autodoc_mock_imports = [
     "pulser",
     "pyqubo",
     "azure",
+    "qnexus",
+    "quantinuum_schemas",
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True

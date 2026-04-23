@@ -157,6 +157,11 @@ _lazy = {
         "OriginDevice",
         "OriginJob",
     ],
+    "quantinuum": [
+        "QuantinuumProvider",
+        "QuantinuumDevice",
+        "QuantinuumJob",
+    ],
     "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
@@ -201,6 +206,9 @@ if TYPE_CHECKING:
     from .origin import OriginDevice as OriginDevice
     from .origin import OriginJob as OriginJob
     from .origin import OriginProvider as OriginProvider
+    from .quantinuum import QuantinuumDevice as QuantinuumDevice
+    from .quantinuum import QuantinuumJob as QuantinuumJob
+    from .quantinuum import QuantinuumProvider as QuantinuumProvider
 
 
 def __getattr__(name):

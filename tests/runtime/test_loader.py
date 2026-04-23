@@ -58,7 +58,20 @@ def test_load_job_error(job_id):
 def test_get_providers():
     """Test getting all available providers."""
     providers = get_providers()
-    assert providers == PROVIDERS == ["aws", "azure", "ibm", "ionq", "oqc", "origin", "qbraid"]
+    assert (
+        providers
+        == PROVIDERS
+        == [
+            "aws",
+            "azure",
+            "ibm",
+            "ionq",
+            "oqc",
+            "origin",
+            "qbraid",
+            "quantinuum",
+        ]
+    )
 
 
 def test_load_provider(mock_client):

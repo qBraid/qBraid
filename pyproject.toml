@@ -49,6 +49,7 @@ cudaq = ["cudaq>=0.9.0,<0.14.0"]
 ionq = ["qiskit-ionq>=0.5.12"]
 oqc = ["oqc-qcaas-client>=3.11.0"]
 origin = ["pyqpanda3"]
+quantinuum = ["qnexus>=0.39.0", "pytket>=1.31"]
 pennylane = ["pennylane>=0.43"]
 pulser = ["pulser-core>=1.4.0,<1.8.0", "pulser-simulation>=1.4.0,<1.8.0"]
 pyqubo = ["pyqubo>=1.4.0"]
@@ -79,6 +80,7 @@ azure = "qbraid.runtime.azure.provider:AzureQuantumProvider"
 ibm = "qbraid.runtime.ibm.provider:QiskitRuntimeProvider"
 ionq = "qbraid.runtime.ionq.provider:IonQProvider"
 origin = "qbraid.runtime.origin.provider:OriginProvider"
+quantinuum = "qbraid.runtime.quantinuum.provider:QuantinuumProvider"
 qbraid = "qbraid.runtime.native.provider:QbraidProvider"
 oqc = "qbraid.runtime.oqc.provider:OQCProvider"
 
@@ -88,6 +90,7 @@ azure = "qbraid.runtime.azure.job:AzureQuantumJob"
 ibm = "qbraid.runtime.ibm.job:QiskitJob"
 ionq = "qbraid.runtime.ionq.job:IonQJob"
 origin = "qbraid.runtime.origin.job:OriginJob"
+quantinuum = "qbraid.runtime.quantinuum.job:QuantinuumJob"
 qbraid = "qbraid.runtime.native.job:QbraidJob"
 oqc = "qbraid.runtime.oqc.job:OQCJob"
 
