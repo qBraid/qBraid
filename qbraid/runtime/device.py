@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from qbraid._logging import logger
 from qbraid.programs import (
@@ -47,7 +47,6 @@ from .options import RuntimeOptions
 if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
-    import qbraid.transpiler
 
 
 class QuantumDevice(ABC):
@@ -56,22 +55,22 @@ class QuantumDevice(ABC):
     def __init__(
         self,
         profile: qbraid.runtime.TargetProfile,
-        scheme: Optional[ConversionScheme] = None,
-        options: Optional[RuntimeOptions] = None,
+        scheme: ConversionScheme | None = None,
+        options: RuntimeOptions | None = None,
     ):
         """Create a ``QuantumDevice`` object.
 
         Args:
             profile (TargetProfile): The device runtime profile.
-            scheme (Optional[ConversionScheme]): The conversion graph and options passed
+            scheme (ConversionScheme | None): The conversion graph and options passed
                 to the transpiler at runtime.
-            options (Optional[RuntimeOptions]): Custom options to control the runtime
+            options (RuntimeOptions | None): Custom options to control the runtime
                 behavior. Adds fields or overrides default values for ``transpile``,
                 ``transform``, and ``validate``. Note that while you can modify these
                 values, their associated validators are fixed and cannot be changed.
         """
         self._profile = profile
-        self._target_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = profile.program_spec
+        self._target_spec: ProgramSpec | list[ProgramSpec] | None = profile.program_spec
         self._scheme = scheme or ConversionScheme()
         self._options = self._default_options()
         if options:
@@ -88,7 +87,7 @@ class QuantumDevice(ABC):
         return self.profile.device_id
 
     @property
-    def num_qubits(self) -> Optional[int]:
+    def num_qubits(self) -> int | None:
         """The number of qubits supported by the device."""
         return self.profile.num_qubits
 
@@ -481,18 +480,21 @@ class QuantumDevice(ABC):
     @abstractmethod
     def submit(
         self,
-        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
         *args,
         **kwargs,
-    ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
-        """Vendor run method. Should return dictionary with the following keys."""
+    ) -> qbraid.runtime.QuantumJob | list[qbraid.runtime.QuantumJob]:
+        """
+        Submit a job to the device, where run_input matches the quantum program type
+        accepted by the device API (i.e. QuantumDevice.profile.program_spec).
+        """
 
     def run(
         self,
-        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
         *args,
         **kwargs,
-    ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
+    ) -> qbraid.runtime.QuantumJob | list[qbraid.runtime.QuantumJob]:
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 

@@ -18,9 +18,10 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from qbraid_core.services.runtime import QuantumRuntimeClient
+from qbraid_core.services.runtime.schemas.result import Result as CoreResult
 
 from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
@@ -41,8 +42,8 @@ class QbraidJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        device: Optional[qbraid.runtime.QbraidDevice] = None,
-        client: Optional[qbraid_core.services.runtime.QuantumRuntimeClient] = None,
+        device: qbraid.runtime.QbraidDevice | None = None,
+        client: qbraid_core.services.runtime.QuantumRuntimeClient | None = None,
         **kwargs,
     ):
         super().__init__(job_id, device, **kwargs)
@@ -63,7 +64,7 @@ class QbraidJob(QuantumJob):
             self._client = self._device.client if self._device else QuantumRuntimeClient()
         return self._client
 
-    def queue_position(self) -> Optional[int]:
+    def queue_position(self) -> int | None:
         """Return the position of the job in the queue."""
         return self.metadata()["queuePosition"]
 
@@ -106,14 +107,22 @@ class QbraidJob(QuantumJob):
 
         logger.info("Success. Current status: %s", status.name)
 
-    def result(self, timeout: Optional[int] = None) -> Result[ResultDataType]:
+    def result(self, timeout: int | None = None) -> Result[ResultDataType]:
         """Return the results of the job."""
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
         cost = job_data.cost
         time_stamps = job_data.timeStamps
         success = job_data.status == JobStatus.COMPLETED
-        job_result = self.client.get_job_result(self.id) if success else None
+        if success:
+            job_result = self.client.get_job_result(self.id)
+        else:
+            job_result = CoreResult(
+                status=job_data.status,
+                cost=cost,
+                timeStamps=time_stamps,
+                resultData={},
+            )
         data = ResultData.from_object(job_result, job_data.experimentType)
         return Result[ResultDataType](
             device_id=job_data.deviceQrn,
@@ -122,4 +131,5 @@ class QbraidJob(QuantumJob):
             data=data,
             time_stamps=time_stamps,
             cost=cost,
+            status=job_data.status,
         )
