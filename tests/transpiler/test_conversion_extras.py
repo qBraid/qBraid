@@ -32,7 +32,7 @@ except ImportError:
 
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
-from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
+from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_ionq, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
@@ -164,3 +164,58 @@ def test_autoqasm_shared15_to_qasm3_extra():
 
     assert isinstance(program, str)
     assert program == normalize_qasm_gate_params(qasm3_shared15_reference())
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_compacts_qubit_indices():
+    """Test that qiskit_to_ionq remaps qubit indices to a compact 0-based range.
+
+    When a circuit is transpiled against a large backend (e.g. 29 qubits),
+    qiskit may map logical qubits to high-index physical qubits. The IonQ
+    dict must use compacted indices so the simulator/QPU receives the minimal
+    qubit count.
+    """
+    # pylint: disable=import-outside-toplevel
+    from qiskit import QuantumCircuit
+
+    # Build a 2-qubit Bell circuit on a 20-qubit register, placing gates on
+    # qubits 7 and 15 to simulate layout expansion from transpilation.
+    qc = QuantumCircuit(20)
+    qc.h(7)
+    qc.cx(7, 15)
+
+    result = qiskit_to_ionq(qc, gateset="qis")
+
+    assert result["qubits"] == 2
+    targets_seen: set[int] = set()
+    for gate in result["circuit"]:
+        for key in ("target", "targets", "control", "controls"):
+            val = gate.get(key)
+            if val is not None:
+                if isinstance(val, list):
+                    targets_seen.update(val)
+                else:
+                    targets_seen.add(val)
+    assert targets_seen == {0, 1}
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_small_circuit_unchanged():
+    """Test that qiskit_to_ionq produces correct output for a simple circuit
+    that doesn't need remapping."""
+    # pylint: disable=import-outside-toplevel
+    import math
+
+    from qiskit import QuantumCircuit
+
+    qc = QuantumCircuit(1)
+    qc.rx(-math.pi / 2, 0)
+
+    result = qiskit_to_ionq(qc, gateset="qis")
+
+    assert result["qubits"] == 1
+    assert result["format"] == "ionq.circuit.v0"
+    assert result["gateset"] == "qis"
+    assert len(result["circuit"]) == 1
+    assert result["circuit"][0]["gate"] == "rx"
+    assert result["circuit"][0]["targets"] == [0]
