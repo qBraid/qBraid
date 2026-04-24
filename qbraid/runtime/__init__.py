@@ -212,12 +212,12 @@ if TYPE_CHECKING:
     from .origin import OriginDevice as OriginDevice
     from .origin import OriginJob as OriginJob
     from .origin import OriginProvider as OriginProvider
-    from .rigetti import RigettiDevice as RigettiDevice
-    from .rigetti import RigettiJob as RigettiJob
-    from .rigetti import RigettiProvider as RigettiProvider
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .rigetti import RigettiDevice as RigettiDevice
+    from .rigetti import RigettiJob as RigettiJob
+    from .rigetti import RigettiProvider as RigettiProvider
 
 
 def __getattr__(name):
