@@ -54,6 +54,7 @@ autodoc_mock_imports = [
     "pennylane",
     "pyqir",
     "pyquil",
+    "qcs_sdk",
     "pytket",
     "qcaas_client",
     "qiskit",

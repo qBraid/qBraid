@@ -20,3 +20,4 @@ Submodules
    origin
    quantinuum
    native
+   rigetti

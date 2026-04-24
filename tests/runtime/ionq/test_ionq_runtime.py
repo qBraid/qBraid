@@ -113,6 +113,15 @@ DEVICE_DATA = [
         "has_access": False,
         "degraded": False,
     },
+    {
+        "backend": "qpu.forte-enterprise-3",
+        "status": "unavailable",
+        "qubits": 36,
+        "average_queue_time": 0,
+        "last_updated": 1738692095,
+        "has_access": False,
+        "degraded": False,
+    },
 ]
 
 POST_JOB_RESPONSE = {
@@ -201,14 +210,25 @@ def program_spec():
 def test_ionq_provider_get_device(program_spec):
     """Test getting IonQ provider and device."""
     with (
-        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch("qbraid_core.sessions.Session.get") as mock_get,
         patch(
             "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
         ) as mock_get_characterization,
     ):
 
         mock_get_characterization.side_effect = mock_characterization
-        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+
+        def mock_get_response(url):
+            mock_resp = Mock()
+            if "/backends/" in url:
+                backend_id = url.split("/backends/")[1]
+                device = next(d for d in DEVICE_DATA if d["backend"] == backend_id)
+                mock_resp.json.return_value = device
+            else:
+                mock_resp.json.return_value = DEVICE_DATA
+            return mock_resp
+
+        mock_get.side_effect = lambda url, **kwargs: mock_get_response(url)
 
         provider = IonQProvider(api_key="fake_api_key")
         assert isinstance(provider, IonQProvider)
@@ -527,7 +547,7 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")
 @patch("importlib.util.find_spec", return_value=None)
-def test_ionq_failed_job(mock_find_spec, mock_post, mock_get, circuit):
+def test_ionq_failed_job(_mock_find_spec, mock_post, mock_get, circuit):
     """Test running a fake job."""
     GET_JOB_RESPONSE["status"] = "failed"
     simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
@@ -749,12 +769,12 @@ def test_squash_multicircuit_input_valid_multiple_entries(native_input):
 
 def random_ionq_id(user=False):
     """Return a random IonQ ID."""
-    hex = uuid.uuid4().hex
+    hex_str = uuid.uuid4().hex
 
     if user:
-        return hex[:24]
+        return hex_str[:24]
 
-    return f"{hex[:8]}-{hex[8:12]}-{hex[12:16]}-{hex[16:20]}-{hex[20:]}"
+    return f"{hex_str[:8]}-{hex_str[8:12]}-{hex_str[12:16]}-{hex_str[16:20]}-{hex_str[20:]}"
 
 
 def generate_job_data_ids(num_children=0):
