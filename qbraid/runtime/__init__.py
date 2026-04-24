@@ -163,6 +163,11 @@ _lazy = {
         "OriginDevice",
         "OriginJob",
     ],
+    "quantinuum": [
+        "QuantinuumProvider",
+        "QuantinuumDevice",
+        "QuantinuumJob",
+    ],
     "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
@@ -210,6 +215,9 @@ if TYPE_CHECKING:
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider
+    from .quantinuum import QuantinuumDevice as QuantinuumDevice
+    from .quantinuum import QuantinuumJob as QuantinuumJob
+    from .quantinuum import QuantinuumProvider as QuantinuumProvider
 
 
 def __getattr__(name):

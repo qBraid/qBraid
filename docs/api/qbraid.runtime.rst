@@ -18,5 +18,6 @@ Submodules
    ionq
    oqc
    origin
+   quantinuum
    native
    rigetti

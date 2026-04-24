@@ -61,7 +61,17 @@ def test_get_providers():
     assert (
         providers
         == PROVIDERS
-        == ["aws", "azure", "ibm", "ionq", "oqc", "origin", "qbraid", "rigetti"]
+        == [
+            "aws",
+            "azure",
+            "ibm",
+            "ionq",
+            "oqc",
+            "origin",
+            "qbraid",
+            "quantinuum",
+            "rigetti"
+        ]
     )
 
 
