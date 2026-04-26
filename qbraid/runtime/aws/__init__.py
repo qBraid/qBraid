@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Mdule submiting and managing quantm tasks through AWS
+Module submitting and managing quantum tasks through AWS
 and Amazon Braket supported devices.
 
 .. currentmodule:: qbraid.runtime.aws
@@ -29,12 +29,25 @@ Classes
     BraketQuantumTask
 
 """
-from .device import BraketDevice
-from .job import BraketQuantumTask
-from .provider import BraketProvider
 
 __all__ = [
     "BraketDevice",
     "BraketProvider",
     "BraketQuantumTask",
 ]
+
+
+def __getattr__(name):
+    if name == "BraketProvider":
+        from .provider import BraketProvider
+
+        return BraketProvider
+    if name == "BraketDevice":
+        from .device import BraketDevice
+
+        return BraketDevice
+    if name == "BraketQuantumTask":
+        from .job import BraketQuantumTask
+
+        return BraketQuantumTask
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
