@@ -21,19 +21,13 @@ from typing import Any
 from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
-from qbraid_core.services.runtime.schemas import (  # pylint: disable=no-name-in-module
+from qbraid_core.services.runtime.schemas import (
+    GroupJob,
     JobRequest,
     Program,
     Result,
     RuntimeDevice,
     RuntimeJob,
-)
-
-# TODO: remove the `no-name-in-module` disable below once qbraid-core 0.2.2
-# (which exports GroupJob from `qbraid_core.services.runtime.schemas`) has
-# been released and the minimum version pin in requirements.txt is bumped.
-from qbraid_core.services.runtime.schemas.group import (  # pylint: disable=no-name-in-module
-    GroupJob,
 )
 
 from qbraid.runtime.device import QuantumDevice
