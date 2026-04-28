@@ -16,12 +16,12 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `BatchJobSession` context manager and `BatchResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical batch. Jobs submitted via `QbraidDevice.run()` inside an active `BatchJobSession` are automatically tagged with the batch's QRN, supporting cross-device and cross-provider batches on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the batch, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_batch` for retrieving the currently active batch QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
+- Added `GroupJobSession` context manager and `GroupResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical group. Jobs submitted via `QbraidDevice.run()` inside an active `GroupJobSession` are automatically tagged with the group's QRN, supporting cross-device and cross-provider groups on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the group, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_group` for retrieving the currently active group QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
 
-  **Context-manager usage (cross-device batch):**
+  **Context-manager usage (cross-device group):**
 
   ```python
-  from qbraid.runtime import BatchJobSession, QbraidProvider
+  from qbraid.runtime import GroupJobSession, QbraidProvider
 
   provider = QbraidProvider()
 
@@ -35,17 +35,17 @@ Types of changes:
   c = measure q;
   """
 
-  # All jobs inside the context are automatically tagged with the batch QRN
-  with BatchJobSession(name="Bell State Sweep") as batch:
-      # Jobs can target different devices and providers within the same batch
+  # All jobs inside the context are automatically tagged with the group QRN
+  with GroupJobSession(name="Bell State Sweep") as group:
+      # Jobs can target different devices and providers within the same group
       device_a = provider.get_device("aws:aws:sim:sv1")
       job1 = device_a.run(bell, shots=100)
 
       device_b = provider.get_device("aws:aws:sim:tn1")
       job2 = device_b.run(bell, shots=100)
 
-  # Collect results after the batch is closed
-  results = batch.results(timeout=300)
+  # Collect results after the group is closed
+  results = group.results(timeout=300)
   for job_id, result in results.results.items():
       print(f"{job_id}: {result.data.get_counts()}")
   ```
@@ -54,23 +54,23 @@ Types of changes:
 
   ```python
   # Useful for notebooks where you don't want a single with block
-  batch = BatchJobSession(name="interactive")
-  batch.open()
+  group = GroupJobSession(name="interactive")
+  group.open()
 
   # Submit jobs across multiple cells
   job1 = device.run(circuit_1, shots=100)
   job2 = device.run(circuit_2, shots=100)
 
   # Explicitly close when done submitting
-  batch.close()
-  results = batch.results(timeout=300)
+  group.close()
+  results = group.results(timeout=300)
   ```
 
   **Auto-close with Time-to-Live (TTL):**
 
   ```python
-  # Batch auto-closes after 60s if not explicitly closed (default: 3600s / 1 hour)
-  with BatchJobSession(name="short-lived", max_ttl=60) as batch:
+  # Group auto-closes after 60s if not explicitly closed (default: 3600s / 1 hour)
+  with GroupJobSession(name="short-lived", max_ttl=60) as group:
       job = device.run(bell, shots=10)
   ```
 
@@ -82,10 +82,10 @@ Types of changes:
       for job_id, result in results.items():
           print(f"{job_id}: {result.data.get_counts()}")
 
-  with BatchJobSession(name="with-callback") as batch:
+  with GroupJobSession(name="with-callback") as group:
       device.run(bell, shots=100)
       # Register callback; it fires automatically when the context exits
-      batch.on_all_complete(analyze, timeout=600)
+      group.on_all_complete(analyze, timeout=600)
 - Added OriginQ QCloud provider integration (`qbraid.runtime.origin`) with `OriginProvider`, `OriginDevice`, and `OriginJob` classes. Supports single-circuit submission on simulators and QPU backends, and batch submission (`list[QProg]`) on QPU backends. Simulator batch input automatically fans out to individual jobs. ([#1148](https://github.com/qBraid/qBraid/pull/1148))
 
   ```python
