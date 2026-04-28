@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Module defining BatchJobSession context manager and BatchResult container.
+Module defining GroupJobSession context manager and GroupResult container.
 
 """
 
@@ -28,75 +28,75 @@ from qbraid._logging import logger
 from qbraid.runtime.result import Result
 
 if TYPE_CHECKING:
-    from qbraid_core.services.runtime.schemas import BatchJob, BatchStatus
+    from qbraid_core.services.runtime.schemas.group import GroupJob, GroupStatus
 
     from qbraid.runtime.job import QuantumJob
 
 
-# Thread-safe context variables for tracking active batch.
+# Thread-safe context variables for tracking active group.
 # NOTE: ContextVar is subscripted at runtime (not lazy like annotations),
-# so we must use a string forward ref for BatchJobSession.
+# so we must use a string forward ref for GroupJobSession.
 
-# Var for the batchJobQrn string, which is included in job submissions by QbraidDevice.run()
-_active_batch: contextvars.ContextVar[str | None] = contextvars.ContextVar(
-    "_active_batch", default=None
+# Var for the groupJobQrn string, which is included in job submissions by QbraidDevice.run()
+_active_group: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "_active_group", default=None
 )
 
-# Var for the active BatchJobSession instance, which is read by QbraidDevice.submit()
+# Var for the active GroupJobSession instance, which is read by QbraidDevice.submit()
 # to register jobs with the session.
-_active_batch_session: contextvars.ContextVar["BatchJobSession | None"] = contextvars.ContextVar(
-    "_active_batch_session", default=None
+_active_group_session: contextvars.ContextVar["GroupJobSession | None"] = contextvars.ContextVar(
+    "_active_group_session", default=None
 )
 
 
-def get_active_batch() -> str | None:
-    """Return the batchJobQrn of the currently active batch, or None.
+def get_active_group() -> str | None:
+    """Return the groupJobQrn of the currently active group, or None.
 
     Called by QbraidDevice.run() to check if jobs should be tagged
-    with a batch identifier.
+    with a group identifier.
     """
-    return _active_batch.get(None)
+    return _active_group.get(None)
 
 
-def get_active_batch_session() -> BatchJobSession | None:
-    """Return the active BatchJobSession, or None.
+def get_active_group_session() -> GroupJobSession | None:
+    """Return the active GroupJobSession, or None.
 
     Called by QbraidDevice.submit() to register jobs
-    with the active batch session.
+    with the active group session.
     """
-    return _active_batch_session.get(None)
+    return _active_group_session.get(None)
 
 
-def reset_active_batch(token: contextvars.Token) -> None:
-    """Reset the active batch QRN to its previous value."""
-    _active_batch.reset(token)
+def reset_active_group(token: contextvars.Token) -> None:
+    """Reset the active group QRN to its previous value."""
+    _active_group.reset(token)
 
 
-def reset_active_batch_session(token: contextvars.Token) -> None:
-    """Reset the active batch session to its previous value."""
-    _active_batch_session.reset(token)
+def reset_active_group_session(token: contextvars.Token) -> None:
+    """Reset the active group session to its previous value."""
+    _active_group_session.reset(token)
 
 
-class BatchResult:
-    """Container for results of all jobs in a batch.
+class GroupResult:
+    """Container for results of all jobs in a group.
 
     Exposes the raw ``results`` mapping for direct access, plus
     convenience helpers for filtering by success. Supports indexing,
     iteration, and ``len()`` via the underlying mapping.
 
     Attributes:
-        batch_id: The batchJobQrn identifier.
+        group_id: The groupJobQrn identifier.
         results: Mapping of jobQrn -> Result[ResultDataType].
 
     Example:
-        >>> batch_result = batch.results()
-        >>> for job_id, result in batch_result.results.items():
+        >>> group_result = group.results()
+        >>> for job_id, result in group_result.results.items():
         ...     counts = result.data.get_counts()
         ...     print(f"{job_id}: {counts}")
     """
 
-    def __init__(self, batch_id: str, results: dict[str, Result]):
-        self.batch_id = batch_id
+    def __init__(self, group_id: str, results: dict[str, Result]):
+        self.group_id = group_id
         self.results = results
 
     def __getitem__(self, job_id: str) -> Result:
@@ -124,16 +124,16 @@ class BatchResult:
         success = len(self.successful())
         fail = len(self.failed())
         return (
-            f"BatchResult(batch_id='{self.batch_id}', "
+            f"GroupResult(group_id='{self.group_id}', "
             f"total={len(self)}, successful={success}, failed={fail})"
         )
 
 
-class BatchJobSession:
-    """Context manager for grouping quantum job submissions into a batch.
+class GroupJobSession:
+    """Context manager for grouping quantum job submissions into a group.
 
     Jobs submitted via QbraidDevice.run() within this context are
-    automatically tagged with the batch's QRN. The batch supports
+    automatically tagged with the group's QRN. The group supports
     cross-device and cross-provider job submissions for qBraid
     native devices.
 
@@ -141,35 +141,35 @@ class BatchJobSession:
     interactive workflows (notebooks, REPL).
 
     Args:
-        name: Optional human-readable name for the batch.
-        tags: Optional tags for filtering/organizing batches.
+        name: Optional human-readable name for the group.
+        tags: Optional tags for filtering/organizing groups.
         metadata: Optional metadata dict.
         client: Optional QuantumRuntimeClient instance. If not provided,
             a default client is created.
         max_ttl: Optional max time-to-live in seconds (1–86400). After this
-            duration, the batch is automatically closed by the backend.
+            duration, the group is automatically closed by the backend.
             Defaults to None (backend default of 3600s / 1 hour).
 
     Example (context manager):
-        >>> from qbraid.runtime import BatchJobSession
-        >>> with BatchJobSession(name="sweep") as batch:
+        >>> from qbraid.runtime import GroupJobSession
+        >>> with GroupJobSession(name="sweep") as group:
         ...     job1 = device_a.run(circuit_1)
         ...     job2 = device_b.run(circuit_2)
-        >>> results = batch.results(timeout=300)
+        >>> results = group.results(timeout=300)
         >>> for job_id, result in results.items():
         ...     print(result.data.get_counts())
 
     Example (manual open/close):
-        >>> batch = BatchJobSession(name="interactive")
-        >>> batch.open()
+        >>> group = GroupJobSession(name="interactive")
+        >>> group.open()
         >>> job1 = device_a.run(circuit_1)
         >>> job2 = device_b.run(circuit_2)
-        >>> batch.close()
-        >>> results = batch.results(timeout=300)
+        >>> group.close()
+        >>> results = group.results(timeout=300)
 
     Cross-references:
         - Context variable read by: QbraidDevice.submit() (native/device.py:92-147)
-        - Core schemas: qbraid_core.services.runtime.schemas (BatchJob, BatchStatus)
+        - Core schemas: qbraid_core.services.runtime.schemas (GroupJob, GroupStatus)
     """
 
     def __init__(  # pylint: disable=too-many-arguments
@@ -187,7 +187,7 @@ class BatchJobSession:
         self._metadata = metadata or {}
         self._client = client
         self._max_ttl = max_ttl
-        self._batch_data: BatchJob | None = None
+        self._group_data: GroupJob | None = None
         self._jobs: list[QuantumJob] = []
         self._token: contextvars.Token | None = None
         self._session_token: contextvars.Token | None = None
@@ -203,13 +203,13 @@ class BatchJobSession:
         return self._client
 
     @property
-    def batch_id(self) -> str | None:
-        """Return the batch QRN, or None if not yet opened."""
-        return self._batch_data.batchJobQrn if self._batch_data else None
+    def group_id(self) -> str | None:
+        """Return the group QRN, or None if not yet opened."""
+        return self._group_data.groupJobQrn if self._group_data else None
 
     @property
     def name(self) -> str | None:
-        """Return the batch name."""
+        """Return the group name."""
         return self._name
 
     @property
@@ -219,42 +219,42 @@ class BatchJobSession:
 
     @property
     def jobs(self) -> list[QuantumJob]:
-        """Return the list of jobs submitted within this batch."""
+        """Return the list of jobs submitted within this group."""
         return list(self._jobs)
 
     def _register_job(self, job: QuantumJob) -> None:
-        """Register a job as part of this batch.
+        """Register a job as part of this group.
 
-        Called internally by QbraidDevice.run() when an active batch
+        Called internally by QbraidDevice.run() when an active group
         context is detected.
         """
         self._jobs.append(job)
 
     def _reset_context(self) -> None:
-        """Reset context variables so no further jobs are tagged with this batch."""
+        """Reset context variables so no further jobs are tagged with this group."""
         if self._token is not None:
-            reset_active_batch(self._token)
+            reset_active_group(self._token)
             self._token = None
         if self._session_token is not None:
-            reset_active_batch_session(self._session_token)
+            reset_active_group_session(self._session_token)
             self._session_token = None
 
-    def open(self) -> BatchJobSession:
-        """Open the batch session.
+    def open(self) -> GroupJobSession:
+        """Open the group session.
 
-        Creates a batch on the backend and sets the context variable
+        Creates a group on the backend and sets the context variable
         so that subsequent QbraidDevice.run() calls include the
-        batchJobQrn in their job submissions.
+        groupJobQrn in their job submissions.
 
         Returns:
             self, for chaining.
 
         Raises:
-            RuntimeError: If a batch session is already active.
+            RuntimeError: If a group session is already active.
         """
-        if get_active_batch() is not None:
+        if get_active_group() is not None:
             raise RuntimeError(
-                "Cannot nest BatchJobSession contexts. A batch session is already active."
+                "Cannot nest GroupJobSession contexts. A group session is already active."
             )
 
         # Reset mutable state so the session can be safely reused
@@ -263,54 +263,54 @@ class BatchJobSession:
         self._on_complete_timeout = None
         self._on_complete_poll_interval = 5
 
-        self._batch_data = self.client.create_batch(
+        self._group_data = self.client.create_group(
             name=self._name,
             tags=self._tags,
             metadata=self._metadata,
             max_ttl=self._max_ttl,
         )
-        self._token = _active_batch.set(self._batch_data.batchJobQrn)
-        self._session_token = _active_batch_session.set(self)
-        logger.info("Opened batch session: %s", self._batch_data.batchJobQrn)
+        self._token = _active_group.set(self._group_data.groupJobQrn)
+        self._session_token = _active_group_session.set(self)
+        logger.info("Opened group session: %s", self._group_data.groupJobQrn)
         return self
 
     def close(self) -> None:
-        """Close the batch session.
+        """Close the group session.
 
-        Resets context variables and closes the batch on the backend.
+        Resets context variables and closes the group on the backend.
         Unlike ``__exit__``, errors propagate to the caller and the
         ``on_all_complete`` callback is **not** triggered.
 
         Raises:
             RuntimeError: If the session has not been opened.
         """
-        if self._batch_data is None:
-            raise RuntimeError("Batch session has not been opened.")
+        if self._group_data is None:
+            raise RuntimeError("Group session has not been opened.")
 
         self._reset_context()
 
-        # Close the batch on the backend (skip if already in a terminal state,
+        # Close the group on the backend (skip if already in a terminal state,
         # e.g. auto-closed by TTL expiry, or cancelled)
-        current_status = getattr(self._batch_data.status, "value", self._batch_data.status)
+        current_status = getattr(self._group_data.status, "value", self._group_data.status)
         terminal_statuses = {"CLOSED", "COMPLETED", "FAILED", "CANCELLED"}
         if current_status not in terminal_statuses:
-            self._batch_data = self.client.close_batch(self._batch_data.batchJobQrn)
-            logger.info("Closed batch session: %s", self._batch_data.batchJobQrn)
+            self._group_data = self.client.close_group(self._group_data.groupJobQrn)
+            logger.info("Closed group session: %s", self._group_data.groupJobQrn)
         else:
             # Refresh to get latest state from backend
-            self._batch_data = self.client.get_batch(self._batch_data.batchJobQrn)
+            self._group_data = self.client.get_group(self._group_data.groupJobQrn)
             logger.info(
-                "Batch already %s, skipping close: %s",
+                "Group already %s, skipping close: %s",
                 current_status,
-                self._batch_data.batchJobQrn,
+                self._group_data.groupJobQrn,
             )
 
-    def __enter__(self) -> BatchJobSession:
-        """Open the batch session (delegates to :meth:`open`)."""
+    def __enter__(self) -> GroupJobSession:
+        """Open the group session (delegates to :meth:`open`)."""
         return self.open()
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        """Close the batch session.
+        """Close the group session.
 
         Delegates to :meth:`close` for context-var reset and backend
         close, then runs the ``on_all_complete`` callback if registered.
@@ -321,36 +321,36 @@ class BatchJobSession:
         try:
             self.close()
         except Exception as err:  # pylint: disable=broad-exception-caught
-            logger.error("Failed to close batch: %s", err)
+            logger.error("Failed to close group: %s", err)
 
         # If callback registered, wait for results and invoke
         if self._on_complete_callback is not None:
             try:
-                batch_result = self.results(
+                group_result = self.results(
                     timeout=self._on_complete_timeout,
                     poll_interval=self._on_complete_poll_interval,
                 )
-                self._on_complete_callback(batch_result.results)
+                self._on_complete_callback(group_result.results)
             except Exception as err:  # pylint: disable=broad-exception-caught
                 logger.error("on_all_complete callback failed: %s", err)
 
-    def status(self) -> BatchStatus:
-        """Fetch and return the current batch status from the backend.
+    def status(self) -> GroupStatus:
+        """Fetch and return the current group status from the backend.
 
         Returns:
-            BatchStatus enum value.
+            GroupStatus enum value.
         """
-        if self._batch_data is None:
-            raise RuntimeError("Batch session has not been opened.")
-        self._batch_data = self.client.get_batch(self._batch_data.batchJobQrn)
-        return self._batch_data.status
+        if self._group_data is None:
+            raise RuntimeError("Group session has not been opened.")
+        self._group_data = self.client.get_group(self._group_data.groupJobQrn)
+        return self._group_data.status
 
     def results(
         self,
         timeout: int | None = None,
         poll_interval: int = 5,
-    ) -> BatchResult:
-        """Wait for all jobs to complete and return a BatchResult.
+    ) -> GroupResult:
+        """Wait for all jobs to complete and return a GroupResult.
 
         Blocks until all jobs reach a terminal state (COMPLETED, FAILED,
         CANCELLED) or until the timeout is reached.
@@ -358,43 +358,43 @@ class BatchJobSession:
         Args:
             timeout: Maximum seconds to wait **per job**. ``None`` = wait
                 indefinitely. Note: this is applied per job, not across the
-                whole batch, so with N jobs the total blocking time may
-                reach up to N × timeout seconds.
+                whole group, so with N jobs the total blocking time may
+                reach up to N * timeout seconds.
             poll_interval: Seconds between status checks per job.
 
         Returns:
-            BatchResult mapping jobQrn -> Result[ResultDataType].
+            GroupResult mapping jobQrn -> Result[ResultDataType].
 
         Raises:
             TimeoutError: If timeout reached before a job completes.
-            RuntimeError: If batch session was never opened.
+            RuntimeError: If group session was never opened.
         """
-        if self._batch_data is None:
-            raise RuntimeError("Batch session has not been opened.")
+        if self._group_data is None:
+            raise RuntimeError("Group session has not been opened.")
 
         results: dict[str, Result] = {}
         for job in self._jobs:
             job.wait_for_final_state(timeout=timeout, poll_interval=poll_interval)
             results[str(job.id)] = job.result()
 
-        return BatchResult(batch_id=self._batch_data.batchJobQrn, results=results)
+        return GroupResult(group_id=self._group_data.groupJobQrn, results=results)
 
     def cancel(self) -> None:
-        """Cancel the batch and all non-terminal jobs.
+        """Cancel the group and all non-terminal jobs.
 
         Also resets context variables so that no further jobs are tagged
-        with this batch and a new ``BatchJobSession`` can be opened.
+        with this group and a new ``GroupJobSession`` can be opened.
 
         Raises:
-            RuntimeError: If batch session was never opened.
+            RuntimeError: If group session was never opened.
         """
-        if self._batch_data is None:
-            raise RuntimeError("Batch session has not been opened.")
+        if self._group_data is None:
+            raise RuntimeError("Group session has not been opened.")
 
         self._reset_context()
 
-        self._batch_data = self.client.cancel_batch(self._batch_data.batchJobQrn)
-        logger.info("Cancelled batch: %s", self._batch_data.batchJobQrn)
+        self._group_data = self.client.cancel_group(self._group_data.groupJobQrn)
+        logger.info("Cancelled group: %s", self._group_data.groupJobQrn)
 
     def on_all_complete(
         self,
@@ -423,14 +423,14 @@ class BatchJobSession:
                             print(f"{job_id}: {counts}")
             timeout: Max seconds to wait **per job** for terminal state.
                 ``None`` = indefinite. Applied per job, so total blocking
-                time may reach up to N × timeout seconds for N jobs.
+                time may reach up to N * timeout seconds for N jobs.
             poll_interval: Seconds between status polls per job.
 
         Example:
-            >>> with BatchJobSession(name="sweep") as batch:
+            >>> with GroupJobSession(name="sweep") as group:
             ...     for circuit in circuits:
             ...         device.run(circuit)
-            ...     batch.on_all_complete(analyze, timeout=600)
+            ...     group.on_all_complete(analyze, timeout=600)
 
         Cross-references:
             - Result class: qbraid/runtime/result.py

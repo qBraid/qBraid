@@ -79,7 +79,6 @@ Exceptions
 import importlib
 from typing import TYPE_CHECKING
 
-from .batch import BatchJobSession, BatchResult, get_active_batch
 from .device import QuantumDevice
 from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
@@ -89,6 +88,7 @@ from .exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
+from .group import GroupJobSession, GroupResult, get_active_group
 from .job import QuantumJob
 from .loader import (
     JobLoaderError,
@@ -113,9 +113,9 @@ from .result_data import (
 PROVIDERS = get_providers()
 
 __all__ = [
-    "BatchJobSession",
-    "BatchResult",
-    "get_active_batch",
+    "GroupJobSession",
+    "GroupResult",
+    "get_active_group",
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
