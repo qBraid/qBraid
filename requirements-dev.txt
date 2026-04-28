@@ -26,7 +26,7 @@ qnexus>=0.39.0
 autoqasm>=0.1.2,<0.3
 
 # optional runtime dependencies
-qiskit-ibm-runtime>=0.39.0,<0.42
+qiskit-ibm-runtime>=0.39.0,<0.47
 oqc-qcaas-client>=3.11.0; python_version < "3.13"
 azure-quantum>=3.6.0,<4.0
 azure-identity>=1.17,<2.0
