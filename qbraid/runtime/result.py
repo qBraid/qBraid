@@ -67,6 +67,12 @@ class Result(Generic[ResultDataType]):
         """Returns the result of the job."""
         return self._details
 
+    def __getattr__(self, name: str) -> Any:
+        """Allow access to details as attributes."""
+        if name in self._details:
+            return self._details[name]
+        raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
+
     @deprecated("Use 'Result.data.get_counts()' instead.")
     def measurement_counts(self, *args, **kwargs) -> Any:
         """Returns the measurement counts of the job."""
