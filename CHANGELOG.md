@@ -16,6 +16,29 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; requires local [quilc](https://github.com/quil-lang/quilc) and [QVM](https://github.com/quil-lang/qvm) binaries for compilation and simulation — install the [Forest SDK](https://qcs.rigetti.com/sdk-downloads) before use ([#1127](https://github.com/qBraid/qBraid/pull/1127))
+
+  ```python
+  import pyquil
+  import pyquil.gates
+
+  from qbraid.runtime.rigetti import RigettiProvider
+
+  provider = RigettiProvider()
+  device = provider.get_device("Ankaa-3")
+
+  # Bell state on qubits 0 and 1, measured into a 2-bit register
+  program = pyquil.Program()
+  ro = program.declare("ro", "BIT", 2)
+  program.inst(pyquil.gates.H(0))
+  program.inst(pyquil.gates.CNOT(0, 1))
+  program.inst(pyquil.gates.MEASURE(0, ro[0]))
+  program.inst(pyquil.gates.MEASURE(1, ro[1]))
+
+  job = device.run(program, shots=100)
+  result = job.result()
+  print(result.data.get_counts())
+  ```
 - Added `GroupJobSession` context manager and `GroupResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical group. Jobs submitted via `QbraidDevice.run()` inside an active `GroupJobSession` are automatically tagged with the group's QRN, supporting cross-device and cross-provider groups on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the group, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_group` for retrieving the currently active group QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
 
   **Context-manager usage (cross-device group):**
