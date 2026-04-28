@@ -25,10 +25,12 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import requires_extras
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
+pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
 
 if TYPE_CHECKING:
     import braket.circuits
     import pytket.circuit
+    import qiskit
 
 
 @requires_extras("pytket.extensions.braket")
@@ -43,3 +45,16 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
     """
     braket_circuit, _, _ = pytket_braket.braket_convert.tk_to_braket(circuit)
     return braket_circuit
+
+
+@requires_extras("pytket.extensions.qiskit")
+def pytket_to_qiskit(circuit: pytket.circuit.Circuit) -> qiskit.QuantumCircuit:
+    """Returns a Qiskit QuantumCircuit equivalent to the input pytket circuit.
+
+    Args:
+        circuit (pytket.circuit.Circuit): PyTKET circuit to convert to a Qiskit circuit.
+
+    Returns:
+        qiskit.QuantumCircuit: Qiskit circuit equivalent to input pytket circuit.
+    """
+    return pytket_qiskit.tk_to_qiskit(circuit)

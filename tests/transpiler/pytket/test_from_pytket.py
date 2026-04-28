@@ -68,3 +68,24 @@ def test_100_random_pytket():
         pytket_circuit = random_circuit("pytket", 4, 1, graph=graph)
         cirq_circuit = transpile(pytket_circuit, "cirq")
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
+
+
+def test_bell_state_pytket_to_qiskit():
+    """Direct ``pytket_to_qiskit`` conversion produces an equivalent Qiskit circuit."""
+    pytest.importorskip("qiskit", reason="qiskit not installed.")
+    pytest.importorskip("pytket.extensions.qiskit", reason="pytket-qiskit not installed.")
+
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid.transpiler.conversions.pytket import pytket_to_qiskit
+
+    pytket_circuit = TKCircuit(2)
+    pytket_circuit.H(0)
+    pytket_circuit.CX(0, 1)
+
+    qiskit_circuit = pytket_to_qiskit(pytket_circuit)
+    # Round-trip through qBraid's transpiler should also work (pytket → qiskit via the new edge).
+    transpiled_qiskit = transpile(pytket_circuit, "qiskit")
+
+    assert qiskit_circuit.num_qubits == 2
+    assert circuits_allclose(pytket_circuit, qiskit_circuit, strict_gphase=True)
+    assert circuits_allclose(pytket_circuit, transpiled_qiskit, strict_gphase=True)
