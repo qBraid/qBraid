@@ -86,6 +86,7 @@ Types of changes:
       device.run(bell, shots=100)
       # Register callback; it fires automatically when the context exits
       group.on_all_complete(analyze, timeout=600)
+  ```
 - Added Quantinuum NEXUS provider integration (`qbraid.runtime.quantinuum`) with `QuantinuumProvider`, `QuantinuumDevice`, and `QuantinuumJob` classes. Supports single-circuit and batch submission via the NEXUS compile + execute pipeline; accepts any program type reachable to pytket via the qBraid transpiler graph. Counts are returned in MSB-first (`BasisOrder.dlo`) ordering for consistency with other qBraid providers. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
 - Added `pytket_to_qiskit` conversion function in `qbraid.transpiler.conversions.pytket.pytket_extras`, enabling the transpiler graph to route pytket ↔ qiskit directly (previously reachable only via the qasm2 bridge). Gated by `@requires_extras("pytket.extensions.qiskit")`. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
 
