@@ -67,12 +67,12 @@ jobs:
       - name: Override qbraid-core from branch
         if: ${{ inputs.qbraid_core_branch != '' }}
         run: |
-          pip install "git+https://${{ secrets.CROSS_REPO_TOKEN }}@github.com/qBraid/qbraid-core.git@${QBRAID_CORE_BRANCH}"
+          pip install --force-reinstall "git+https://${{ secrets.CROSS_REPO_TOKEN }}@github.com/qBraid/qbraid-core.git@${QBRAID_CORE_BRANCH}"
 
       - name: Override pyqasm from branch
         if: ${{ inputs.pyqasm_branch != '' }}
         run: |
-          pip install "git+https://${{ secrets.CROSS_REPO_TOKEN }}@github.com/qBraid/pyqasm.git@${PYQASM_BRANCH}"
+          pip install --force-reinstall "git+https://${{ secrets.CROSS_REPO_TOKEN }}@github.com/qBraid/pyqasm.git@${PYQASM_BRANCH}"
 
       - name: Log installed versions
         run: |
