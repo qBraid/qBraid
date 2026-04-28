@@ -16,11 +16,13 @@
 Module defining mock data and classes for testing the runtime module.
 
 """
-from typing import Any, Optional
+
+from typing import Any
 from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import (
+    GroupJob,
     JobRequest,
     Program,
     Result,
@@ -185,7 +187,7 @@ REDUNDANT_JOB_DATA = {
 
 JOB_DATA_QIR = {
     "jobQrn": "qbraid:qbraid:sim:qir-sv-37f5-qjob-1234567890",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "qbraid",
     "provider": "qbraid",
     "status": "COMPLETED",
@@ -209,7 +211,7 @@ JOB_DATA_QIR = {
 
 JOB_DATA_NEC = {
     "jobQrn": "qbraid:nec:sim:vector-annealer-37f5-qjob-1234567890",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "qbraid",
     "provider": "nec",
     "status": "COMPLETED",
@@ -233,7 +235,7 @@ JOB_DATA_NEC = {
 
 JOB_DATA_AQUILA = {
     "jobQrn": "aws:quera:qpu:aquila-37f5-qjob-696aae286a18e4f726abf2af",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "aws",
     "provider": "quera",
     "status": "COMPLETED",
@@ -355,7 +357,7 @@ RESULTS_DATA_AQUILA = {
 
 JOB_DATA_EQUAL1 = {
     "jobQrn": "qbraid:equal1:sim:bell-1-37f5-qjob-2ht3zyghhxsr8gqbu8yj",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "qbraid",
     "provider": "equal1",
     "status": "COMPLETED",
@@ -526,7 +528,7 @@ class MockClient:
             "tags": job_data.get("tags", {}),
             "runtimeOptions": job_data.get("runtimeOptions", {}),
             "jobQrn": job_data.get("jobQrn"),
-            "batchJobQrn": job_data.get("batchJobQrn"),
+            "groupJobQrn": job_data.get("groupJobQrn"),
             "vendor": job_data.get("vendor"),
             "provider": job_data.get("provider"),
             "status": "INITIALIZING",
@@ -619,8 +621,69 @@ class MockClient:
         """Cancels a specific quantum job."""
         # Mock implementation - no-op for testing
 
+    # Group methods
+    _group_counter: int = 0
+
+    def __init__(self):
+        self._groups: dict[str, dict[str, Any]] = {}
+
+    def _make_group_data(self, qrn: str, **overrides: Any) -> dict[str, Any]:
+        """Return the stored group dict, applying any overrides."""
+        data = self._groups.get(qrn, {}).copy()
+        data.update(overrides)
+        return data
+
+    def create_group(
+        self,
+        name: str | None = None,
+        tags: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        max_ttl: int | None = None,
+    ) -> GroupJob:
+        """Mock create_group — stores and returns a GroupJob with OPEN status."""
+        MockClient._group_counter += 1
+        qrn = f"qbraid:group:test-group-{MockClient._group_counter}"
+        data = {
+            "groupJobQrn": qrn,
+            "name": name,
+            "status": "OPEN",
+            "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+            "jobCount": 0,
+            "completedCount": 0,
+            "failedCount": 0,
+            "cancelledCount": 0,
+            "maxTTL": max_ttl or 3600,
+            "tags": tags or {},
+            "metadata": metadata or {},
+        }
+        self._groups[qrn] = data
+        return GroupJob.model_validate(data)
+
+    def close_group(self, group_qrn: str) -> GroupJob:
+        """Mock close_group — updates stored group to CLOSED and returns it."""
+        data = self._make_group_data(group_qrn, status="CLOSED")
+        self._groups[group_qrn] = data
+        return GroupJob.model_validate(data)
+
+    def cancel_group(self, group_qrn: str) -> GroupJob:
+        """Mock cancel_group — updates stored group to CANCELLED and returns it."""
+        data = self._make_group_data(group_qrn, status="CANCELLED")
+        self._groups[group_qrn] = data
+        return GroupJob.model_validate(data)
+
+    def get_group(self, group_qrn: str) -> GroupJob:
+        """Mock get_group — returns the stored group data.
+
+        Raises:
+            KeyError: If the group QRN is not found in the mock store.
+        """
+        if group_qrn not in self._groups:
+            raise KeyError(f"Group {group_qrn} not found in mock storage")
+        data = self._make_group_data(group_qrn)
+        return GroupJob.model_validate(data)
+
     # Legacy methods for backward compatibility
-    def search_devices(self, query: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    def search_devices(self, query: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Returns a list of devices matching the given query (legacy method)."""
         all_devices = [data["data"].copy() for data in self.DEVICE_MAP.values()]
 

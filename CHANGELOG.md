@@ -38,6 +38,78 @@ Types of changes:
   job = device.run(program, shots=100)
   result = job.result()
   print(result.data.get_counts())
+  ```
+- Added `GroupJobSession` context manager and `GroupResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical group. Jobs submitted via `QbraidDevice.run()` inside an active `GroupJobSession` are automatically tagged with the group's QRN, supporting cross-device and cross-provider groups on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the group, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_group` for retrieving the currently active group QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
+
+  **Context-manager usage (cross-device group):**
+
+  ```python
+  from qbraid.runtime import GroupJobSession, QbraidProvider
+
+  provider = QbraidProvider()
+
+  bell = """
+  OPENQASM 3.0;
+  include "stdgates.inc";
+  qubit[2] q;
+  bit[2] c;
+  h q[0];
+  cx q[0], q[1];
+  c = measure q;
+  """
+
+  # All jobs inside the context are automatically tagged with the group QRN
+  with GroupJobSession(name="Bell State Sweep") as group:
+      # Jobs can target different devices and providers within the same group
+      device_a = provider.get_device("aws:aws:sim:sv1")
+      job1 = device_a.run(bell, shots=100)
+
+      device_b = provider.get_device("aws:aws:sim:tn1")
+      job2 = device_b.run(bell, shots=100)
+
+  # Collect results after the group is closed
+  results = group.results(timeout=300)
+  for job_id, result in results.results.items():
+      print(f"{job_id}: {result.data.get_counts()}")
+  ```
+
+  **Manual open/close (notebooks and REPL):**
+
+  ```python
+  # Useful for notebooks where you don't want a single with block
+  group = GroupJobSession(name="interactive")
+  group.open()
+
+  # Submit jobs across multiple cells
+  job1 = device.run(circuit_1, shots=100)
+  job2 = device.run(circuit_2, shots=100)
+
+  # Explicitly close when done submitting
+  group.close()
+  results = group.results(timeout=300)
+  ```
+
+  **Auto-close with Time-to-Live (TTL):**
+
+  ```python
+  # Group auto-closes after 60s if not explicitly closed (default: 3600s / 1 hour)
+  with GroupJobSession(name="short-lived", max_ttl=60) as group:
+      job = device.run(bell, shots=10)
+  ```
+
+  **Completion callback:**
+
+  ```python
+  # Define a handler for when all jobs finish
+  def analyze(results):
+      for job_id, result in results.items():
+          print(f"{job_id}: {result.data.get_counts()}")
+
+  with GroupJobSession(name="with-callback") as group:
+      device.run(bell, shots=100)
+      # Register callback; it fires automatically when the context exits
+      group.on_all_complete(analyze, timeout=600)
+  ```
 - Added Quantinuum NEXUS provider integration (`qbraid.runtime.quantinuum`) with `QuantinuumProvider`, `QuantinuumDevice`, and `QuantinuumJob` classes. Supports single-circuit and batch submission via the NEXUS compile + execute pipeline; accepts any program type reachable to pytket via the qBraid transpiler graph. Counts are returned in MSB-first (`BasisOrder.dlo`) ordering for consistency with other qBraid providers. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
 - Added `pytket_to_qiskit` conversion function in `qbraid.transpiler.conversions.pytket.pytket_extras`, enabling the transpiler graph to route pytket ↔ qiskit directly (previously reachable only via the qasm2 bridge). Gated by `@requires_extras("pytket.extensions.qiskit")`. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
 
