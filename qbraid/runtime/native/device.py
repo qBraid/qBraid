@@ -23,10 +23,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, overload
 
+import pyqasm
 from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._logging import logger
+from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
@@ -37,6 +39,11 @@ if TYPE_CHECKING:
     import qbraid_core.services.runtime
 
     import qbraid.runtime
+
+
+_QIR_DEVICE_IDS = {
+    "qbraid:qbraid:sim:qir-sv",
+}
 
 
 class QbraidDevice(QuantumDevice):
@@ -87,6 +94,33 @@ class QbraidDevice(QuantumDevice):
             raise ValueError(f"Noise model '{noise_model}' not supported by device.")
 
         return self.profile.noise_models.get(noise_model).name
+
+    def transform(self, run_input: str) -> str:
+        """Apply device-specific transformations to the run input.
+
+        For QIR-based devices, removes barrier operations that are not
+        supported by the qBraid QIR runtime.
+        """
+        if self.id not in _QIR_DEVICE_IDS:
+            return run_input
+
+        try:
+            program = load_program(run_input)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to load program for barrier removal: %s", err)
+            return run_input
+
+        if not hasattr(program, "_module") or not program._module.has_barriers():
+            return run_input
+
+        logger.info(
+            "Removing barriers from program for QIR device '%s'. "
+            "Barriers are not supported by the QIR runtime.",
+            self.id,
+        )
+        program._module.remove_barriers()
+        program._program = pyqasm.dumps(program._module)
+        return program.program
 
     # pylint: disable=too-many-arguments
     @overload
