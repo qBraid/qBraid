@@ -165,8 +165,8 @@ Types of changes:
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added CodeRabbit configuration file (`.coderabbit.yaml`) to disable automatic code review functionality ([#1162](https://github.com/qBraid/qBraid/pull/1162))
 - Added `@overload` method signatures to `QbraidDevice.submit` method to provide type hints for single `Program` vs `list[Program]` input types ([#1164](https://github.com/qBraid/qBraid/pull/1164))
-- Added `QbraidDevice.transform()` method and `_QIR_DEVICE_IDS` module-level set to `qbraid.runtime.native.device`; `transform()` uses `load_program()` + `pyqasm` to strip barrier operations from QASM programs before submission to QIR-based devices ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
-- Added 8 unit tests for `QbraidDevice.transform()` in `tests/runtime/native/test_qir_simulator_remote.py` covering barrier removal, no-barrier passthrough, non-QIR device preservation, non-QASM passthrough, multiple barriers, single-qubit barrier, barrier between gates/measurements, and barrier-only circuits ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
+- Added `QbraidDevice.transform()` method and `_QIR_DEVICE_IDS` module-level set to `qbraid.runtime.native.device`; `transform()` uses `load_program()` + `pyqasm` to strip barrier operations from QASM programs before submission to QIR-based devices ([#1170](https://github.com/qBraid/qBraid/pull/1170))
+- Added 8 unit tests for `QbraidDevice.transform()` in `tests/runtime/native/test_qir_simulator_remote.py` covering barrier removal, no-barrier passthrough, non-QIR device preservation, non-QASM passthrough, multiple barriers, single-qubit barrier, barrier between gates/measurements, and barrier-only circuits ([#1170](https://github.com/qBraid/qBraid/pull/1170))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -176,7 +176,7 @@ Types of changes:
 - Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
 - Simplified `test_qasm3_to_braket_error_includes_detail` test by removing reset case and converting from parametrized test to single case testing only the `c3x` undefined gate error ([#1161](https://github.com/qBraid/qBraid/pull/1161))
-- Broadened exception catch in `tests/fixtures/__init__.py` `import_circuit_functions()` from `ImportError` to `Exception` to handle broken native library imports (e.g. `quil_rs` incompatibility with `pyquil`) gracefully during test collection ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
+- Broadened exception catch in `tests/fixtures/__init__.py` `import_circuit_functions()` from `ImportError` to `Exception` to handle broken native library imports (e.g. `quil_rs` incompatibility with `pyquil`) gracefully during test collection ([#1170](https://github.com/qBraid/qBraid/pull/1170))
 - Modernized type annotations throughout `qbraid.runtime` by replacing `Optional[]` and `Union[]` with PEP 604 syntax using `|` operator ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Deprecated
@@ -185,7 +185,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
-- Fixed QIR simulator (`qbraid:qbraid:sim:qir-sv`) rejecting programs containing `barrier` instructions by stripping barriers in `QbraidDevice.transform()` before submission; barriers are no-ops in quantum computing but caused cryptic linker errors in the QIR runtime (`__quantum__qis__barrier__body`) ([#PR_NUMBER](https://github.com/qBraid/qBraid/pull/PR_NUMBER))
+- Fixed QIR simulator (`qbraid:qbraid:sim:qir-sv`) rejecting programs containing `barrier` instructions by stripping barriers in `QbraidDevice.transform()` before submission; barriers are no-ops in quantum computing but caused cryptic linker errors in the QIR runtime (`__quantum__qis__barrier__body`) ([#1170](https://github.com/qBraid/qBraid/pull/1170))
 - Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
 - Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Fixed classical bit collisions in Braket `pad_measurements` method by detecting internal collisions, padding collisions, and out-of-range indices; rebases existing measures to sequential indices when necessary to ensure valid QASM output ([#1160](https://github.com/qBraid/qBraid/pull/1160))
