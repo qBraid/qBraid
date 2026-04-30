@@ -144,6 +144,7 @@ class ConversionGraph(rx.PyDiGraph):
         conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
         conversion_pairs: list[list[str, str]] = [
             conversion.split("_to_") for conversion in conversion_functions
+            if not ('qop' in conversion or 'fop' in conversion)
         ]
         registered_conversion_pairs: list[list[str, str]] = [
             [source, target]
@@ -182,7 +183,7 @@ class ConversionGraph(rx.PyDiGraph):
             for alias in nodes:
                 if alias not in self._node_alias_id_map and (
                     not self.require_native or is_registered_alias_native(alias)
-                ):
+                ) and "qop" not in alias and "fop" not in alias:
                     self._node_alias_id_map[alias] = self.add_node(alias)
 
     def has_node(self, node: str) -> bool:
@@ -660,3 +661,71 @@ class ConversionGraph(rx.PyDiGraph):
         from qbraid.visualization.plot_conversions import plot_conversion_graph
 
         plot_conversion_graph(self, **kwargs)
+
+
+class OperatorConversionGraph(ConversionGraph):
+    # pylint: disable-next=too-many-arguments
+    def __init__(
+        self,
+        conversions: Optional[list[Conversion]] = None,
+        require_native: bool = False,
+        include_isolated: bool = False,
+        edge_bias: Optional[float] = None,
+        nodes: Optional[Union[list[str], set[str]]] = None,
+    ):
+        """
+        Initialize a ConversionGraph instance.
+
+        Args:
+            conversions (list[Conversion], optional): List of conversion edges. If None,
+                default conversion edges are used.
+            require_native (bool): If True, only include "native" conversion functions.
+                Defaults to False.
+            include_isolated (bool): If True, includes all registered program type aliases, even
+                those that are not connected to any other nodes in the graph. Defaults to True.
+            edge_bias (float, optional): Factor used to fine-tune the edge weight calculations
+                and modify the decision thresholds for pathfinding. Defaults to 0.25 to prioritize
+                shorter paths. For example, a bias of 0.25 slightly favors a single conversion at
+                weight 0.78 over two conversions at weight 1.0. Only used if conversions is None.
+            nodes (list[str], optional): List of nodes to include in the graph. If nodes is None
+                and conversions is None, all nodes connected by registered conversions are included.
+                If nodes is None and conversions is specified, only nodes connected by the specified
+                conversions are included. Isolated nodes included iff include_isolated is True.
+
+        """
+        opconversions = conversions or self.load_default_conversions(bias=edge_bias)
+        super().__init__(
+            conversions=opconversions,
+            require_native=require_native,
+            include_isolated=include_isolated,
+            edge_bias=edge_bias,
+            nodes=nodes
+        )
+
+    @staticmethod
+    def load_default_conversions(bias: Optional[float] = None) -> list[Conversion]:
+        """
+        Create a list of default conversion nodes using predefined conversion functions.
+
+        Returns:
+            list[Conversion]: List of default conversion edges.
+        """
+        transpiler = import_module("qbraid.transpiler.conversions")
+        conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
+        conversion_pairs: list[list[str, str]] = [
+            conversion.split("_to_") for conversion in conversion_functions
+            if ("_to_" in conversion and ('qop' in conversion or 'fop' in conversion))
+        ]
+
+        registered_conversion_pairs: list[list[str, str]] = [
+            [source, target]
+            for source, target in conversion_pairs
+            if source in QPROGRAM_ALIASES and target in QPROGRAM_ALIASES
+        ]
+
+        def construct_conversion(name: list[str, str]) -> Conversion:
+            source, target = name
+            conversion_func = getattr(transpiler, f"{source}_to_{target}")
+            return Conversion(source, target, conversion_func, bias=bias)
+
+        return [construct_conversion(conversion) for conversion in registered_conversion_pairs]
