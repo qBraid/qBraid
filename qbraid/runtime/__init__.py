@@ -89,6 +89,7 @@ from .exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
+from .group import GroupJobSession, GroupResult, get_active_group
 from .job import QuantumJob
 from .loader import (
     JobLoaderError,
@@ -113,9 +114,9 @@ from .result_data import (
 PROVIDERS = get_providers()
 
 __all__ = [
-    "BatchJobSession",
-    "BatchResult",
-    "get_active_batch",
+    "GroupJobSession",
+    "GroupResult",
+    "get_active_group",
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
@@ -163,10 +164,20 @@ _lazy = {
         "OQCDevice",
         "OQCJob",
     ],
+    "rigetti": [
+        "RigettiProvider",
+        "RigettiDevice",
+        "RigettiJob",
+    ],
     "origin": [
         "OriginProvider",
         "OriginDevice",
         "OriginJob",
+    ],
+    "quantinuum": [
+        "QuantinuumProvider",
+        "QuantinuumDevice",
+        "QuantinuumJob",
     ],
     "ibm": [
         "QiskitRuntimeProvider",
@@ -212,6 +223,12 @@ if TYPE_CHECKING:
     from .origin import OriginDevice as OriginDevice
     from .origin import OriginJob as OriginJob
     from .origin import OriginProvider as OriginProvider
+    from .quantinuum import QuantinuumDevice as QuantinuumDevice
+    from .quantinuum import QuantinuumJob as QuantinuumJob
+    from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .rigetti import RigettiDevice as RigettiDevice
+    from .rigetti import RigettiJob as RigettiJob
+    from .rigetti import RigettiProvider as RigettiProvider
 
 
 def __getattr__(name):
@@ -232,5 +249,7 @@ def __getattr__(name):
 
 def __dir__():
     return sorted(
-        __all__ + list(_lazy.keys()) + [item for sublist in _lazy.values() for item in sublist]
+        __all__
+        + list(_lazy.keys())
+        + [item for sublist in _lazy.values() for item in sublist]
     )

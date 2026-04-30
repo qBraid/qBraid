@@ -21,7 +21,7 @@ from __future__ import annotations
 import base64
 import json
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
 from qbraid_core.exceptions import AuthError
@@ -92,7 +92,7 @@ def validate_qasm_to_ionq(program: Qasm2StringType | Qasm3StringType, device_id:
 
 def get_program_spec_lambdas(
     program_type_alias: str, device_id: str
-) -> dict[str, Optional[Callable[[Any], None]]]:
+) -> dict[str, Callable[[Any], None] | None]:
     """Returns conversion and validation functions for the given program type and device."""
     if program_type_alias == "pyqir":
         return {"serialize": _serialize_pyqir, "validate": None}
@@ -127,9 +127,7 @@ class QbraidProvider(QuantumProvider):
             qBraid QuantumRuntimeClient object
     """
 
-    def __init__(
-        self, api_key: Optional[str] = None, client: Optional[QuantumRuntimeClient] = None
-    ):
+    def __init__(self, api_key: str | None = None, client: QuantumRuntimeClient | None = None):
         """
         Initializes the QbraidProvider object
 
@@ -157,7 +155,7 @@ class QbraidProvider(QuantumProvider):
         return self._client
 
     @staticmethod
-    def _get_program_spec(run_package: Optional[str], device_id: str) -> Optional[ProgramSpec]:
+    def _get_program_spec(run_package: str | None, device_id: str) -> ProgramSpec | None:
         """Return the program spec for the given run package and device."""
         if not run_package:
             return None
@@ -182,7 +180,7 @@ class QbraidProvider(QuantumProvider):
         ]
 
     @staticmethod
-    def _get_basis_gates(device_qrn: str) -> Optional[list[str]]:
+    def _get_basis_gates(device_qrn: str) -> list[str] | None:
         """Return the basis gates for the qBraid device."""
         _vendor, provider, device_type, name = device_qrn.split(":")
         if provider == "ionq":
@@ -218,7 +216,6 @@ class QbraidProvider(QuantumProvider):
     @cached_method(ttl=120)
     def get_devices(self) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
-        # query = kwargs or None
 
         try:
             # TODO: Implement support for device query

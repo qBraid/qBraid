@@ -17735,3 +17735,78 @@ def test_full_pipeline_multiple_devices(provider, sv1_program):
     for job in jobs:
         assert isinstance(job, QbraidJob)
         assert job.status() in [JobStatus.COMPLETED, JobStatus.QUEUED, JobStatus.INITIALIZING]
+
+
+# ============================================================================
+# Failed Job Result Tests
+# ============================================================================
+
+FAILED_GET_JOB_RESPONSE = {
+    "success": True,
+    "data": {
+        "_id": "69e7d2b3ae0f5ac2f46cb5db",
+        "jobQrn": "qbraid:qbraid:sim:qir-sv-8ce1-qjob-69e7d2b3ae0f5ac2f46cb5da",
+        "batchJobQrn": None,
+        "vendor": "qbraid",
+        "provider": "qbraid",
+        "status": "FAILED",
+        "statusMsg": 'Error: "Failed to link some declared functions: '
+        '__quantum__qis__barrier__body"\n',
+        "experimentType": "gate_model",
+        "queuePosition": None,
+        "timeStamps": {
+            "createdAt": "2026-04-21T19:40:37Z",
+            "endedAt": "2026-04-21T19:40:37Z",
+            "executionDuration": 2,
+        },
+        "cost": 0.0,
+        "estimatedCost": 0.0,
+        "metadata": {},
+        "name": None,
+        "shots": 100,
+        "deviceQrn": "qbraid:qbraid:sim:qir-sv",
+        "tags": {},
+        "runtimeOptions": {},
+        "jobVrn": None,
+        "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+        "deviceId": {
+            "_id": "689fa8990970e91064666bff",
+            "vrn": None,
+            "name": "QIR Sparse Simulator",
+            "pricing": {"perTask": 0, "perShot": 0, "perMinute": 0},
+            "status": "ONLINE",
+            "vendor": "qbraid",
+        },
+        "providerId": {"_id": "68cd83661650e905db02b1ff", "provider": "qBraid"},
+        "error": None,
+        "s3Destination": None,
+        "createdAt": "2026-04-21T19:40:37.000Z",
+        "updatedAt": "2026-04-21T19:40:37.000Z",
+    },
+}
+
+FAILED_GET_JOB = RuntimeJob.model_validate(FAILED_GET_JOB_RESPONSE["data"])
+
+
+class MockClientWithFailedJob(MockQuantumRuntimeClient):
+    """Mock client that returns a FAILED job for the failed job QRN."""
+
+    def get_job(self, job_qrn: str) -> RuntimeJob:
+        if job_qrn == FAILED_GET_JOB.jobQrn:
+            return FAILED_GET_JOB
+        return super().get_job(job_qrn)
+
+
+def test_job_result_failed():
+    """Test getting result for a FAILED job creates CoreResult with empty resultData."""
+    client = MockClientWithFailedJob()
+    job = QbraidJob(job_id=FAILED_GET_JOB.jobQrn, client=client)
+    result = job.result()
+    assert isinstance(result, RuntimeResult)
+    assert result.success is False
+    assert result.job_id == FAILED_GET_JOB.jobQrn
+    assert result.device_id == FAILED_GET_JOB.deviceQrn
+    assert isinstance(result.data, GateModelResultData)
+    assert result.data.measurement_counts is None
+    assert result.data.measurements is None
+    assert result.details.get("status") == JobStatus.FAILED

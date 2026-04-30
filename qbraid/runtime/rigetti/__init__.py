@@ -1,4 +1,4 @@
-# Copyright 2025 qBraid
+# Copyright 2026 qBraid
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,22 +13,24 @@
 # limitations under the License.
 
 """
-PyTKET conversions
+Module for submitting and managing jobs through the Rigetti QCS API.
 
-.. currentmodule:: qbraid.transpiler.conversions.pytket
+.. currentmodule:: qbraid.runtime.rigetti
 
-Functions
-----------
+Classes
+--------
 
 .. autosummary::
    :toctree: ../stubs/
 
-   pytket_to_braket
-   pytket_to_qasm2
-   pytket_to_qiskit
+    RigettiProvider
+    RigettiDevice
+    RigettiJob
 
 """
-from .pytket_extras import pytket_to_braket, pytket_to_qiskit
-from .pytket_to_qasm2 import pytket_to_qasm2
 
-__all__ = ["pytket_to_braket", "pytket_to_qasm2", "pytket_to_qiskit"]
+from .device import RigettiDevice
+from .job import RigettiJob
+from .provider import RigettiProvider
+
+__all__ = ["RigettiDevice", "RigettiJob", "RigettiProvider"]

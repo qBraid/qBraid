@@ -16,12 +16,35 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `BatchJobSession` context manager and `BatchResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical batch. Jobs submitted via `QbraidDevice.run()` inside an active `BatchJobSession` are automatically tagged with the batch's QRN, supporting cross-device and cross-provider batches on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the batch, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_batch` for retrieving the currently active batch QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
-
-  **Context-manager usage (cross-device batch):**
+- Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; requires local [quilc](https://github.com/quil-lang/quilc) and [QVM](https://github.com/quil-lang/qvm) binaries for compilation and simulation — install the [Forest SDK](https://qcs.rigetti.com/sdk-downloads) before use ([#1127](https://github.com/qBraid/qBraid/pull/1127))
 
   ```python
-  from qbraid.runtime import BatchJobSession, QbraidProvider
+  import pyquil
+  import pyquil.gates
+
+  from qbraid.runtime.rigetti import RigettiProvider
+
+  provider = RigettiProvider()
+  device = provider.get_device("Ankaa-3")
+
+  # Bell state on qubits 0 and 1, measured into a 2-bit register
+  program = pyquil.Program()
+  ro = program.declare("ro", "BIT", 2)
+  program.inst(pyquil.gates.H(0))
+  program.inst(pyquil.gates.CNOT(0, 1))
+  program.inst(pyquil.gates.MEASURE(0, ro[0]))
+  program.inst(pyquil.gates.MEASURE(1, ro[1]))
+
+  job = device.run(program, shots=100)
+  result = job.result()
+  print(result.data.get_counts())
+  ```
+- Added `GroupJobSession` context manager and `GroupResult` container to `qbraid.runtime` for grouping quantum job submissions into a logical group. Jobs submitted via `QbraidDevice.run()` inside an active `GroupJobSession` are automatically tagged with the group's QRN, supporting cross-device and cross-provider groups on qBraid native devices. Supports both `with` context-manager usage and manual `open()`/`close()` for interactive workflows, an optional `max_ttl` (1–86400s) after which the backend auto-closes the group, and an `on_all_complete` callback that fires with aggregated results when the context exits. Also exports `get_active_group` for retrieving the currently active group QRN ([#1140](https://github.com/qBraid/qBraid/pull/1140))
+
+  **Context-manager usage (cross-device group):**
+
+  ```python
+  from qbraid.runtime import GroupJobSession, QbraidProvider
 
   provider = QbraidProvider()
 
@@ -35,17 +58,17 @@ Types of changes:
   c = measure q;
   """
 
-  # All jobs inside the context are automatically tagged with the batch QRN
-  with BatchJobSession(name="Bell State Sweep") as batch:
-      # Jobs can target different devices and providers within the same batch
+  # All jobs inside the context are automatically tagged with the group QRN
+  with GroupJobSession(name="Bell State Sweep") as group:
+      # Jobs can target different devices and providers within the same group
       device_a = provider.get_device("aws:aws:sim:sv1")
       job1 = device_a.run(bell, shots=100)
 
       device_b = provider.get_device("aws:aws:sim:tn1")
       job2 = device_b.run(bell, shots=100)
 
-  # Collect results after the batch is closed
-  results = batch.results(timeout=300)
+  # Collect results after the group is closed
+  results = group.results(timeout=300)
   for job_id, result in results.results.items():
       print(f"{job_id}: {result.data.get_counts()}")
   ```
@@ -54,23 +77,23 @@ Types of changes:
 
   ```python
   # Useful for notebooks where you don't want a single with block
-  batch = BatchJobSession(name="interactive")
-  batch.open()
+  group = GroupJobSession(name="interactive")
+  group.open()
 
   # Submit jobs across multiple cells
   job1 = device.run(circuit_1, shots=100)
   job2 = device.run(circuit_2, shots=100)
 
   # Explicitly close when done submitting
-  batch.close()
-  results = batch.results(timeout=300)
+  group.close()
+  results = group.results(timeout=300)
   ```
 
   **Auto-close with Time-to-Live (TTL):**
 
   ```python
-  # Batch auto-closes after 60s if not explicitly closed (default: 3600s / 1 hour)
-  with BatchJobSession(name="short-lived", max_ttl=60) as batch:
+  # Group auto-closes after 60s if not explicitly closed (default: 3600s / 1 hour)
+  with GroupJobSession(name="short-lived", max_ttl=60) as group:
       job = device.run(bell, shots=10)
   ```
 
@@ -82,10 +105,34 @@ Types of changes:
       for job_id, result in results.items():
           print(f"{job_id}: {result.data.get_counts()}")
 
-  with BatchJobSession(name="with-callback") as batch:
+  with GroupJobSession(name="with-callback") as group:
       device.run(bell, shots=100)
       # Register callback; it fires automatically when the context exits
-      batch.on_all_complete(analyze, timeout=600)
+      group.on_all_complete(analyze, timeout=600)
+  ```
+- Added Quantinuum NEXUS provider integration (`qbraid.runtime.quantinuum`) with `QuantinuumProvider`, `QuantinuumDevice`, and `QuantinuumJob` classes. Supports single-circuit and batch submission via the NEXUS compile + execute pipeline; accepts any program type reachable to pytket via the qBraid transpiler graph. Counts are returned in MSB-first (`BasisOrder.dlo`) ordering for consistency with other qBraid providers. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
+- Added `pytket_to_qiskit` conversion function in `qbraid.transpiler.conversions.pytket.pytket_extras`, enabling the transpiler graph to route pytket ↔ qiskit directly (previously reachable only via the qasm2 bridge). Gated by `@requires_extras("pytket.extensions.qiskit")`. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
+
+  ```python
+  from pytket import Circuit
+  from qbraid.runtime.quantinuum import QuantinuumProvider
+
+  provider = QuantinuumProvider()  # authentication via `qnx login`
+
+  # List available devices (or fetch one by name)
+  devices = provider.get_devices()
+  device = provider.get_device("H1-1E")  # emulator
+
+  # Build a Bell state circuit
+  circuit = Circuit(2, 2)
+  circuit.H(0).CX(0, 1).measure_all()
+
+  # Submit and wait for results
+  job = device.run(circuit, shots=1000)
+  result = job.result()
+  print(result.data.measurement_counts)
+  # {'00': 512, '11': 488}
+  ```
 - Added OriginQ QCloud provider integration (`qbraid.runtime.origin`) with `OriginProvider`, `OriginDevice`, and `OriginJob` classes. Supports single-circuit submission on simulators and QPU backends, and batch submission (`list[QProg]`) on QPU backends. Simulator batch input automatically fans out to individual jobs. ([#1148](https://github.com/qBraid/qBraid/pull/1148))
 
   ```python
@@ -117,6 +164,7 @@ Types of changes:
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added CodeRabbit configuration file (`.coderabbit.yaml`) to disable automatic code review functionality ([#1162](https://github.com/qBraid/qBraid/pull/1162))
+- Added `@overload` method signatures to `QbraidDevice.submit` method to provide type hints for single `Program` vs `list[Program]` input types ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -126,6 +174,7 @@ Types of changes:
 - Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
 - Simplified `test_qasm3_to_braket_error_includes_detail` test by removing reset case and converting from parametrized test to single case testing only the `c3x` undefined gate error ([#1161](https://github.com/qBraid/qBraid/pull/1161))
+- Modernized type annotations throughout `qbraid.runtime` by replacing `Optional[]` and `Union[]` with PEP 604 syntax using `|` operator ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -137,6 +186,7 @@ Types of changes:
 - Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Fixed classical bit collisions in Braket `pad_measurements` method by detecting internal collisions, padding collisions, and out-of-range indices; rebases existing measures to sequential indices when necessary to ensure valid QASM output ([#1160](https://github.com/qBraid/qBraid/pull/1160))
 - Fixed `BraketQuantumTask._get_partial_measurement_qubits_from_tags` to return `None` and log warning when tag qubits are missing from result measurements, preventing crashes during result processing ([#1160](https://github.com/qBraid/qBraid/pull/1160))
+- Fixed `QbraidJob.result` method to handle failed jobs by creating a `qbraid_core.services.runtime.schemas.Result` with empty `resultData` instead of calling `get_job_result`, preventing crashes when processing failed job results ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
 ### Dependencies
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
