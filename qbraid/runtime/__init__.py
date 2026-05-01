@@ -75,6 +75,7 @@ Exceptions
     ProviderLoaderError
 
 """
+
 import importlib
 from typing import TYPE_CHECKING
 
@@ -87,8 +88,15 @@ from .exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
+from .group import GroupJobSession, GroupResult, get_active_group
 from .job import QuantumJob
-from .loader import JobLoaderError, ProviderLoaderError, get_providers, load_job, load_provider
+from .loader import (
+    JobLoaderError,
+    ProviderLoaderError,
+    get_providers,
+    load_job,
+    load_provider,
+)
 from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
@@ -105,6 +113,9 @@ from .result_data import (
 PROVIDERS = get_providers()
 
 __all__ = [
+    "GroupJobSession",
+    "GroupResult",
+    "get_active_group",
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
@@ -151,6 +162,11 @@ _lazy = {
         "OQCProvider",
         "OQCDevice",
         "OQCJob",
+    ],
+    "rigetti": [
+        "RigettiProvider",
+        "RigettiDevice",
+        "RigettiJob",
     ],
     "origin": [
         "OriginProvider",
@@ -209,6 +225,9 @@ if TYPE_CHECKING:
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .rigetti import RigettiDevice as RigettiDevice
+    from .rigetti import RigettiJob as RigettiJob
+    from .rigetti import RigettiProvider as RigettiProvider
 
 
 def __getattr__(name):

@@ -53,10 +53,11 @@ quantinuum = ["qnexus>=0.39.0", "pytket>=1.31"]
 pennylane = ["pennylane>=0.43"]
 pulser = ["pulser-core>=1.4.0,<1.8.0", "pulser-simulation>=1.4.0,<1.8.0"]
 pyqubo = ["pyqubo>=1.4.0"]
-pyquil = ["pyquil>=4.4", "qcs-sdk-python>=0.21.12,<0.21.23"]
+pyquil = ["pyquil>=5.0.0rc3", "qcs-sdk-python>=0.26.1"]
 pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2.0,<=0.5.1"]
 qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.39.0,<0.42", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
+rigetti = ["pyquil>=5.0.0rc3; python_version < '3.13'", "qcs-sdk-python>=0.26.1; python_version < '3.13'"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
 
 [project.entry-points."qbraid.programs"]
@@ -83,6 +84,7 @@ origin = "qbraid.runtime.origin.provider:OriginProvider"
 quantinuum = "qbraid.runtime.quantinuum.provider:QuantinuumProvider"
 qbraid = "qbraid.runtime.native.provider:QbraidProvider"
 oqc = "qbraid.runtime.oqc.provider:OQCProvider"
+rigetti = "qbraid.runtime.rigetti.provider:RigettiProvider"
 
 [project.entry-points."qbraid.jobs"]
 aws = "qbraid.runtime.aws.job:BraketQuantumTask"
@@ -93,6 +95,7 @@ origin = "qbraid.runtime.origin.job:OriginJob"
 quantinuum = "qbraid.runtime.quantinuum.job:QuantinuumJob"
 qbraid = "qbraid.runtime.native.job:QbraidJob"
 oqc = "qbraid.runtime.oqc.job:OQCJob"
+rigetti = "qbraid.runtime.rigetti.job:RigettiJob"
 
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}
