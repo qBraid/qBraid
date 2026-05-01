@@ -165,6 +165,8 @@ Types of changes:
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added CodeRabbit configuration file (`.coderabbit.yaml`) to disable automatic code review functionality ([#1162](https://github.com/qBraid/qBraid/pull/1162))
 - Added `@overload` method signatures to `QbraidDevice.submit` method to provide type hints for single `Program` vs `list[Program]` input types ([#1164](https://github.com/qBraid/qBraid/pull/1164))
+- Added `list_jobs` and `get_job` methods to `BraketProvider` for querying AWS Braket quantum tasks; supports filtering by status, device ARN, tags, and cross-region queries when using multiple device ARNs ([#1166](https://github.com/qBraid/qBraid/pull/1166))
+- Added `list_jobs` and `get_job` methods to `QiskitRuntimeProvider` for querying IBM Quantum jobs via REST API; includes authentication via API key exchange for IAM tokens, filtering by status/backend/tags/date range, and pagination support ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -176,6 +178,7 @@ Types of changes:
 - Simplified `test_qasm3_to_braket_error_includes_detail` test by removing reset case and converting from parametrized test to single case testing only the `c3x` undefined gate error ([#1161](https://github.com/qBraid/qBraid/pull/1161))
 - Modernized type annotations throughout `qbraid.runtime` by replacing `Optional[]` and `Union[]` with PEP 604 syntax using `|` operator ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 - Fixed OpenQASM 3 to CUDA-Q conversion to promote integer gate parameters to floating-point values, preventing incorrect integer inference in rotation angles. ([#1171](https://github.com/qBraid/qBraid/pull/1171))
+- Improved `qbraid.runtime.aws` and `qbraid.runtime.ibm` modules with lazy imports using `__getattr__` to reduce initialization overhead ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -189,7 +192,6 @@ Types of changes:
 - Fixed `BraketQuantumTask._get_partial_measurement_qubits_from_tags` to return `None` and log warning when tag qubits are missing from result measurements, preventing crashes during result processing ([#1160](https://github.com/qBraid/qBraid/pull/1160))
 - Fixed `QbraidJob.result` method to handle failed jobs by creating a `qbraid_core.services.runtime.schemas.Result` with empty `resultData` instead of calling `get_job_result`, preventing crashes when processing failed job results ([#1164](https://github.com/qBraid/qBraid/pull/1164))
 
-
 ### Dependencies
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
@@ -197,6 +199,7 @@ Types of changes:
 - Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
 - Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
+- Updated `qbraid-core` requirement from `>=0.2.3,<0.3.0` to `>=0.2.3,<0.4.0` to support expanded version range ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
 ## [0.11.1] - 2026-02-24
 
