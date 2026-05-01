@@ -504,9 +504,27 @@ class QuantumDevice(ABC):
         Args:
             run_input: A single quantum program or a list of quantum programs to run on the device.
 
+        Keyword Args:
+            as_batch: If True, submit the list of programs as a single batch job
+                (one VRN, one status, one result containing all circuits). The device
+                must support batch execution. Defaults to False.
+
         Returns:
             A QuantumJob object or a list of QuantumJob objects corresponding to the input.
         """
+        as_batch = kwargs.pop("as_batch", False)
+
+        if as_batch:
+            if not isinstance(run_input, list):
+                raise ValueError("as_batch=True requires a list of programs.")
+            if len(run_input) > 200:
+                raise ValueError("Batch jobs are limited to 200 circuits.")
+            run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
+            logger.debug(
+                "Submitting batch of %d circuits to device '%s'", len(run_input), self.id
+            )
+            return self.submit(run_input_compat, *args, as_batch=True, **kwargs)
+
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
