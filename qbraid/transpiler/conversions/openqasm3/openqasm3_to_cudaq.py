@@ -150,8 +150,11 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
 
             args = []
             for arg in statement.arguments:
+                val = arg.value
                 assert arg.value is not None, f"gate arguments should've been literals: {arg}"
-                args.append(arg.value)
+                if isinstance(val, int):
+                    val = float(val)
+                args.append(val)
             targs = [type(a) for a in args]
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
