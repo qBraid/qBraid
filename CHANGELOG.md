@@ -16,6 +16,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.12.0] - 2026-05-01
+
+### Added
 - Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; requires local [quilc](https://github.com/quil-lang/quilc) and [QVM](https://github.com/quil-lang/qvm) binaries for compilation and simulation — install the [Forest SDK](https://qcs.rigetti.com/sdk-downloads) before use ([#1127](https://github.com/qBraid/qBraid/pull/1127))
 
   ```python
