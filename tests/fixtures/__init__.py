@@ -31,8 +31,8 @@ def import_circuit_functions(module_name, bell_func_name, shared15_func_name):
     try:
         # Attempt to import the module relatively to the current script
         circuits = importlib.import_module(package, __package__)
-    except ImportError:
-        return None, None  # The module is not installed
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None, None  # ImportError, AttributeError from broken native libs, etc.
 
     # Get the bell and shared15 functions
     bell_func = getattr(circuits, bell_func_name, None)

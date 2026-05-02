@@ -200,6 +200,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- Fixed QIR simulator (`qbraid:qbraid:sim:qir-sv`) rejecting programs containing `barrier` instructions by stripping barriers in `QbraidDevice.transform()` before submission; barriers are no-ops in quantum computing but caused cryptic linker errors in the QIR runtime (`__quantum__qis__barrier__body`) ([#1170](https://github.com/qBraid/qBraid/pull/1170))
 - Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
 - Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Fixed classical bit collisions in Braket `pad_measurements` method by detecting internal collisions, padding collisions, and out-of-range indices; rebases existing measures to sequential indices when necessary to ensure valid QASM output ([#1160](https://github.com/qBraid/qBraid/pull/1160))
