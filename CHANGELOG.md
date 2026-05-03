@@ -23,6 +23,8 @@ Types of changes:
 
 ### Removed
 
+- Removed `QirRunner` from native runtime API exports and imports ([#1175](https://github.com/qBraid/qBraid/pull/1175))
+
 ### Fixed
 
 ### Dependencies
