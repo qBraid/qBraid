@@ -1,25 +1,66 @@
 name: Feature request 💡
-description: Suggest an idea for this project
+description: Suggest a new capability or improvement for the qBraid-SDK
 title: "[FEATURE] "
-labels: [enhancement]
+labels: ["feature request 💡"]
 
 body:
   - type: markdown
     attributes:
-      value: "Thank you for taking the time to suggest a feature. Please fill out the details below to help us understand your idea better."
+      value: |
+        Thanks for taking the time to suggest a feature. The more concrete the use case, the easier it is for us to prioritize.
+
+        > **Adding a new quantum device or provider?** Please use the **Provider integration request** template instead — it captures the specific information we need to scope that work.
 
   - type: textarea
     id: feature-description
     attributes:
-      label: Feature Description
-      description: "Describe the feature you'd like and the problem it solves. Include any specific use cases that illustrate its benefits."
-      placeholder: "Please describe the feature in detail."
+      label: Feature description
+      description: Describe the feature you'd like and the problem it solves.
+      placeholder: A clear, specific description of the proposed feature.
     validations:
       required: true
-  
-  - type: textarea
+
+  - type: dropdown
+    id: feature-area
     attributes:
-      label: Implementation (Optional)
-      description: "Do you have an idea for how this could be implemented? Please include those details here."
+      label: Feature area
+      description: Which part of the SDK does this touch?
+      multiple: true
+      options:
+        - transpiler / conversion
+        - runtime / job submission
+        - provider integration
+        - QASM parser
+        - QIR
+        - visualization
+        - Jupyter / qBraid Lab
+        - documentation
+        - installation / packaging
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / use case
+      description: What are you trying to do, and why is it important? Concrete examples are very welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered (optional)
+      description: Have you tried a workaround? Is there another framework that solves this well?
+    validations:
+      required: false
+
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Suggested implementation (optional)
+      description: If you have an idea for how this could be built, include it here. Code sketches welcome.
+      render: python
     validations:
       required: false
