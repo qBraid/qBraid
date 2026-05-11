@@ -207,10 +207,12 @@ class QiskitRuntimeProvider(QuantumProvider):
         if not token:
             raise ValueError("IBM API key not found. Set QISKIT_IBM_TOKEN or pass token directly.")
 
-        data = urlencode({
-            "grant_type": "urn:ibm:params:oauth:grant-type:apikey",
-            "apikey": token,
-        }).encode("utf-8")
+        data = urlencode(
+            {
+                "grant_type": "urn:ibm:params:oauth:grant-type:apikey",
+                "apikey": token,
+            }
+        ).encode("utf-8")
 
         req = Request(_IAM_TOKEN_URL, data=data, method="POST")
         req.add_header("Content-Type", "application/x-www-form-urlencoded")
