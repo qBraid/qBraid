@@ -1,0 +1,50 @@
+name: Documentation issue 📕
+description: Report something wrong, missing, or unclear in the qBraid-SDK documentation
+title: "[DOCS] "
+labels: ["documentation 📕"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve the docs. The qBraid-SDK documentation lives at [docs.qbraid.com](https://docs.qbraid.com/sdk/user-guide/overview).
+
+  - type: input
+    id: page
+    attributes:
+      label: Page or URL
+      description: Which page of the documentation does this concern? Paste the URL if possible.
+      placeholder: "https://docs.qbraid.com/sdk/..."
+    validations:
+      required: true
+
+  - type: dropdown
+    id: doc-issue-type
+    attributes:
+      label: Type of issue
+      options:
+        - incorrect content
+        - missing content
+        - unclear explanation
+        - broken link
+        - outdated example / code no longer runs
+        - typo / formatting
+        - other
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What's the problem?
+      description: Describe what's wrong, missing, or confusing. Quote the relevant text where possible.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested-fix
+    attributes:
+      label: Suggested fix (optional)
+      description: If you know how the docs should read, propose the wording or example here.
+    validations:
+      required: false
