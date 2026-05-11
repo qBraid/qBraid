@@ -289,7 +289,7 @@ class BraketProvider(QuantumProvider):
 
         return {k: v.isoformat() if isinstance(v, datetime) else v for k, v in task.items()}
 
-    def _search_tasks(
+    def _search_tasks(  # pylint: disable=too-many-arguments
         self,
         region: str,
         limit: int = 20,
@@ -318,7 +318,7 @@ class BraketProvider(QuantumProvider):
             "nextToken": response.get("nextToken"),
         }
 
-    def list_jobs(
+    def list_jobs(  # pylint: disable=too-many-arguments
         self,
         limit: int = 20,
         status: Optional[str] = None,
