@@ -293,8 +293,8 @@ class TestListJobsMultiDevice:
         call_count = 0
 
         def mock_search_tasks(
-            _region, _limit, status=None, device_arn=None
-        ):  # pylint: disable=unused-argument
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             nonlocal call_count
             call_count += 1
             if device_arn == IONQ_ARIA_ARN:
@@ -319,8 +319,8 @@ class TestListJobsMultiDevice:
         newer = BraketProvider._serialize_task(TASK_2)  # Apr 15
 
         def mock_search_tasks(
-            _region, _limit, status=None, device_arn=None
-        ):  # pylint: disable=unused-argument
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             if device_arn == SV1_ARN:
                 return {"tasks": [older]}
             return {"tasks": [newer]}
@@ -346,7 +346,7 @@ class TestListJobsMultiDevice:
             for i in range(5)
         ]
 
-        def mock_search_tasks(_region, _limit, **_kwargs):
+        def mock_search_tasks(region, limit, **kwargs):  # pylint: disable=unused-argument
             return {"tasks": tasks}
 
         with (
@@ -362,8 +362,8 @@ class TestListJobsMultiDevice:
         regions_queried = []
 
         def mock_search_tasks(
-            region, _limit, status=None, device_arn=None
-        ):  # pylint: disable=unused-argument
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             regions_queried.append(region)
             return {"tasks": []}
 
@@ -381,8 +381,8 @@ class TestListJobsMultiDevice:
         statuses_passed = []
 
         def mock_search_tasks(
-            _region, _limit, status=None, device_arn=None
-        ):  # pylint: disable=unused-argument
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             statuses_passed.append(status)
             return {"tasks": []}
 
@@ -573,8 +573,8 @@ class TestEndToEndHandlerUsage:
         ionq_task = BraketProvider._serialize_task(TASK_2)
 
         def mock_search(
-            _region, _limit, status=None, device_arn=None
-        ):  # pylint: disable=unused-argument
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             if device_arn == SV1_ARN:
                 return {"tasks": [sv1_task]}
             if device_arn == IONQ_ARIA_ARN:
