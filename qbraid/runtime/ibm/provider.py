@@ -250,7 +250,7 @@ class QiskitRuntimeProvider(QuantumProvider):
         req.add_header("Authorization", f"Bearer {access_token}")
         req.add_header("Service-CRN", instance)
         req.add_header("Accept", "application/json")
-        from qbraid._version import __version__
+        from qbraid._version import __version__  # pylint: disable=import-outside-toplevel
 
         req.add_header("User-Agent", f"qbraid/{__version__}")
 
@@ -260,7 +260,7 @@ class QiskitRuntimeProvider(QuantumProvider):
         except (URLError, OSError) as e:
             raise ValueError(f"IBM API request failed: {e}") from e
 
-    def list_jobs(
+    def list_jobs(  # pylint: disable=too-many-arguments
         self,
         limit: int = 20,
         offset: int = 0,

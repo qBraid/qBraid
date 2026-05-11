@@ -23,9 +23,6 @@ actual IBM Quantum REST API responses.
 """
 
 import json
-import os
-import tempfile
-from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -354,7 +351,7 @@ class TestListJobs:
             "_ibm_api_get",
             return_value={"jobs": [IBM_JOB_SAMPLER, IBM_JOB_FAILED], "count": 2},
         ) as mock_get:
-            result = provider.list_jobs(pending=False)
+            provider.list_jobs(pending=False)
 
         params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
         assert params["pending"] == "false"
@@ -529,18 +526,18 @@ class TestEndToEndHandlerUsage:
         with patch.object(provider, "_ibm_api_get") as mock_get:
             # Completed/failed
             mock_get.return_value = completed_response
-            result = provider.list_jobs(pending=False)
+            provider.list_jobs(pending=False)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert params["pending"] == "false"
 
             # Queued/running
             mock_get.return_value = pending_response
-            result = provider.list_jobs(pending=True)
+            provider.list_jobs(pending=True)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert params["pending"] == "true"
 
             # All
             mock_get.return_value = all_response
-            result = provider.list_jobs(pending=None)
+            provider.list_jobs(pending=None)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert "pending" not in params
