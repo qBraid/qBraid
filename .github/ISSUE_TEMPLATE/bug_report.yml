@@ -9,7 +9,7 @@ body:
       value: |
         Thanks for taking the time to file a bug report. The more specific you can be, the faster we can fix it.
 
-        Before submitting, please search [existing issues](https://github.com/qBraid/qBraid/issues?q=is%3Aissue) and the [documentation](https://docs.qbraid.com/sdk/user-guide/overview).
+        Before submitting, please search [existing issues](https://github.com/qBraid/qBraid/issues?q=is%3Aissue) and the [documentation](https://docs.qbraid.com/v2/sdk/user-guide/overview).
 
   - type: textarea
     id: about
