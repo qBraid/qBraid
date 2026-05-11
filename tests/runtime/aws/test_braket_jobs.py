@@ -22,6 +22,7 @@ using realistic mock data modeled after actual AWS Braket API responses.
 """
 
 import datetime
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -38,7 +39,9 @@ AQUILA_ARN = "arn:aws:braket:us-east-1::device/qpu/quera/Aquila"
 IQM_GARNET_ARN = "arn:aws:braket:eu-north-1::device/qpu/iqm/Garnet"
 
 TASK_1 = {
-    "quantumTaskArn": "arn:aws:braket:us-east-1:592242689881:quantum-task/abc12345-1111-2222-3333-444455556666",
+    "quantumTaskArn": (
+        "arn:aws:braket:us-east-1:592242689881:quantum-task/abc12345-1111-2222-3333-444455556666"
+    ),
     "status": "COMPLETED",
     "deviceArn": SV1_ARN,
     "shots": 1000,
@@ -50,7 +53,9 @@ TASK_1 = {
 }
 
 TASK_2 = {
-    "quantumTaskArn": "arn:aws:braket:us-east-1:592242689881:quantum-task/def67890-aaaa-bbbb-cccc-ddddeeeeffff",
+    "quantumTaskArn": (
+        "arn:aws:braket:us-east-1:592242689881:quantum-task/def67890-aaaa-bbbb-cccc-ddddeeeeffff"
+    ),
     "status": "COMPLETED",
     "deviceArn": IONQ_ARIA_ARN,
     "shots": 100,
@@ -62,7 +67,9 @@ TASK_2 = {
 }
 
 TASK_3_AQUILA = {
-    "quantumTaskArn": "arn:aws:braket:us-east-1:592242689881:quantum-task/ahs99999-1111-2222-3333-aquila000000",
+    "quantumTaskArn": (
+        "arn:aws:braket:us-east-1:592242689881:quantum-task/ahs99999-1111-2222-3333-aquila000000"
+    ),
     "status": "COMPLETED",
     "deviceArn": AQUILA_ARN,
     "shots": 100,
@@ -74,7 +81,9 @@ TASK_3_AQUILA = {
 }
 
 TASK_4_EU = {
-    "quantumTaskArn": "arn:aws:braket:eu-north-1:592242689881:quantum-task/eu112233-4455-6677-8899-aabbccddeeff",
+    "quantumTaskArn": (
+        "arn:aws:braket:eu-north-1:592242689881:quantum-task/eu112233-4455-6677-8899-aabbccddeeff"
+    ),
     "status": "RUNNING",
     "deviceArn": IQM_GARNET_ARN,
     "shots": 500,
@@ -134,6 +143,7 @@ class TestSerializeTask:
     """Test datetime serialization for JSON compatibility."""
 
     def test_converts_datetime_to_iso(self):
+        """Datetime values are converted to ISO format strings."""
         task = {
             "quantumTaskArn": "arn:aws:braket:us-east-1:123:quantum-task/abc",
             "status": "COMPLETED",
@@ -146,6 +156,7 @@ class TestSerializeTask:
         assert result["status"] == "COMPLETED"
 
     def test_preserves_non_datetime_values(self):
+        """Non-datetime values are preserved as-is."""
         task = {
             "quantumTaskArn": "arn:aws:braket:us-east-1:123:quantum-task/abc",
             "status": "FAILED",
@@ -281,12 +292,14 @@ class TestListJobsMultiDevice:
         """device_arns queries each ARN in its extracted region and merges results."""
         call_count = 0
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             nonlocal call_count
             call_count += 1
             if device_arn == IONQ_ARIA_ARN:
                 return {"tasks": [BraketProvider._serialize_task(TASK_2)]}
-            elif device_arn == IQM_GARNET_ARN:
+            if device_arn == IQM_GARNET_ARN:
                 return {"tasks": [BraketProvider._serialize_task(TASK_4_EU)]}
             return {"tasks": []}
 
@@ -305,7 +318,9 @@ class TestListJobsMultiDevice:
         older = BraketProvider._serialize_task(TASK_1)  # Apr 14
         newer = BraketProvider._serialize_task(TASK_2)  # Apr 15
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             if device_arn == SV1_ARN:
                 return {"tasks": [older]}
             return {"tasks": [newer]}
@@ -331,7 +346,7 @@ class TestListJobsMultiDevice:
             for i in range(5)
         ]
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(region, limit, **kwargs):  # pylint: disable=unused-argument
             return {"tasks": tasks}
 
         with (
@@ -346,7 +361,9 @@ class TestListJobsMultiDevice:
         """Regions are correctly extracted from device ARNs."""
         regions_queried = []
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             regions_queried.append(region)
             return {"tasks": []}
 
@@ -363,7 +380,9 @@ class TestListJobsMultiDevice:
         """Status filter is passed through to each per-device query."""
         statuses_passed = []
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             statuses_passed.append(status)
             return {"tasks": []}
 
@@ -409,11 +428,11 @@ class TestListJobsTagFilter:
 
         call_count = [0]
 
-        def mock_get_tasks_by_tag(key, values=None, region_names=None):
+        def mock_get_tasks_by_tag(key, **_kwargs):
             call_count[0] += 1
             if key == "project":
                 return [TASK_1["quantumTaskArn"], TASK_3_AQUILA["quantumTaskArn"]]
-            elif key == "user":
+            if key == "user":
                 return [TASK_1["quantumTaskArn"]]
             return []
 
@@ -500,8 +519,6 @@ class TestEndToEndHandlerUsage:
         Simulate: CloudJobsAWSHandler.get() calls list_jobs() then
         serializes to JSON for the frontend.
         """
-        import json
-
         mock_braket_client.search_quantum_tasks.return_value = {
             "quantumTasks": [TASK_1, TASK_3_AQUILA],
             "nextToken": "next_page_abc",
@@ -555,10 +572,12 @@ class TestEndToEndHandlerUsage:
         sv1_task = BraketProvider._serialize_task(TASK_1)
         ionq_task = BraketProvider._serialize_task(TASK_2)
 
-        def mock_search(region, limit, status=None, device_arn=None):
+        def mock_search(
+            region, limit, status=None, device_arn=None  # pylint: disable=unused-argument
+        ):
             if device_arn == SV1_ARN:
                 return {"tasks": [sv1_task]}
-            elif device_arn == IONQ_ARIA_ARN:
+            if device_arn == IONQ_ARIA_ARN:
                 return {"tasks": [ionq_task]}
             return {"tasks": []}
 
