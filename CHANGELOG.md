@@ -16,16 +16,26 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- QASM conditional (if) statement support for Cirq conversions ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- `normalize_if_blocks` function to convert QASM 3-style if blocks to QASM 2 single-line syntax ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Support for `BranchingStatement` handling in `_replace_gate_in_statement` function ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- IF and EQ tokens to QasmLexer for conditional statement parsing ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 ### Improved / Modified
+- Enhanced `qasm3_to_cirq` function with multi-path conversion approach including pyqasm unrolling and if block normalization ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Updated `qasm2_to_cirq` to use `normalize_if_blocks` for conditional statement compatibility ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Modified `_replace_gate_in_statement` return type from `QuantumGate` to `Statement` to handle branching statements ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Re-enabled classical control functionality in `cirq_qasm_parser.py` with proper if statement parsing ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Classical control flow support for QASM to Cirq conversions now properly handles if statements and conditions ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 ### Dependencies
+- Added `sympy` import to `cirq_qasm_parser.py` for conditional operations ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 ## [0.12.0] - 2026-05-01
 
