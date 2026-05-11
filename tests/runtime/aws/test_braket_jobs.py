@@ -226,7 +226,7 @@ class TestListJobs:
             patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
             patch.object(provider, "_get_default_region", return_value="us-east-1"),
         ):
-            provider.list_jobs(device_arn=IONQ_ARIA_ARN)
+            _result = provider.list_jobs(device_arn=IONQ_ARIA_ARN)
 
         call_kwargs = mock_braket_client.search_quantum_tasks.call_args[1]
         filters = call_kwargs["filters"]
