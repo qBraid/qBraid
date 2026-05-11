@@ -29,6 +29,8 @@ Classes
 
 """
 
+# pylint: disable=import-outside-toplevel,undefined-all-variable
+
 __all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider"]
 
 

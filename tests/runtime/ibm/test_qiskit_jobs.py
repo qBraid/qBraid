@@ -23,9 +23,6 @@ actual IBM Quantum REST API responses.
 """
 
 import json
-import os
-import tempfile
-from io import BytesIO
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -119,6 +116,7 @@ def mock_ibm_api():
     Context manager that mocks both _exchange_api_key and urlopen
     so _ibm_api_get works without real HTTP calls.
     """
+
     def _make_response(data):
         resp = MagicMock()
         resp.read.return_value = json.dumps(data).encode("utf-8")
@@ -265,8 +263,10 @@ class TestIbmApiGet:
         """Request includes Bearer token, Service-CRN, and User-Agent."""
         mock_resp = mock_ibm_api({"jobs": [], "count": 0})
 
-        with patch.object(provider, "_exchange_api_key", return_value=FAKE_IAM_TOKEN), \
-             patch("qbraid.runtime.ibm.provider.urlopen", return_value=mock_resp) as mock_urlopen:
+        with (
+            patch.object(provider, "_exchange_api_key", return_value=FAKE_IAM_TOKEN),
+            patch("qbraid.runtime.ibm.provider.urlopen", return_value=mock_resp) as mock_urlopen,
+        ):
             provider._ibm_api_get("/jobs")
 
         call_args = mock_urlopen.call_args
@@ -279,8 +279,10 @@ class TestIbmApiGet:
         """Query params are URL-encoded."""
         mock_resp = mock_ibm_api({"jobs": []})
 
-        with patch.object(provider, "_exchange_api_key", return_value=FAKE_IAM_TOKEN), \
-             patch("qbraid.runtime.ibm.provider.urlopen", return_value=mock_resp) as mock_urlopen:
+        with (
+            patch.object(provider, "_exchange_api_key", return_value=FAKE_IAM_TOKEN),
+            patch("qbraid.runtime.ibm.provider.urlopen", return_value=mock_resp) as mock_urlopen,
+        ):
             provider._ibm_api_get("/jobs", params={"limit": 10, "pending": "true"})
 
         req = mock_urlopen.call_args[0][0]
@@ -295,8 +297,10 @@ class TestIbmApiGet:
             p.instance = None
             p._runtime_service = MagicMock(spec=[])
 
-        with patch.object(p, "_exchange_api_key", return_value=FAKE_IAM_TOKEN), \
-             patch.object(QiskitRuntimeProvider, "_load_ibm_cloud_credentials", return_value={}):
+        with (
+            patch.object(p, "_exchange_api_key", return_value=FAKE_IAM_TOKEN),
+            patch.object(QiskitRuntimeProvider, "_load_ibm_cloud_credentials", return_value={}),
+        ):
             with pytest.raises(ValueError, match="instance.*not found"):
                 p._ibm_api_get("/jobs")
 
@@ -319,7 +323,9 @@ class TestListJobs:
 
     def test_list_jobs_with_limit_and_offset(self, provider):
         """Limit and offset are passed to the API."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER], "count": 1}) as mock_get:
+        with patch.object(
+            provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER], "count": 1}
+        ) as mock_get:
             provider.list_jobs(limit=1, offset=2)
 
         call_args = mock_get.call_args
@@ -329,7 +335,9 @@ class TestListJobs:
 
     def test_list_pending_jobs(self, provider):
         """pending=True filters for queued/running jobs."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_QUEUED], "count": 1}) as mock_get:
+        with patch.object(
+            provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_QUEUED], "count": 1}
+        ) as mock_get:
             result = provider.list_jobs(pending=True)
 
         params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
@@ -338,15 +346,21 @@ class TestListJobs:
 
     def test_list_completed_jobs(self, provider):
         """pending=False filters for completed/failed/cancelled jobs."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER, IBM_JOB_FAILED], "count": 2}) as mock_get:
-            result = provider.list_jobs(pending=False)
+        with patch.object(
+            provider,
+            "_ibm_api_get",
+            return_value={"jobs": [IBM_JOB_SAMPLER, IBM_JOB_FAILED], "count": 2},
+        ) as mock_get:
+            provider.list_jobs(pending=False)
 
         params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
         assert params["pending"] == "false"
 
     def test_list_jobs_with_backend_filter(self, provider):
         """Backend filter is passed to API."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER], "count": 1}) as mock_get:
+        with patch.object(
+            provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER], "count": 1}
+        ) as mock_get:
             provider.list_jobs(backend="ibm_fez")
 
         params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
@@ -354,7 +368,9 @@ class TestListJobs:
 
     def test_list_jobs_with_tags(self, provider):
         """Tags are passed to API."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER], "count": 1}) as mock_get:
+        with patch.object(
+            provider, "_ibm_api_get", return_value={"jobs": [IBM_JOB_SAMPLER], "count": 1}
+        ) as mock_get:
             provider.list_jobs(tags=["benchmark"])
 
         params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
@@ -362,7 +378,9 @@ class TestListJobs:
 
     def test_list_jobs_with_date_range(self, provider):
         """Date range filters are passed to API."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [], "count": 0}) as mock_get:
+        with patch.object(
+            provider, "_ibm_api_get", return_value={"jobs": [], "count": 0}
+        ) as mock_get:
             provider.list_jobs(
                 created_after="2026-04-01T00:00:00Z",
                 created_before="2026-04-30T23:59:59Z",
@@ -374,7 +392,9 @@ class TestListJobs:
 
     def test_list_jobs_omits_none_params(self, provider):
         """None-valued params are not sent to the API."""
-        with patch.object(provider, "_ibm_api_get", return_value={"jobs": [], "count": 0}) as mock_get:
+        with patch.object(
+            provider, "_ibm_api_get", return_value={"jobs": [], "count": 0}
+        ) as mock_get:
             provider.list_jobs(backend=None, tags=None, pending=None)
 
         params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
@@ -435,17 +455,21 @@ class TestEndToEndHandlerUsage:
         # Transform to frontend shape (as the handler does)
         transformed = []
         for job in jobs:
-            transformed.append({
-                "id": job["id"],
-                "status": job["status"],
-                "backend": job["backend"],
-                "created": job.get("created"),
-                "cost": job.get("cost", 0),
-                "tags": job.get("tags", []),
-                "program": job.get("program", {}),
-            })
+            transformed.append(
+                {
+                    "id": job["id"],
+                    "status": job["status"],
+                    "backend": job["backend"],
+                    "created": job.get("created"),
+                    "cost": job.get("cost", 0),
+                    "tags": job.get("tags", []),
+                    "program": job.get("program", {}),
+                }
+            )
 
-        serialized = json.dumps({"status": "success", "jobs": transformed, "total": result["count"]})
+        serialized = json.dumps(
+            {"status": "success", "jobs": transformed, "total": result["count"]}
+        )
         parsed = json.loads(serialized)
 
         assert parsed["total"] == 4
@@ -502,18 +526,18 @@ class TestEndToEndHandlerUsage:
         with patch.object(provider, "_ibm_api_get") as mock_get:
             # Completed/failed
             mock_get.return_value = completed_response
-            result = provider.list_jobs(pending=False)
+            provider.list_jobs(pending=False)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert params["pending"] == "false"
 
             # Queued/running
             mock_get.return_value = pending_response
-            result = provider.list_jobs(pending=True)
+            provider.list_jobs(pending=True)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert params["pending"] == "true"
 
             # All
             mock_get.return_value = all_response
-            result = provider.list_jobs(pending=None)
+            provider.list_jobs(pending=None)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert "pending" not in params

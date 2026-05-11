@@ -22,6 +22,7 @@ using realistic mock data modeled after actual AWS Braket API responses.
 """
 
 import datetime
+import json
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -38,7 +39,9 @@ AQUILA_ARN = "arn:aws:braket:us-east-1::device/qpu/quera/Aquila"
 IQM_GARNET_ARN = "arn:aws:braket:eu-north-1::device/qpu/iqm/Garnet"
 
 TASK_1 = {
-    "quantumTaskArn": "arn:aws:braket:us-east-1:592242689881:quantum-task/abc12345-1111-2222-3333-444455556666",
+    "quantumTaskArn": (
+        "arn:aws:braket:us-east-1:592242689881:quantum-task/abc12345-1111-2222-3333-444455556666"
+    ),
     "status": "COMPLETED",
     "deviceArn": SV1_ARN,
     "shots": 1000,
@@ -50,7 +53,9 @@ TASK_1 = {
 }
 
 TASK_2 = {
-    "quantumTaskArn": "arn:aws:braket:us-east-1:592242689881:quantum-task/def67890-aaaa-bbbb-cccc-ddddeeeeffff",
+    "quantumTaskArn": (
+        "arn:aws:braket:us-east-1:592242689881:quantum-task/def67890-aaaa-bbbb-cccc-ddddeeeeffff"
+    ),
     "status": "COMPLETED",
     "deviceArn": IONQ_ARIA_ARN,
     "shots": 100,
@@ -62,7 +67,9 @@ TASK_2 = {
 }
 
 TASK_3_AQUILA = {
-    "quantumTaskArn": "arn:aws:braket:us-east-1:592242689881:quantum-task/ahs99999-1111-2222-3333-aquila000000",
+    "quantumTaskArn": (
+        "arn:aws:braket:us-east-1:592242689881:quantum-task/ahs99999-1111-2222-3333-aquila000000"
+    ),
     "status": "COMPLETED",
     "deviceArn": AQUILA_ARN,
     "shots": 100,
@@ -74,7 +81,9 @@ TASK_3_AQUILA = {
 }
 
 TASK_4_EU = {
-    "quantumTaskArn": "arn:aws:braket:eu-north-1:592242689881:quantum-task/eu112233-4455-6677-8899-aabbccddeeff",
+    "quantumTaskArn": (
+        "arn:aws:braket:eu-north-1:592242689881:quantum-task/eu112233-4455-6677-8899-aabbccddeeff"
+    ),
     "status": "RUNNING",
     "deviceArn": IQM_GARNET_ARN,
     "shots": 500,
@@ -134,6 +143,7 @@ class TestSerializeTask:
     """Test datetime serialization for JSON compatibility."""
 
     def test_converts_datetime_to_iso(self):
+        """Datetime values are converted to ISO format strings."""
         task = {
             "quantumTaskArn": "arn:aws:braket:us-east-1:123:quantum-task/abc",
             "status": "COMPLETED",
@@ -146,6 +156,7 @@ class TestSerializeTask:
         assert result["status"] == "COMPLETED"
 
     def test_preserves_non_datetime_values(self):
+        """Non-datetime values are preserved as-is."""
         task = {
             "quantumTaskArn": "arn:aws:braket:us-east-1:123:quantum-task/abc",
             "status": "FAILED",
@@ -174,8 +185,10 @@ class TestListJobs:
             "nextToken": None,
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs()
 
         assert len(result["tasks"]) == 2
@@ -183,9 +196,7 @@ class TestListJobs:
         # Verify datetimes were serialized
         assert isinstance(result["tasks"][0]["createdAt"], str)
 
-        mock_braket_client.search_quantum_tasks.assert_called_once_with(
-            maxResults=20, filters=[]
-        )
+        mock_braket_client.search_quantum_tasks.assert_called_once_with(maxResults=20, filters=[])
 
     def test_list_jobs_with_status_filter(self, provider, mock_aws_session, mock_braket_client):
         """Filter by status passes the correct filter to boto3."""
@@ -193,13 +204,17 @@ class TestListJobs:
             "quantumTasks": [TASK_1],
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(status="COMPLETED")
 
         assert len(result["tasks"]) == 1
         call_kwargs = mock_braket_client.search_quantum_tasks.call_args[1]
-        assert {"name": "status", "operator": "EQUAL", "values": ["COMPLETED"]} in call_kwargs["filters"]
+        assert {"name": "status", "operator": "EQUAL", "values": ["COMPLETED"]} in call_kwargs[
+            "filters"
+        ]
 
     def test_list_jobs_with_device_filter(self, provider, mock_aws_session, mock_braket_client):
         """Filter by device ARN passes the correct filter."""
@@ -207,9 +222,11 @@ class TestListJobs:
             "quantumTasks": [TASK_2],
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
-            result = provider.list_jobs(device_arn=IONQ_ARIA_ARN)
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
+            _result = provider.list_jobs(device_arn=IONQ_ARIA_ARN)
 
         call_kwargs = mock_braket_client.search_quantum_tasks.call_args[1]
         filters = call_kwargs["filters"]
@@ -221,8 +238,10 @@ class TestListJobs:
             "quantumTasks": [],
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(status="FAILED", device_arn=SV1_ARN)
 
         call_kwargs = mock_braket_client.search_quantum_tasks.call_args[1]
@@ -236,8 +255,10 @@ class TestListJobs:
             "nextToken": "page2_token_xyz",
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(next_token="page1_token_abc", limit=1)
 
         assert result["nextToken"] == "page2_token_xyz"
@@ -249,8 +270,10 @@ class TestListJobs:
         """Custom limit is passed to search_quantum_tasks."""
         mock_braket_client.search_quantum_tasks.return_value = {"quantumTasks": []}
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             provider.list_jobs(limit=50)
 
         call_kwargs = mock_braket_client.search_quantum_tasks.call_args[1]
@@ -269,17 +292,21 @@ class TestListJobsMultiDevice:
         """device_arns queries each ARN in its extracted region and merges results."""
         call_count = 0
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            _region, _limit, status=None, device_arn=None
+        ):  # pylint: disable=unused-argument
             nonlocal call_count
             call_count += 1
             if device_arn == IONQ_ARIA_ARN:
                 return {"tasks": [BraketProvider._serialize_task(TASK_2)]}
-            elif device_arn == IQM_GARNET_ARN:
+            if device_arn == IQM_GARNET_ARN:
                 return {"tasks": [BraketProvider._serialize_task(TASK_4_EU)]}
             return {"tasks": []}
 
-        with patch.object(provider, "_search_tasks", side_effect=mock_search_tasks), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_search_tasks", side_effect=mock_search_tasks),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(device_arns=[IONQ_ARIA_ARN, IQM_GARNET_ARN])
 
         assert call_count == 2
@@ -291,13 +318,17 @@ class TestListJobsMultiDevice:
         older = BraketProvider._serialize_task(TASK_1)  # Apr 14
         newer = BraketProvider._serialize_task(TASK_2)  # Apr 15
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            _region, _limit, status=None, device_arn=None
+        ):  # pylint: disable=unused-argument
             if device_arn == SV1_ARN:
                 return {"tasks": [older]}
             return {"tasks": [newer]}
 
-        with patch.object(provider, "_search_tasks", side_effect=mock_search_tasks), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_search_tasks", side_effect=mock_search_tasks),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(device_arns=[SV1_ARN, IONQ_ARIA_ARN])
 
         assert result["tasks"][0]["createdAt"] > result["tasks"][1]["createdAt"]
@@ -305,19 +336,23 @@ class TestListJobsMultiDevice:
     def test_multi_device_respects_limit(self, provider):
         """Merged results are trimmed to the requested limit."""
         tasks = [
-            BraketProvider._serialize_task({
-                **TASK_1,
-                "quantumTaskArn": f"arn:aws:braket:us-east-1:123:quantum-task/task-{i}",
-                "createdAt": datetime.datetime(2026, 4, 14 + i, 12, 0, 0),
-            })
+            BraketProvider._serialize_task(
+                {
+                    **TASK_1,
+                    "quantumTaskArn": f"arn:aws:braket:us-east-1:123:quantum-task/task-{i}",
+                    "createdAt": datetime.datetime(2026, 4, 14 + i, 12, 0, 0),
+                }
+            )
             for i in range(5)
         ]
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(_region, _limit, **_kwargs):
             return {"tasks": tasks}
 
-        with patch.object(provider, "_search_tasks", side_effect=mock_search_tasks), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_search_tasks", side_effect=mock_search_tasks),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(device_arns=[SV1_ARN], limit=3)
 
         assert len(result["tasks"]) == 3
@@ -326,12 +361,16 @@ class TestListJobsMultiDevice:
         """Regions are correctly extracted from device ARNs."""
         regions_queried = []
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            region, _limit, status=None, device_arn=None
+        ):  # pylint: disable=unused-argument
             regions_queried.append(region)
             return {"tasks": []}
 
-        with patch.object(provider, "_search_tasks", side_effect=mock_search_tasks), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_search_tasks", side_effect=mock_search_tasks),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             provider.list_jobs(device_arns=[IONQ_ARIA_ARN, IQM_GARNET_ARN])
 
         assert "us-east-1" in regions_queried
@@ -341,12 +380,16 @@ class TestListJobsMultiDevice:
         """Status filter is passed through to each per-device query."""
         statuses_passed = []
 
-        def mock_search_tasks(region, limit, status=None, device_arn=None):
+        def mock_search_tasks(
+            _region, _limit, status=None, device_arn=None
+        ):  # pylint: disable=unused-argument
             statuses_passed.append(status)
             return {"tasks": []}
 
-        with patch.object(provider, "_search_tasks", side_effect=mock_search_tasks), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_search_tasks", side_effect=mock_search_tasks),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             provider.list_jobs(device_arns=[SV1_ARN, IONQ_ARIA_ARN], status="COMPLETED")
 
         assert all(s == "COMPLETED" for s in statuses_passed)
@@ -366,9 +409,11 @@ class TestListJobsTagFilter:
             "quantumTasks": [TASK_1, TASK_2],
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"), \
-             patch.object(provider, "get_tasks_by_tag", return_value=[TASK_1["quantumTaskArn"]]):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+            patch.object(provider, "get_tasks_by_tag", return_value=[TASK_1["quantumTaskArn"]]),
+        ):
             result = provider.list_jobs(tags={"project": "bell-test"})
 
         # Only TASK_1 has the matching tag ARN
@@ -383,17 +428,19 @@ class TestListJobsTagFilter:
 
         call_count = [0]
 
-        def mock_get_tasks_by_tag(key, values=None, region_names=None):
+        def mock_get_tasks_by_tag(key, **_kwargs):
             call_count[0] += 1
             if key == "project":
                 return [TASK_1["quantumTaskArn"], TASK_3_AQUILA["quantumTaskArn"]]
-            elif key == "user":
+            if key == "user":
                 return [TASK_1["quantumTaskArn"]]
             return []
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"), \
-             patch.object(provider, "get_tasks_by_tag", side_effect=mock_get_tasks_by_tag):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+            patch.object(provider, "get_tasks_by_tag", side_effect=mock_get_tasks_by_tag),
+        ):
             result = provider.list_jobs(tags={"project": "bell-test", "user": "ryanhill"})
 
         assert call_count[0] == 2
@@ -433,7 +480,9 @@ class TestGetJob:
             "status": "RUNNING",
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_session) as mock_get_session:
+        with patch.object(
+            provider, "_get_aws_session", return_value=mock_session
+        ) as mock_get_session:
             provider.get_job(TASK_4_EU["quantumTaskArn"])
 
         mock_get_session.assert_called_once_with(region_name="eu-north-1")
@@ -445,8 +494,10 @@ class TestGetJob:
         mock_session.boto_session.client.return_value = mock_client
         mock_client.get_quantum_task.return_value = {"status": "COMPLETED"}
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_session), \
-             patch.object(provider, "_get_default_region", return_value="us-west-2"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_session),
+            patch.object(provider, "_get_default_region", return_value="us-west-2"),
+        ):
             provider.get_job("malformed-arn")
 
         mock_session.boto_session.client.assert_called_with("braket", region_name="us-west-2")
@@ -468,15 +519,15 @@ class TestEndToEndHandlerUsage:
         Simulate: CloudJobsAWSHandler.get() calls list_jobs() then
         serializes to JSON for the frontend.
         """
-        import json
-
         mock_braket_client.search_quantum_tasks.return_value = {
             "quantumTasks": [TASK_1, TASK_3_AQUILA],
             "nextToken": "next_page_abc",
         }
 
-        with patch.object(provider, "_get_aws_session", return_value=mock_aws_session), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_get_aws_session", return_value=mock_aws_session),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(limit=10, status="COMPLETED")
 
         # Handler serializes to JSON
@@ -521,15 +572,19 @@ class TestEndToEndHandlerUsage:
         sv1_task = BraketProvider._serialize_task(TASK_1)
         ionq_task = BraketProvider._serialize_task(TASK_2)
 
-        def mock_search(region, limit, status=None, device_arn=None):
+        def mock_search(
+            _region, _limit, status=None, device_arn=None
+        ):  # pylint: disable=unused-argument
             if device_arn == SV1_ARN:
                 return {"tasks": [sv1_task]}
-            elif device_arn == IONQ_ARIA_ARN:
+            if device_arn == IONQ_ARIA_ARN:
                 return {"tasks": [ionq_task]}
             return {"tasks": []}
 
-        with patch.object(provider, "_search_tasks", side_effect=mock_search), \
-             patch.object(provider, "_get_default_region", return_value="us-east-1"):
+        with (
+            patch.object(provider, "_search_tasks", side_effect=mock_search),
+            patch.object(provider, "_get_default_region", return_value="us-east-1"),
+        ):
             result = provider.list_jobs(
                 device_arns=[SV1_ARN, IONQ_ARIA_ARN],
                 limit=10,
