@@ -7,14 +7,14 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for helping us improve the docs. The qBraid-SDK documentation lives at [docs.qbraid.com](https://docs.qbraid.com/sdk/user-guide/overview).
+        Thanks for helping us improve the docs. The qBraid-SDK documentation lives at [docs.qbraid.com](https://docs.qbraid.com/v2/sdk/user-guide/overview).
 
   - type: input
     id: page
     attributes:
       label: Page or URL
       description: Which page of the documentation does this concern? Paste the URL if possible.
-      placeholder: "https://docs.qbraid.com/sdk/..."
+      placeholder: "https://docs.qbraid.com/v2/sdk/..."
     validations:
       required: true
 

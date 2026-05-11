@@ -9,7 +9,7 @@ body:
       value: |
         Thanks for proposing a new provider integration. The qBraid-SDK is a hardware-agnostic runtime framework, and most of our provider integrations come from the community — including via the Unitary Foundation's [`metriq-bench`](https://github.com/unitaryfund/metriq) project. This template captures everything we need to scope the work.
 
-        Before submitting, please check the [supported providers list](https://docs.qbraid.com/sdk/user-guide/overview) to make sure the provider isn't already integrated.
+        Before submitting, please check the [supported providers list](https://docs.qbraid.com/v2/sdk/user-guide/overview) to make sure the provider isn't already integrated.
 
   - type: input
     id: provider-name

@@ -1,7 +1,7 @@
 blank_issues_enabled: false
 contact_links:
   - name: 📚 Documentation
-    url: https://docs.qbraid.com/sdk/user-guide/overview
+    url: https://docs.qbraid.com/v2/sdk/user-guide/overview
     about: Browse the qBraid-SDK user guide, API reference, and tutorials before opening an issue.
   - name: 💬 Ask a question / Get support
     url: https://www.qbraid.com/contact
