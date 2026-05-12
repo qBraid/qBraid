@@ -28,6 +28,8 @@ Types of changes:
 
 ### Dependencies
 
+- Updated qbraid-core minimum version requirement from 0.2.3 to 0.3.0 ([#1182](https://github.com/qBraid/qBraid/pull/1182))
+
 ## [0.12.0] - 2026-05-01
 
 ### Added
