@@ -30,6 +30,7 @@ import operator
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Union, cast
 
 import numpy as np
+import sympy
 from cirq import CX, Circuit, NamedQubit, ops
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
@@ -40,8 +41,6 @@ from .cirq_custom import U2Gate, U3Gate, rzz
 
 yacc = LazyLoader('yacc', globals(), 'ply.yacc')
 
-# Redefined lexer tokens (4/7/21) to surpress warning:
-# Token ['IF', 'NE'] defined, but not used
 QasmLexer.tokens = [
     "FORMAT_SPEC",
     "NUMBER",
@@ -53,6 +52,8 @@ QasmLexer.tokens = [
     "CREG",
     "MEASURE",
     "ARROW",
+    "IF",
+    "EQ",
 ]
 
 if TYPE_CHECKING:
@@ -400,7 +401,8 @@ class QasmParser:
 
     def p_circuit_gate_or_measurement(self, p):
         """circuit :  circuit gate_op
-        |  circuit measurement"""
+        |  circuit measurement
+        |  circuit if"""
         self.circuit.append(p[2])
         p[0] = self.circuit
 
@@ -606,17 +608,17 @@ class QasmParser:
     # if operations
     # if : IF '(' carg EQ NATURAL_NUMBER ')' ID qargs
 
-    # def p_if(self, p):
-    #     """if : IF '(' carg EQ NATURAL_NUMBER ')' gate_op"""
-    #     # We have to split the register into bits (since that's what measurement does above),
-    #     # and create one condition per bit, checking against that part of the binary value.
-    #     conditions = []
-    #     for i, key in enumerate(p[3]):
-    #         v = (p[5] >> i) & 1
-    #         conditions.append(sympy.Eq(sympy.Symbol(key), v))
-    #     p[0] = [
-    #         ops.ClassicallyControlledOperation(conditions=conditions, sub_operation=tuple(p[7])[0])
-    #     ]
+    def p_if(self, p):
+        """if : IF '(' carg EQ NATURAL_NUMBER ')' gate_op"""
+        # We have to split the register into bits (since that's what measurement does above),
+        # and create one condition per bit, checking against that part of the binary value.
+        conditions = []
+        for i, key in enumerate(p[3]):
+            v = (p[5] >> i) & 1
+            conditions.append(sympy.Eq(sympy.Symbol(key), v))
+        p[0] = [
+            ops.ClassicallyControlledOperation(conditions=conditions, sub_operation=tuple(p[7])[0])
+        ]
 
     def p_error(self, p):
         if p is None:

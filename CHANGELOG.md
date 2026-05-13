@@ -16,9 +16,17 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- QASM conditional (if) statement support for Cirq conversions ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- `normalize_if_blocks` function to convert QASM 3-style if blocks to QASM 2 single-line syntax ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Support for `BranchingStatement` handling in `_replace_gate_in_statement` function ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- IF and EQ tokens to QasmLexer for conditional statement parsing ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
 
 ### Improved / Modified
+- Enhanced `qasm3_to_cirq` function with multi-path conversion approach including pyqasm unrolling and if block normalization ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Updated `qasm2_to_cirq` to use `normalize_if_blocks` for conditional statement compatibility ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Modified `_replace_gate_in_statement` return type from `QuantumGate` to `Statement` to handle branching statements ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Re-enabled classical control functionality in `cirq_qasm_parser.py` with proper if statement parsing ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 ### Deprecated
 
@@ -27,8 +35,10 @@ Types of changes:
 - Removed `QirRunner` from native runtime API exports and imports ([#1175](https://github.com/qBraid/qBraid/pull/1175))
 
 ### Fixed
+- Classical control flow support for QASM to Cirq conversions now properly handles if statements and conditions ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 ### Dependencies
+- Added `sympy` import to `cirq_qasm_parser.py` for conditional operations ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 
 - Updated qbraid-core minimum version requirement from 0.2.3 to 0.3.0 ([#1182](https://github.com/qBraid/qBraid/pull/1182))
 
