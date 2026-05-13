@@ -16,8 +16,25 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `OpenQuantumProvider`, `OpenQuantumDevice`, and `OpenQuantumJob` classes implementing the qBraid runtime interface for Open Quantum
+- Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
 
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+- Removed `QirRunner` from native runtime API exports and imports ([#1175](https://github.com/qBraid/qBraid/pull/1175))
+
+### Fixed
+
+### Dependencies
+
+- Updated qbraid-core minimum version requirement from 0.2.3 to 0.3.0 ([#1182](https://github.com/qBraid/qBraid/pull/1182))
+
+## [0.12.0] - 2026-05-01
+
+### Added
 - Added `RigettiProvider`, `RigettiDevice`, and `RigettiJob` classes implementing the qBraid runtime interface for Rigetti QCS; auth is handled via `RIGETTI_REFRESH_TOKEN`, `RIGETTI_CLIENT_ID`, and `RIGETTI_ISSUER` env vars or a `QCSClient` passthrough; requires local [quilc](https://github.com/quil-lang/quilc) and [QVM](https://github.com/quil-lang/qvm) binaries for compilation and simulation — install the [Forest SDK](https://qcs.rigetti.com/sdk-downloads) before use ([#1127](https://github.com/qBraid/qBraid/pull/1127))
 
   ```python
@@ -167,6 +184,8 @@ Types of changes:
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added CodeRabbit configuration file (`.coderabbit.yaml`) to disable automatic code review functionality ([#1162](https://github.com/qBraid/qBraid/pull/1162))
 - Added `@overload` method signatures to `QbraidDevice.submit` method to provide type hints for single `Program` vs `list[Program]` input types ([#1164](https://github.com/qBraid/qBraid/pull/1164))
+- Added `list_jobs` and `get_job` methods to `BraketProvider` for querying AWS Braket quantum tasks; supports filtering by status, device ARN, tags, and cross-region queries when using multiple device ARNs ([#1166](https://github.com/qBraid/qBraid/pull/1166))
+- Added `list_jobs` and `get_job` methods to `QiskitRuntimeProvider` for querying IBM Quantum jobs via REST API; includes authentication via API key exchange for IAM tokens, filtering by status/backend/tags/date range, and pagination support ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -177,6 +196,8 @@ Types of changes:
 - Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
 - Simplified `test_qasm3_to_braket_error_includes_detail` test by removing reset case and converting from parametrized test to single case testing only the `c3x` undefined gate error ([#1161](https://github.com/qBraid/qBraid/pull/1161))
 - Modernized type annotations throughout `qbraid.runtime` by replacing `Optional[]` and `Union[]` with PEP 604 syntax using `|` operator ([#1164](https://github.com/qBraid/qBraid/pull/1164))
+- Fixed OpenQASM 3 to CUDA-Q conversion to promote integer gate parameters to floating-point values, preventing incorrect integer inference in rotation angles. ([#1171](https://github.com/qBraid/qBraid/pull/1171))
+- Improved `qbraid.runtime.aws` and `qbraid.runtime.ibm` modules with lazy imports using `__getattr__` to reduce initialization overhead ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
@@ -197,6 +218,7 @@ Types of changes:
 - Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
 - Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
+- Updated `qbraid-core` requirement from `>=0.2.3,<0.3.0` to `>=0.2.3,<0.4.0` to support expanded version range ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
 ## [0.11.1] - 2026-02-24
 
