@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `as_batch=True` parameter to `QuantumDevice.run()` and `QbraidDevice.submit()` enabling submission of a list of circuits as a single batch job (one vendor call, one VRN, one status). `QbraidJob.result()` returns `list[Result]` for batch jobs (`numCircuits > 1`) and a single `Result` for regular jobs. Batch jobs are capped at 200 circuits. ([#1187](https://github.com/qBraid/qBraid/pull/1187))
 - Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
 
 ### Improved / Modified
