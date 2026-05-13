@@ -33,6 +33,18 @@ if TYPE_CHECKING:
 
 qbraid_rt_oq = LazyLoader("qbraid_rt_oq", globals(), "qbraid.runtime.openquantum")
 
+# Execution plan and queue priority mappings
+EXECUTION_PLAN_TYPES = {
+    "PUBLIC": "072f7eb6-574b-4bae-aafa-d3399c4abe7a",
+    "PRIVATE": "f83fd52f-c691-470f-9521-26b81c4e53bd",
+}
+
+QUEUE_PRIORITY_TYPES = {
+    "STANDARD": "0f7b91a3-d1bf-46fb-af9c-55b77fa72bed",
+    "PRIORITY": "4ea2b9de-2d20-46d4-b1b5-0b71537a584f",
+    "INSTANT": "74cebc3d-14d8-455d-900e-daedc1566384",
+}
+
 
 class OpenQuantumJob(QuantumJob):
     """OpenQuantum job class."""
@@ -42,7 +54,7 @@ class OpenQuantumJob(QuantumJob):
         job_id: str,
         session: Optional[qbraid.runtime.openquantum.OpenQuantumSession] = None,
         device: Optional[qbraid.runtime.QuantumDevice] = None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(job_id, device=device, **kwargs)
         self._session = session or qbraid_rt_oq.OpenQuantumSession()
@@ -85,15 +97,12 @@ class OpenQuantumJob(QuantumJob):
 
         results = self.session.download_job_output(self.id)
         data = GateModelResultData(measurement_counts=results)
-        device_id = self.device.id if self.device else ""
+        device_id = self._device.id if self._device else job_data.get("backend_class_id", "")
 
         # Add readable execution plan and queue priority names
         enhanced_job_data = dict(job_data)
         execution_plan_id = job_data.get("execution_plan_id")
         queue_priority_id = job_data.get("queue_priority_id")
-
-        # Import mappings here to avoid circular imports
-        from .device import EXECUTION_PLAN_TYPES, QUEUE_PRIORITY_TYPES
 
         # Create reverse mappings
         execution_plan_reverse = {v: k for k, v in EXECUTION_PLAN_TYPES.items()}
@@ -106,9 +115,5 @@ class OpenQuantumJob(QuantumJob):
             enhanced_job_data["queue_priority"] = queue_priority_reverse[queue_priority_id]
 
         return Result(
-            device_id=device_id,
-            job_id=self.id,
-            success=True,
-            data=data,
-            **enhanced_job_data
+            device_id=device_id, job_id=self.id, success=True, data=data, **enhanced_job_data
         )

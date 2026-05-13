@@ -99,7 +99,7 @@ class OpenQuantumSession(Session):
 
     def get_backend_class_details(self, backend_id: str) -> dict[str, Any]:
         """Get detailed information for a specific backend class."""
-        url = f"{self.scheduler_url}/v1/backend/classes/{backend_id}"
+        url = f"{self.scheduler_url}/v1/backends/classes/{backend_id}"
         return self.get(url).json()
 
     def get_user_organizations(self) -> list[dict[str, Any]]:
@@ -114,7 +114,7 @@ class OpenQuantumSession(Session):
         resp = self.post(url).json()
         upload_id = resp["id"]
         upload_url = resp["url"]
-        requests.put(upload_url, data=content).raise_for_status()
+        requests.put(upload_url, data=content, timeout=60).raise_for_status()
         return upload_id
 
     def prepare_job(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -162,7 +162,7 @@ class OpenQuantumSession(Session):
         if not output_url:
             raise ResourceNotFoundError("Job output URL not available.")
 
-        response = requests.get(output_url)
+        response = requests.get(output_url, timeout=60)
         response.raise_for_status()
         return response.json()
 
@@ -176,16 +176,15 @@ class OpenQuantumProvider(QuantumProvider):
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         device_id = data.get("short_code") or data.get("id")
         # Extract max_qubits from constraint_data if available
-        num_qubits = None
         constraint_data = data.get("constraint_data")
-        if constraint_data and isinstance(constraint_data, dict):
-            num_qubits = constraint_data.get("max_qubits")
+        num_qubits = constraint_data.get("max_qubits") if constraint_data else None
 
         return TargetProfile(
             device_id=device_id,
             simulator=data.get("type") == "SIMULATOR",
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
+            constraint_data=constraint_data,
             program_spec=[
                 ProgramSpec(str, alias="qasm3", experiment_type=ExperimentType.GATE_MODEL),
                 ProgramSpec(str, alias="qasm2", experiment_type=ExperimentType.GATE_MODEL),
@@ -194,7 +193,7 @@ class OpenQuantumProvider(QuantumProvider):
         )
 
     @cached_method
-    def get_devices(self, **kwargs) -> list[OpenQuantumDevice]:
+    def get_devices(self) -> list[OpenQuantumDevice]:
         """Get a list of OpenQuantum devices."""
         data = self.session.get_devices()
         # Enrich each device with constraint data from details API
@@ -207,7 +206,7 @@ class OpenQuantumProvider(QuantumProvider):
                     # Merge constraint_data from details into device data
                     if "constraint_data" in details:
                         device["constraint_data"] = details["constraint_data"]
-                except Exception:
+                except Exception:  # pylint: disable=broad-exception-caught
                     # If details API fails, continue with basic device data
                     pass
             enriched_devices.append(device)

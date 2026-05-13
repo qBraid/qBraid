@@ -222,13 +222,13 @@ if TYPE_CHECKING:
     from .native import QbraidSessionV1 as QbraidSessionV1
     from .native import QirRunner as QirRunner
     from .native import Session as Session
-    from .oqc import OQCDevice as OQCDevice
-    from .oqc import OQCJob as OQCJob
-    from .oqc import OQCProvider as OQCProvider
     from .openquantum import OpenQuantumDevice as OpenQuantumDevice
     from .openquantum import OpenQuantumJob as OpenQuantumJob
     from .openquantum import OpenQuantumProvider as OpenQuantumProvider
     from .openquantum import OpenQuantumSession as OpenQuantumSession
+    from .oqc import OQCDevice as OQCDevice
+    from .oqc import OQCJob as OQCJob
+    from .oqc import OQCProvider as OQCProvider
     from .origin import OriginDevice as OriginDevice
     from .origin import OriginJob as OriginJob
     from .origin import OriginProvider as OriginProvider
@@ -238,7 +238,6 @@ if TYPE_CHECKING:
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider
-
 
 
 def __getattr__(name):

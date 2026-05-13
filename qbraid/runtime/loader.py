@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     from qbraid.runtime.azure import AzureQuantumJob, AzureQuantumProvider
     from qbraid.runtime.ibm import QiskitJob, QiskitRuntimeProvider
     from qbraid.runtime.ionq import IonQJob, IonQProvider
-    from qbraid.runtime.openquantum import OpenQuantumJob, OpenQuantumProvider
     from qbraid.runtime.native import QbraidJob, QbraidProvider
+    from qbraid.runtime.openquantum import OpenQuantumJob, OpenQuantumProvider
     from qbraid.runtime.oqc import OQCJob, OQCProvider
     from qbraid.runtime.origin import OriginJob, OriginProvider
 
@@ -140,9 +140,7 @@ def load_provider(provider_name: Literal["ionq"], **kwargs) -> IonQProvider: ...
 
 
 @overload
-def load_provider(
-    provider_name: Literal["openquantum"], **kwargs
-) -> OpenQuantumProvider: ...
+def load_provider(provider_name: Literal["openquantum"], **kwargs) -> OpenQuantumProvider: ...
 
 
 @overload

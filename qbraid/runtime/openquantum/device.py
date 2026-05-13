@@ -23,19 +23,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
-from .job import OpenQuantumJob
-
-# Execution plan and queue priority mappings
-EXECUTION_PLAN_TYPES = {
-    "PUBLIC": "072f7eb6-574b-4bae-aafa-d3399c4abe7a",
-    "PRIVATE": "f83fd52f-c691-470f-9521-26b81c4e53bd",
-}
-
-QUEUE_PRIORITY_TYPES = {
-    "STANDARD": "0f7b91a3-d1bf-46fb-af9c-55b77fa72bed",
-    "PRIORITY": "4ea2b9de-2d20-46d4-b1b5-0b71537a584f",
-    "INSTANT": "74cebc3d-14d8-455d-900e-daedc1566384",
-}
+from .job import EXECUTION_PLAN_TYPES, QUEUE_PRIORITY_TYPES, OpenQuantumJob
 
 if TYPE_CHECKING:
     import qbraid.runtime.openquantum
@@ -63,6 +51,7 @@ class OpenQuantumDevice(QuantumDevice):
         # without listing all devices. Assuming ONLINE if instance exists.
         return DeviceStatus.ONLINE
 
+    # pylint: disable-next=arguments-differ,too-many-arguments
     def submit(
         self,
         run_input: str | list[str],
@@ -143,23 +132,37 @@ class OpenQuantumDevice(QuantumDevice):
             if not queue_priority_id:
                 raise ValueError(f"Unknown queue priority: {queue_priority}")
 
-        # Plan & priority selection (your logic, slightly cleaner)
-        if execution_plan_id:
-            plan = next((p for p in quote if p["execution_plan_id"] == execution_plan_id), None)
-            if not plan:
-                raise ValueError(f"Execution plan '{execution_plan_id}' not found in quote.")
-        else:
-            plan = min(quote, key=lambda p: p.get("price", float("inf")))
+        # Plan & priority selection
+        valid_options = []
+        plan_found = False
 
-        if queue_priority_id:
-            prio = next(
-                (q for q in plan["queue_priorities"] if q["queue_priority_id"] == queue_priority_id),
-                None,
-            )
-            if not prio:
-                raise ValueError(f"Queue priority '{queue_priority_id}' not found in selected plan.")
-        else:
-            prio = min(plan["queue_priorities"], key=lambda q: q.get("price_increase", float("inf")))
+        for p in quote:
+            if execution_plan_id and p.get("execution_plan_id") != execution_plan_id:
+                continue
+            plan_found = True
+            for q in p.get("queue_priorities", []):
+                if queue_priority_id and q.get("queue_priority_id") != queue_priority_id:
+                    continue
+                valid_options.append((p, q))
+
+        if not valid_options:
+            if execution_plan_id and not plan_found:
+                raise ValueError(f"Execution plan '{execution_plan_id}' not found in quote.")
+            if execution_plan_id and queue_priority_id:
+                raise ValueError(
+                    f"Queue priority '{queue_priority_id}' not found in selected plan."
+                )
+            if queue_priority_id:
+                raise ValueError(
+                    f"Queue priority '{queue_priority_id}' not found in any execution plan."
+                )
+            raise ValueError("No valid execution plans or queue priorities found in quote.")
+
+        plan, prio = min(
+            valid_options,
+            key=lambda opt: opt[0].get("price", float("inf"))
+            + opt[1].get("price_increase", float("inf")),
+        )
 
         job_payload = {
             "organization_id": organization_id,
