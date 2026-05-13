@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
 
 ### Improved / Modified
 
@@ -24,9 +25,13 @@ Types of changes:
 ### Removed
 - Removed pytket-braket dependency from braket optional dependencies ([#1176](https://github.com/qBraid/qBraid/pull/1176))
 
+- Removed `QirRunner` from native runtime API exports and imports ([#1175](https://github.com/qBraid/qBraid/pull/1175))
+
 ### Fixed
 
 ### Dependencies
+
+- Updated qbraid-core minimum version requirement from 0.2.3 to 0.3.0 ([#1182](https://github.com/qBraid/qBraid/pull/1182))
 
 ## [0.12.0] - 2026-05-01
 
