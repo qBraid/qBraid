@@ -220,7 +220,6 @@ if TYPE_CHECKING:
     from .native import QbraidJob as QbraidJob
     from .native import QbraidProvider as QbraidProvider
     from .native import QbraidSessionV1 as QbraidSessionV1
-    from .native import QirRunner as QirRunner
     from .native import Session as Session
     from .openquantum import OpenQuantumDevice as OpenQuantumDevice
     from .openquantum import OpenQuantumJob as OpenQuantumJob
