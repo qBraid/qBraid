@@ -18,6 +18,27 @@ Types of changes:
 ### Added
 - Added `OpenQuantumProvider`, `OpenQuantumDevice`, and `OpenQuantumJob` classes implementing the qBraid runtime interface for Open Quantum
 
+  ```python
+  from qbraid.runtime.openquantum import OpenQuantumProvider
+
+  # Create SDK key on OpenQuantum.com 
+  provider = OpenQuantumProvider(client_id="", client_secret="")
+  device = provider.get_device("ionq:forte-1")
+
+  qasm_str = """
+  OPENQASM 3.0;
+  qubit[2] q;
+  bit[2] c;
+  h q[0];
+  cx q[0], q[1];
+  c = measure q;
+  """
+
+  job = device.run(qasm_str, shots=100)
+  result = job.result()
+  print(result.data.get_counts())
+  ```
+
 - Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
 
 ### Improved / Modified
