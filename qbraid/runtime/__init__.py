@@ -214,7 +214,6 @@ if TYPE_CHECKING:
     from .native import QbraidJob as QbraidJob
     from .native import QbraidProvider as QbraidProvider
     from .native import QbraidSessionV1 as QbraidSessionV1
-    from .native import QirRunner as QirRunner
     from .native import Session as Session
     from .oqc import OQCDevice as OQCDevice
     from .oqc import OQCJob as OQCJob
