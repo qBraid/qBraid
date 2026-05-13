@@ -520,9 +520,7 @@ class QuantumDevice(ABC):
             if len(run_input) > 200:
                 raise ValueError("Batch jobs are limited to 200 circuits.")
             run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
-            logger.debug(
-                "Submitting batch of %d circuits to device '%s'", len(run_input), self.id
-            )
+            logger.debug("Submitting batch of %d circuits to device '%s'", len(run_input), self.id)
             return self.submit(run_input_compat, *args, as_batch=True, **kwargs)
 
         is_single_input = not isinstance(run_input, list)
