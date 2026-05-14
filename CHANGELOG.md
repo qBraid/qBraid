@@ -48,6 +48,7 @@ Types of changes:
 ### Deprecated
 
 ### Removed
+- Removed pytket-braket dependency from braket optional dependencies ([#1176](https://github.com/qBraid/qBraid/pull/1176))
 
 - Removed `QirRunner` from native runtime API exports and imports ([#1175](https://github.com/qBraid/qBraid/pull/1175))
 
