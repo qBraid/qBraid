@@ -117,58 +117,33 @@ class QbraidJob(QuantumJob):
         """
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
-        cost = job_data.cost
-        time_stamps = job_data.timeStamps
         success = job_data.status == JobStatus.COMPLETED
         num_circuits = job_data.numCircuits or 1
 
-        if not success:
-            job_result = CoreResult(
+        if success:
+            raw_result = self.client.get_job_result(self.id)
+        else:
+            empty = CoreResult(
                 status=job_data.status,
-                cost=cost,
-                timeStamps=time_stamps,
+                cost=job_data.cost,
+                timeStamps=job_data.timeStamps,
                 resultData={},
             )
-            data = ResultData.from_object(job_result, job_data.experimentType)
-            single_result = Result[ResultDataType](
+            raw_result = [empty] * num_circuits if num_circuits > 1 else empty
+
+        def _build_result(core_result: CoreResult) -> Result[ResultDataType]:
+            data = ResultData.from_object(core_result, job_data.experimentType)
+            return Result[ResultDataType](
                 device_id=job_data.deviceQrn,
                 job_id=job_data.jobQrn,
                 success=success,
                 data=data,
-                time_stamps=time_stamps,
-                cost=cost,
+                time_stamps=job_data.timeStamps,
+                cost=job_data.cost,
                 status=job_data.status,
             )
-            return [single_result] * num_circuits if num_circuits > 1 else single_result
 
-        raw_result = self.client.get_job_result(self.id)
+        if isinstance(raw_result, list):
+            return [_build_result(r) for r in raw_result]
 
-        if num_circuits > 1 and isinstance(raw_result, list):
-            # Batch job: raw_result is list[CoreResult]
-            results = []
-            for circuit_result in raw_result:
-                data = ResultData.from_object(circuit_result, job_data.experimentType)
-                results.append(
-                    Result[ResultDataType](
-                        device_id=job_data.deviceQrn,
-                        job_id=job_data.jobQrn,
-                        success=True,
-                        data=data,
-                        time_stamps=time_stamps,
-                        cost=cost,
-                        status=job_data.status,
-                    )
-                )
-            return results
-
-        # Single-circuit job
-        data = ResultData.from_object(raw_result, job_data.experimentType)
-        return Result[ResultDataType](
-            device_id=job_data.deviceQrn,
-            job_id=job_data.jobQrn,
-            success=success,
-            data=data,
-            time_stamps=time_stamps,
-            cost=cost,
-            status=job_data.status,
-        )
+        return _build_result(raw_result)
