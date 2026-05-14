@@ -173,6 +173,7 @@ DEVICE_DATA_EQUAL1 = {
         "directAccess": True,
         "pricingModel": "fixed",
         "notes": None,
+        "batchJobSupport": True,
     },
 }
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=arguments-differ
+# pylint: disable=arguments-differ,too-many-arguments
 
 """
 Module defining QbraidDevice class
@@ -88,7 +88,6 @@ class QbraidDevice(QuantumDevice):
 
         return self.profile.noise_models.get(noise_model).name
 
-    # pylint: disable=too-many-arguments
     @overload
     def submit(
         self,
@@ -97,6 +96,7 @@ class QbraidDevice(QuantumDevice):
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
+        as_batch: bool = False,
     ) -> QbraidJob: ...
 
     @overload
@@ -107,11 +107,20 @@ class QbraidDevice(QuantumDevice):
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
+        as_batch: bool = False,
     ) -> list[QbraidJob]: ...
 
-    # pylint: enable=too-many-arguments
+    @overload
+    def submit(
+        self,
+        run_input: list[Program],
+        shots: int | None = None,
+        name: str | None = None,
+        tags: dict[str, str | int | bool] | None = None,
+        runtime_options: dict[str, Any] | None = None,
+        as_batch: bool = True,
+    ) -> QbraidJob: ...
 
-    # pylint: disable-next=too-many-arguments
     def submit(
         self,
         run_input: Program | list[Program],
@@ -128,14 +137,21 @@ class QbraidDevice(QuantumDevice):
         are registered with the session.
 
         Args:
+            run_input: A single program or a list of programs to submit to the device.
+            shots: The number of shots to run the program(s).
+            name: The name of the job.
+            tags: A dictionary of tags to add to the job.
+            runtime_options: A dictionary of runtime options to pass to the device.
             as_batch: When True, submit all programs as a single batch job
                 (one API call, one QRN, one status). Returns a single QbraidJob.
+                Check QbraidDevice.profile.batch_job_support to verify if
+                batch jobs are supported by this device.
         """
         tags = tags or {}
         runtime_options = runtime_options or {}
         noise_model: NoiseModel | str | None = runtime_options.pop("noise_model", None)
 
-        # Read group context — only QbraidDevice supports grouped execution.
+        # Read group context
         group_job_qrn = get_active_group()
         session = get_active_group_session() if group_job_qrn else None
 
@@ -143,34 +159,21 @@ class QbraidDevice(QuantumDevice):
             runtime_options["noiseModel"] = self._resolve_noise_model(noise_model)
 
         if as_batch:
-            # Batch mode: submit all programs as a single job
-            programs = run_input if isinstance(run_input, list) else [run_input]
+            if not self.profile.get("batch_job_support"):
+                raise ValueError("Batch jobs are not supported by this device.")
 
-            if group_job_qrn:
-                logger.debug(
-                    "Submitting batch job to device '%s' (group: %s)", self.id, group_job_qrn
-                )
+            if not isinstance(run_input, list):
+                raise ValueError("Batch jobs require a list of programs.")
 
-            job_request = JobRequest(
-                deviceQrn=self.id,
-                program=programs,
-                shots=shots,
-                name=name,
-                tags=tags,
-                runtimeOptions=runtime_options,
-                groupJobQrn=group_job_qrn,
-            )
-            job_data = self.client.create_job(job_request)
-            job = QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client)
-            if session is not None:
-                session._register_job(job)
-            return job
-
-        is_single_input = not isinstance(run_input, list)
+        is_single_input = as_batch or not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
 
-        if group_job_qrn:
-            logger.debug("Submitting job to device '%s' (group: %s)", self.id, group_job_qrn)
+        logger.debug(
+            "Submitting %s to device '%s' (group: %s)",
+            "batch job" if as_batch else f"{len(run_input)} job(s)",
+            self.id,
+            group_job_qrn,
+        )
 
         jobs = []
 

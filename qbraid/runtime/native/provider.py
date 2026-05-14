@@ -211,6 +211,7 @@ class QbraidProvider(QuantumProvider):
             name=device.name,
             pricing=device.pricing,
             basis_gates=basis_gates,
+            batch_job_support=device.batchJobSupport,
         )
 
     @cached_method(ttl=120)

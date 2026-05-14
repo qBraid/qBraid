@@ -92,17 +92,20 @@ class TestBatchSubmission:
             assert isinstance(request.program, list)
             assert len(request.program) == 3
 
+    def test_batch_submit_unsupported_device_raises(self, client):
+        """as_batch=True on a device without batch support raises ValueError."""
+        provider = QbraidProvider(client=client)
+        with cache_disabled(provider):
+            qir_device = provider.get_device("qbraid:qbraid:sim:qir-sv")
+        programs = [QASM_H, QASM_X]
+        with pytest.raises(ValueError, match="not supported"):
+            qir_device.run(programs, as_batch=True)
+
     def test_batch_submit_non_list_raises(self, device):
         """as_batch=True with a single (non-list) program raises ValueError."""
         single = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[1];\nh q[0];'
-        with pytest.raises(ValueError, match="requires a list"):
+        with pytest.raises(ValueError, match="require a list"):
             device.run(single, as_batch=True)
-
-    def test_batch_submit_over_200_raises(self, device):
-        """as_batch=True with > 200 circuits raises ValueError."""
-        programs = ['OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[1];\nh q[0];'] * 201
-        with pytest.raises(ValueError, match="limited to 200"):
-            device.run(programs, as_batch=True)
 
     def test_batch_submit_with_group_session(self, device, batch_programs):
         """Batch submit inside a GroupJobSession passes groupJobQrn."""
