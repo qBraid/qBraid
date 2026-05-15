@@ -165,6 +165,8 @@ class QbraidDevice(QuantumDevice):
             if not isinstance(run_input, list):
                 raise ValueError("Batch jobs require a list of programs.")
 
+        # Wrap so the loop iterates once: [Program] for single, [list[Program]]
+        # for batch (sends the full list as one API call → 1 QRN, N circuits).
         is_single_input = as_batch or not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
 
