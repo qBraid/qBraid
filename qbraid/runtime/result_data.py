@@ -221,8 +221,14 @@ class GateModelResultData(ResultData):
 
         counts = self.get_counts()
         probabilities = self.get_probabilities()
-        shots = sum(counts.values())
-        num_measured_qubits = len(next(iter(counts)))
+
+        if isinstance(counts, list):
+            shots = [sum(c.values()) for c in counts]
+            num_measured_qubits = [len(next(iter(c))) for c in counts]
+        else:
+            shots = sum(counts.values())
+            num_measured_qubits = len(next(iter(counts)))
+
         data = {
             "shots": shots,
             "num_measured_qubits": num_measured_qubits,

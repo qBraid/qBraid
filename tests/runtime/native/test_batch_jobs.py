@@ -24,7 +24,7 @@ from unittest.mock import patch
 import pytest
 
 from qbraid._caching import cache_disabled
-from qbraid.runtime import Result
+from qbraid.runtime import BatchResult, Result
 from qbraid.runtime.group import GroupJobSession
 from qbraid.runtime.native import QbraidProvider
 from qbraid.runtime.native.job import QbraidJob
@@ -121,43 +121,69 @@ class TestBatchSubmission:
 class TestBatchResult:
     """Tests for QbraidJob.result() with batch jobs (numCircuits > 1)."""
 
-    def test_batch_result_returns_list(self, device, client):
-        """result() for a batch job returns a list[Result] of correct length."""
+    def test_batch_result_returns_batch_result(self, device, client):
+        """result() for a batch job returns a BatchResult."""
         job = QbraidJob(
             job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
             device=device,
             client=client,
         )
-        results = job.result()
-        assert isinstance(results, list)
-        assert len(results) == 3
+        result = job.result()
+        assert isinstance(result, BatchResult)
+        assert result.num_circuits == 3
 
-    def test_batch_result_individual_data(self, device, client):
-        """Each Result in the batch has the correct measurementCounts."""
+    def test_batch_result_per_circuit_data(self, device, client):
+        """Each per-circuit Result has the correct measurementCounts."""
         job = QbraidJob(
             job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
             device=device,
             client=client,
         )
-        results = job.result()
-        for i, result in enumerate(results):
-            assert result.data.get_counts() == RESULTS_DATA_BATCH_EQUAL1[i]["measurementCounts"]
+        result = job.result()
+        for i, circuit_result in enumerate(result.results):
+            assert (
+                circuit_result.data.get_counts()
+                == RESULTS_DATA_BATCH_EQUAL1[i]["measurementCounts"]
+            )
+
+    def test_batch_result_aggregate_counts(self, device, client):
+        """Aggregate data.get_counts() returns a list of all circuit counts."""
+        job = QbraidJob(
+            job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
+            device=device,
+            client=client,
+        )
+        result = job.result()
+        counts = result.data.get_counts()
+        assert isinstance(counts, list)
+        assert len(counts) == 3
+
+    def test_batch_result_details_indexed(self, device, client):
+        """details returns a list of per-circuit detail dicts."""
+        job = QbraidJob(
+            job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
+            device=device,
+            client=client,
+        )
+        result = job.result()
+        details = result.details
+        assert isinstance(details, list)
+        assert len(details) == 3
 
     def test_batch_result_metadata(self, device, client):
-        """Each Result has correct device_id, job_id, and success flag."""
+        """BatchResult has correct device_id, job_id, and success flag."""
         job = QbraidJob(
             job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
             device=device,
             client=client,
         )
-        results = job.result()
-        for result in results:
-            assert result.device_id == JOB_DATA_BATCH_EQUAL1["deviceQrn"]
-            assert result.job_id == JOB_DATA_BATCH_EQUAL1["jobQrn"]
-            assert result.success is True
+        result = job.result()
+        assert result.device_id == JOB_DATA_BATCH_EQUAL1["deviceQrn"]
+        assert result.job_id == JOB_DATA_BATCH_EQUAL1["jobQrn"]
+        assert result.success is True
 
     def test_single_circuit_result_unchanged(self, device, client):
-        """Single-circuit job still returns a single Result (not a list)."""
+        """Single-circuit job still returns a single Result (not BatchResult)."""
         job = QbraidJob(
             job_id=JOB_DATA_EQUAL1["jobQrn"],
             device=device,
@@ -165,11 +191,10 @@ class TestBatchResult:
         )
         result = job.result()
         assert isinstance(result, Result)
-        assert not isinstance(result, list)
+        assert not isinstance(result, BatchResult)
 
     def test_batch_result_failed_job(self, device, client):
-        """A failed batch job returns a list of failed Result objects."""
-        # Temporarily set the batch job status to FAILED
+        """A failed batch job returns a BatchResult with success=False."""
         original_status = JOB_DATA_BATCH_EQUAL1["status"]
         JOB_DATA_BATCH_EQUAL1["status"] = "FAILED"
         try:
@@ -178,10 +203,11 @@ class TestBatchResult:
                 device=device,
                 client=client,
             )
-            results = job.result()
-            assert isinstance(results, list)
-            assert len(results) == 3
-            for result in results:
-                assert result.success is False
+            result = job.result()
+            assert isinstance(result, BatchResult)
+            assert result.num_circuits == 3
+            assert result.success is False
+            for circuit_result in result.results:
+                assert circuit_result.success is False
         finally:
             JOB_DATA_BATCH_EQUAL1["status"] = original_status

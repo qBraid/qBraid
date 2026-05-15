@@ -27,7 +27,7 @@ from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import Result, ResultDataType
+from qbraid.runtime.result import BatchResult, Result, ResultDataType
 from qbraid.runtime.result_data import ResultData
 
 if TYPE_CHECKING:
@@ -109,11 +109,11 @@ class QbraidJob(QuantumJob):
 
     def result(
         self, timeout: int | None = None
-    ) -> Result[ResultDataType] | list[Result[ResultDataType]]:
+    ) -> Result[ResultDataType] | BatchResult[ResultDataType]:
         """Return the results of the job.
 
-        For single-circuit jobs, returns a single ``Result``.
-        For batch jobs (``numCircuits > 1``), returns a ``list[Result]``.
+        For single-circuit jobs, returns a single :class:`Result`.
+        For batch jobs (``numCircuits > 1``), returns a :class:`BatchResult`.
         """
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
@@ -136,14 +136,24 @@ class QbraidJob(QuantumJob):
             return Result[ResultDataType](
                 device_id=job_data.deviceQrn,
                 job_id=job_data.jobQrn,
-                success=success,
+                success=core_result.status == JobStatus.COMPLETED,
                 data=data,
+                time_stamps=core_result.timeStamps,
+                cost=core_result.cost,
+                status=core_result.status,
+                **core_result.resultData,
+            )
+
+        if isinstance(raw_result, list):
+            per_circuit = [_build_result(r) for r in raw_result]
+            return BatchResult[ResultDataType](
+                device_id=job_data.deviceQrn,
+                job_id=job_data.jobQrn,
+                success=success,
+                results=per_circuit,
                 time_stamps=job_data.timeStamps,
                 cost=job_data.cost,
                 status=job_data.status,
             )
-
-        if isinstance(raw_result, list):
-            return [_build_result(r) for r in raw_result]
 
         return _build_result(raw_result)
