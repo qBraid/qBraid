@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import base64
 import json
-import warnings
 from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
@@ -29,6 +28,7 @@ from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeSer
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
 from qbraid._caching import cached_method
+from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -162,10 +162,11 @@ class QbraidProvider(QuantumProvider):
 
         program_type = QPROGRAM_REGISTRY.get(run_package)
         if program_type is None:
-            warnings.warn(
-                f"The default runtime configuration for device '{device_id}' includes "
-                f"transpilation to program type '{run_package}', which is not registered.",
-                RuntimeWarning,
+            logger.warning(
+                "The default runtime configuration for device '%s' includes "
+                "transpilation to program type '%s', which is not registered.",
+                device_id,
+                run_package,
             )
         lambdas = get_program_spec_lambdas(run_package, device_id)
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
