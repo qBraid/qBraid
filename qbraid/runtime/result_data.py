@@ -45,10 +45,17 @@ class ResultData(ABC):
     specific :class:`~qbraid.programs.ExperimentType`.
     """
 
+    _unscoped_data: dict[str, Any]
+
     @property
     @abstractmethod
     def experiment_type(self) -> ExperimentType:
         """Returns the experiment type."""
+
+    @property
+    def extra(self) -> dict[str, Any]:
+        """Returns metadata fields that are not part of the typed result data."""
+        return self._unscoped_data
 
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:

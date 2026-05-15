@@ -22,6 +22,7 @@ from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import (
+    BatchResult,
     GroupJob,
     JobRequest,
     Program,
@@ -622,16 +623,16 @@ class MockClient:
 
         return RuntimeJob.model_validate(job_data_copy)
 
-    def get_job_result(self, job_qrn: str) -> Result | list[Result]:
+    def get_job_result(self, job_qrn: str) -> Result | BatchResult:
         """Returns the results for a specific quantum job.
 
-        For batch jobs (numCircuits > 1), returns a list of Result objects.
+        For batch jobs (numCircuits > 1), returns a BatchResult.
         """
         # Check batch results map first
         if job_qrn in self.BATCH_RESULTS_MAP:
             batch_results_data = self.BATCH_RESULTS_MAP[job_qrn]
             batch_job_data = self.BATCH_JOB_MAP.get(job_qrn, {})
-            results = []
+            per_circuit = []
             for circuit_result_data in batch_results_data:
                 result_response = {
                     "status": "COMPLETED",
@@ -639,8 +640,13 @@ class MockClient:
                     "timeStamps": batch_job_data.get("timeStamps", {}),
                     "resultData": circuit_result_data,
                 }
-                results.append(Result.model_validate(result_response))
-            return results
+                per_circuit.append(Result.model_validate(result_response))
+            return BatchResult(
+                status=per_circuit[0].status,
+                cost=per_circuit[0].cost,
+                timeStamps=per_circuit[0].timeStamps,
+                results=per_circuit,
+            )
 
         # Try job QRN mapping first
         device_qrn = self.JOB_QRN_TO_DEVICE.get(job_qrn)

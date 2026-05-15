@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from qbraid_core.services.runtime import QuantumRuntimeClient
+from qbraid_core.services.runtime.schemas.result import BatchResult as CoreBatchResult
 from qbraid_core.services.runtime.schemas.result import Result as CoreResult
 
 from qbraid._logging import logger
@@ -129,7 +130,15 @@ class QbraidJob(QuantumJob):
                 timeStamps=job_data.timeStamps,
                 resultData={},
             )
-            raw_result = [empty] * num_circuits if num_circuits > 1 else empty
+            if num_circuits > 1:
+                raw_result = CoreBatchResult(
+                    status=job_data.status,
+                    cost=job_data.cost,
+                    timeStamps=job_data.timeStamps,
+                    results=[empty] * num_circuits,
+                )
+            else:
+                raw_result = empty
 
         def _build_result(core_result: CoreResult) -> Result[ResultDataType]:
             data = ResultData.from_object(core_result, job_data.experimentType)
@@ -141,19 +150,19 @@ class QbraidJob(QuantumJob):
                 time_stamps=core_result.timeStamps,
                 cost=core_result.cost,
                 status=core_result.status,
-                **core_result.resultData,
+                **data.extra,
             )
 
-        if isinstance(raw_result, list):
-            per_circuit = [_build_result(r) for r in raw_result]
+        if isinstance(raw_result, CoreBatchResult):
+            per_circuit = [_build_result(r) for r in raw_result.results]
             return BatchResult[ResultDataType](
                 device_id=job_data.deviceQrn,
                 job_id=job_data.jobQrn,
                 success=success,
                 results=per_circuit,
-                time_stamps=job_data.timeStamps,
-                cost=job_data.cost,
-                status=job_data.status,
+                time_stamps=raw_result.timeStamps,
+                cost=raw_result.cost,
+                status=raw_result.status,
             )
 
         return _build_result(raw_result)
