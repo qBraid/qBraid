@@ -1,17 +1,11 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
 contact_links:
   - name: 📚 Documentation
     url: https://docs.qbraid.com/v2/sdk/user-guide/overview
     about: Browse the qBraid-SDK user guide, API reference, and tutorials before opening an issue.
   - name: 💬 Ask a question / Get support
     url: https://www.qbraid.com/contact
-    about: For questions about using the SDK, qBraid Lab, credits, or account access, reach the qBraid team via the contact page — we respond faster there than on GitHub.
+    about: For questions about using qBraid Lab, credits, or account access, reach the qBraid team via the contact page.
   - name: 🤝 Discussions
     url: https://github.com/qBraid/qBraid/discussions
     about: Open-ended ideas, design conversations, show-and-tell, and community Q&A.
-  - name: 🔒 Report a security vulnerability
-    url: https://github.com/qBraid/qBraid/security/policy
-    about: Please report security vulnerabilities privately per our security policy — do not open a public issue.
-  - name: 🛠️ Contributing guide
-    url: https://github.com/qBraid/qBraid/blob/main/CONTRIBUTING.md
-    about: First-time contributor? Read the contributing guide before opening an issue or PR.

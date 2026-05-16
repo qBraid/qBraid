@@ -42,8 +42,12 @@ Types of changes:
   ```
 
 - Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
+- Added `py.typed` package data configuration in `pyproject.toml` to mark the package as type-aware ([#1189](https://github.com/qBraid/qBraid/pull/1189))
 
 ### Improved / Modified
+- Updated README.md to include documentation links for OriginProvider, QuantinuumProvider, and RigettiProvider in the runtime setup instructions ([#1189](https://github.com/qBraid/qBraid/pull/1189))
+- Replaced warnings.warn with logger.warning in `QbraidProvider._get_program_spec` method for improved logging consistency ([#1189](https://github.com/qBraid/qBraid/pull/1189))
+- Updated examples submodule to latest commit ([#1189](https://github.com/qBraid/qBraid/pull/1189))
 
 ### Deprecated
 
