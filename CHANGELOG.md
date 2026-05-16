@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `as_batch=True` parameter to `QbraidDevice.submit()` enabling submission of a list of circuits as a single batch job (one API call, one job QRN). `QbraidJob.result()` returns `list[Result]` for batch jobs (`numCircuits > 1`) and a single `Result` for regular jobs. ([#1187](https://github.com/qBraid/qBraid/pull/1187))
 - Added `OpenQuantumProvider`, `OpenQuantumDevice`, and `OpenQuantumJob` classes implementing the qBraid runtime interface for Open Quantum
 
   ```python

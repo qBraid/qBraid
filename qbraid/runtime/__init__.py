@@ -101,7 +101,7 @@ from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import Result
+from .result import BatchResult, Result
 from .result_data import (
     AnalogResultData,
     AnalogShotResult,
@@ -135,6 +135,7 @@ __all__ = [
     "RuntimeOptions",
     "NoiseModel",
     "NoiseModelSet",
+    "BatchResult",
     "Result",
     "ResultData",
     "GateModelResultData",
