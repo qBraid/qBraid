@@ -178,15 +178,6 @@ DEVICE_DATA_EQUAL1 = {
     },
 }
 
-REDUNDANT_JOB_DATA = {
-    "timeStamps": {
-        "createdAt": "2024-05-23T01:39:11.288Z",
-        "endedAt": "2024-05-23T01:39:11.304Z",
-        "executionDuration": 16,
-    },
-    "status": "COMPLETED",
-}
-
 JOB_DATA_QIR = {
     "jobQrn": "qbraid:qbraid:sim:qir-sv-37f5-qjob-1234567890",
     "groupJobQrn": None,
@@ -275,7 +266,7 @@ RESULTS_DATA_QIR = {
     "measurementCounts": {"11111": 4, "00000": 6},
     "runnerVersion": "0.7.4",
     "runnerSeed": None,
-    **REDUNDANT_JOB_DATA,
+
 }
 
 RESULTS_DATA_NEC = {
@@ -289,7 +280,7 @@ RESULTS_DATA_NEC = {
         }
     ],
     "solutionCount": 1,
-    **REDUNDANT_JOB_DATA,
+
 }
 
 RESULTS_DATA_AQUILA = {
