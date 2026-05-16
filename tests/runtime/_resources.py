@@ -266,7 +266,6 @@ RESULTS_DATA_QIR = {
     "measurementCounts": {"11111": 4, "00000": 6},
     "runnerVersion": "0.7.4",
     "runnerSeed": None,
-
 }
 
 RESULTS_DATA_NEC = {
@@ -280,7 +279,6 @@ RESULTS_DATA_NEC = {
         }
     ],
     "solutionCount": 1,
-
 }
 
 RESULTS_DATA_AQUILA = {
