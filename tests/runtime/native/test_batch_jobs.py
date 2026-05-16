@@ -28,6 +28,7 @@ from qbraid.runtime import BatchResult, Result
 from qbraid.runtime.group import GroupJobSession
 from qbraid.runtime.native import QbraidProvider
 from qbraid.runtime.native.job import QbraidJob
+from qbraid.runtime.result_data import GateModelResultData
 
 from .._resources import (
     JOB_DATA_BATCH_EQUAL1,
@@ -98,8 +99,8 @@ class TestBatchSubmission:
         with cache_disabled(provider):
             qir_device = provider.get_device("qbraid:qbraid:sim:qir-sv")
         programs = [QASM_H, QASM_X]
-        with pytest.raises(ValueError, match="not supported"):
-            qir_device.run(programs, as_batch=True)
+        with pytest.raises(ValueError, match="Batch jobs are not supported"):
+            qir_device.submit(programs, as_batch=True)
 
     def test_batch_submit_non_list_raises(self, device):
         """as_batch=True with a single (non-list) program raises ValueError."""
@@ -211,3 +212,105 @@ class TestBatchResult:
                 assert circuit_result.success is False
         finally:
             JOB_DATA_BATCH_EQUAL1["status"] = original_status
+
+    def test_single_circuit_failed_result(self, device, client):
+        """A failed single-circuit job returns a Result with success=False and empty data."""
+        original_status = JOB_DATA_EQUAL1["status"]
+        JOB_DATA_EQUAL1["status"] = "FAILED"
+        try:
+            job = QbraidJob(
+                job_id=JOB_DATA_EQUAL1["jobQrn"],
+                device=device,
+                client=client,
+            )
+            result = job.result()
+            assert isinstance(result, Result)
+            assert not isinstance(result, BatchResult)
+            assert result.success is False
+        finally:
+            JOB_DATA_EQUAL1["status"] = original_status
+
+    def test_batch_result_circuit_without_counts(self, device, client):
+        """BatchResult handles circuits with no measurementCounts (None)."""
+        original_results = list(RESULTS_DATA_BATCH_EQUAL1)
+        RESULTS_DATA_BATCH_EQUAL1.clear()
+        RESULTS_DATA_BATCH_EQUAL1.extend(
+            [
+                {"measurementCounts": {"00": 50, "11": 50}},
+                {},  # no measurementCounts
+                {"measurementCounts": {"01": 30, "10": 70}},
+            ]
+        )
+        try:
+            job = QbraidJob(
+                job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
+                device=device,
+                client=client,
+            )
+            result = job.result()
+            counts = result.data.get_counts()
+            assert isinstance(counts, list)
+            assert len(counts) == 3
+            assert counts[1] == {}
+        finally:
+            RESULTS_DATA_BATCH_EQUAL1.clear()
+            RESULTS_DATA_BATCH_EQUAL1.extend(original_results)
+
+    def test_batch_result_with_probabilities(self):
+        """BatchResult._build_aggregate_data collects probabilities when present."""
+        result_data = GateModelResultData(
+            measurement_counts={"00": 50, "11": 50},
+            measurement_probabilities={"00": 0.5, "11": 0.5},
+        )
+        per_circuit = [
+            Result(
+                device_id="qbraid:equal1:sim:bell-1",
+                job_id="test-batch",
+                success=True,
+                data=result_data,
+            ),
+            Result(
+                device_id="qbraid:equal1:sim:bell-1",
+                job_id="test-batch",
+                success=True,
+                data=result_data,
+            ),
+        ]
+        batch = BatchResult(
+            device_id="qbraid:equal1:sim:bell-1",
+            job_id="test-batch",
+            success=True,
+            results=per_circuit,
+        )
+        # Access aggregate data to trigger _build_aggregate_data
+        agg = batch.data
+        assert isinstance(agg, GateModelResultData)
+        # The aggregate stores probabilities as a list internally
+        assert agg._measurement_probabilities is not None
+        assert isinstance(agg._measurement_probabilities, list)
+        assert len(agg._measurement_probabilities) == 2
+
+    def test_batch_result_to_dict_with_list_counts(self, device, client):
+        """GateModelResultData.to_dict() works with list-of-dicts counts (batch aggregate)."""
+        job = QbraidJob(
+            job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
+            device=device,
+            client=client,
+        )
+        result = job.result()
+        data_dict = result.data.to_dict()
+        assert isinstance(data_dict["shots"], list)
+        assert isinstance(data_dict["num_measured_qubits"], list)
+        assert len(data_dict["shots"]) == 3
+
+    def test_batch_result_repr(self, device, client):
+        """BatchResult repr contains key metadata."""
+        job = QbraidJob(
+            job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
+            device=device,
+            client=client,
+        )
+        result = job.result()
+        r = repr(result)
+        assert "BatchResult" in r
+        assert "num_circuits=3" in r
