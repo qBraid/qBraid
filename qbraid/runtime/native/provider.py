@@ -162,7 +162,7 @@ class QbraidProvider(QuantumProvider):
 
         program_type = QPROGRAM_REGISTRY.get(run_package)
         if program_type is None:
-            logger.warning(
+            logger.info(
                 "The default runtime configuration for device '%s' includes "
                 "transpilation to program type '%s', which is not registered.",
                 device_id,
