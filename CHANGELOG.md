@@ -16,7 +16,55 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `as_batch=True` parameter to `QbraidDevice.submit()` enabling submission of a list of circuits as a single batch job (one API call, one job QRN). `QbraidJob.result()` returns `list[Result]` for batch jobs (`numCircuits > 1`) and a single `Result` for regular jobs. ([#1187](https://github.com/qBraid/qBraid/pull/1187))
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.12.1] - 2026-05-17
+
+### Added
+- Added `as_batch=True` parameter to `QbraidDevice.submit()` enabling submission of a list of circuits as a single batch job (one API call, one job QRN). `QbraidJob.result()` returns `BatchResult` for batch jobs and a single `Result` for regular jobs. ([#1187](https://github.com/qBraid/qBraid/pull/1187))
+
+  ```python
+  from qiskit import QuantumCircuit
+  from qbraid.runtime import QbraidProvider
+  from qbraid.visualization import plot_histogram
+
+  provider = QbraidProvider()
+  device = provider.get_device("qbraid:equal1:sim:bell-1")
+
+  assert device.profile.batch_job_support is True
+
+  bell = QuantumCircuit(2)
+  bell.h(0)
+  bell.cx(0, 1)
+  bell.measure_all()
+
+  ghz = QuantumCircuit(3)
+  ghz.h(0)
+  ghz.cx(0, 1)
+  ghz.cx(1, 2)
+  ghz.measure_all()
+
+  job = device.run([bell, ghz], as_batch=True, shots=100)
+
+  result = job.result()  # BatchResult
+  print(result.num_circuits)  # 2
+
+  for i, circuit_result in enumerate(result.results):
+      print(f"Circuit {i}: {circuit_result.data.get_counts()}")
+
+  batch_counts = result.data.get_counts()
+
+  plot_histogram(batch_counts)
+  ```
 - Added `OpenQuantumProvider`, `OpenQuantumDevice`, and `OpenQuantumJob` classes implementing the qBraid runtime interface for Open Quantum
 
   ```python
@@ -42,25 +90,21 @@ Types of changes:
   print(result.data.get_counts())
   ```
 
-- Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
+- Added `config.yml`, `provider_integration_request.yml`, `documentation.yml`, and `question.yml` GitHub issue templates, and expanded the existing bug-report and feature-request templates with structured fields (SDK version, affected-area dropdowns, steps/expected/actual splits, feature-area dropdowns, motivation/use-case prompts). The new `config.yml` routes the New Issue picker to the documentation, the qBraid contact page, GitHub Discussions, the security policy, and the contributing guide; `blank_issues_enabled: false` ensures every issue arrives via a template. The new provider-integration template provides a structured on-ramp for the external-contributor pattern that produced the Origin Quantum, Quantinuum, and Rigetti integrations during POSE Phase I ([#1181](https://github.com/qBraid/qBraid/pull/1181))
 - Added `py.typed` package data configuration in `pyproject.toml` to mark the package as type-aware ([#1189](https://github.com/qBraid/qBraid/pull/1189))
 
 ### Improved / Modified
 - Updated README.md to include documentation links for OriginProvider, QuantinuumProvider, and RigettiProvider in the runtime setup instructions ([#1189](https://github.com/qBraid/qBraid/pull/1189))
-- Replaced warnings.warn with logger.warning in `QbraidProvider._get_program_spec` method for improved logging consistency ([#1189](https://github.com/qBraid/qBraid/pull/1189))
+- Replaced `warnings.warn` with `logger.warning` in `QbraidProvider._get_program_spec` method for to reduce noise in `get_devices()` calls ([#1189](https://github.com/qBraid/qBraid/pull/1189))
 - Updated examples submodule to latest commit ([#1189](https://github.com/qBraid/qBraid/pull/1189))
-
-### Deprecated
 
 ### Removed
 
 - Removed `QirRunner` from native runtime API exports and imports ([#1175](https://github.com/qBraid/qBraid/pull/1175))
 
-### Fixed
-
 ### Dependencies
 
-- Updated qbraid-core minimum version requirement from 0.2.3 to 0.3.0 ([#1182](https://github.com/qBraid/qBraid/pull/1182))
+- Updated qbraid-core minimum version requirement from 0.2.3 to 0.3.2 ([#1182](https://github.com/qBraid/qBraid/pull/1182), [#1187](https://github.com/qBraid/qBraid/pull/1187))
 
 ## [0.12.0] - 2026-05-01
 
@@ -160,8 +204,6 @@ Types of changes:
       group.on_all_complete(analyze, timeout=600)
   ```
 - Added Quantinuum NEXUS provider integration (`qbraid.runtime.quantinuum`) with `QuantinuumProvider`, `QuantinuumDevice`, and `QuantinuumJob` classes. Supports single-circuit and batch submission via the NEXUS compile + execute pipeline; accepts any program type reachable to pytket via the qBraid transpiler graph. Counts are returned in MSB-first (`BasisOrder.dlo`) ordering for consistency with other qBraid providers. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
-- Added `pytket_to_qiskit` conversion function in `qbraid.transpiler.conversions.pytket.pytket_extras`, enabling the transpiler graph to route pytket ↔ qiskit directly (previously reachable only via the qasm2 bridge). Gated by `@requires_extras("pytket.extensions.qiskit")`. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
-
   ```python
   from pytket import Circuit
   from qbraid.runtime.quantinuum import QuantinuumProvider
@@ -209,6 +251,7 @@ Types of changes:
   print(result.data.get_probabilities())
   # {'00': 0.515, '11': 0.485}
   ```
+- Added `pytket_to_qiskit` conversion function in `qbraid.transpiler.conversions.pytket.pytket_extras`, enabling the transpiler graph to route pytket ↔ qiskit directly (previously reachable only via the qasm2 bridge). Gated by `@requires_extras("pytket.extensions.qiskit")`. ([#1163](https://github.com/qBraid/qBraid/pull/1163))
 - Added cross-repo integration test workflow (`.github/workflows/cross-repo-test.yml`) and report script (`.github/scripts/parse_test_report.py`) to support testing the qBraid SDK against in-development branches of `qbraid-core` and `pyqasm` before they are released ([#1137](https://github.com/qBraid/qBraid/pull/1137))
 - Added `remove_empty_registers` function to `qbraid.passes.qasm` for stripping zero-length register declarations (e.g. `creg c[0];`) from QASM strings
 - Added pytest remote tests for QIR simulator device with fixtures for Bell state circuits as both QASM and QIR module formats ([#1136](https://github.com/qBraid/qBraid/pull/1136))
@@ -231,8 +274,6 @@ Types of changes:
 
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
-
-### Removed
 
 ### Fixed
 - Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
