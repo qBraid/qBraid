@@ -272,6 +272,9 @@ Types of changes:
 - Fixed OpenQASM 3 to CUDA-Q conversion to promote integer gate parameters to floating-point values, preventing incorrect integer inference in rotation angles. ([#1171](https://github.com/qBraid/qBraid/pull/1171))
 - Improved `qbraid.runtime.aws` and `qbraid.runtime.ibm` modules with lazy imports using `__getattr__` to reduce initialization overhead ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
+### Deprecated
+- `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
+
 ### Fixed
 - Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
 - Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
@@ -287,9 +290,6 @@ Types of changes:
 - Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
 - Updated `qbraid-core` requirement from `>=0.2.3,<0.3.0` to `>=0.2.3,<0.4.0` to support expanded version range ([#1166](https://github.com/qBraid/qBraid/pull/1166))
-
-### Deprecated
-- `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 
 ## [0.11.1] - 2026-02-24
 
