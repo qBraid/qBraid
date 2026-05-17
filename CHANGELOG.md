@@ -272,6 +272,22 @@ Types of changes:
 - Fixed OpenQASM 3 to CUDA-Q conversion to promote integer gate parameters to floating-point values, preventing incorrect integer inference in rotation angles. ([#1171](https://github.com/qBraid/qBraid/pull/1171))
 - Improved `qbraid.runtime.aws` and `qbraid.runtime.ibm` modules with lazy imports using `__getattr__` to reduce initialization overhead ([#1166](https://github.com/qBraid/qBraid/pull/1166))
 
+### Fixed
+- Fixed pyqpanda3-to-QASM2 conversion emitting invalid `creg c[0]` declarations, which caused downstream parsers to reject the output and broke round-trip conversions (e.g. `cirq → pyqpanda3 → cirq`)
+- Fixed azure-quantum version mismatch in development requirements to align with package optional dependency constraints ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Fixed classical bit collisions in Braket `pad_measurements` method by detecting internal collisions, padding collisions, and out-of-range indices; rebases existing measures to sequential indices when necessary to ensure valid QASM output ([#1160](https://github.com/qBraid/qBraid/pull/1160))
+- Fixed `BraketQuantumTask._get_partial_measurement_qubits_from_tags` to return `None` and log warning when tag qubits are missing from result measurements, preventing crashes during result processing ([#1160](https://github.com/qBraid/qBraid/pull/1160))
+- Fixed `QbraidJob.result` method to handle failed jobs by creating a `qbraid_core.services.runtime.schemas.Result` with empty `resultData` instead of calling `get_job_result`, preventing crashes when processing failed job results ([#1164](https://github.com/qBraid/qBraid/pull/1164))
+
+### Dependencies
+- Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
+- Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
+- Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
+- Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
+- Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
+- Updated `qbraid-core` requirement from `>=0.2.3,<0.3.0` to `>=0.2.3,<0.4.0` to support expanded version range ([#1166](https://github.com/qBraid/qBraid/pull/1166))
+
 ### Deprecated
 - `AzureQuantumJob._make_estimator_result` and `OutputDataFormat.RESOURCE_ESTIMATOR` are deprecated; the `microsoft.resource-estimates.v1` output format is no longer emitted by azure-quantum >= 3.x. These will be removed in v0.12 ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 
