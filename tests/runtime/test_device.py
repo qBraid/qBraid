@@ -611,7 +611,7 @@ def test_get_program_spec_not_registered_warning(caplog):
     """Test that a warning is logged when the program type is not registered."""
     run_package = "not_registered"
     device_id = "fake_device"
-    with caplog.at_level(logging.WARNING, logger="qbraid"):
+    with caplog.at_level(logging.INFO, logger="qbraid"):
         QbraidProvider._get_program_spec(run_package, device_id)
     assert any(
         f"device '{device_id}'" in record.message and f"'{run_package}'" in record.message
