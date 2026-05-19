@@ -16,11 +16,14 @@
 Module defining mock data and classes for testing the runtime module.
 
 """
-from typing import Any, Optional
+
+from typing import Any
 from unittest.mock import MagicMock
 
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import (
+    BatchResult,
+    GroupJob,
     JobRequest,
     Program,
     Result,
@@ -171,21 +174,13 @@ DEVICE_DATA_EQUAL1 = {
         "directAccess": True,
         "pricingModel": "fixed",
         "notes": None,
+        "batchJobSupport": True,
     },
-}
-
-REDUNDANT_JOB_DATA = {
-    "timeStamps": {
-        "createdAt": "2024-05-23T01:39:11.288Z",
-        "endedAt": "2024-05-23T01:39:11.304Z",
-        "executionDuration": 16,
-    },
-    "status": "COMPLETED",
 }
 
 JOB_DATA_QIR = {
     "jobQrn": "qbraid:qbraid:sim:qir-sv-37f5-qjob-1234567890",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "qbraid",
     "provider": "qbraid",
     "status": "COMPLETED",
@@ -209,7 +204,7 @@ JOB_DATA_QIR = {
 
 JOB_DATA_NEC = {
     "jobQrn": "qbraid:nec:sim:vector-annealer-37f5-qjob-1234567890",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "qbraid",
     "provider": "nec",
     "status": "COMPLETED",
@@ -233,7 +228,7 @@ JOB_DATA_NEC = {
 
 JOB_DATA_AQUILA = {
     "jobQrn": "aws:quera:qpu:aquila-37f5-qjob-696aae286a18e4f726abf2af",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "aws",
     "provider": "quera",
     "status": "COMPLETED",
@@ -271,7 +266,6 @@ RESULTS_DATA_QIR = {
     "measurementCounts": {"11111": 4, "00000": 6},
     "runnerVersion": "0.7.4",
     "runnerSeed": None,
-    **REDUNDANT_JOB_DATA,
 }
 
 RESULTS_DATA_NEC = {
@@ -285,7 +279,6 @@ RESULTS_DATA_NEC = {
         }
     ],
     "solutionCount": 1,
-    **REDUNDANT_JOB_DATA,
 }
 
 RESULTS_DATA_AQUILA = {
@@ -355,7 +348,7 @@ RESULTS_DATA_AQUILA = {
 
 JOB_DATA_EQUAL1 = {
     "jobQrn": "qbraid:equal1:sim:bell-1-37f5-qjob-2ht3zyghhxsr8gqbu8yj",
-    "batchJobQrn": None,
+    "groupJobQrn": None,
     "vendor": "qbraid",
     "provider": "equal1",
     "status": "COMPLETED",
@@ -390,6 +383,39 @@ RESULTS_DATA_EQUAL1 = {
     "executionOptions": None,
 }
 
+# ── Batch job mock data ──────────────────────────────────────────────────
+
+JOB_DATA_BATCH_EQUAL1 = {
+    "jobQrn": "qbraid:equal1:sim:bell-1-37f5-qjob-batch001",
+    "groupJobQrn": None,
+    "vendor": "qbraid",
+    "provider": "equal1",
+    "status": "COMPLETED",
+    "statusMsg": None,
+    "experimentType": "gate_model",
+    "queuePosition": None,
+    "timeStamps": {
+        "createdAt": "2026-01-20T10:00:00.000Z",
+        "endedAt": "2026-01-20T10:00:05.000Z",
+        "executionDuration": 150,
+    },
+    "cost": 0.045,
+    "estimatedCost": 0.045,
+    "metadata": {},
+    "name": "Equal1 Batch Job",
+    "shots": 100,
+    "deviceQrn": "qbraid:equal1:sim:bell-1",
+    "tags": {},
+    "runtimeOptions": {},
+    "numCircuits": 3,
+}
+
+RESULTS_DATA_BATCH_EQUAL1 = [
+    {"measurementCounts": {"00": 60, "11": 40}},
+    {"measurementCounts": {"0": 100}},
+    {"measurementCounts": {"01": 30, "10": 70}},
+]
+
 
 class MockClient:
     """Mock client for testing with Runtime API format."""
@@ -415,12 +441,21 @@ class MockClient:
         "qbraid:equal1:sim:bell-1": RESULTS_DATA_EQUAL1,
     }
 
+    BATCH_JOB_MAP = {
+        "qbraid:equal1:sim:bell-1-37f5-qjob-batch001": JOB_DATA_BATCH_EQUAL1,
+    }
+
+    BATCH_RESULTS_MAP = {
+        "qbraid:equal1:sim:bell-1-37f5-qjob-batch001": RESULTS_DATA_BATCH_EQUAL1,
+    }
+
     # Job QRN to device QRN mapping
     JOB_QRN_TO_DEVICE = {
         "aws:quera:qpu:aquila-37f5-qjob-696aae286a18e4f726abf2af": "aws:quera:qpu:aquila",
         "qbraid:qbraid:sim:qir-sv-37f5-qjob-1234567890": "qbraid:qbraid:sim:qir-sv",
         "qbraid:nec:sim:vector-annealer-37f5-qjob-1234567890": "qbraid:nec:sim:vector-annealer",
         "qbraid:equal1:sim:bell-1-37f5-qjob-2ht3zyghhxsr8gqbu8yj": "qbraid:equal1:sim:bell-1",
+        "qbraid:equal1:sim:bell-1-37f5-qjob-batch001": "qbraid:equal1:sim:bell-1",
     }
 
     @property
@@ -519,14 +554,18 @@ class MockClient:
         if shots is None:
             shots = 100  # Default for jobs that don't specify shots
 
+        # Determine if this is a batch submission
+        is_batch = isinstance(request.program, list) and len(request.program) > 1
+        num_circuits = len(request.program) if is_batch else None
+
         job_response = {
             "name": job_data.get("name"),
             "shots": shots,
             "deviceQrn": device_qrn,
             "tags": job_data.get("tags", {}),
             "runtimeOptions": job_data.get("runtimeOptions", {}),
-            "jobQrn": job_data.get("jobQrn"),
-            "batchJobQrn": job_data.get("batchJobQrn"),
+            "jobQrn": JOB_DATA_BATCH_EQUAL1["jobQrn"] if is_batch else job_data.get("jobQrn"),
+            "groupJobQrn": request.groupJobQrn or job_data.get("groupJobQrn"),
             "vendor": job_data.get("vendor"),
             "provider": job_data.get("provider"),
             "status": "INITIALIZING",
@@ -538,10 +577,18 @@ class MockClient:
             "estimatedCost": job_data.get("estimatedCost", 130),
             "metadata": job_data.get("metadata", {}),
         }
+        if num_circuits is not None:
+            job_response["numCircuits"] = num_circuits
         return RuntimeJob.model_validate(job_response)
 
     def get_job(self, job_qrn: str) -> RuntimeJob:
         """Returns the metadata for a specific quantum job."""
+        # Check batch job map first
+        if job_qrn in self.BATCH_JOB_MAP:
+            job_data = self.BATCH_JOB_MAP[job_qrn]
+            job_data_copy = job_data.copy()
+            return RuntimeJob.model_validate(job_data_copy)
+
         # Try job QRN mapping first
         device_qrn = self.JOB_QRN_TO_DEVICE.get(job_qrn)
         if device_qrn:
@@ -565,8 +612,31 @@ class MockClient:
 
         return RuntimeJob.model_validate(job_data_copy)
 
-    def get_job_result(self, job_qrn: str) -> Result:
-        """Returns the results for a specific quantum job."""
+    def get_job_result(self, job_qrn: str) -> Result | BatchResult:
+        """Returns the results for a specific quantum job.
+
+        For batch jobs (numCircuits > 1), returns a BatchResult.
+        """
+        # Check batch results map first
+        if job_qrn in self.BATCH_RESULTS_MAP:
+            batch_results_data = self.BATCH_RESULTS_MAP[job_qrn]
+            batch_job_data = self.BATCH_JOB_MAP.get(job_qrn, {})
+            per_circuit = []
+            for circuit_result_data in batch_results_data:
+                result_response = {
+                    "status": "COMPLETED",
+                    "cost": str(batch_job_data.get("cost", 0)),
+                    "timeStamps": batch_job_data.get("timeStamps", {}),
+                    "resultData": circuit_result_data,
+                }
+                per_circuit.append(Result.model_validate(result_response))
+            return BatchResult(
+                status=per_circuit[0].status,
+                cost=per_circuit[0].cost,
+                timeStamps=per_circuit[0].timeStamps,
+                results=per_circuit,
+            )
+
         # Try job QRN mapping first
         device_qrn = self.JOB_QRN_TO_DEVICE.get(job_qrn)
         if not device_qrn:
@@ -619,8 +689,69 @@ class MockClient:
         """Cancels a specific quantum job."""
         # Mock implementation - no-op for testing
 
+    # Group methods
+    _group_counter: int = 0
+
+    def __init__(self):
+        self._groups: dict[str, dict[str, Any]] = {}
+
+    def _make_group_data(self, qrn: str, **overrides: Any) -> dict[str, Any]:
+        """Return the stored group dict, applying any overrides."""
+        data = self._groups.get(qrn, {}).copy()
+        data.update(overrides)
+        return data
+
+    def create_group(
+        self,
+        name: str | None = None,
+        tags: dict[str, Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+        max_ttl: int | None = None,
+    ) -> GroupJob:
+        """Mock create_group — stores and returns a GroupJob with OPEN status."""
+        MockClient._group_counter += 1
+        qrn = f"qbraid:group:test-group-{MockClient._group_counter}"
+        data = {
+            "groupJobQrn": qrn,
+            "name": name,
+            "status": "OPEN",
+            "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
+            "jobCount": 0,
+            "completedCount": 0,
+            "failedCount": 0,
+            "cancelledCount": 0,
+            "maxTTL": max_ttl or 3600,
+            "tags": tags or {},
+            "metadata": metadata or {},
+        }
+        self._groups[qrn] = data
+        return GroupJob.model_validate(data)
+
+    def close_group(self, group_qrn: str) -> GroupJob:
+        """Mock close_group — updates stored group to CLOSED and returns it."""
+        data = self._make_group_data(group_qrn, status="CLOSED")
+        self._groups[group_qrn] = data
+        return GroupJob.model_validate(data)
+
+    def cancel_group(self, group_qrn: str) -> GroupJob:
+        """Mock cancel_group — updates stored group to CANCELLED and returns it."""
+        data = self._make_group_data(group_qrn, status="CANCELLED")
+        self._groups[group_qrn] = data
+        return GroupJob.model_validate(data)
+
+    def get_group(self, group_qrn: str) -> GroupJob:
+        """Mock get_group — returns the stored group data.
+
+        Raises:
+            KeyError: If the group QRN is not found in the mock store.
+        """
+        if group_qrn not in self._groups:
+            raise KeyError(f"Group {group_qrn} not found in mock storage")
+        data = self._make_group_data(group_qrn)
+        return GroupJob.model_validate(data)
+
     # Legacy methods for backward compatibility
-    def search_devices(self, query: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    def search_devices(self, query: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Returns a list of devices matching the given query (legacy method)."""
         all_devices = [data["data"].copy() for data in self.DEVICE_MAP.values()]
 

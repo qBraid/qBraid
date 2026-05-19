@@ -183,10 +183,24 @@ class BraketQuantumTask(QuantumJob):
 
         # Parse the partial measurement qubit indices from the tag string (e.g., "0/2/3")
         partial_measurement_qubits_str = response["tags"]["partial_measurement_qubits"]
-        partial_measurement_qubits = [int(q) for q in partial_measurement_qubits_str.split("/")]
+        if not partial_measurement_qubits_str:
+            return None
+        partial_measurement_qubits = [
+            int(q) for q in partial_measurement_qubits_str.split("/") if q
+        ]
+        if not partial_measurement_qubits:
+            return None
+
+        missing = [q for q in partial_measurement_qubits if q not in all_measurement_qubits]
+        if missing:
+            logger.warning(
+                "Partial measurement qubits %s from task tag are not present in the result's "
+                "measured qubits %s; skipping partial-measurement filtering. This usually means "
+                "the submitted circuit lost measurements during transpilation.",
+                missing,
+                all_measurement_qubits,
+            )
+            return None
 
         # Map the original qubit indices to their positions in the measurement results array
-        partial_measurement_qubit_indices = [
-            all_measurement_qubits.index(q) for q in partial_measurement_qubits
-        ]
-        return partial_measurement_qubit_indices
+        return [all_measurement_qubits.index(q) for q in partial_measurement_qubits]

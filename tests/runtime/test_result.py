@@ -639,10 +639,10 @@ def test_format_value_list_with_depth(result_instance):
     assert result_instance._format_value(test_list, depth=2) == "[...]"
 
 
-def test_format_value_dict_with_openqasm(result_instance):
-    """Test _format_value with a dict with openQasm key."""
-    test_dict = {"openQasm": "OPENQASM 2.0;"}
-    assert result_instance._format_value(test_dict) == "{openQasm: '...'}"
+def test_format_value_dict_with_compiled_output(result_instance):
+    """Test _format_value with a dict with compiledOutput key."""
+    test_dict = {"compiledOutput": "base64encodeddata"}
+    assert result_instance._format_value(test_dict) == "{compiledOutput: '...'}"
 
 
 def test_format_value_catch_all(result_instance):
