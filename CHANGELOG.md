@@ -28,7 +28,6 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
-- Added `requests` import as `http_requests` in `qbraid.runtime.ionq.provider` module ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 
 ## [0.12.1] - 2026-05-17
 
