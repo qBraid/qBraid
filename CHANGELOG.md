@@ -16,7 +16,6 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `_get_public` method in `IonQProvider` class to make GET requests without auth headers for public endpoints ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 
 ### Improved / Modified
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
