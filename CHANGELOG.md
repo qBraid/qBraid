@@ -15,6 +15,7 @@ Types of changes:
 
 ## [Unreleased]
 
+
 ### Added
 
 ### Improved / Modified
@@ -33,6 +34,28 @@ Types of changes:
 ## [0.12.1] - 2026-05-17
 
 ### Added
+
+- Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
+
+```python
+  from pulser import Sequence  # build your pulse sequence as usual
+  from qbraid.runtime.pasqal import PasqalProvider
+
+  # Credentials may also come from PASQAL_USERNAME / PASQAL_PASSWORD /
+  # PASQAL_PROJECT_ID environment variables.
+  provider = PasqalProvider(
+      username="you@example.com",
+      password="...",
+      project_id="...",
+  )
+
+  device = provider.get_device("EMU_FREE")  # or "FRESNEL", "EMU_TN", ...
+  sequence: Sequence = ...  # your Pulser sequence
+  job = device.run(sequence, shots=200)
+  result = job.result()
+  print(result.data.get_counts())
+```
+
 - Added `as_batch=True` parameter to `QbraidDevice.submit()` enabling submission of a list of circuits as a single batch job (one API call, one job QRN). `QbraidJob.result()` returns `BatchResult` for batch jobs and a single `Result` for regular jobs. ([#1187](https://github.com/qBraid/qBraid/pull/1187))
 
   ```python
