@@ -13,7 +13,7 @@
 # limitations under the License.
 
 # pylint: disable=redefined-outer-name,missing-class-docstring,missing-function-docstring
-# pylint: disable=too-many-public-methods
+# pylint: disable=too-many-public-methods,unused-argument
 
 """
 Unit tests for Pasqal provider, device, and job classes.
@@ -23,6 +23,7 @@ Unit tests for Pasqal provider, device, and job classes.
 from __future__ import annotations
 
 import sys
+import importlib.machinery
 import types
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -121,6 +122,8 @@ def _install_pulser_stub() -> None:
     if "pulser" in sys.modules and hasattr(sys.modules["pulser"], "Sequence"):
         return
 
+    import importlib.machinery  # noqa: PLC0415
+
     pulser = sys.modules.get("pulser") or types.ModuleType("pulser")
 
     class Sequence:
@@ -133,6 +136,7 @@ def _install_pulser_stub() -> None:
             return self._abstract_repr
 
     pulser.Sequence = Sequence  # type: ignore[attr-defined]
+    pulser.__spec__ = importlib.machinery.ModuleSpec("pulser", None)
     sys.modules["pulser"] = pulser
 
 
