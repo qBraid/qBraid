@@ -122,7 +122,6 @@ def _install_pulser_stub() -> None:
     if "pulser" in sys.modules and hasattr(sys.modules["pulser"], "Sequence"):
         return
 
-    import importlib.machinery  # noqa: PLC0415
 
     pulser = sys.modules.get("pulser") or types.ModuleType("pulser")
 
