@@ -114,6 +114,9 @@ class PasqalDevice(QuantumDevice):
 
         sequences = run_input if isinstance(run_input, list) else [run_input]
 
+        if shots <= 0:
+            raise PasqalDeviceError(f"`shots` must be a positive integer, got {shots}.")
+
         if not sequences:
             raise PasqalDeviceError("submit() requires at least one Pulser sequence.")
 
@@ -131,7 +134,6 @@ class PasqalDevice(QuantumDevice):
 
         try:
             batch = self._sdk.create_batch(
-                serialized_sequence=None,
                 jobs=jobs,
                 device_type=device_type,
                 wait=wait,

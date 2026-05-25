@@ -47,7 +47,7 @@ _PASQAL_STATUS_MAP: dict[str, JobStatus] = {
     "ERROR": JobStatus.FAILED,
     "CANCELED": JobStatus.CANCELLED,
     "TIMED_OUT": JobStatus.FAILED,
-    "PAUSED": JobStatus.INITIALIZING,
+    "PAUSED": JobStatus.QUEUED,
 }
 
 _TERMINAL_JOB_STATUSES = frozenset(

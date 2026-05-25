@@ -173,7 +173,7 @@ class PasqalProvider(QuantumProvider):
         instantiate emulator devices without it.
         """
         try:
-            return self._sdk.get_device_specs_dict() or {}
+            return self._sdk.get_device_specs_dict()
         except Exception as exc:  # pylint: disable=broad-exception-caught
             logger.warning("Could not fetch Pasqal device specs: %s", exc)
             return {}
@@ -187,7 +187,9 @@ class PasqalProvider(QuantumProvider):
         runs offline.
         """
         specs = self._device_specs()
-        device_ids: tuple[str, ...] = tuple(specs.keys()) if specs else _DEFAULT_DEVICE_IDS
+        if not specs:
+            return []
+        device_ids: tuple[str, ...] = tuple(specs.keys())
         return [
             PasqalDevice(profile=_build_profile(device_id), sdk=self._sdk)
             for device_id in device_ids

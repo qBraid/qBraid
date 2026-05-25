@@ -22,8 +22,8 @@ Unit tests for Pasqal provider, device, and job classes.
 
 from __future__ import annotations
 
-import sys
 import importlib.machinery
+import sys
 import types
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -64,52 +64,32 @@ def _install_pasqal_cloud_stub() -> None:
 
     device_mod = types.ModuleType("pasqal_cloud.device")
 
-    class DeviceTypeName(str):
-        """Stub StrEnum-like for pasqal_cloud.device.DeviceTypeName."""
+    _DEVICE_TYPE_VALUES = (
+        "FRESNEL",
+        "FRESNEL_CAN1",
+        "EMU_FREE",
+        "EMU_TN",
+        "EMU_FRESNEL",
+        "EMU_MPS",
+        "EMU_SV",
+    )
 
-        FRESNEL = "FRESNEL"
-        FRESNEL_CAN1 = "FRESNEL_CAN1"
-        EMU_FREE = "EMU_FREE"
-        EMU_TN = "EMU_TN"
-        EMU_FRESNEL = "EMU_FRESNEL"
-        EMU_MPS = "EMU_MPS"
-        EMU_SV = "EMU_SV"
+    class _DeviceTypeNameMeta(type):
+        def __iter__(cls):
+            return iter(cls(v) for v in _DEVICE_TYPE_VALUES)
 
-        _all = {"FRESNEL", "FRESNEL_CAN1", "EMU_FREE", "EMU_TN", "EMU_FRESNEL", "EMU_MPS", "EMU_SV"}
+    class DeviceTypeName(str, metaclass=_DeviceTypeNameMeta):
+        """Stub for pasqal_cloud.device.DeviceTypeName."""
 
         def __new__(cls, value):
-            if value not in cls._all:
+            if value not in _DEVICE_TYPE_VALUES:
                 raise ValueError(value)
             return str.__new__(cls, value)
-
-        def __iter__(self):  # pragma: no cover - not used
-            return iter(self._all)
-
-        @classmethod
-        def __class_getitem__(cls, _):  # pragma: no cover
-            return cls
 
         @property
         def value(self):
             return str(self)
 
-    # Make DeviceTypeName iterable as a class for `[m.value for m in cls]`.
-    class _DeviceTypeNameMeta(type):
-        def __iter__(cls):
-            return iter(
-                DeviceTypeName(v)
-                for v in (
-                    "FRESNEL",
-                    "FRESNEL_CAN1",
-                    "EMU_FREE",
-                    "EMU_TN",
-                    "EMU_FRESNEL",
-                    "EMU_MPS",
-                    "EMU_SV",
-                )
-            )
-
-    DeviceTypeName = _DeviceTypeNameMeta("DeviceTypeName", (str,), dict(DeviceTypeName.__dict__))
     device_mod.DeviceTypeName = DeviceTypeName  # type: ignore[attr-defined]
 
     sys.modules["pasqal_cloud"] = pasqal_cloud
@@ -121,7 +101,6 @@ def _install_pasqal_cloud_stub() -> None:
 def _install_pulser_stub() -> None:
     if "pulser" in sys.modules and hasattr(sys.modules["pulser"], "Sequence"):
         return
-
 
     pulser = sys.modules.get("pulser") or types.ModuleType("pulser")
 
@@ -228,7 +207,7 @@ class TestStatusMapping:
             ("ERROR", JobStatus.FAILED),
             ("CANCELED", JobStatus.CANCELLED),
             ("TIMED_OUT", JobStatus.FAILED),
-            ("PAUSED", JobStatus.INITIALIZING),
+            ("PAUSED", JobStatus.QUEUED),
             ("done", JobStatus.COMPLETED),  # case-insensitive
             ("SOMETHING_NEW", JobStatus.UNKNOWN),
             (None, JobStatus.UNKNOWN),
@@ -343,7 +322,7 @@ class TestPasqalProvider:
         mock_sdk.get_device_specs_dict.side_effect = RuntimeError("network down")
         provider = PasqalProvider(sdk=mock_sdk)
         devices = provider.get_devices()
-        assert {d.id for d in devices} == set(_DEFAULT_DEVICE_IDS)
+        assert devices == []
 
     def test_get_device_known(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
@@ -427,7 +406,7 @@ class TestPasqalDevice:
     def test_submit_empty_input_raises(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
-        with pytest.raises(PasqalDeviceError, match="at least one"):
+        with pytest.raises(PasqalDeviceError, match=r"pulser\.Sequence"):
             device.submit([])
 
     def test_submit_invalid_type_raises(self, mock_sdk):
@@ -442,6 +421,12 @@ class TestPasqalDevice:
         device = provider.get_device("EMU_FREE")
         with pytest.raises(PasqalDeviceError, match="Failed to submit batch"):
             device.submit(_make_pulser_sequence())
+
+    def test_submit_invalid_shots_raises(self, mock_sdk):
+        provider = PasqalProvider(sdk=mock_sdk)
+        device = provider.get_device("EMU_FREE")
+        with pytest.raises(PasqalDeviceError, match="`shots` must be a positive integer"):
+            device.submit(_make_pulser_sequence(), shots=0)
 
 
 # ---------------------------------------------------------------------------
