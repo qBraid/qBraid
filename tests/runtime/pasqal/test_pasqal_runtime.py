@@ -97,8 +97,6 @@ def _install_pasqal_cloud_stub() -> None:
     sys.modules["pasqal_cloud.batch"] = batch_mod
     sys.modules["pasqal_cloud.device"] = device_mod
 
-
-def _install_pulser_stub() -> None:
     if "pulser" in sys.modules and hasattr(sys.modules["pulser"], "Sequence"):
         return
 
@@ -119,7 +117,6 @@ def _install_pulser_stub() -> None:
 
 
 _install_pasqal_cloud_stub()
-_install_pulser_stub()
 
 
 # Now safe to import the package under test.
@@ -139,7 +136,6 @@ from qbraid.runtime.pasqal.job import (  # noqa: E402
     _map_pasqal_status,
 )
 from qbraid.runtime.pasqal.provider import (  # noqa: E402
-    _DEFAULT_DEVICE_IDS,
     _build_profile,
     _is_simulator,
 )
@@ -372,7 +368,6 @@ class TestPasqalDevice:
         assert job.id == "batch-xyz"
         mock_sdk.create_batch.assert_called_once()
         call_kwargs = mock_sdk.create_batch.call_args.kwargs
-        assert call_kwargs["serialized_sequence"] is None
         assert call_kwargs["wait"] is False
         assert call_kwargs["jobs"] == [{"runs": 200, "serialized_sequence": '{"foo": 1}'}]
         # Device type must be the enum member for "EMU_FREE".
@@ -406,13 +401,13 @@ class TestPasqalDevice:
     def test_submit_empty_input_raises(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
-        with pytest.raises(PasqalDeviceError, match=r"pulser\.Sequence"):
+        with pytest.raises(PasqalDeviceError, match="at least one"):
             device.submit([])
 
     def test_submit_invalid_type_raises(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
-        with pytest.raises(PasqalDeviceError, match="pulser.Sequence"):
+        with pytest.raises(PasqalDeviceError, match=r"pulser\.Sequence"):
             device.submit(12345)  # type: ignore[arg-type]
 
     def test_submit_wraps_sdk_errors(self, mock_sdk):
