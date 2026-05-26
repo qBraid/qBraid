@@ -19,7 +19,6 @@ Module defining Pasqal job class.
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
@@ -31,10 +30,9 @@ from qbraid.runtime.result_data import AnalogResultData
 if TYPE_CHECKING:
     from pasqal_cloud import SDK as PasqalSDK
     from pasqal_cloud.batch import Batch
+    from pasqal_cloud.batch import Job as PasqalBatchJob
 
     from qbraid.runtime.pasqal.device import PasqalDevice
-
-logger = logging.getLogger(__name__)
 
 
 # Mapping from pasqal-cloud batch / job status strings to qBraid JobStatus.
@@ -191,7 +189,7 @@ class PasqalJob(QuantumJob):
         )
 
     @staticmethod
-    def _extract_counts(job: Any) -> dict[str, int]:
+    def _extract_counts(job: PasqalBatchJob) -> dict[str, int]:
         """Extract a bitstring-counter dict from a pasqal-cloud Job record.
 
         Prefers ``Job.result`` (already the ``"counter"`` slice of the full

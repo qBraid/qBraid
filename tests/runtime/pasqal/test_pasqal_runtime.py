@@ -360,7 +360,7 @@ class TestPasqalDevice:
 
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
-        sequence = _make_pulser_sequence('{"foo": 1}')
+        sequence = '{"foo": 1}'
 
         job = device.submit(sequence, shots=200)
 
@@ -379,7 +379,7 @@ class TestPasqalDevice:
 
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_TN")
-        sequences = [_make_pulser_sequence('{"i": 0}'), _make_pulser_sequence('{"i": 1}')]
+        sequences = ['{"i": 0}', '{"i": 1}']
 
         job = device.submit(sequences, shots=50)
         assert job.id == "batch-multi"
@@ -404,24 +404,18 @@ class TestPasqalDevice:
         with pytest.raises(PasqalDeviceError, match="at least one"):
             device.submit([])
 
-    def test_submit_invalid_type_raises(self, mock_sdk):
-        provider = PasqalProvider(sdk=mock_sdk)
-        device = provider.get_device("EMU_FREE")
-        with pytest.raises(PasqalDeviceError, match=r"pulser\.Sequence"):
-            device.submit(12345)  # type: ignore[arg-type]
-
     def test_submit_wraps_sdk_errors(self, mock_sdk):
         mock_sdk.create_batch.side_effect = RuntimeError("api down")
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
         with pytest.raises(PasqalDeviceError, match="Failed to submit batch"):
-            device.submit(_make_pulser_sequence())
+            device.submit('{"stub": true}')
 
     def test_submit_invalid_shots_raises(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
         with pytest.raises(PasqalDeviceError, match="`shots` must be a positive integer"):
-            device.submit(_make_pulser_sequence(), shots=0)
+            device.submit('{"stub": true}', shots=0)
 
 
 # ---------------------------------------------------------------------------

@@ -19,7 +19,6 @@ Module defining Pasqal device class.
 
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 from qbraid.runtime.device import QuantumDevice
@@ -33,8 +32,6 @@ if TYPE_CHECKING:
     from pulser import Sequence
 
     from qbraid.runtime.profile import TargetProfile
-
-logger = logging.getLogger(__name__)
 
 
 class PasqalDeviceError(QbraidRuntimeError):
@@ -81,7 +78,7 @@ class PasqalDevice(QuantumDevice):
 
     def submit(  # pylint: disable=arguments-differ
         self,
-        run_input: Sequence | list[Sequence] | str | list[str],
+        run_input: str | list[str],
         shots: int = 100,
         wait: bool = False,
     ) -> PasqalJob:
@@ -120,15 +117,13 @@ class PasqalDevice(QuantumDevice):
         if not sequences:
             raise PasqalDeviceError("submit() requires at least one Pulser sequence.")
 
-        serialized = [self._serialize(seq) for seq in sequences]
-
         # Pasqal accepts a batch-level sequence with per-job variables OR
         # per-job sequences with no batch-level sequence. We use the
         # per-job-sequence layout so heterogeneous sequences are supported
         # without requiring callers to parameterise. Per the pasqal-cloud
         # README: when a batch has no batch-level sequence, all jobs must
         # carry their own ``serialized_sequence``.
-        jobs = [{"runs": shots, "serialized_sequence": seq} for seq in serialized]
+        jobs = [{"runs": shots, "serialized_sequence": seq} for seq in sequences]
 
         device_type = self._resolve_device_type(DeviceTypeName)
 
@@ -144,24 +139,6 @@ class PasqalDevice(QuantumDevice):
             ) from exc
 
         return PasqalJob(job_id=batch.id, sdk=self._sdk, device=self)
-
-    def _serialize(self, sequence: Sequence | str) -> str:
-        """Return a Pulser-abstract-repr string for ``sequence``.
-
-        Strings are passed through unchanged so callers can supply
-        pre-serialized sequences (e.g. when the runtime's transpiler has
-        already serialized them upstream of :meth:`submit`).
-        """
-        if isinstance(sequence, str):
-            return sequence
-        try:
-            return sequence.to_abstract_repr()
-        except AttributeError as exc:
-            raise PasqalDeviceError(
-                "Pasqal submit() expects a `pulser.Sequence` or its serialized"
-                " abstract-repr string; received "
-                f"{type(sequence).__name__}."
-            ) from exc
 
     def _resolve_device_type(self, device_type_enum):
         """Map this device's id to a ``pasqal_cloud.DeviceTypeName`` member.

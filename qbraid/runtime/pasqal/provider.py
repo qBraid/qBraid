@@ -19,11 +19,11 @@ Module defining Pasqal provider class.
 
 from __future__ import annotations
 
-import logging
 import os
 from typing import TYPE_CHECKING
 
 from qbraid._caching import cached_method
+from qbraid._logging import logger
 from qbraid.programs import ExperimentType, ProgramSpec
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
@@ -34,8 +34,6 @@ from .device import PasqalDevice
 if TYPE_CHECKING:
     from pasqal_cloud import SDK as PasqalSDK
     from pasqal_cloud.authentication import TokenProvider
-
-logger = logging.getLogger(__name__)
 
 
 # Default device IDs exposed by Pasqal Cloud. Mirrors
