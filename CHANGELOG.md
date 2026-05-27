@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#PLACEHOLDER](https://github.com/qBraid/qBraid/pull/PLACEHOLDER))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 
 ### Deprecated
