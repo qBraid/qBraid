@@ -28,6 +28,7 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+- Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 
 ## [0.12.1] - 2026-05-17
 
