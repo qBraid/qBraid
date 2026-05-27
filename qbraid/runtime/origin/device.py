@@ -18,7 +18,6 @@ Module defining OriginQ device class.
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 from qbraid.runtime.device import QuantumDevice
@@ -31,8 +30,6 @@ from .job import OriginJob
 if TYPE_CHECKING:
     from pyqpanda3.core import QProg
     from pyqpanda3.qcloud import QCloudBackend, QCloudService
-
-logger = logging.getLogger(__name__)
 
 
 class OriginDeviceError(QbraidRuntimeError):

@@ -18,9 +18,9 @@ Module defining Quantinuum job class.
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any
 
+from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
@@ -31,8 +31,6 @@ if TYPE_CHECKING:
     from qnexus.models.references import ExecuteJobRef
 
     from qbraid.runtime.quantinuum.device import QuantinuumDevice
-
-logger = logging.getLogger(__name__)
 
 _QUANTINUUM_STATUS_MAP: dict[str, JobStatus] = {
     "COMPLETED": JobStatus.COMPLETED,

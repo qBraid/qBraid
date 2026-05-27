@@ -18,7 +18,6 @@ Module defining Quantinuum provider class.
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING
 
 from qbraid._caching import cached_method
@@ -31,8 +30,6 @@ from .device import QuantinuumDevice
 
 if TYPE_CHECKING:
     from pytket.backends.backendinfo import BackendInfo
-
-logger = logging.getLogger(__name__)
 
 
 def _fetch_quantinuum_devices_df():

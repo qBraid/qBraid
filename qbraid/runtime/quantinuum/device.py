@@ -18,12 +18,12 @@ Module defining Quantinuum device class.
 """
 from __future__ import annotations
 
-import logging
 import os
 import uuid
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
+from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -34,8 +34,6 @@ if TYPE_CHECKING:
     from pytket.circuit import Circuit
 
     from qbraid.runtime.profile import TargetProfile
-
-logger = logging.getLogger(__name__)
 
 
 class QuantinuumDeviceError(QbraidRuntimeError):

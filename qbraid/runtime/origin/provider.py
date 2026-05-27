@@ -18,11 +18,11 @@ Module defining OriginQ provider class.
 """
 from __future__ import annotations
 
-import logging
 import os
 from typing import TYPE_CHECKING
 
 from qbraid._caching import cached_method
+from qbraid._logging import logger
 from qbraid.programs import ExperimentType, ProgramSpec
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -31,8 +31,6 @@ from .device import OriginDevice
 
 if TYPE_CHECKING:
     from pyqpanda3.qcloud import QCloudBackend, QCloudService
-
-logger = logging.getLogger(__name__)
 
 SIMULATOR_BACKENDS: dict[str, int] = {
     "full_amplitude": 35,

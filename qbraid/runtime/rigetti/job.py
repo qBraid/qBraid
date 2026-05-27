@@ -25,7 +25,6 @@ Module defining Rigetti job class
 
 from __future__ import annotations
 
-import logging
 import re
 from typing import TYPE_CHECKING, Any
 
@@ -41,14 +40,13 @@ from qcs_sdk.qpu.api import (
     retrieve_results,
 )
 
+from qbraid._logging import logger
 from qbraid.runtime import JobStateError
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
-
-logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from .device import RigettiDevice
