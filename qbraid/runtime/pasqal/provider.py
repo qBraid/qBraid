@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
-from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -68,8 +68,10 @@ def _build_profile(device_id: str, num_qubits: int | None = None) -> TargetProfi
     Returns:
         A :class:`TargetProfile` describing the device for the qBraid runtime.
     """
-    # pylint: disable-next=import-outside-toplevel
-    from pulser import Sequence
+    sequence_type = QPROGRAM_REGISTRY.get("pulser")
+    if sequence_type is None:
+        # pylint: disable-next=import-outside-toplevel
+        from pulser import Sequence as sequence_type  # type: ignore[assignment]
 
     return TargetProfile(
         device_id=device_id,
@@ -77,7 +79,7 @@ def _build_profile(device_id: str, num_qubits: int | None = None) -> TargetProfi
         experiment_type=ExperimentType.ANALOG,
         num_qubits=num_qubits,
         program_spec=ProgramSpec(
-            Sequence,
+            sequence_type,
             alias="pulser",
             serialize=lambda sequence: sequence.to_abstract_repr(),
         ),
