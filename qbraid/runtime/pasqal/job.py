@@ -104,7 +104,7 @@ class PasqalJob(QuantumJob):
                 available.
         """
         super().__init__(job_id=job_id, device=device, **kwargs)
-        resolved_sdk = sdk if sdk is not None else getattr(device, "sdk", None)
+        resolved_sdk = sdk if sdk is not None else (device.sdk if device is not None else None)
         if resolved_sdk is None:
             raise PasqalJobError(
                 "PasqalJob requires either an explicit `sdk` argument or a "
@@ -131,7 +131,7 @@ class PasqalJob(QuantumJob):
             return self._terminal_status
 
         batch = self._fetch_batch()
-        raw_status = getattr(batch, "status", None)
+        raw_status = batch.status
         job_status = _map_pasqal_status(raw_status)
 
         if job_status in _TERMINAL_JOB_STATUSES:
@@ -163,13 +163,11 @@ class PasqalJob(QuantumJob):
         batch = self._fetch_batch()
 
         if self.status() != JobStatus.COMPLETED:
-            errors = getattr(batch, "errors", None)
             raise PasqalJobError(
-                f"Pasqal batch {self.id} did not complete successfully: "
-                f"status={getattr(batch, 'status', 'UNKNOWN')}, errors={errors}"
+                f"Pasqal batch {self.id} did not complete successfully: " f"status={batch.status}"
             )
 
-        ordered_jobs = list(getattr(batch, "ordered_jobs", []) or [])
+        ordered_jobs = list(batch.ordered_jobs)
         if not ordered_jobs:
             raise PasqalJobError(f"No jobs found on Pasqal batch {self.id}.")
 
@@ -195,13 +193,11 @@ class PasqalJob(QuantumJob):
         Prefers ``Job.result`` (already the ``"counter"`` slice of the full
         result), falling back to ``Job.full_result['counter']``.
         """
-        counts = getattr(job, "result", None)
+        counts = job.result
         if counts is None:
-            full_result = getattr(job, "full_result", None)
+            full_result = job.full_result
             if isinstance(full_result, dict):
                 counts = full_result.get("counter")
         if counts is None:
-            raise PasqalJobError(
-                f"Pasqal job {getattr(job, 'id', '?')} has no counter result available."
-            )
+            raise PasqalJobError(f"Pasqal job {job.id} has no counter result available.")
         return dict(counts)

@@ -29,7 +29,6 @@ from .job import PasqalJob
 
 if TYPE_CHECKING:
     from pasqal_cloud import SDK as PasqalSDK
-    from pulser import Sequence
 
     from qbraid.runtime.profile import TargetProfile
 
@@ -94,11 +93,10 @@ class PasqalDevice(QuantumDevice):
         id; per-job results are aggregated on retrieval.
 
         Args:
-            run_input: A ``pulser.Sequence`` (or list thereof). The qBraid
-                transpiler/serializer pipeline (invoked via the base class
-                ``run``) converts the input to its abstract-repr string; both
-                pre-serialized strings and live ``Sequence`` instances are
-                accepted here.
+            run_input: A pre-serialized Pulser abstract-repr string (or list
+                thereof). Serialization is handled upstream by the qBraid
+                runtime via ``ProgramSpec.serialize`` before this method
+                is called.
             shots: Number of repetitions per sequence. Defaults to 100.
             wait: When ``True``, block until the underlying batch reaches a
                 terminal state before returning. Defaults to ``False``.

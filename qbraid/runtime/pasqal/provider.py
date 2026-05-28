@@ -70,26 +70,33 @@ def _build_profile(device_id: str, num_qubits: int | None = None) -> TargetProfi
     """
     sequence_type = QPROGRAM_REGISTRY.get("pulser")
     if sequence_type is None:
-        # pylint: disable-next=import-outside-toplevel
-        from pulser import Sequence as sequence_type  # type: ignore[assignment]
+        try:
+            # pylint: disable-next=import-outside-toplevel
+            from pulser import Sequence as sequence_type  # type: ignore[assignment]
+        except ImportError:
+            sequence_type = None
 
+    program_spec = (
+        ProgramSpec(
+            sequence_type,
+            alias="pulser",
+            serialize=lambda sequence: sequence.to_abstract_repr(),
+        )
+        if sequence_type is not None
+        else None
+    )
     return TargetProfile(
         device_id=device_id,
         simulator=_is_simulator(device_id),
         experiment_type=ExperimentType.ANALOG,
         num_qubits=num_qubits,
-        program_spec=ProgramSpec(
-            sequence_type,
-            alias="pulser",
-            serialize=lambda sequence: sequence.to_abstract_repr(),
-        ),
+        program_spec=program_spec,
         provider_name="pasqal",
     )
 
 
 class PasqalProvider(QuantumProvider):
     """Implements qBraid's :class:`QuantumProvider` interface for Pasqal Cloud Services.
-
     Authentication mirrors the ``pasqal_cloud.SDK`` constructor: provide a
     ``username`` / ``password`` pair, a ``token_provider``, or set the
     ``PASQAL_USERNAME``, ``PASQAL_PASSWORD``, and ``PASQAL_PROJECT_ID``
@@ -187,9 +194,7 @@ class PasqalProvider(QuantumProvider):
         runs offline.
         """
         specs = self._device_specs()
-        if not specs:
-            return []
-        device_ids: tuple[str, ...] = tuple(specs.keys())
+        device_ids = set(specs.keys()) | set(_DEFAULT_DEVICE_IDS)
         return [
             PasqalDevice(profile=_build_profile(device_id), sdk=self._sdk)
             for device_id in device_ids

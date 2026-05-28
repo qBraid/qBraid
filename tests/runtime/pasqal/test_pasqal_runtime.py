@@ -237,6 +237,7 @@ class TestProviderHelpers:
         assert _is_simulator(device_id) is is_sim
 
     def test_build_profile_basic(self):
+        pytest.importorskip("pulser")
         profile = _build_profile("EMU_FREE", num_qubits=10)
         assert profile.device_id == "EMU_FREE"
         assert profile.simulator is True
@@ -246,11 +247,13 @@ class TestProviderHelpers:
         assert profile.program_spec.alias == "pulser"
 
     def test_build_profile_qpu(self):
+        pytest.importorskip("pulser")
         profile = _build_profile("FRESNEL")
         assert profile.simulator is False
         assert profile.num_qubits is None
 
     def test_program_spec_serializer_uses_abstract_repr(self):
+        pytest.importorskip("pulser")
         profile = _build_profile("EMU_FREE")
         sequence = _make_pulser_sequence('{"foo": 1}')
         serialized = profile.program_spec.serialize(sequence)
@@ -309,7 +312,16 @@ class TestPasqalProvider:
     def test_get_devices_uses_spec_keys(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
         devices = provider.get_devices()
-        assert {d.id for d in devices} == {"FRESNEL", "EMU_FREE", "EMU_TN"}
+        expected = {
+            "FRESNEL",
+            "FRESNEL_CAN1",
+            "EMU_FREE",
+            "EMU_TN",
+            "EMU_FRESNEL",
+            "EMU_MPS",
+            "EMU_SV",
+        }
+        assert {d.id for d in devices} == expected
         for device in devices:
             assert isinstance(device, PasqalDevice)
             assert device.profile.experiment_type == ExperimentType.ANALOG
@@ -318,7 +330,16 @@ class TestPasqalProvider:
         mock_sdk.get_device_specs_dict.side_effect = RuntimeError("network down")
         provider = PasqalProvider(sdk=mock_sdk)
         devices = provider.get_devices()
-        assert devices == []
+        expected = {
+            "FRESNEL",
+            "FRESNEL_CAN1",
+            "EMU_FREE",
+            "EMU_TN",
+            "EMU_FRESNEL",
+            "EMU_MPS",
+            "EMU_SV",
+        }
+        assert {d.id for d in devices} == expected
 
     def test_get_device_known(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
