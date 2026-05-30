@@ -70,20 +70,13 @@ def _build_profile(device_id: str, num_qubits: int | None = None) -> TargetProfi
     """
     sequence_type = QPROGRAM_REGISTRY.get("pulser")
     if sequence_type is None:
-        try:
-            # pylint: disable-next=import-outside-toplevel
-            from pulser import Sequence as sequence_type  # type: ignore[assignment]
-        except ImportError:
-            sequence_type = None
+        # pylint: disable-next=import-outside-toplevel
+        from pulser import Sequence as sequence_type  # type: ignore[assignment]
 
-    program_spec = (
-        ProgramSpec(
-            sequence_type,
-            alias="pulser",
-            serialize=lambda sequence: sequence.to_abstract_repr(),
-        )
-        if sequence_type is not None
-        else None
+    program_spec = ProgramSpec(
+        sequence_type,
+        alias="pulser",
+        serialize=lambda sequence: sequence.to_abstract_repr(),
     )
     return TargetProfile(
         device_id=device_id,
@@ -178,10 +171,11 @@ class PasqalProvider(QuantumProvider):
         ``get_device_specs_dict`` may require authentication, so we degrade
         gracefully and return an empty dict on failure -- callers can still
         instantiate emulator devices without it.
+
         """
         try:
             return self._sdk.get_device_specs_dict()
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except Exception as exc:  # pylint: disable=broad-except
             logger.warning("Could not fetch Pasqal device specs: %s", exc)
             return {}
 

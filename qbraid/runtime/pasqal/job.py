@@ -48,14 +48,6 @@ _PASQAL_STATUS_MAP: dict[str, JobStatus] = {
     "PAUSED": JobStatus.QUEUED,
 }
 
-_TERMINAL_JOB_STATUSES = frozenset(
-    {
-        JobStatus.COMPLETED,
-        JobStatus.FAILED,
-        JobStatus.CANCELLED,
-    }
-)
-
 
 class PasqalJobError(QbraidRuntimeError):
     """Exception raised by :class:`PasqalJob`."""
@@ -134,7 +126,7 @@ class PasqalJob(QuantumJob):
         raw_status = batch.status
         job_status = _map_pasqal_status(raw_status)
 
-        if job_status in _TERMINAL_JOB_STATUSES:
+        if job_status in JobStatus.terminal_states():
             self._terminal_status = job_status
 
         return job_status

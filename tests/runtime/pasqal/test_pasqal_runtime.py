@@ -13,132 +13,33 @@
 # limitations under the License.
 
 # pylint: disable=redefined-outer-name,missing-class-docstring,missing-function-docstring
-# pylint: disable=too-many-public-methods,unused-argument
-
-"""
-Unit tests for Pasqal provider, device, and job classes.
-
-"""
-
+"""Unit tests for Pasqal provider, device, and job classes."""
 from __future__ import annotations
 
-import importlib.machinery
-import sys
-import types
+import json
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-# ---------------------------------------------------------------------------
-# Minimal stubs for the optional `pasqal_cloud` and `pulser` packages.
-#
-# The pasqal-cloud SDK and pulser are declared as optional extras of qBraid,
-# so the test environment may not have them installed. We install lightweight
-# in-process stubs that expose only the surface area the qbraid.runtime.pasqal
-# package imports lazily. This lets the unit tests run unconditionally,
-# matching the pattern used by other optional-dep providers.
-# ---------------------------------------------------------------------------
+pytest.importorskip("pasqal_cloud")
+pytest.importorskip("pulser")
 
-
-def _install_pasqal_cloud_stub() -> None:
-    if "pasqal_cloud" in sys.modules:
-        return
-
-    pasqal_cloud = types.ModuleType("pasqal_cloud")
-    pasqal_cloud.SDK = MagicMock(name="pasqal_cloud.SDK")  # type: ignore[attr-defined]
-
-    authentication = types.ModuleType("pasqal_cloud.authentication")
-
-    class TokenProvider:  # noqa: D401 - stub
-        """Stub TokenProvider for type checking."""
-
-    authentication.TokenProvider = TokenProvider  # type: ignore[attr-defined]
-
-    batch_mod = types.ModuleType("pasqal_cloud.batch")
-
-    class Batch:  # noqa: D401 - stub
-        """Stub Batch class."""
-
-    batch_mod.Batch = Batch  # type: ignore[attr-defined]
-
-    device_mod = types.ModuleType("pasqal_cloud.device")
-
-    _DEVICE_TYPE_VALUES = (
-        "FRESNEL",
-        "FRESNEL_CAN1",
-        "EMU_FREE",
-        "EMU_TN",
-        "EMU_FRESNEL",
-        "EMU_MPS",
-        "EMU_SV",
-    )
-
-    class _DeviceTypeNameMeta(type):
-        def __iter__(cls):
-            return iter(cls(v) for v in _DEVICE_TYPE_VALUES)
-
-    class DeviceTypeName(str, metaclass=_DeviceTypeNameMeta):
-        """Stub for pasqal_cloud.device.DeviceTypeName."""
-
-        def __new__(cls, value):
-            if value not in _DEVICE_TYPE_VALUES:
-                raise ValueError(value)
-            return str.__new__(cls, value)
-
-        @property
-        def value(self):
-            return str(self)
-
-    device_mod.DeviceTypeName = DeviceTypeName  # type: ignore[attr-defined]
-
-    sys.modules["pasqal_cloud"] = pasqal_cloud
-    sys.modules["pasqal_cloud.authentication"] = authentication
-    sys.modules["pasqal_cloud.batch"] = batch_mod
-    sys.modules["pasqal_cloud.device"] = device_mod
-
-    if "pulser" in sys.modules and hasattr(sys.modules["pulser"], "Sequence"):
-        return
-
-    pulser = sys.modules.get("pulser") or types.ModuleType("pulser")
-
-    class Sequence:
-        """Minimal Pulser Sequence stub."""
-
-        def __init__(self, abstract_repr: str = '{"stub": true}'):
-            self._abstract_repr = abstract_repr
-
-        def to_abstract_repr(self) -> str:
-            return self._abstract_repr
-
-    pulser.Sequence = Sequence  # type: ignore[attr-defined]
-    pulser.__spec__ = importlib.machinery.ModuleSpec("pulser", None)
-    sys.modules["pulser"] = pulser
-
-
-_install_pasqal_cloud_stub()
-
-
-# Now safe to import the package under test.
 # pylint: disable=wrong-import-position
+from pulser import Register, Sequence  # noqa: E402
+from pulser.devices import AnalogDevice  # noqa: E402
+
 from qbraid.programs import ExperimentType  # noqa: E402
 from qbraid.runtime.enums import DeviceStatus, JobStatus  # noqa: E402
 from qbraid.runtime.exceptions import ResourceNotFoundError  # noqa: E402
-from qbraid.runtime.pasqal import (  # noqa: E402
-    PasqalDevice,
-    PasqalJob,
-    PasqalProvider,
-)
+from qbraid.runtime.pasqal import PasqalDevice, PasqalJob, PasqalProvider  # noqa: E402
 from qbraid.runtime.pasqal.device import PasqalDeviceError  # noqa: E402
 from qbraid.runtime.pasqal.job import (  # noqa: E402
     _PASQAL_STATUS_MAP,
     PasqalJobError,
     _map_pasqal_status,
 )
-from qbraid.runtime.pasqal.provider import (  # noqa: E402
-    _build_profile,
-    _is_simulator,
-)
+from qbraid.runtime.pasqal.provider import _build_profile, _is_simulator  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
@@ -157,10 +58,10 @@ def mock_sdk():
     return sdk
 
 
-def _make_pulser_sequence(abstract: str = '{"name": "test"}'):
-    seq = MagicMock(name="PulserSequence")
-    seq.to_abstract_repr.return_value = abstract
-    return seq
+def _make_pulser_sequence():
+
+    reg = Register({"q0": (0.0, 0.0)})
+    return Sequence(reg, AnalogDevice)
 
 
 def _make_job(status: str = "DONE", counter: dict[str, int] | None = None, job_id: str = "job-1"):
@@ -237,7 +138,6 @@ class TestProviderHelpers:
         assert _is_simulator(device_id) is is_sim
 
     def test_build_profile_basic(self):
-        pytest.importorskip("pulser")
         profile = _build_profile("EMU_FREE", num_qubits=10)
         assert profile.device_id == "EMU_FREE"
         assert profile.simulator is True
@@ -247,17 +147,17 @@ class TestProviderHelpers:
         assert profile.program_spec.alias == "pulser"
 
     def test_build_profile_qpu(self):
-        pytest.importorskip("pulser")
         profile = _build_profile("FRESNEL")
         assert profile.simulator is False
         assert profile.num_qubits is None
 
     def test_program_spec_serializer_uses_abstract_repr(self):
-        pytest.importorskip("pulser")
         profile = _build_profile("EMU_FREE")
-        sequence = _make_pulser_sequence('{"foo": 1}')
-        serialized = profile.program_spec.serialize(sequence)
-        assert serialized == '{"foo": 1}'
+        seq = _make_pulser_sequence()
+        serialized = profile.program_spec.serialize(seq)
+        assert isinstance(serialized, str)
+        data = json.loads(serialized)
+        assert "register" in data
 
 
 class TestPasqalProvider:
@@ -271,7 +171,7 @@ class TestPasqalProvider:
         provider = PasqalProvider(sdk=mock_sdk)
         assert provider.sdk is mock_sdk
 
-    def test_init_with_username_password(self, monkeypatch):
+    def test_init_with_username_password(self):
         # Patch the SDK constructor used inside the provider.
         sdk_mock = MagicMock(name="PasqalSDK")
         with patch("pasqal_cloud.SDK", return_value=sdk_mock) as ctor:

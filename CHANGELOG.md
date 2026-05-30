@@ -1,41 +1,43 @@
 # Changelog
+
 All notable changes to this project will be documented in this file.
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
 Types of changes:
+
 - `Added`: for new features.
 - `Improved / Modified`: for changes to existing functionality.
 - `Deprecated`: for soon-to-be removed features.
 - `Removed`: for now removed features.
 - `Fixed`: for any bug fixes.
 - `Dependencies`: for updates to external libraries or packages.
+
 ## [Unreleased]
+
 ### Added
+
 - Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
 
 ```python
-  from pulser import Sequence  # build your pulse sequence as usual
-  from qbraid.runtime.pasqal import PasqalProvider
+from pulser import Register, Sequence
+from pulser.devices import AnalogDevice
+from qbraid.runtime.pasqal import PasqalProvider
 
-  # Credentials may also come from PASQAL_USERNAME / PASQAL_PASSWORD /
-  # PASQAL_PROJECT_ID environment variables.
-  provider = PasqalProvider(
-      username="you@example.com",
-      password="...",
-      project_id="...",
-  )
-
-  device = provider.get_device("EMU_FREE")  # or "FRESNEL", "EMU_TN", ...
-  sequence: Sequence = ...  # your Pulser sequence
-  job = device.run(sequence, shots=200)
-  result = job.result()
-  print(result.data.get_counts())
+provider = PasqalProvider(
+    username="you@example.com",
+    password="...",
+    project_id="...",
+)
+device = provider.get_device("EMU_FREE")
+reg = Register({"q0": (0.0, 0.0)})
+sequence = Sequence(reg, AnalogDevice)
+job = device.run(sequence, shots=200)
+result = job.result()
+print(result.data.get_counts())
 ```
 
-
 ### Improved / Modified
-
-
-
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 
@@ -51,11 +53,6 @@ Types of changes:
 ## [0.12.1] - 2026-05-17
 
 ### Added
-
-
-
-
-
 - Added `as_batch=True` parameter to `QbraidDevice.submit()` enabling submission of a list of circuits as a single batch job (one API call, one job QRN). `QbraidJob.result()` returns `BatchResult` for batch jobs and a single `Result` for regular jobs. ([#1187](https://github.com/qBraid/qBraid/pull/1187))
 
   ```python
