@@ -29,12 +29,14 @@ Functions
    cirq_to_pyqir
    cirq_to_stim
    stim_to_cirq
-
+   openfermion_qop_to_qiskit_qop
 """
 from .cirq_extras import cirq_to_pyqir, cirq_to_stim, stim_to_cirq
 from .cirq_to_braket import cirq_to_braket
 from .cirq_to_pyquil import cirq_to_pyquil
 from .cirq_to_qasm2 import cirq_to_qasm2
+from .openfermion_qop_to_qiskit_qop import openfermion_qop_to_qiskit_qop
+from .openfermion_fop_to_qiskit_fop import openfermion_fop_to_qiskit_fop
 
 __all__ = [
     "cirq_to_braket",
@@ -43,4 +45,6 @@ __all__ = [
     "cirq_to_pyqir",
     "cirq_to_stim",
     "stim_to_cirq",
+    "openfermion_qop_to_qiskit_qop",
+    "openfermion_fop_to_qiskit_fop",
 ]
