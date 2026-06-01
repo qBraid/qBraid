@@ -510,7 +510,7 @@ class MockClient:
         }
 
     # New Runtime API methods
-    def list_devices(self) -> list[RuntimeDevice]:
+    def list_devices(self, include_retired: bool = False) -> list[RuntimeDevice]:
         """Returns a list of all quantum devices."""
         devices = []
         for device_data in [
