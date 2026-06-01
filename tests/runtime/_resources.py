@@ -509,8 +509,8 @@ class MockClient:
             "organizationUserId": "68f94f8e0c6d3502fd4c37f5",
         }
 
-    # New Runtime API methods
-    def list_devices(self) -> list[RuntimeDevice]:
+    # pylint: disable-next=unused-argument
+    def list_devices(self, include_retired: bool = False) -> list[RuntimeDevice]:
         """Returns a list of all quantum devices."""
         devices = []
         for device_data in [

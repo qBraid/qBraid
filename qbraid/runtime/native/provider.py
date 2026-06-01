@@ -216,12 +216,12 @@ class QbraidProvider(QuantumProvider):
         )
 
     @cached_method(ttl=120)
-    def get_devices(self) -> list[QbraidDevice]:
+    def get_devices(self, include_retired: bool = False, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
 
         try:
             # TODO: Implement support for device query
-            devices = self.client.list_devices()
+            devices = self.client.list_devices(include_retired=include_retired, **kwargs)
         except (ValueError, QuantumRuntimeServiceRequestError) as err:
             raise ResourceNotFoundError("No devices found matching given criteria.") from err
 
