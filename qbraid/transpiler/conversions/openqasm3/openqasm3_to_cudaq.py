@@ -169,8 +169,16 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                     mod.modifier == ast.GateModifierName.ctrl
                 ), f"non-ctrl modifiers should've be unrolled: {mod}"
 
-                gate = get_gate(name, targs)
-                kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
+                ctrl_name = "c" + name
+                ctrl_op = getattr(kernel, ctrl_name, None)
+                if ctrl_op is not None:
+                    if args:
+                        ctrl_op(*args, *qubit_refs)
+                    else:
+                        ctrl_op(*qubit_refs)
+                else:
+                    gate = get_gate(name, targs)
+                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
                 if (namel := name.lower())[0] == "c" and namel[1:] in [
                     "x",
@@ -181,11 +189,25 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                     "rz",
                 ]:
                     # pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
-                    gate = get_gate(namel[1:], targs)
-                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
+                    ctrl_op = getattr(kernel, namel, None)
+                    if ctrl_op is not None:
+                        if args:
+                            ctrl_op(*args, *qubit_refs)
+                        else:
+                            ctrl_op(*qubit_refs)
+                    else:
+                        gate = get_gate(namel[1:], targs)
+                        kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
                 else:
-                    gate = get_gate(name, targs)
-                    kernel.apply_call(gate, *qubit_refs, *args)
+                    op = getattr(kernel, name, None)
+                    if op is not None:
+                        if args:
+                            op(*args, *qubit_refs)
+                        else:
+                            op(*qubit_refs)
+                    else:
+                        gate = get_gate(name, targs)
+                        kernel.apply_call(gate, *qubit_refs, *args)
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
