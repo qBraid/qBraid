@@ -17268,7 +17268,7 @@ class MockQuantumRuntimeClient(QuantumRuntimeClient):
             # Track call counts for get_job to simulate job progression
             self._job_call_counts = {}
 
-    def list_devices(self) -> list[RuntimeDevice]:
+    def list_devices(self, include_retired: bool = False) -> list[RuntimeDevice]:
         """Returns a list of all quantum devices."""
         return [SV1_DEVICE, AQUILA_DEVICE, RIGETTI_DEVICE, PASQAL_DEVICE]
 
@@ -17420,6 +17420,13 @@ def test_provider_get_devices(provider):
     assert AQUILA_DEVICE.qrn in device_ids
     assert RIGETTI_DEVICE.qrn in device_ids
     assert PASQAL_DEVICE.qrn in device_ids
+
+
+def test_provider_get_devices_passes_kwargs(provider):
+    """Test that get_devices passes kwargs through to client.list_devices."""
+    devices = provider.get_devices(include_retired=True)
+    assert len(devices) == 4
+    assert all(isinstance(device, QbraidDevice) for device in devices)
 
 
 def test_provider_get_device_sv1(provider):

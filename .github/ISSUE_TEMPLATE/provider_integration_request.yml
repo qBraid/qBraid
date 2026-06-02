@@ -1,0 +1,113 @@
+name: Provider integration request 🔌
+description: Request or propose support for a new quantum hardware provider, device, or simulator in the qBraid-SDK
+title: "[PROVIDER] Add support for "
+labels: ["enhancement ✨", "devices 💻", "interface 🔌"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for proposing a new provider integration. The qBraid-SDK is a hardware-agnostic runtime framework, and most of our provider integrations come from the community — including via the Unitary Foundation's [`metriq-bench`](https://github.com/unitaryfund/metriq) project. This template captures everything we need to scope the work.
+
+        Before submitting, please check the [supported providers list](https://docs.qbraid.com/v2/sdk/user-guide/overview) to make sure the provider isn't already integrated.
+
+  - type: input
+    id: provider-name
+    attributes:
+      label: Provider name
+      description: Name of the company, lab, or simulator project.
+      placeholder: "e.g. Pasqal, Atom Computing, IQM"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device-type
+    attributes:
+      label: Device type
+      description: What kind of quantum hardware or simulator is this?
+      options:
+        - superconducting
+        - trapped ion
+        - neutral atom
+        - photonic
+        - spin / NV-center
+        - annealer
+        - simulator
+        - control system
+        - other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: public-access
+    attributes:
+      label: Access model
+      description: How can users currently access this hardware or simulator?
+      options:
+        - publicly accessible API
+        - private beta / waitlist
+        - on-premise / institutional only
+        - open-source simulator (no credentials needed)
+        - other
+    validations:
+      required: true
+
+  - type: input
+    id: existing-sdk
+    attributes:
+      label: Existing client SDK or API docs
+      description: Link to the provider's existing client SDK, API docs, or repository (or "none").
+      placeholder: "https://..."
+    validations:
+      required: false
+
+  - type: input
+    id: native-ir
+    attributes:
+      label: Native program type or IR
+      description: What does the provider accept? E.g. OpenQASM 2/3, native pulse, custom JSON, QIR, …
+      placeholder: "e.g. OpenQASM 3"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: affiliation
+    attributes:
+      label: Are you affiliated with the provider?
+      options:
+        - "Yes — employee"
+        - "Yes — academic collaborator"
+        - "No — community contributor / user"
+        - "Prefer not to say"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willingness
+    attributes:
+      label: Would you be willing to contribute the integration?
+      description: We welcome community contributions and will pair with you on review and design.
+      options:
+        - "Yes — I'd like to lead the integration"
+        - "Yes — I'd like to co-contribute with the qBraid team"
+        - "No — requesting only"
+        - "Unsure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Existing benchmark or use case (optional)
+      description: |
+        Is there an existing benchmark, paper, or tool that depends on this integration? The canonical example is the Unitary Foundation's `metriq-bench` project, which upstreams provider integrations to the qBraid-SDK as it grows.
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional context (optional)
+      description: Anything else we should know — timelines, blocking dependencies, related issues, etc.
+    validations:
+      required: false
