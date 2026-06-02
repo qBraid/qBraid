@@ -18,15 +18,17 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from qbraid_core.services.runtime import QuantumRuntimeClient
+from qbraid_core.services.runtime.schemas.result import BatchResult as CoreBatchResult
+from qbraid_core.services.runtime.schemas.result import Result as CoreResult
 
 from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import Result, ResultDataType
+from qbraid.runtime.result import BatchResult, Result, ResultDataType
 from qbraid.runtime.result_data import ResultData
 
 if TYPE_CHECKING:
@@ -41,8 +43,8 @@ class QbraidJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        device: Optional[qbraid.runtime.QbraidDevice] = None,
-        client: Optional[qbraid_core.services.runtime.QuantumRuntimeClient] = None,
+        device: qbraid.runtime.QbraidDevice | None = None,
+        client: qbraid_core.services.runtime.QuantumRuntimeClient | None = None,
         **kwargs,
     ):
         super().__init__(job_id, device, **kwargs)
@@ -63,7 +65,7 @@ class QbraidJob(QuantumJob):
             self._client = self._device.client if self._device else QuantumRuntimeClient()
         return self._client
 
-    def queue_position(self) -> Optional[int]:
+    def queue_position(self) -> int | None:
         """Return the position of the job in the queue."""
         return self.metadata()["queuePosition"]
 
@@ -106,20 +108,61 @@ class QbraidJob(QuantumJob):
 
         logger.info("Success. Current status: %s", status.name)
 
-    def result(self, timeout: Optional[int] = None) -> Result[ResultDataType]:
-        """Return the results of the job."""
+    def result(
+        self, timeout: int | None = None
+    ) -> Result[ResultDataType] | BatchResult[ResultDataType]:
+        """Return the results of the job.
+
+        For single-circuit jobs, returns a single :class:`Result`.
+        For batch jobs (``numCircuits > 1``), returns a :class:`BatchResult`.
+        """
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
-        cost = job_data.cost
-        time_stamps = job_data.timeStamps
         success = job_data.status == JobStatus.COMPLETED
-        job_result = self.client.get_job_result(self.id) if success else None
-        data = ResultData.from_object(job_result, job_data.experimentType)
-        return Result[ResultDataType](
-            device_id=job_data.deviceQrn,
-            job_id=job_data.jobQrn,
-            success=success,
-            data=data,
-            time_stamps=time_stamps,
-            cost=cost,
-        )
+        num_circuits = job_data.numCircuits or 1
+
+        if success:
+            raw_result = self.client.get_job_result(self.id)
+        else:
+            empty = CoreResult(
+                status=job_data.status,
+                cost=job_data.cost,
+                timeStamps=job_data.timeStamps,
+                resultData={},
+            )
+            if num_circuits > 1:
+                raw_result = CoreBatchResult(
+                    status=job_data.status,
+                    cost=job_data.cost,
+                    timeStamps=job_data.timeStamps,
+                    results=[empty] * num_circuits,
+                )
+            else:
+                raw_result = empty
+
+        def _build_result(core_result: CoreResult) -> Result[ResultDataType]:
+            data = ResultData.from_object(core_result, job_data.experimentType)
+            return Result[ResultDataType](
+                device_id=job_data.deviceQrn,
+                job_id=job_data.jobQrn,
+                success=core_result.status == JobStatus.COMPLETED,
+                data=data,
+                time_stamps=core_result.timeStamps,
+                cost=core_result.cost,
+                status=core_result.status,
+                **data.extra,
+            )
+
+        if isinstance(raw_result, CoreBatchResult):
+            per_circuit = [_build_result(r) for r in raw_result.results]
+            return BatchResult[ResultDataType](
+                device_id=job_data.deviceQrn,
+                job_id=job_data.jobQrn,
+                success=success,
+                results=per_circuit,
+                time_stamps=raw_result.timeStamps,
+                cost=raw_result.cost,
+                status=raw_result.status,
+            )
+
+        return _build_result(raw_result)

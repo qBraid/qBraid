@@ -28,8 +28,23 @@ Classes
     QiskitJob
 
 """
-from .device import QiskitBackend
-from .job import QiskitJob
-from .provider import QiskitRuntimeProvider
+
+# pylint: disable=import-outside-toplevel,undefined-all-variable
 
 __all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider"]
+
+
+def __getattr__(name):
+    if name == "QiskitRuntimeProvider":
+        from .provider import QiskitRuntimeProvider
+
+        return QiskitRuntimeProvider
+    if name == "QiskitBackend":
+        from .device import QiskitBackend
+
+        return QiskitBackend
+    if name == "QiskitJob":
+        from .job import QiskitJob
+
+        return QiskitJob
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

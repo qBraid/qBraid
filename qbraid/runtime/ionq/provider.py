@@ -20,6 +20,7 @@ Module defining IonQ session and provider classes
 import os
 from typing import Any, Optional
 
+import requests as http_requests
 from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
@@ -61,16 +62,24 @@ class IonQSession(Session):
         self.api_key = api_key
         self.add_user_agent(f"QbraidSDK/{qbraid_version}")
 
+    def _get_public(self, path: str, **kwargs) -> http_requests.Response:
+        """Make a GET request without auth headers for public endpoints."""
+        url = self.base_url.rstrip("/") + "/" + path.lstrip("/")
+        timeout = kwargs.pop("timeout", 30)
+        response = http_requests.get(url, timeout=timeout, **kwargs)
+        response.raise_for_status()
+        return response
+
     def get_devices(self, **kwargs) -> dict[str, dict[str, Any]]:
         """Get all IonQ devices."""
-        devices_list = self.get("/backends", **kwargs).json()
+        devices_list = self._get_public("/backends", **kwargs).json()
         devices_dict = {device["backend"]: device for device in devices_list}
         return devices_dict
 
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific IonQ device."""
         try:
-            return self.get(f"/backends/{device_id}").json()
+            return self._get_public(f"/backends/{device_id}").json()
         except Exception as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 

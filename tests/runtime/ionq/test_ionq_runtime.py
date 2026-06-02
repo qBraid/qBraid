@@ -113,6 +113,15 @@ DEVICE_DATA = [
         "has_access": False,
         "degraded": False,
     },
+    {
+        "backend": "qpu.forte-enterprise-3",
+        "status": "unavailable",
+        "qubits": 36,
+        "average_queue_time": 0,
+        "last_updated": 1738692095,
+        "has_access": False,
+        "degraded": False,
+    },
 ]
 
 POST_JOB_RESPONSE = {
@@ -192,6 +201,18 @@ def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any
     return None
 
 
+def mock_get_device_response(url, **kwargs):
+    """Mock Session.get to return appropriate device data based on URL."""
+    mock_resp = Mock()
+    if "/backends/" in url:
+        backend_id = url.split("/backends/")[1]
+        device_data = next(d for d in DEVICE_DATA if d["backend"] == backend_id)
+        mock_resp.json.return_value = device_data
+    else:
+        mock_resp.json.return_value = DEVICE_DATA
+    return mock_resp
+
+
 @pytest.fixture
 def program_spec():
     """Return a ProgramSpec instance for IonQ."""
@@ -201,14 +222,25 @@ def program_spec():
 def test_ionq_provider_get_device(program_spec):
     """Test getting IonQ provider and device."""
     with (
-        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch("qbraid_core.sessions.Session.get") as mock_get,
         patch(
             "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
         ) as mock_get_characterization,
     ):
 
         mock_get_characterization.side_effect = mock_characterization
-        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+
+        def mock_get_response(url):
+            mock_resp = Mock()
+            if "/backends/" in url:
+                backend_id = url.split("/backends/")[1]
+                device = next(d for d in DEVICE_DATA if d["backend"] == backend_id)
+                mock_resp.json.return_value = device
+            else:
+                mock_resp.json.return_value = DEVICE_DATA
+            return mock_resp
+
+        mock_get.side_effect = lambda url, **kwargs: mock_get_response(url)
 
         provider = IonQProvider(api_key="fake_api_key")
         assert isinstance(provider, IonQProvider)
@@ -366,14 +398,14 @@ def test_ionq_device_transform_run_input(qis_input, qis_input_decomp):
     """
 
     with (
-        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch("qbraid_core.sessions.Session.get") as mock_get,
         patch(
             "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
         ) as mock_get_characterization,
     ):
 
         mock_get_characterization.side_effect = mock_characterization
-        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+        mock_get.side_effect = mock_get_device_response
 
         provider = IonQProvider(api_key="fake_api_key")
         test_devices = provider.get_devices()
@@ -443,14 +475,14 @@ def test_ionq_device_transform_retry():
     """
 
     with (
-        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch("qbraid_core.sessions.Session.get") as mock_get,
         patch(
             "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
         ) as mock_get_characterization,
         patch("qbraid.runtime.ionq.device.logger") as mock_logger,
     ):
         mock_get_characterization.side_effect = mock_characterization
-        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+        mock_get.side_effect = mock_get_device_response
 
         provider = IonQProvider(api_key="fake_api_key")
         test_devices = provider.get_devices()
@@ -527,7 +559,7 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")
 @patch("importlib.util.find_spec", return_value=None)
-def test_ionq_failed_job(mock_find_spec, mock_post, mock_get, circuit):
+def test_ionq_failed_job(_mock_find_spec, mock_post, mock_get, circuit):
     """Test running a fake job."""
     GET_JOB_RESPONSE["status"] = "failed"
     simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
@@ -749,12 +781,12 @@ def test_squash_multicircuit_input_valid_multiple_entries(native_input):
 
 def random_ionq_id(user=False):
     """Return a random IonQ ID."""
-    hex = uuid.uuid4().hex
+    hex_str = uuid.uuid4().hex
 
     if user:
-        return hex[:24]
+        return hex_str[:24]
 
-    return f"{hex[:8]}-{hex[8:12]}-{hex[12:16]}-{hex[16:20]}-{hex[20:]}"
+    return f"{hex_str[:8]}-{hex_str[8:12]}-{hex_str[12:16]}-{hex_str[16:20]}-{hex_str[20:]}"
 
 
 def generate_job_data_ids(num_children=0):
@@ -898,29 +930,40 @@ def test_ionq_device_run_warnings(monkeypatch):
     qiskit-specific parameters with non-qiskit input."""
     monkeypatch.setattr("qbraid.runtime.ionq.device.importlib.util.find_spec", lambda _: None)
 
-    device = IonQDevice(
-        TargetProfile(device_id="simulator", simulator=True),
-        IonQSession("fake_api_key"),
-    )
+    simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
 
-    device.submit = Mock()
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_resp = Mock()
+        mock_resp.json.return_value = simulator_data
+        mock_get.return_value = mock_resp
 
-    dummy_circuit = "OPENQASM 2.0; qreg q[1]; h q[0];"
+        device = IonQDevice(
+            TargetProfile(device_id="simulator", simulator=True),
+            IonQSession("fake_api_key"),
+        )
 
-    with pytest.warns(UserWarning, match="GateSet argument is only applicable when qiskit-ionq"):
-        device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS)
+        device.submit = Mock()
 
-    with pytest.warns(UserWarning, match="IonQ compiler synthesis option is only applicable when"):
-        device.run(dummy_circuit, shots=1000, ionq_compiler_synthesis=True)
+        dummy_circuit = "OPENQASM 2.0; qreg q[1]; h q[0];"
 
-    with pytest.warns() as record:
-        device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS, ionq_compiler_synthesis=True)
+        with pytest.warns(
+            UserWarning, match="GateSet argument is only applicable when qiskit-ionq"
+        ):
+            device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS)
 
-    assert len(record) == 2
-    assert "GateSet argument is only applicable" in str(record[0].message)
-    assert "IonQ compiler synthesis option is only applicable" in str(record[1].message)
+        with pytest.warns(
+            UserWarning, match="IonQ compiler synthesis option is only applicable when"
+        ):
+            device.run(dummy_circuit, shots=1000, ionq_compiler_synthesis=True)
 
-    device.submit.assert_called()
+        with pytest.warns() as record:
+            device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS, ionq_compiler_synthesis=True)
+
+        assert len(record) == 2
+        assert "GateSet argument is only applicable" in str(record[0].message)
+        assert "IonQ compiler synthesis option is only applicable" in str(record[1].message)
+
+        device.submit.assert_called()
 
 
 @pytest.mark.skipif(

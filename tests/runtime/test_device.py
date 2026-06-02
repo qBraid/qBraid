@@ -607,18 +607,16 @@ def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
     assert "Invalid type for noise model" in str(excinfo)
 
 
-def test_get_program_spec_not_registered_warning():
-    """Test that a warning is emitted when the program type is not registered."""
+def test_get_program_spec_not_registered_warning(caplog):
+    """Test that a warning is logged when the program type is not registered."""
     run_package = "not_registered"
     device_id = "fake_device"
-    with pytest.warns(
-        RuntimeWarning,
-        match=(
-            f"The default runtime configuration for device '{device_id}' includes "
-            f"transpilation to program type '{run_package}', which is not registered."
-        ),
-    ):
+    with caplog.at_level(logging.INFO, logger="qbraid"):
         QbraidProvider._get_program_spec(run_package, device_id)
+    assert any(
+        f"device '{device_id}'" in record.message and f"'{run_package}'" in record.message
+        for record in caplog.records
+    )
 
 
 def test_get_program_spec_lambdas_validate_qasm_to_ionq():
