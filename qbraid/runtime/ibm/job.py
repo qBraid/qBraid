@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Optional
 
 from qbraid_core._import import LazyLoader
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
-from qiskit_ibm_runtime import RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid._logging import logger
@@ -60,10 +59,7 @@ class QiskitJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        job: Optional[
-            qiskit_ibm_runtime.RuntimeJobV2
-            | qiskit.primitives.PrimitiveJob
-        ] = None,
+        job: Optional[qiskit_ibm_runtime.RuntimeJobV2 | qiskit.primitives.PrimitiveJob] = None,
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
         **kwargs,
     ):
