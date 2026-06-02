@@ -127,6 +127,7 @@ class PasqalDevice(QuantumDevice):
 
         try:
             batch = self._sdk.create_batch(
+                serialized_sequence=None,
                 jobs=jobs,
                 device_type=device_type,
                 wait=wait,
