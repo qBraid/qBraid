@@ -180,7 +180,7 @@ _lazy = {
         "OriginDevice",
         "OriginJob",
     ],
-     "pasqal": [
+    "pasqal": [
         "PasqalProvider",
         "PasqalDevice",
         "PasqalJob",
