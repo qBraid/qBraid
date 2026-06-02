@@ -22,3 +22,5 @@ Submodules
    quantinuum
    native
    rigetti
+   pasqal
+   

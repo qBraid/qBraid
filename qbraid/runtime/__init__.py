@@ -180,6 +180,11 @@ _lazy = {
         "OriginDevice",
         "OriginJob",
     ],
+    "pasqal": [
+        "PasqalProvider",
+        "PasqalDevice",
+        "PasqalJob",
+    ],
     "quantinuum": [
         "QuantinuumProvider",
         "QuantinuumDevice",
@@ -232,6 +237,9 @@ if TYPE_CHECKING:
     from .origin import OriginDevice as OriginDevice
     from .origin import OriginJob as OriginJob
     from .origin import OriginProvider as OriginProvider
+    from .pasqal import PasqalDevice as PasqalDevice
+    from .pasqal import PasqalJob as PasqalJob
+    from .pasqal import PasqalProvider as PasqalProvider
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
