@@ -16,5 +16,11 @@ Submodules
    ibm
    azure
    ionq
+   openquantum
    oqc
+   origin
+   quantinuum
    native
+   rigetti
+   pasqal
+   

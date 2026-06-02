@@ -373,3 +373,20 @@ def test_openqasm3_to_cudaq_random_clifford_circuit(num_qubits, _):
     qasm3_str_in = qasm3_dumps(circ)
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, method="state")
+
+
+def test_openqasm3_numeric_literals_promoted_to_float():
+    """Test integer gate parameters are promoted to float in CUDA-Q kernels."""
+
+    qasm_str = """
+    OPENQASM 3;
+    include "stdgates.inc";
+    qubit[1] q;
+    U(0, 0, 0) q[0];
+    """
+
+    cudaq_out = openqasm3_to_cudaq(qasm_str)
+    cudaq_str = str(cudaq_out)
+
+    assert "arith.constant 0.000000e+00 : f64" in cudaq_str
+    _check_output(qasm_str, cudaq_out, method="state")

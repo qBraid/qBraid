@@ -54,6 +54,7 @@ autodoc_mock_imports = [
     "pennylane",
     "pyqir",
     "pyquil",
+    "qcs_sdk",
     "pytket",
     "qcaas_client",
     "qiskit",
@@ -64,11 +65,14 @@ autodoc_mock_imports = [
     "cudaq",
     "flair_visual",
     "bloqade",
+    "pasqal_cloud",
+    "pulser",
     "pandas",
     "pyqpanda3",
-    "pulser",
     "pyqubo",
     "azure",
+    "qnexus",
+    "quantinuum_schemas",
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True

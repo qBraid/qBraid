@@ -75,6 +75,7 @@ Exceptions
     ProviderLoaderError
 
 """
+
 import importlib
 from typing import TYPE_CHECKING
 
@@ -87,13 +88,20 @@ from .exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
+from .group import GroupJobSession, GroupResult, get_active_group
 from .job import QuantumJob
-from .loader import JobLoaderError, ProviderLoaderError, get_providers, load_job, load_provider
+from .loader import (
+    JobLoaderError,
+    ProviderLoaderError,
+    get_providers,
+    load_job,
+    load_provider,
+)
 from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import Result
+from .result import BatchResult, Result
 from .result_data import (
     AnalogResultData,
     AnalogShotResult,
@@ -105,6 +113,9 @@ from .result_data import (
 PROVIDERS = get_providers()
 
 __all__ = [
+    "GroupJobSession",
+    "GroupResult",
+    "get_active_group",
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
@@ -124,6 +135,7 @@ __all__ = [
     "RuntimeOptions",
     "NoiseModel",
     "NoiseModelSet",
+    "BatchResult",
     "Result",
     "ResultData",
     "GateModelResultData",
@@ -147,10 +159,36 @@ _lazy = {
         "IonQDevice",
         "IonQJob",
     ],
+    "openquantum": [
+        "OpenQuantumSession",
+        "OpenQuantumProvider",
+        "OpenQuantumDevice",
+        "OpenQuantumJob",
+    ],
     "oqc": [
         "OQCProvider",
         "OQCDevice",
         "OQCJob",
+    ],
+    "rigetti": [
+        "RigettiProvider",
+        "RigettiDevice",
+        "RigettiJob",
+    ],
+    "origin": [
+        "OriginProvider",
+        "OriginDevice",
+        "OriginJob",
+    ],
+    "pasqal": [
+        "PasqalProvider",
+        "PasqalDevice",
+        "PasqalJob",
+    ],
+    "quantinuum": [
+        "QuantinuumProvider",
+        "QuantinuumDevice",
+        "QuantinuumJob",
     ],
     "ibm": [
         "QiskitRuntimeProvider",
@@ -188,11 +226,26 @@ if TYPE_CHECKING:
     from .native import QbraidJob as QbraidJob
     from .native import QbraidProvider as QbraidProvider
     from .native import QbraidSessionV1 as QbraidSessionV1
-    from .native import QirRunner as QirRunner
     from .native import Session as Session
+    from .openquantum import OpenQuantumDevice as OpenQuantumDevice
+    from .openquantum import OpenQuantumJob as OpenQuantumJob
+    from .openquantum import OpenQuantumProvider as OpenQuantumProvider
+    from .openquantum import OpenQuantumSession as OpenQuantumSession
     from .oqc import OQCDevice as OQCDevice
     from .oqc import OQCJob as OQCJob
     from .oqc import OQCProvider as OQCProvider
+    from .origin import OriginDevice as OriginDevice
+    from .origin import OriginJob as OriginJob
+    from .origin import OriginProvider as OriginProvider
+    from .pasqal import PasqalDevice as PasqalDevice
+    from .pasqal import PasqalJob as PasqalJob
+    from .pasqal import PasqalProvider as PasqalProvider
+    from .quantinuum import QuantinuumDevice as QuantinuumDevice
+    from .quantinuum import QuantinuumJob as QuantinuumJob
+    from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .rigetti import RigettiDevice as RigettiDevice
+    from .rigetti import RigettiJob as RigettiJob
+    from .rigetti import RigettiProvider as RigettiProvider
 
 
 def __getattr__(name):
