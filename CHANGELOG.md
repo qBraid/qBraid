@@ -16,10 +16,32 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
+
+- Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
+
+```python
+from pulser import Register, Sequence
+from pulser.devices import AnalogDevice
+from qbraid.runtime.pasqal import PasqalProvider
+
+provider = PasqalProvider(
+    username="you@example.com",
+    password="...",
+    project_id="...",
+)
+device = provider.get_device("EMU_FREE")
+reg = Register({"q0": (0.0, 0.0)})
+sequence = Sequence(reg, AnalogDevice)
+job = device.run(sequence, shots=200)
+result = job.result()
+print(result.data.get_counts())
+```
 
 ### Improved / Modified
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
+- Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
 ### Deprecated
 
@@ -29,6 +51,7 @@ Types of changes:
 
 ### Dependencies
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
+- Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
 ## [0.12.1] - 2026-05-17
 
