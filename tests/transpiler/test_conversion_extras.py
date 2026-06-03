@@ -50,13 +50,7 @@ def has_extra(conversion_func: Callable) -> bool:
         bool: True if all required extra packages are importable, False otherwise.
     """
     extras = getattr(conversion_func, "requires_extras", [])
-    for module_name in extras:
-        try:
-            if importlib.util.find_spec(module_name) is None:
-                return False
-        except ModuleNotFoundError:
-            return False
-    return True
+    return all(importlib.util.find_spec(module_name) is not None for module_name in extras)
 
 
 @pytest.mark.skipif(not has_extra(qiskit_to_braket), reason="Extra not installed")
