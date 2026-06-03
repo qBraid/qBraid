@@ -38,6 +38,8 @@ result = job.result()
 print(result.data.get_counts())
 ```
 
+- Added direct OpenQASM 3 to pyQuil conversion through `openqasm3_to_pyquil`, including conversion graph registration and coverage benchmarks for the new target path ([#1202](https://github.com/qBraid/qBraid/pull/1202)).
+
 ### Improved / Modified
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
