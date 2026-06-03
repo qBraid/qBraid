@@ -87,13 +87,13 @@ def test_to_cirq_bad_openqasm_program(item):
 @pytest.mark.parametrize("to_type", QPROGRAM_ALIASES)
 def test_cirq_round_trip(bell_circuit, to_type, conversion_graph: ConversionGraph):
     """Test converting Cirq circuits to other supported types."""
-    if not conversion_graph.has_path("cirq", to_type) or not conversion_graph.has_path(
-        to_type, "cirq"
-    ):
-        pytest.skip(f"cirq to {to_type} round-trip not yet supported")
     circuit_in, _ = bell_circuit
 
     require_native = is_registered_alias_native(to_type)
+    graph = conversion_graph if not require_native else ConversionGraph(require_native=True)
+    if not graph.has_path("cirq", to_type) or not graph.has_path(to_type, "cirq"):
+        pytest.skip(f"cirq to {to_type} round-trip not yet supported")
+
     circuit_mid = transpile(circuit_in, to_type, require_native=require_native)
     circuit_out = transpile(circuit_mid, "cirq", require_native=require_native)
     assert _equal(circuit_in, circuit_out), f"Failed round-trip from cirq to {to_type}"
@@ -152,7 +152,8 @@ def test_15(shared15_circuit, shared15_unitary, target_package):
 def test_bell(bell_circuit, bell_unitary, target, conversion_graph: ConversionGraph):
     """Tests transpiling bell circuits."""
     circuit, source = bell_circuit
-    if not conversion_graph.has_path(source, target):
+    graph = ConversionGraph(require_native=True)
+    if not graph.has_path(source, target):
         pytest.skip(f"{source} to {target} conversion not yet supported")
     qbraid_circuit = load_program(circuit)
     transpiled_circuit = transpile(qbraid_circuit.program, target, require_native=True)
