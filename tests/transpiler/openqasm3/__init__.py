@@ -11,28 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""
-OpenQASM 3 conversions
-
-.. currentmodule:: qbraid.transpiler.conversions.openqasm3
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   openqasm3_to_qasm3
-   openqasm3_to_ionq
-   openqasm3_to_cudaq
-   openqasm3_to_pyquil
-
-"""
-
-from .openqasm3_to_cudaq import openqasm3_to_cudaq
-from .openqasm3_to_ionq import openqasm3_to_ionq
-from .openqasm3_to_pyquil import openqasm3_to_pyquil
-from .openqasm3_to_qasm3 import openqasm3_to_qasm3
-
-__all__ = ["openqasm3_to_qasm3", "openqasm3_to_ionq", "openqasm3_to_cudaq", "openqasm3_to_pyquil"]
