@@ -16,6 +16,8 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `openqasm3_to_pyquil` conversion, providing a direct, `pyqasm`-backed transpiler edge from OpenQASM 3 to pyQuil (previously only reachable via a lossy multi-hop path through cirq). Closes [#1179](https://github.com/qBraid/qBraid/issues/1179). ([#1203](https://github.com/qBraid/qBraid/pull/1203))
+
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
 - Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
