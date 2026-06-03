@@ -31,8 +31,9 @@ except ImportError:
 
 
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
+from qbraid.transpiler.conversions.pennylane import pennylane_to_braket, pennylane_to_cirq, pennylane_to_qiskit
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
-from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
+from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pennylane, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
@@ -49,7 +50,13 @@ def has_extra(conversion_func: Callable) -> bool:
         bool: True if all required extra packages are importable, False otherwise.
     """
     extras = getattr(conversion_func, "requires_extras", [])
-    return all(importlib.util.find_spec(module_name) is not None for module_name in extras)
+    for module_name in extras:
+        try:
+            if importlib.util.find_spec(module_name) is None:
+                return False
+        except ModuleNotFoundError:
+            return False
+    return True
 
 
 @pytest.mark.skipif(not has_extra(qiskit_to_braket), reason="Extra not installed")
@@ -164,3 +171,133 @@ def test_autoqasm_shared15_to_qasm3_extra():
 
     assert isinstance(program, str)
     assert program == normalize_qasm_gate_params(qasm3_shared15_reference())
+
+
+def pennylane_bell_tape():
+    """Returns a PennyLane QuantumTape for a Bell circuit."""
+    from ..fixtures.pennylane.circuits import pennylane_bell  # pylint: disable=import-outside-toplevel
+
+    return pennylane_bell()
+
+
+# ---------------------------------------------------------------------------
+# qiskit_to_pennylane
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_pennylane), reason="Extra not installed")
+@pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
+def test_qiskit_to_pennylane_extra_bell(bell_circuit):
+    """Test qiskit-pennylane conversion extra produces a QuantumTape (Bell circuit)."""
+    import pennylane  # pylint: disable=import-outside-toplevel
+
+    qiskit_circuit, _ = bell_circuit
+    conversions = [Conversion("qiskit", "pennylane", qiskit_to_pennylane)]
+    graph = ConversionGraph(conversions)
+    program = transpile(qiskit_circuit, "pennylane", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, pennylane.tape.QuantumTape)
+    assert len(program.operations) == 2
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_pennylane), reason="Extra not installed")
+@pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
+def test_qiskit_to_pennylane_extra_wire_count(bell_circuit):
+    """Test that converted PennyLane tape has the correct number of wires."""
+    qiskit_circuit, _ = bell_circuit
+    conversions = [Conversion("qiskit", "pennylane", qiskit_to_pennylane)]
+    graph = ConversionGraph(conversions)
+    program = transpile(qiskit_circuit, "pennylane", conversion_graph=graph, max_path_depth=1)
+    assert len(program.wires) == 2
+
+
+# ---------------------------------------------------------------------------
+# pennylane_to_qiskit
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not has_extra(pennylane_to_qiskit), reason="Extra not installed")
+def test_pennylane_to_qiskit_extra_bell():
+    """Test pennylane-qiskit conversion extra produces a QuantumCircuit (Bell circuit)."""
+    import qiskit.circuit  # pylint: disable=import-outside-toplevel
+
+    tape = pennylane_bell_tape()
+    conversions = [Conversion("pennylane", "qiskit", pennylane_to_qiskit)]
+    graph = ConversionGraph(conversions)
+    program = transpile(tape, "qiskit", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, qiskit.circuit.QuantumCircuit)
+    assert program.num_qubits == 2
+
+
+@pytest.mark.skipif(not has_extra(pennylane_to_qiskit), reason="Extra not installed")
+@pytest.mark.skipif(not has_extra(qiskit_to_pennylane), reason="Extra not installed")
+def test_pennylane_qiskit_roundtrip_bell():
+    """Test pennylane -> qiskit -> pennylane round-trip preserves operation count."""
+    import pennylane  # pylint: disable=import-outside-toplevel
+
+    tape = pennylane_bell_tape()
+    conversions = [
+        Conversion("pennylane", "qiskit", pennylane_to_qiskit),
+        Conversion("qiskit", "pennylane", qiskit_to_pennylane),
+    ]
+    graph = ConversionGraph(conversions)
+    qiskit_program = transpile(tape, "qiskit", conversion_graph=graph, max_path_depth=1)
+    back = transpile(qiskit_program, "pennylane", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(back, pennylane.tape.QuantumTape)
+    assert len(back.operations) == len(tape.operations)
+
+
+# ---------------------------------------------------------------------------
+# pennylane_to_braket
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not has_extra(pennylane_to_braket), reason="Extra not installed")
+def test_pennylane_to_braket_extra_bell():
+    """Test pennylane-braket conversion extra produces a Braket Circuit (Bell circuit)."""
+    tape = pennylane_bell_tape()
+    conversions = [Conversion("pennylane", "braket", pennylane_to_braket)]
+    graph = ConversionGraph(conversions)
+    program = transpile(tape, "braket", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, braket.circuits.Circuit)
+    assert program.qubit_count == 2
+
+
+@pytest.mark.skipif(not has_extra(pennylane_to_braket), reason="Extra not installed")
+def test_pennylane_to_braket_extra_instruction_count():
+    """Test that converted Braket circuit has the expected number of instructions."""
+    tape = pennylane_bell_tape()
+    conversions = [Conversion("pennylane", "braket", pennylane_to_braket)]
+    graph = ConversionGraph(conversions)
+    program = transpile(tape, "braket", conversion_graph=graph, max_path_depth=1)
+    # Bell circuit: H + CNOT = 2 instructions
+    assert len(list(program.instructions)) == 2
+
+
+# ---------------------------------------------------------------------------
+# pennylane_to_cirq
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(not has_extra(pennylane_to_cirq), reason="Extra not installed")
+def test_pennylane_to_cirq_extra_bell():
+    """Test pennylane-cirq conversion extra produces a Cirq Circuit (Bell circuit)."""
+    import cirq  # pylint: disable=import-outside-toplevel
+
+    tape = pennylane_bell_tape()
+    conversions = [Conversion("pennylane", "cirq", pennylane_to_cirq)]
+    graph = ConversionGraph(conversions)
+    program = transpile(tape, "cirq", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, cirq.Circuit)
+
+
+@pytest.mark.skipif(not has_extra(pennylane_to_cirq), reason="Extra not installed")
+def test_pennylane_to_cirq_extra_qubit_count():
+    """Test that converted Cirq circuit involves the expected number of qubits."""
+    import cirq  # pylint: disable=import-outside-toplevel
+
+    tape = pennylane_bell_tape()
+    conversions = [Conversion("pennylane", "cirq", pennylane_to_cirq)]
+    graph = ConversionGraph(conversions)
+    program = transpile(tape, "cirq", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, cirq.Circuit)
+    assert len(program.all_qubits()) == 2
