@@ -35,4 +35,4 @@ from .openqasm3_to_ionq import openqasm3_to_ionq
 from .openqasm3_to_pyquil import openqasm3_to_pyquil
 from .openqasm3_to_qasm3 import openqasm3_to_qasm3
 
-__all__ = ["openqasm3_to_qasm3", "openqasm3_to_ionq", "openqasm3_to_cudaq", "openqasm3_to_pyquil"]
+__all__ = ["openqasm3_to_cudaq", "openqasm3_to_ionq", "openqasm3_to_pyquil", "openqasm3_to_qasm3"]
