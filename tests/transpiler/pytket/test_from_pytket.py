@@ -16,6 +16,7 @@
 Unit tests for converting pytket circuits to Cirq circuits.
 
 """
+
 import pytest
 
 try:
@@ -54,11 +55,23 @@ def test_crz_gate_from_pytket(qubits):
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
 @pytest.mark.parametrize("theta", (0, 2 * np.pi, np.pi / 2, np.pi / 4))
 def test_rzz_gate_from_pytket(qubits, theta):
-    """Test converting Rzz gate from pytket to cirq."""
+    """Test converting Rzz gate from pytket to cirq.
+
+    With the new direct ``pytket -> cirq`` edge (via ``pytket-cirq``), the default
+    1-hop route represents ``ZZPhase(t)`` as ``cirq.ZZ ** t`` -- unitary-equivalent up
+    to an unobservable global phase, so the default-route check uses
+    ``strict_gphase=False``. The native ``pytket -> qasm2 -> cirq`` route remains exact
+    including global phase, asserted separately via ``require_native=True``.
+    """
     pytket_circuit = TKCircuit(2)
     pytket_circuit.ZZPhase(theta, *qubits)
+
     cirq_circuit = transpile(pytket_circuit, "cirq")
-    assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
+    assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
+
+    native_graph = ConversionGraph(require_native=True)
+    cirq_via_native = transpile(pytket_circuit, "cirq", conversion_graph=native_graph)
+    assert circuits_allclose(pytket_circuit, cirq_via_native, strict_gphase=True)
 
 
 def test_100_random_pytket():

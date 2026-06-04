@@ -16,6 +16,7 @@
 Tests for qBraid transpiler conversion extras.
 
 """
+
 import importlib.util
 from typing import Callable
 
@@ -31,6 +32,7 @@ except ImportError:
 
 
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
+from qbraid.transpiler.conversions.pytket import pytket_to_pyqir
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
@@ -72,6 +74,24 @@ def test_qiskit_to_pyqir_extra(bell_circuit):
     conversions = [Conversion("qiskit", "pyqir", qiskit_to_pyqir)]
     graph = ConversionGraph(conversions)
     program = transpile(qiskit_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, pyqir.Module)
+
+
+@pytest.mark.skipif(not has_extra(pytket_to_pyqir), reason="Extra not installed")
+@pytest.mark.skipif(not pyqir_installed, reason="pyqir not installed")
+def test_pytket_to_pyqir_extra():
+    """Test pytket-qir transpiler conversion extra."""
+    # pylint: disable-next=import-outside-toplevel
+    from pytket.circuit import Circuit
+
+    pytket_circuit = Circuit(2)
+    pytket_circuit.H(0)
+    pytket_circuit.CX(0, 1)
+    pytket_circuit.measure_all()
+
+    conversions = [Conversion("pytket", "pyqir", pytket_to_pyqir)]
+    graph = ConversionGraph(conversions)
+    program = transpile(pytket_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, pyqir.Module)
 
 

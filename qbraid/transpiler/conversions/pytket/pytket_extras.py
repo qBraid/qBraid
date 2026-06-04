@@ -28,10 +28,13 @@ from qbraid.transpiler.annotations import requires_extras
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
 pytket_cirq = LazyLoader("pytket_cirq", globals(), "pytket.extensions.cirq")
+pytket_qir = LazyLoader("pytket_qir", globals(), "pytket.qir")
+pyqir = LazyLoader("pyqir", globals(), "pyqir")
 
 if TYPE_CHECKING:
     import braket.circuits
     import cirq
+    import pyqir
     import pytket.circuit
     import qiskit
 
@@ -74,3 +77,18 @@ def pytket_to_cirq(circuit: pytket.circuit.Circuit) -> cirq.Circuit:
         cirq.Circuit: Cirq circuit equivalent to input pytket circuit.
     """
     return pytket_cirq.tk_to_cirq(circuit)
+
+
+@requires_extras("pytket.qir", "pyqir")
+def pytket_to_pyqir(circuit: pytket.circuit.Circuit) -> pyqir.Module:
+    """Returns a PyQIR module equivalent to the input pytket circuit.
+
+    Args:
+        circuit (pytket.circuit.Circuit): PyTKET circuit to convert to a PyQIR module.
+
+    Returns:
+        pyqir.Module: PyQIR module equivalent to input pytket circuit.
+    """
+    llvm_ir = pytket_qir.pytket_to_qir(circuit, qir_format=pytket_qir.QIRFormat.STRING)
+    context = pyqir.Context()
+    return pyqir.Module.from_ir(context, llvm_ir, "Circuit")
