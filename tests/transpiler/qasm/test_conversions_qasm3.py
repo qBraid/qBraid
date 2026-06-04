@@ -26,6 +26,16 @@ from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import qasm3_to_cirq
 from qbraid.transpiler.converter import transpile
 
+try:
+    from pyquil import Program
+    from pyquil.gates import H, CNOT, RX, RY
+
+    from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import openqasm3_to_pyquil
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
 
 def test_one_qubit_qiskit_to_braket():
     """Test converting qiskit to braket for one qubit circuit."""
@@ -100,3 +110,37 @@ def test_qasm3_to_cirq_raises_for_invalid_qasm():
     invalid_qasm = "OPENQASM 2.0;\nqreg q[1];\nbarrier q;"
     with pytest.raises(QasmError):
         qasm3_to_cirq(invalid_qasm)
+
+
+@pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
+def test_openqasm3_to_pyquil_basic():
+    """Test converting OpenQASM3 to pyQuil for basic circuit."""
+    qasm3 = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    """
+    quil_program = openqasm3_to_pyquil(qasm3)
+    assert isinstance(quil_program, Program)
+    assert "H 0" in quil_program.out()
+    assert "CNOT 0 1" in quil_program.out()
+
+
+@pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
+def test_openqasm3_to_pyquil_parameterized():
+    """Test converting OpenQASM3 to pyQuil with parameterized gates."""
+    qasm3 = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    rx(1.5707963267948966) q[1];
+    """
+    quil_program = openqasm3_to_pyquil(qasm3)
+    assert isinstance(quil_program, Program)
+    assert "H 0" in quil_program.out()
+    assert "CNOT 0 1" in quil_program.out()
+    assert "RX(1.5707963267948966) 1" in quil_program.out()
