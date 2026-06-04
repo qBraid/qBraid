@@ -16,6 +16,7 @@
 Module containing PyTKET conversion extras.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -26,9 +27,11 @@ from qbraid.transpiler.annotations import requires_extras
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
+pytket_cirq = LazyLoader("pytket_cirq", globals(), "pytket.extensions.cirq")
 
 if TYPE_CHECKING:
     import braket.circuits
+    import cirq
     import pytket.circuit
     import qiskit
 
@@ -58,3 +61,16 @@ def pytket_to_qiskit(circuit: pytket.circuit.Circuit) -> qiskit.QuantumCircuit:
         qiskit.QuantumCircuit: Qiskit circuit equivalent to input pytket circuit.
     """
     return pytket_qiskit.tk_to_qiskit(circuit)
+
+
+@requires_extras("pytket.extensions.cirq")
+def pytket_to_cirq(circuit: pytket.circuit.Circuit) -> cirq.Circuit:
+    """Returns a Cirq circuit equivalent to the input pytket circuit.
+
+    Args:
+        circuit (pytket.circuit.Circuit): PyTKET circuit to convert to a Cirq circuit.
+
+    Returns:
+        cirq.Circuit: Cirq circuit equivalent to input pytket circuit.
+    """
+    return pytket_cirq.tk_to_cirq(circuit)
