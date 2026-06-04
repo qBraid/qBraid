@@ -81,6 +81,23 @@ def test_openqasm3_to_pyquil_measurement():
     assert out.count("MEASURE") == 2
 
 
+def test_openqasm3_to_pyquil_barrier_skipped():
+    """Barrier statements have no pyQuil equivalent and are skipped, not raised."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    h q[0];
+    barrier q;
+    cx q[0], q[1];
+    """
+    result = openqasm3_to_pyquil(qasm)
+    out = result.out()
+    # the barrier emits no instruction, while the surrounding gates are preserved
+    assert "H 0" in out
+    assert "CNOT 0 1" in out
+
+
 def test_openqasm3_to_pyquil_malformed_raises():
     """Malformed QASM raises ProgramConversionError."""
     with pytest.raises(ProgramConversionError):

@@ -129,11 +129,19 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
 
     # pass 2: emit gates + measurements
     for statement in unrolled.statements:
-        # QuantumPhase = global phase (gphase); unobservable, safe to drop (pyqasm emits
-        # it when decomposing gates such as rzz; equivalence holds up to global phase).
+        # Skip statements with no pyQuil equivalent that are safe to drop:
+        # - QuantumPhase = global phase (gphase); unobservable (pyqasm emits it when
+        #   decomposing gates such as rzz; equivalence holds up to global phase).
+        # - QuantumBarrier = scheduling hint only; has no effect on the converted program.
         if isinstance(
             statement,
-            (ast.QubitDeclaration, ast.ClassicalDeclaration, ast.Include, ast.QuantumPhase),
+            (
+                ast.QubitDeclaration,
+                ast.ClassicalDeclaration,
+                ast.Include,
+                ast.QuantumPhase,
+                ast.QuantumBarrier,
+            ),
         ):
             continue
 
