@@ -29,6 +29,7 @@ try:
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
+    from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_pyquil
     from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
     from qbraid.transpiler.exceptions import ProgramConversionError
@@ -159,3 +160,122 @@ def test_cirq_to_quil_output_rzz():
     cirq_circuit = qasm2_to_cirq(qasm)
     p_test: Program = cirq_to_pyquil(cirq_circuit)
     assert p_test.out().replace("pi/2", f"{np.pi/2}") == p.out()
+
+
+# Benchmarking tests for openqasm3_to_pyquil
+OPENQASM3_BELL_STATE = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[2] q;
+bit[2] c;
+h q[0];
+cx q[0], q[1];
+measure q -> c;
+"""
+
+
+def test_openqasm3_to_pyquil_bell_state():
+    """Test conversion of Bell state circuit from OpenQASM3 to pyQuil."""
+    program = openqasm3_to_pyquil(OPENQASM3_BELL_STATE)
+    assert isinstance(program, Program)
+    # Should have H gate and CNOT gate
+    program_str = program.out()
+    assert "H 0" in program_str or "H(0)" in program_str
+    assert "CNOT" in program_str or "CX" in program_str
+
+
+OPENQASM3_PARAMETERIZED = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[2] q;
+rx(1.5708) q[0];
+ry(0.7854) q[1];
+rz(3.1416) q[0];
+"""
+
+
+def test_openqasm3_to_pyquil_parameterized():
+    """Test conversion of parameterized gates from OpenQASM3 to pyQuil."""
+    program = openqasm3_to_pyquil(OPENQASM3_PARAMETERIZED)
+    assert isinstance(program, Program)
+    program_str = program.out()
+    assert "RX" in program_str
+    assert "RY" in program_str
+    assert "RZ" in program_str
+
+
+OPENQASM3_THREE_QUBIT = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[3] q;
+h q[0];
+h q[1];
+h q[2];
+ccx q[0], q[1], q[2];
+"""
+
+
+def test_openqasm3_to_pyquil_three_qubit():
+    """Test conversion of three-qubit Toffoli gate from OpenQASM3 to pyQuil."""
+    program = openqasm3_to_pyquil(OPENQASM3_THREE_QUBIT)
+    assert isinstance(program, Program)
+    program_str = program.out()
+    assert "CCNOT" in program_str or "TOFFOLI" in program_str
+
+
+OPENQASM3_ALL_SINGLE_QUBIT = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[1] q;
+x q[0];
+y q[0];
+z q[0];
+h q[0];
+s q[0];
+t q[0];
+"""
+
+
+def test_openqasm3_to_pyquil_all_single_qubit():
+    """Test conversion of all supported single-qubit gates."""
+    program = openqasm3_to_pyquil(OPENQASM3_ALL_SINGLE_QUBIT)
+    assert isinstance(program, Program)
+    program_str = program.out()
+    assert "X" in program_str
+    assert "Y" in program_str
+    assert "Z" in program_str
+    assert "H" in program_str
+    assert "S" in program_str
+    assert "T" in program_str
+
+
+OPENQASM3_TWO_QUBIT = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[2] q;
+cx q[0], q[1];
+cz q[0], q[1];
+swap q[0], q[1];
+"""
+
+
+def test_openqasm3_to_pyquil_two_qubit():
+    """Test conversion of all supported two-qubit gates."""
+    program = openqasm3_to_pyquil(OPENQASM3_TWO_QUBIT)
+    assert isinstance(program, Program)
+    program_str = program.out()
+    assert "CNOT" in program_str or "CX" in program_str
+    assert "CZ" in program_str
+    assert "SWAP" in program_str
+
+
+def test_openqasm3_to_pyquil_unsupported_gate():
+    """Test that unsupported gates raise ProgramConversionError."""
+    unsupported_qasm = """
+    OPENQASM 3;
+    include "stdgates.inc";
+    qubit[1] q;
+    phase(1.0) q[0];
+    """
+    with pytest.raises(ProgramConversionError, match="Unsupported gate"):
+        openqasm3_to_pyquil(unsupported_qasm)

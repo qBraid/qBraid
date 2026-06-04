@@ -103,6 +103,17 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
 
     Raises:
         ProgramConversionError: If the program cannot be converted.
+
+    Limitations:
+        - Only supports gates in GATE_MAP (X, Y, Z, H, S, T, RX, RY, RZ, CNOT, CZ, SWAP, CCNOT)
+        - Does not support reset operations
+        - Does not support barrier operations
+        - Does not support gate modifiers (pow, ctrl, inv)
+        - Does not support multi-dimensional qubit arrays
+        - Does not support classical control flow (if, for, while)
+        - Does not support custom gate definitions
+        - Rotation gates only accept single parameter (params[0])
+        - Measurements are supported but classical bit handling is simplified
     """
     try:
         module = pyqasm.loads(program)
