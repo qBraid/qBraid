@@ -20,11 +20,11 @@ Unit tests for OpenQASM 3 to pyQuil conversion.
 import pytest
 
 try:
-    import pyquil  # pylint: disable=unused-import
+    from pyquil import Program
+    from pyquil.gates import CNOT, CPHASE, RX, RZ, H
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import openqasm3_to_pyquil
-    from qbraid.transpiler.conversions.qasm3 import qasm3_to_cirq
     from qbraid.transpiler.exceptions import ProgramConversionError
 
     pyquil_not_installed = False
@@ -35,7 +35,7 @@ pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not install
 
 
 def test_openqasm3_to_pyquil_bell():
-    """Bell circuit converts and matches unitary."""
+    """Bell circuit converts and matches an explicit pyQuil reference."""
     qasm = """
     OPENQASM 3.0;
     include "stdgates.inc";
@@ -44,12 +44,12 @@ def test_openqasm3_to_pyquil_bell():
     cx q[0], q[1];
     """
     result = openqasm3_to_pyquil(qasm)
-    reference = qasm3_to_cirq(qasm)
-    assert circuits_allclose(reference, result, strict_gphase=False)
+    expected = Program(H(0), CNOT(0, 1))
+    assert circuits_allclose(result, expected, strict_gphase=False)
 
 
 def test_openqasm3_to_pyquil_parameterized():
-    """Parameterized gates convert and match unitary."""
+    """Parameterized gates convert and match an explicit pyQuil reference."""
     qasm = """
     OPENQASM 3.0;
     include "stdgates.inc";
@@ -59,8 +59,8 @@ def test_openqasm3_to_pyquil_parameterized():
     cp(0.3) q[0], q[1];
     """
     result = openqasm3_to_pyquil(qasm)
-    reference = qasm3_to_cirq(qasm)
-    assert circuits_allclose(reference, result, strict_gphase=False)
+    expected = Program(RX(0.5, 0), RZ(1.2, 1), CPHASE(0.3, 0, 1))
+    assert circuits_allclose(result, expected, strict_gphase=False)
 
 
 def test_openqasm3_to_pyquil_measurement():
