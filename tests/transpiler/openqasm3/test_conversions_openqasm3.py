@@ -21,7 +21,7 @@ import pytest
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, RX, RZ, H
+    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, S, X
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import openqasm3_to_pyquil
@@ -96,6 +96,23 @@ def test_openqasm3_to_pyquil_barrier_skipped():
     # the barrier emits no instruction, while the surrounding gates are preserved
     assert "H 0" in out
     assert "CNOT 0 1" in out
+
+
+def test_openqasm3_to_pyquil_gate_modifiers():
+    """Gate modifiers (inv/ctrl/pow/negctrl) are decomposed by pyqasm and convert correctly."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    inv @ s q[0];
+    ctrl @ x q[0], q[1];
+    pow(2) @ x q[0];
+    negctrl @ x q[0], q[1];
+    """
+    result = openqasm3_to_pyquil(qasm)
+    # inv @ s -> S-dagger; ctrl @ x -> CNOT; pow(2) @ x -> X X; negctrl @ x -> X CNOT X
+    expected = Program(S(0).dagger(), CNOT(0, 1), X(0), X(0), X(0), CNOT(0, 1), X(0))
+    assert circuits_allclose(result, expected, strict_gphase=False)
 
 
 def test_openqasm3_to_pyquil_malformed_raises():

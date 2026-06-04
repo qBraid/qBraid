@@ -148,7 +148,7 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         if isinstance(statement, ast.QuantumGate):
             name = statement.name.name.lower()
             if statement.modifiers:
-                raise ProgramConversionError(f"Gate modifiers are not supported: {name}")
+                raise ProgramConversionError(f"Unsupported gate modifier on: {name}")
             params = [arg.value for arg in statement.arguments]
             qubits = [_flat_qubit(q, qubit_offsets) for q in statement.qubits]
 
