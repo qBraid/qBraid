@@ -16,6 +16,22 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `cirq_to_qasm3` conversion function, adding a direct `cirq -> qasm3` edge to the transpiler graph. Uses Cirq's native `_qasm_` protocol with automatic decomposition fallback, so new Cirq gates that implement `_qasm_` are supported without any changes to the converter. ([#1210](https://github.com/qBraid/qBraid/pull/1210))
+
+```python
+import cirq
+from qbraid.transpiler.conversions.cirq import cirq_to_qasm3
+
+q0, q1 = cirq.LineQubit.range(2)
+circuit = cirq.Circuit([cirq.H(q0), cirq.CNOT(q0, q1)])
+print(cirq_to_qasm3(circuit))
+# OPENQASM 3.0;
+# include "stdgates.inc";
+# qubit[2] q;
+# h q[0];
+# cx q[0], q[1];
+```
+
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
 - Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
