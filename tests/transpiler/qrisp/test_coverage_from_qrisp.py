@@ -90,6 +90,7 @@ gates_param_map = {
 }
 
 
+@pytest.fixture
 def qrisp_circuits():
     """Construct a dictionary of Qrisp circuits over all supported gates
     using random parameters as applicable.
@@ -134,6 +135,7 @@ def qrisp_circuits():
     return qrisp_gates
 
 
+@pytest.fixture
 def conversion_graph():
     """Return a conversion graph of natively supported conversions."""
     return ConversionGraph(require_native=True)
@@ -161,7 +163,7 @@ def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
     target_circuit = transpile(cirq_circuit, target)
     assert circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
-
+@pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
     """Test converting Qrisp circuits to supported target program type over
     all Qrisp gates and check against baseline expected accuracy.
