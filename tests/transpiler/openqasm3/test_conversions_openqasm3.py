@@ -183,6 +183,25 @@ def test_openqasm3_to_pyquil_feedforward_else():
     assert "Z 1" in out
 
 
+def test_openqasm3_to_pyquil_feedforward_eq0_no_else():
+    """if (c == 0) without an else must not crash (the swap path) and still emit the body."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    bit[1] c;
+    c[0] = measure q[0];
+    if (c[0] == 0) {
+        x q[1];
+    }
+    """
+    result = openqasm3_to_pyquil(qasm)
+    result.resolve_label_placeholders()
+    out = result.out()
+    assert "JUMP-WHEN" in out
+    assert "X 1" in out
+
+
 def test_openqasm3_to_pyquil_gate_modifiers():
     """Gate modifiers (inv/ctrl/pow/negctrl) are decomposed by pyqasm and convert correctly."""
     qasm = """

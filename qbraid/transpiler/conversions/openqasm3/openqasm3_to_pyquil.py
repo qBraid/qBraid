@@ -179,6 +179,7 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         ro_index = clbit_offsets[name] + lhs.index[0].value
         return ro[ro_index], _literal_bit(rhs)
 
+    # pylint: disable-next=too-many-statements
     def emit(statement: ast.Statement, prog: Program) -> None:
         # statements with no observable pyQuil equivalent that are safe to drop:
         #   QuantumPhase = global phase (gphase), unobservable (pyqasm emits it when
@@ -237,12 +238,14 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
             if expected == 0:  # run the if-body when the bit is 0 => swap into the else slot
                 then_block, else_block = else_block, then_block
             then_prog = pyquil.Program()
-            for inner in then_block:
+            for inner in then_block or []:
                 emit(inner, then_prog)
-            else_prog = pyquil.Program()
-            for inner in else_block:
-                emit(inner, else_prog)
-            prog.if_then(reg, then_prog, else_prog if else_block else None)
+            else_prog = None
+            if else_block:
+                else_prog = pyquil.Program()
+                for inner in else_block:
+                    emit(inner, else_prog)
+            prog.if_then(reg, then_prog, else_prog)
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
