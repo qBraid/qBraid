@@ -42,9 +42,10 @@ GATE_MAP = {
     "z": "Z",
     "h": "H",
     "s": "S",
-    "sdg": "S",
+    "sdg": "S",  # Handled specially with PHASE
     "t": "T",
-    "tdg": "T",
+    "tdg": "T",  # Handled specially with PHASE
+    "sx": "SX",  # sqrt(X)
     # Single-qubit rotation gates
     "rx": "RX",
     "ry": "RY",
@@ -52,12 +53,15 @@ GATE_MAP = {
     # Two-qubit gates
     "cx": "CNOT",
     "cnot": "CNOT",
+    "cy": "CY",
     "cz": "CZ",
+    "ch": "CH",
     "swap": "SWAP",
     # Three-qubit gates
     "ccx": "CCNOT",
     "ccnot": "CCNOT",
     "toffoli": "CCNOT",
+    "cswap": "CSWAP",
 }
 
 
@@ -105,15 +109,14 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         ProgramConversionError: If the program cannot be converted.
 
     Limitations:
-        - Only supports gates in GATE_MAP (X, Y, Z, H, S, T, RX, RY, RZ, CNOT, CZ, SWAP, CCNOT)
-        - Does not support reset operations
-        - Does not support barrier operations
+        - Supports gates: X, Y, Z, H, S, T, SX, RX, RY, RZ, CNOT, CY, CZ, CH, SWAP, CCNOT, CSWAP
+        - Supports barrier → FENCE, reset → RESET, delay → DELAY
         - Does not support gate modifiers (pow, ctrl, inv)
         - Does not support multi-dimensional qubit arrays
         - Does not support classical control flow (if, for, while)
         - Does not support custom gate definitions
         - Rotation gates only accept single parameter (params[0])
-        - Measurements are supported but classical bit handling is simplified
+        - Measurements are supported with classical readout register
     """
     try:
         module = pyqasm.loads(program)
@@ -132,9 +135,9 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         if isinstance(statement, ast.QubitDeclaration):
             qubit_count = max(qubit_count, statement.size.value)
 
-    # Declare qubits in pyQuil
-    for i in range(qubit_count):
-        quil_program.declare(f"ro[{i}]", "BIT", 0)
+    # Declare classical readout register in pyQuil (unified register of size qubit_count)
+    if qubit_count > 0:
+        quil_program.declare("ro", "BIT", qubit_count)
 
     # Process gates
     for statement in ast_program.statements:
@@ -146,12 +149,6 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
             continue
         elif isinstance(statement, ast.QuantumGate):
             gate_name = statement.name.name.lower()
-            
-            # Map gate name to pyQuil
-            if gate_name not in GATE_MAP:
-                raise ProgramConversionError(f"Unsupported gate: {gate_name}")
-            
-            pyquil_gate = GATE_MAP[gate_name]
             
             # Extract qubit indices
             qubit_indices = [_qubit_index(q) for q in statement.qubits]
@@ -165,33 +162,71 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
                 RX, RY, RZ,
                 CNOT, CZ, SWAP,
                 CCNOT,
+                PHASE,
+                CY, CH, SX, CSWAP,
+            )
+            from pyquil.quilbase import (
+                Fence,
+                Reset,
+                Delay,
             )
             
-            gate_map = {
-                "X": X, "Y": Y, "Z": Z, "H": H, "S": S, "T": T,
-                "RX": RX, "RY": RY, "RZ": RZ,
-                "CNOT": CNOT, "CZ": CZ, "SWAP": SWAP,
-                "CCNOT": CCNOT,
-            }
-            
-            gate_class = gate_map.get(pyquil_gate)
-            if gate_class is None:
-                raise ProgramConversionError(f"Gate mapping not found: {pyquil_gate}")
-            
-            # Create gate instance with qubit indices and parameters
-            if len(params) == 0:
-                gate = gate_class(*qubit_indices)
+            # Special handling for dagger gates
+            if gate_name == "sdg":
+                # S-dagger = PHASE(-pi/2, q)
+                gate = PHASE(-3.141592653589793 / 2, *qubit_indices)
+                quil_program += gate
+            elif gate_name == "tdg":
+                # T-dagger = PHASE(-pi/4, q)
+                gate = PHASE(-3.141592653589793 / 4, *qubit_indices)
+                quil_program += gate
             else:
-                gate = gate_class(params[0], *qubit_indices)
-            
-            # Apply gate to program
-            quil_program += gate
-        elif isinstance(statement, ast.QuantumMeasurement):
-            # Handle measurement
+                # Map gate name to pyQuil
+                if gate_name not in GATE_MAP:
+                    raise ProgramConversionError(f"Unsupported gate: {gate_name}")
+                
+                pyquil_gate = GATE_MAP[gate_name]
+                
+                gate_map = {
+                    "X": X, "Y": Y, "Z": Z, "H": H, "S": S, "T": T,
+                    "RX": RX, "RY": RY, "RZ": RZ,
+                    "CNOT": CNOT, "CZ": CZ, "SWAP": SWAP,
+                    "CCNOT": CCNOT,
+                    "CY": CY, "CH": CH, "SX": SX, "CSWAP": CSWAP,
+                }
+                
+                gate_class = gate_map.get(pyquil_gate)
+                if gate_class is None:
+                    raise ProgramConversionError(f"Gate mapping not found: {pyquil_gate}")
+                
+                # Create gate instance with qubit indices and parameters
+                if len(params) == 0:
+                    gate = gate_class(*qubit_indices)
+                else:
+                    gate = gate_class(params[0], *qubit_indices)
+                
+                # Apply gate to program
+                quil_program += gate
+        elif isinstance(statement, ast.QuantumMeasurementStatement):
+            # Handle measurement - after pyqasm unroll, measurements come as QuantumMeasurementStatement
             qubit_idx = _qubit_index(statement.measure.qubit)
             if statement.target is not None:
                 classical_idx = _qubit_index(statement.target)
                 quil_program.measure(qubit_idx, classical_idx)
+        elif isinstance(statement, ast.QuantumBarrier):
+            # Handle barrier → FENCE
+            qubit_indices = [_qubit_index(q) for q in statement.qubits]
+            for qubit_idx in qubit_indices:
+                quil_program += Fence(qubit_idx)
+        elif isinstance(statement, ast.QuantumReset):
+            # Handle reset → RESET
+            qubit_idx = _qubit_index(statement.qubits[0])
+            quil_program += Reset(qubit_idx)
+        elif isinstance(statement, ast.QuantumDelay):
+            # Handle delay → DELAY
+            qubit_idx = _qubit_index(statement.qubits[0])
+            duration = statement.duration.value if statement.duration else 0
+            quil_program += Delay(qubit_idx, duration)
         else:
             # Skip other statement types (classical declarations, etc.)
             continue
