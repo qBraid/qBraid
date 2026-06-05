@@ -99,11 +99,11 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
         lines.append(f"qubit[{num_qubits}] q;")
 
     # classical BIT registers declared via DECLARE become bit registers
-    bit_registers: set[str] = set()
+    bit_registers: dict[str, int] = {}
     for instruction in program.instructions:
         if isinstance(instruction, quilbase.Declare) and instruction.memory_type == "BIT":
             lines.append(f"bit[{instruction.memory_size}] {instruction.name};")
-            bit_registers.add(instruction.name)
+            bit_registers[instruction.name] = instruction.memory_size
 
     for instruction in program.instructions:
         if isinstance(instruction, quilbase.Declare):
@@ -132,10 +132,14 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
         elif isinstance(instruction, quilbase.Measurement):
             src = instruction.qubit.index
             target = instruction.classical_reg
-            if target is not None and target.name in bit_registers:
+            if target is None:
+                lines.append(f"measure q[{src}];")
+            elif target.name in bit_registers and 0 <= target.offset < bit_registers[target.name]:
                 lines.append(f"{target.name}[{target.offset}] = measure q[{src}];")
             else:
-                lines.append(f"measure q[{src}];")
+                raise ProgramConversionError(
+                    f"Unsupported measurement target: {target.name}[{target.offset}]"
+                )
 
         else:
             raise ProgramConversionError(f"Unsupported instruction: {instruction}")
