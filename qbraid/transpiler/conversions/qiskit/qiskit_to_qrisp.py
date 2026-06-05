@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     import qiskit as qiskit_
 
 
-@weight(1)
+@weight(1.0)
 def qiskit_to_qrisp(qiskit_qc: qiskit_.QuantumCircuit) -> qrisp_.QuantumCircuit:
     """Returns a Qrisp circuit equivalent to the input Qiskit circuit.
 
@@ -44,5 +44,28 @@ def qiskit_to_qrisp(qiskit_qc: qiskit_.QuantumCircuit) -> qrisp_.QuantumCircuit:
         Qrisp Circuit equivalent to the input Qiskit circuit.
     """
     from qrisp.interface.converter import convert_from_qiskit  # type: ignore
+    from qiskit import transpile
+    from qiskit.transpiler import Target
 
-    return convert_from_qiskit(qiskit_qc)
+    basis_set = [
+        "x",
+        "y",
+        "z",
+        "cx",
+        "cy",
+        "cz",
+        "u3",
+        "h",
+        "rx",
+        "ry",
+        "rz",
+        "s",
+        "t",
+        "measure",
+        "global_phase",
+        "swap",
+    ]
+
+    target = Target.from_configuration(basis_gates=basis_set)
+
+    return convert_from_qiskit(transpile(qiskit_qc, target=target))
