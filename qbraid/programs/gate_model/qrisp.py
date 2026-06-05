@@ -25,7 +25,7 @@ import qrisp
 from qrisp.circuit import Qubit
 from qbraid.programs.exceptions import ProgramTypeError
 
-from ._model import GateModelProgram
+from qbraid.programs.gate_model._model import GateModelProgram
 
 if TYPE_CHECKING:
     import numpy as np
@@ -49,7 +49,7 @@ class QrispCircuit(GateModelProgram):
     @property
     def num_qubits(self) -> int:
         """Return the number of qubits in the circuit."""
-        return self.program.num_qubits
+        return self.program.num_qubits()
 
     @property
     def num_clbits(self) -> int:
@@ -70,7 +70,7 @@ class QrispCircuit(GateModelProgram):
         """Remove empty registers of circuit."""
         qubit_depths = self.program.get_depth_dic()
         idle_qubits = [q for q, d in qubit_depths.items() if d == 0]
-        num_active_qubits = self.program.num_qubits - len(idle_qubits)
+        num_active_qubits = self.program.num_qubits() - len(idle_qubits)
         new_program = qrisp.QuantumCircuit(num_active_qubits, self.num_clbits)
 
         for instr in self.program.data:
@@ -83,5 +83,5 @@ class QrispCircuit(GateModelProgram):
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
         self.program.qubits = [
-            self.program.qubits[i] for i in reversed(range(self.program.num_qubits))
+            self.program.qubits[i] for i in reversed(range(self.program.num_qubits()))
         ]
