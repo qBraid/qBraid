@@ -5,7 +5,7 @@ cudaq>=0.9.0,<0.14.0; python_version < "3.13"
 pennylane>=0.43; python_version >= "3.11"
 pytket>=1.31
 qiskit>=1.0,<3.0
-qrisp>=0.8
+qrisp>=0.7
 
 # transpiler extras
 ply>=3.6
