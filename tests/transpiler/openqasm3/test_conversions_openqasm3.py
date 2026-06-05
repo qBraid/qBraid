@@ -21,7 +21,7 @@ import pytest
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, S, X
+    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, X
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import openqasm3_to_pyquil
@@ -81,8 +81,8 @@ def test_openqasm3_to_pyquil_measurement():
     assert out.count("MEASURE") == 2
 
 
-def test_openqasm3_to_pyquil_barrier_skipped():
-    """Barrier statements have no pyQuil equivalent and are skipped, not raised."""
+def test_openqasm3_to_pyquil_barrier_fence():
+    """Barrier maps to a pyQuil FENCE over its qubits, preserving surrounding gates."""
     qasm = """
     OPENQASM 3.0;
     include "stdgates.inc";
@@ -91,11 +91,96 @@ def test_openqasm3_to_pyquil_barrier_skipped():
     barrier q;
     cx q[0], q[1];
     """
-    result = openqasm3_to_pyquil(qasm)
-    out = result.out()
-    # the barrier emits no instruction, while the surrounding gates are preserved
+    out = openqasm3_to_pyquil(qasm).out()
     assert "H 0" in out
+    assert "FENCE 0 1" in out
     assert "CNOT 0 1" in out
+
+
+def test_openqasm3_to_pyquil_idle_qubits_padded():
+    """Declared-but-unused qubits are padded with I so the register width is preserved."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[4] q;
+    x q[0];
+    x q[2];
+    x q[3];
+    """
+    result = openqasm3_to_pyquil(qasm)
+    # q[1] is idle; without padding the program would be 3-qubit and mismatch the
+    # 4-qubit reference operator.
+    expected = Program(X(0), X(2), X(3), I(1))
+    assert circuits_allclose(result, expected, strict_gphase=False)
+
+
+def test_openqasm3_to_pyquil_reset():
+    """reset maps to pyQuil RESET on the target qubit."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    x q[0];
+    reset q[0];
+    """
+    out = openqasm3_to_pyquil(qasm).out()
+    assert "X 0" in out
+    assert "RESET 0" in out
+
+
+def test_openqasm3_to_pyquil_delay():
+    """delay maps to pyQuil DELAY with the duration converted to seconds."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[1] q;
+    delay[100ns] q[0];
+    """
+    out = openqasm3_to_pyquil(qasm).out()
+    assert "DELAY 0" in out
+
+
+def test_openqasm3_to_pyquil_feedforward():
+    """if (c == 1) classical feedforward maps to a conditional JUMP-WHEN block."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    bit[1] c;
+    h q[0];
+    c[0] = measure q[0];
+    if (c[0] == 1) {
+        x q[1];
+    }
+    """
+    result = openqasm3_to_pyquil(qasm)
+    result.resolve_label_placeholders()
+    out = result.out()
+    assert "MEASURE 0 ro[0]" in out
+    assert "JUMP-WHEN" in out
+    assert "X 1" in out
+
+
+def test_openqasm3_to_pyquil_feedforward_else():
+    """if/else feedforward emits both branches conditioned on the measured bit."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    bit[1] c;
+    c[0] = measure q[0];
+    if (c[0] == 1) {
+        x q[1];
+    } else {
+        z q[1];
+    }
+    """
+    result = openqasm3_to_pyquil(qasm)
+    result.resolve_label_placeholders()
+    out = result.out()
+    assert "JUMP-WHEN" in out
+    assert "X 1" in out
+    assert "Z 1" in out
 
 
 def test_openqasm3_to_pyquil_gate_modifiers():
@@ -121,13 +206,18 @@ def test_openqasm3_to_pyquil_malformed_raises():
         openqasm3_to_pyquil("OPENQASM 3.0; this is not valid;")
 
 
-def test_openqasm3_to_pyquil_unsupported_statement_raises():
-    """A statement outside the supported set (e.g. reset) raises ProgramConversionError."""
+def test_openqasm3_to_pyquil_unsupported_condition_raises():
+    """A branch condition the converter cannot express raises ProgramConversionError."""
     qasm = """
     OPENQASM 3.0;
     include "stdgates.inc";
-    qubit[1] q;
-    reset q[0];
+    qubit[2] q;
+    bit[2] c;
+    c[0] = measure q[0];
+    c[1] = measure q[1];
+    if (c[0] == 1 && c[1] == 1) {
+        x q[0];
+    }
     """
     with pytest.raises(ProgramConversionError):
         openqasm3_to_pyquil(qasm)

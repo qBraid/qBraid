@@ -16,7 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `openqasm3_to_pyquil` conversion, providing a direct, `pyqasm`-backed transpiler edge from OpenQASM 3 to pyQuil (previously only reachable via a lossy multi-hop path through cirq) ([#1203](https://github.com/qBraid/qBraid/pull/1203))
+- Added `openqasm3_to_pyquil` conversion, providing a direct, `pyqasm`-backed transpiler edge from OpenQASM 3 to pyQuil (previously only reachable via a lossy multi-hop path through cirq). Supports the standard gate set (incl. modifiers and controlled gates via `pyqasm` decomposition), measurement, `barrier` (→ `FENCE`), `reset` (→ `RESET`), `delay` (→ `DELAY`), and `if (c == 0|1)` classical feedforward (→ `JUMP-WHEN`); declared-but-idle qubits are padded with `I` so the operator dimension matches the source ([#1203](https://github.com/qBraid/qBraid/pull/1203))
 
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
