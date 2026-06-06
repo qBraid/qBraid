@@ -16,10 +16,8 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- QASM conditional (if) statement support for Cirq conversions ([#1183](https://github.com/qBraid/qBraid/pull/1183))
-- `normalize_if_blocks` function to convert QASM 3-style if blocks to QASM 2 single-line syntax ([#1183](https://github.com/qBraid/qBraid/pull/1183))
-- Support for `BranchingStatement` handling in `_replace_gate_in_statement` function ([#1183](https://github.com/qBraid/qBraid/pull/1183))
-- IF and EQ tokens to QasmLexer for conditional statement parsing ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- QASM conditional (`if`) statement support for Cirq conversions: `qasm2_to_cirq` and `qasm3_to_cirq` now translate classically-controlled (`if (c == val)`) operations into Cirq, backed by a new `normalize_if_blocks` pass that rewrites QASM 3 braced `if` blocks to the single-line form Cirq's parser accepts ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Added `openqasm3_to_pyquil` conversion, providing a direct, `pyqasm`-backed transpiler edge from OpenQASM 3 to pyQuil (previously only reachable via a lossy multi-hop path through cirq). Supports the standard gate set (incl. modifiers and controlled gates via `pyqasm` decomposition), measurement, `barrier` (→ `FENCE`), `reset` (→ `RESET`), `delay` (→ `DELAY`), and `if (c == 0|1)` classical feedforward (→ `JUMP-WHEN`); declared-but-idle qubits are padded with `I` so the operator dimension matches the source ([#1203](https://github.com/qBraid/qBraid/pull/1203))
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
 - Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). ([#1196](https://github.com/qBraid/qBraid/pull/1196))
@@ -43,10 +41,6 @@ print(result.data.get_counts())
 ```
 
 ### Improved / Modified
-- Enhanced `qasm3_to_cirq` function with multi-path conversion approach including pyqasm unrolling and if block normalization ([#1183](https://github.com/qBraid/qBraid/pull/1183))
-- Updated `qasm2_to_cirq` to use `normalize_if_blocks` for conditional statement compatibility ([#1183](https://github.com/qBraid/qBraid/pull/1183))
-- Modified `_replace_gate_in_statement` return type from `QuantumGate` to `Statement` to handle branching statements ([#1183](https://github.com/qBraid/qBraid/pull/1183))
-- Re-enabled classical control functionality in `cirq_qasm_parser.py` with proper if statement parsing ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 - Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
@@ -56,11 +50,9 @@ print(result.data.get_counts())
 ### Removed
 
 ### Fixed
-- Classical control flow support for QASM to Cirq conversions now properly handles if statements and conditions ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
 
 ### Dependencies
-- Added `sympy` import to `cirq_qasm_parser.py` for conditional operations ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
