@@ -43,6 +43,7 @@ try:
         T,
         U,
     )
+    from pyquil.quilatom import QubitPlaceholder
     from pyquil.quilbase import DelayQubits, Fence
 
     pyquil_not_installed = False
@@ -153,6 +154,12 @@ def test_pyquil_to_qasm3_unsupported_gate_raises():
     """A gate with no pyqasm equivalent (e.g. SQISW) raises ProgramConversionError."""
     with pytest.raises(ProgramConversionError):
         pyquil_to_qasm3(Program(SQISW(0, 1)))
+
+
+def test_pyquil_to_qasm3_placeholder_qubit_raises():
+    """A non-fixed qubit (QubitPlaceholder) raises a clean ProgramConversionError."""
+    with pytest.raises(ProgramConversionError):
+        pyquil_to_qasm3(Program(H(QubitPlaceholder())))
 
 
 def test_pyquil_to_qasm3_feedforward_unsupported_raises():

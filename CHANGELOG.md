@@ -16,11 +16,11 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `cirq_to_pytket` and `pytket_to_cirq` transpiler conversions (via the `pytket-cirq` extension), giving a direct Cirq <-> PyTKET edge in the conversion graph. Part of [#1200](https://github.com/qBraid/qBraid/issues/1200). ([#1208](https://github.com/qBraid/qBraid/pull/1208))
+- Added `cirq_to_pytket` and `pytket_to_cirq` transpiler conversions (via the `pytket-cirq` extension), giving a direct Cirq <-> PyTKET edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
 
-- Added `pytket_to_pyqir` transpiler conversion (via the `pytket-qir` extension), giving a direct PyTKET -> PyQIR edge in the conversion graph. Part of [#1200](https://github.com/qBraid/qBraid/issues/1200). ([#1208](https://github.com/qBraid/qBraid/pull/1208))
+- Added `pytket_to_pyqir` transpiler conversion (via the `pytket-qir` extension), giving a direct PyTKET -> PyQIR edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
 
-- Added `pyquil_to_qasm3` conversion, providing a direct transpiler edge from pyQuil to OpenQASM 3 (previously only reachable via a lossy multi-hop path through cirq), and completing the pyQuil <-> OpenQASM 3 round trip alongside `openqasm3_to_pyquil` ([#1203](https://github.com/qBraid/qBraid/pull/1203)). Part of [#1200](https://github.com/qBraid/qBraid/issues/1200). ([#1208](https://github.com/qBraid/qBraid/pull/1208))
+- Added `pyquil_to_qasm3` conversion, providing a direct transpiler edge from pyQuil to OpenQASM 3 (previously only reachable via a lossy multi-hop path through cirq), and completing the pyQuil <-> OpenQASM 3 round trip alongside `openqasm3_to_pyquil` ([#1203](https://github.com/qBraid/qBraid/pull/1203)). ([#1208](https://github.com/qBraid/qBraid/pull/1208))
 
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 

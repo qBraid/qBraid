@@ -80,9 +80,15 @@ def _qubit_index(qubit: object) -> int:
     """Return the integer index of a concrete pyQuil qubit.
 
     ``QubitPlaceholder``/``FormalArgument`` (e.g. from parsed Quil text or
-    DefCircuit bodies) have no fixed index, so they raise a clear error.
+    DefCircuit bodies) expose an ``.index`` property that *raises* when no fixed
+    index is assigned, so that is converted into a clear ``ProgramConversionError``.
     """
-    index = getattr(qubit, "index", qubit)
+    if isinstance(qubit, int):
+        return qubit
+    try:
+        index = qubit.index  # type: ignore[attr-defined]
+    except (AttributeError, ValueError, RuntimeError) as err:
+        raise ProgramConversionError(f"Unsupported non-fixed qubit reference: {qubit!r}") from err
     if not isinstance(index, int):
         raise ProgramConversionError(f"Unsupported non-fixed qubit reference: {qubit!r}")
     return index
@@ -122,7 +128,7 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
         ProgramConversionError: If the program contains an instruction, gate, or
             modifier that this conversion does not support.
     """
-    qubits = program.get_qubit_indices()
+    qubits = {_qubit_index(q) for q in program.get_qubit_indices()}
     num_qubits = (max(qubits) + 1) if qubits else 0
 
     lines = ["OPENQASM 3.0;", 'include "stdgates.inc";']
