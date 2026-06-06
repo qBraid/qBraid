@@ -61,6 +61,7 @@ autodoc_mock_imports = [
     "qiskit_ibm_runtime",
     "scc",
     "stim",
+    "sympy",
     "qibo",
     "cudaq",
     "flair_visual",
