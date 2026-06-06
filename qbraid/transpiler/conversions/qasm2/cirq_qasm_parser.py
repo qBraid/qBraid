@@ -40,20 +40,27 @@ from .cirq_custom import U2Gate, U3Gate, rzz
 
 yacc = LazyLoader('yacc', globals(), 'ply.yacc')
 
-# Redefined lexer tokens (4/7/21) to surpress warning:
-# Token ['IF', 'NE'] defined, but not used
-QasmLexer.tokens = [
-    "FORMAT_SPEC",
-    "NUMBER",
-    "NATURAL_NUMBER",
-    "QELIBINC",
-    "ID",
-    "PI",
-    "QREG",
-    "CREG",
-    "MEASURE",
-    "ARROW",
-]
+# Use a subclass with a reduced token set for this QASM 2 grammar rather than
+# mutating cirq's shared ``QasmLexer.tokens`` in place. Assigning to the imported
+# class attribute corrupts cirq's own OpenQASM 3 importer (``qasm3_to_cirq``)
+# process-wide once this module is imported: cirq's lexer would no longer
+# recognize the QASM 3 tokens it defines rules for (e.g. ``STDGATESINC`` for
+# ``stdgates.inc``), raising a ply ``LexError`` on every subsequent QASM 3 parse.
+# The reduced list also suppresses the original ply "token defined but not used"
+# warning (e.g. ``IF``/``NE``) for this grammar.
+class _QasmLexer(QasmLexer):
+    tokens = [
+        "FORMAT_SPEC",
+        "NUMBER",
+        "NATURAL_NUMBER",
+        "QELIBINC",
+        "ID",
+        "PI",
+        "QREG",
+        "CREG",
+        "MEASURE",
+        "ARROW",
+    ]
 
 if TYPE_CHECKING:
     import cirq
@@ -173,7 +180,7 @@ class QasmParser:
         self.qregs: dict[str, int] = {}
         self.cregs: dict[str, int] = {}
         self.qelibinc = False
-        self.lexer = QasmLexer()
+        self.lexer = _QasmLexer()
         self.supported_format = False
         self.parsedQasm: Optional[Qasm] = None
         self.qubits: dict[str, ops.Qid] = {}
@@ -351,7 +358,7 @@ class QasmParser:
 
     all_gates = {**basic_gates, **qelib_gates}
 
-    tokens = QasmLexer.tokens
+    tokens = _QasmLexer.tokens
     start = 'start'
 
     precedence = (('left', '+', '-'), ('left', '*', '/'), ('right', '^'))
