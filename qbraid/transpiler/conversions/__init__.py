@@ -40,6 +40,9 @@ Submodules
 import importlib
 import inspect
 
+from qbraid.transpiler.conversions.qibo import qasm3_to_qibo as qasm3_to_qibo
+from qbraid.transpiler.conversions.qibo import qibo_to_qasm3 as qibo_to_qasm3
+
 # Dynamically import QPROGRAM_ALIASES when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
 _registry = importlib.import_module("qbraid.programs.registry")
@@ -49,7 +52,10 @@ QPROGRAM_REGISTRY = getattr(_registry, "QPROGRAM_REGISTRY", {})
 # Cache for storing previously seen valid combinations, including reversed pairs
 valid_combinations_cache = set()
 
-conversion_functions = []
+conversion_functions = [
+    "qibo_to_qasm3",
+    "qasm3_to_qibo",
+]
 
 
 def _update_registered_conversions() -> None:

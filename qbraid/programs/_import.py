@@ -154,3 +154,13 @@ NATIVE_REGISTRY: dict[str, Type[Any]] = (
 _QPROGRAM_REGISTRY: dict[str, Type[Any]] = deepcopy(NATIVE_REGISTRY) | dynamic_non_native
 _QPROGRAM_TYPES: set[Type[Any]] = set(_QPROGRAM_REGISTRY.values())
 _QPROGRAM_ALIASES: set[str] = set(_QPROGRAM_REGISTRY.keys())
+
+# Register myQLM type with "myqlm" alias (optional dependency via myqlm-interop)
+try:
+    from qat.core.wrappers.circuit import Circuit as _MyQLMCircuit  # noqa: PLC0415
+
+    _QPROGRAM_REGISTRY["myqlm"] = _MyQLMCircuit
+    _QPROGRAM_ALIASES.add("myqlm")
+    _QPROGRAM_TYPES.add(_MyQLMCircuit)
+except ImportError:  # pragma: no cover
+    pass

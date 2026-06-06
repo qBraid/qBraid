@@ -20,6 +20,9 @@ Types of changes:
 
 - Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
 
+- Added `qibo_to_qasm3` and `qasm3_to_qibo` conversion functions, connecting the `qibo` node
+  to the `qasm3` hub in the transpiler conversion graph ([#XXXX](https://github.com/qBraid/qBraid/pull/XXXX))
+
 ```python
 from pulser import Register, Sequence
 from pulser.devices import AnalogDevice
