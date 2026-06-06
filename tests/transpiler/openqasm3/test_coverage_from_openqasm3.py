@@ -28,12 +28,18 @@ try:
     from qbraid.transpiler import ConversionGraph, transpile
     from qbraid.transpiler.conversions.qasm3 import qasm3_to_cirq
 
-    cirq_not_installed = False
+    cirq_missing = False
 except ImportError:
-    cirq_not_installed = True
+    cirq_missing = True
 
-# cirq is used as the equivalence reference (a raw QASM string has no unitary of its own)
-pytestmark = pytest.mark.skipif(cirq_not_installed, reason="cirq not installed")
+pyquil_missing = importlib.util.find_spec("pyquil") is None
+
+# This benchmark measures the openqasm3 -> pyquil edge added by this PR. pyQuil is
+# the target; cirq is only the equivalence reference (a raw QASM string has no
+# unitary of its own). Both must be installed, so the module is skipped otherwise.
+pytestmark = pytest.mark.skipif(
+    cirq_missing or pyquil_missing, reason="pyquil and/or cirq not installed"
+)
 
 
 def _qasm(body: str, num_qubits: int) -> str:
@@ -75,28 +81,14 @@ QASM_GATES = {
     "ccx": _qasm("ccx q[0], q[1], q[2];", 3),
     "cswap": _qasm("cswap q[0], q[1], q[2];", 3),
     "u": _qasm("u(0.1, 0.2, 0.3) q[0];", 1),
-    "u1": _qasm("u1(0.5) q[0];", 1),
-    "u2": _qasm("u2(0.1, 0.2) q[0];", 1),
-    "u3": _qasm("u3(0.1, 0.2, 0.3) q[0];", 1),
     "id": _qasm("id q[0];", 1),
 }
 
-
-def is_package_installed(package_name: str) -> bool:
-    """Check if a package is installed."""
-    return importlib.util.find_spec(package_name) is not None
-
-
-# (target, baseline). Baseline = measured coverage of openqasm3 -> target over the
-# standard gate set, transpiled through a require-native conversion graph.
-ALL_TARGETS = [
-    ("pyquil", 1.0),
-    ("qiskit", 1.0),
-    ("cirq", 1.0),
-    ("braket", 1.0),
-    ("pytket", 1.0),
-]
-AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
+# Only pyquil is benchmarked here -- it is the target this PR adds. Coverage of the
+# other native targets (qiskit/cirq/braket/pytket) is deferred to a dedicated
+# multi-package benchmark PR. Baseline = measured openqasm3 -> pyquil coverage over
+# the gate set above, transpiled through a require-native conversion graph.
+ALL_TARGETS = [("pyquil", 1.0)]
 
 graph = ConversionGraph(require_native=True)
 
@@ -111,7 +103,7 @@ def convert_from_openqasm3_to_x(target, gate_name):
     assert circuits_allclose(reference, result, strict_gphase=False)
 
 
-@pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
+@pytest.mark.parametrize(("target", "baseline"), ALL_TARGETS)
 def test_openqasm3_coverage(target, baseline):
     """Measure openqasm3 -> target coverage over a standard gate set."""
     ACCURACY_BASELINE = baseline

@@ -17,11 +17,13 @@ Unit tests for OpenQASM 3 to pyQuil conversion.
 
 """
 
+import math
+
 import pytest
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, X
+    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, T, U, X
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import openqasm3_to_pyquil
@@ -200,6 +202,27 @@ def test_openqasm3_to_pyquil_feedforward_eq0_no_else():
     out = result.out()
     assert "JUMP-WHEN" in out
     assert "X 1" in out
+
+
+def test_openqasm3_to_pyquil_special_gates():
+    """Gates needing bespoke handling (sx/sxdg -> RX(+-pi/2), u/u3 -> U, tdg -> T-dagger)."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[1] q;
+    sx q[0];
+    sxdg q[0];
+    tdg q[0];
+    u(0.1, 0.2, 0.3) q[0];
+    """
+    result = openqasm3_to_pyquil(qasm)
+    expected = Program(
+        RX(math.pi / 2, 0),
+        RX(-math.pi / 2, 0),
+        T(0).dagger(),
+        U(0.1, 0.2, 0.3, 0),
+    )
+    assert circuits_allclose(result, expected, strict_gphase=False)
 
 
 def test_openqasm3_to_pyquil_gate_modifiers():
