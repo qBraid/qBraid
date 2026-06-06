@@ -26,7 +26,24 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, ISWAP, MEASURE, RESET, RX, RZ, H, S, T, U
+    from pyquil.gates import (
+        CNOT,
+        CPHASE,
+        CPHASE00,
+        ISWAP,
+        MEASURE,
+        PSWAP,
+        RESET,
+        RX,
+        RZ,
+        RZZ,
+        SQISW,
+        H,
+        S,
+        T,
+        U,
+    )
+    from pyquil.quilbase import DelayQubits, Fence
 
     pyquil_not_installed = False
 except ImportError:
@@ -93,13 +110,56 @@ def test_pyquil_to_qasm3_qubit_register_spans_highest_index():
     assert result == expected
 
 
+def test_pyquil_to_qasm3_extended_gates():
+    """Gates recognized by pyqasm beyond the official stdgates set are mapped."""
+    result = pyquil_to_qasm3(
+        Program(ISWAP(0, 1), RZZ(0.5, 0, 1), PSWAP(0.3, 0, 1), CPHASE00(0.2, 0, 1))
+    )
+    expected = _HEADER + (
+        "qubit[2] q;\n"
+        "iswap q[0], q[1];\n"
+        "rzz(0.5) q[0], q[1];\n"
+        "pswap(0.3) q[0], q[1];\n"
+        "cphaseshift00(0.2) q[0], q[1];\n"
+    )
+    assert result == expected
+
+
+def test_pyquil_to_qasm3_reset():
+    """RESET maps to an OpenQASM 3 reset on the target qubit."""
+    result = pyquil_to_qasm3(Program(H(0), RESET(0)))
+    expected = _HEADER + "qubit[1] q;\nh q[0];\nreset q[0];\n"
+    assert result == expected
+
+
+def test_pyquil_to_qasm3_barrier():
+    """FENCE maps to an OpenQASM 3 barrier over its qubits."""
+    program = Program(H(0))
+    program += Fence([0, 1])
+    result = pyquil_to_qasm3(program)
+    expected = _HEADER + "qubit[2] q;\nh q[0];\nbarrier q[0], q[1];\n"
+    assert result == expected
+
+
+def test_pyquil_to_qasm3_delay():
+    """DELAY maps to an OpenQASM 3 delay with the duration in seconds."""
+    program = Program(H(0))
+    program += DelayQubits([0], 1e-7)
+    out = pyquil_to_qasm3(program)
+    assert "delay[1e-07s] q[0];" in out
+
+
 def test_pyquil_to_qasm3_unsupported_gate_raises():
-    """A gate outside the supported basis (e.g. ISWAP) raises ProgramConversionError."""
+    """A gate with no pyqasm equivalent (e.g. SQISW) raises ProgramConversionError."""
     with pytest.raises(ProgramConversionError):
-        pyquil_to_qasm3(Program(ISWAP(0, 1)))
+        pyquil_to_qasm3(Program(SQISW(0, 1)))
 
 
-def test_pyquil_to_qasm3_unsupported_instruction_raises():
-    """A non-gate instruction with no QASM equivalent (e.g. RESET) raises."""
+def test_pyquil_to_qasm3_feedforward_unsupported_raises():
+    """Classical feed-forward (JUMP-WHEN) is a documented limitation and raises."""
+    program = Program()
+    ro = program.declare("ro", "BIT", 1)
+    program += MEASURE(0, ro[0])
+    program.if_then(ro[0], Program(H(1)))
     with pytest.raises(ProgramConversionError):
-        pyquil_to_qasm3(Program(H(0), RESET()))
+        pyquil_to_qasm3(program)

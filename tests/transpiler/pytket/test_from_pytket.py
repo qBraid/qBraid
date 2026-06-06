@@ -57,21 +57,21 @@ def test_crz_gate_from_pytket(qubits):
 def test_rzz_gate_from_pytket(qubits, theta):
     """Test converting Rzz gate from pytket to cirq.
 
-    With the new direct ``pytket -> cirq`` edge (via ``pytket-cirq``), the default
-    1-hop route represents ``ZZPhase(t)`` as ``cirq.ZZ ** t`` -- unitary-equivalent up
-    to an unobservable global phase, so the default-route check uses
-    ``strict_gphase=False``. The native ``pytket -> qasm2 -> cirq`` route remains exact
-    including global phase, asserted separately via ``require_native=True``.
+    The native ``pytket -> qasm2 -> cirq`` route is asserted exact, including global
+    phase, by forcing it via ``require_native=True``. The new direct ``pytket -> cirq``
+    edge (via ``pytket-cirq``) represents ``ZZPhase(t)`` as ``cirq.ZZ ** t`` -- equivalent
+    only up to an unobservable global phase -- so it is checked separately with
+    ``strict_gphase=False``.
     """
     pytket_circuit = TKCircuit(2)
     pytket_circuit.ZZPhase(theta, *qubits)
 
-    cirq_circuit = transpile(pytket_circuit, "cirq")
-    assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
-
     native_graph = ConversionGraph(require_native=True)
-    cirq_via_native = transpile(pytket_circuit, "cirq", conversion_graph=native_graph)
-    assert circuits_allclose(pytket_circuit, cirq_via_native, strict_gphase=True)
+    cirq_circuit = transpile(pytket_circuit, "cirq", conversion_graph=native_graph)
+    assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
+
+    cirq_direct = transpile(pytket_circuit, "cirq")
+    assert circuits_allclose(pytket_circuit, cirq_direct, strict_gphase=False)
 
 
 def test_100_random_pytket():

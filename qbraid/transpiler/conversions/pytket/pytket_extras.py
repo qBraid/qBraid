@@ -34,9 +34,9 @@ pyqir = LazyLoader("pyqir", globals(), "pyqir")
 if TYPE_CHECKING:
     import braket.circuits
     import cirq
-    import pyqir
     import pytket.circuit
     import qiskit
+    from pyqir import Module
 
 
 @requires_extras("pytket.extensions.braket")
@@ -79,8 +79,8 @@ def pytket_to_cirq(circuit: pytket.circuit.Circuit) -> cirq.Circuit:
     return pytket_cirq.tk_to_cirq(circuit)
 
 
-@requires_extras("pytket.qir", "pyqir")
-def pytket_to_pyqir(circuit: pytket.circuit.Circuit) -> pyqir.Module:
+@requires_extras("pytket.qir")
+def pytket_to_pyqir(circuit: pytket.circuit.Circuit) -> Module:
     """Returns a PyQIR module equivalent to the input pytket circuit.
 
     Args:
@@ -89,6 +89,10 @@ def pytket_to_pyqir(circuit: pytket.circuit.Circuit) -> pyqir.Module:
     Returns:
         pyqir.Module: PyQIR module equivalent to input pytket circuit.
     """
-    llvm_ir = pytket_qir.pytket_to_qir(circuit, qir_format=pytket_qir.QIRFormat.STRING)
+    llvm_ir = pytket_qir.pytket_to_qir(
+        circuit,
+        qir_format=pytket_qir.QIRFormat.STRING,
+        profile=pytket_qir.QIRProfile.BASE,
+    )
     context = pyqir.Context()
     return pyqir.Module.from_ir(context, llvm_ir, "Circuit")

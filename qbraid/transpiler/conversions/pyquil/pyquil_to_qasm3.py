@@ -33,9 +33,10 @@ if TYPE_CHECKING:
 
     from qbraid.programs.typer import Qasm3StringType
 
-# pyQuil gate name -> OpenQASM 3 (stdgates.inc) gate name. The inverse of the
-# mapping used by ``openqasm3_to_pyquil``, restricted to gates that are defined
-# in ``stdgates.inc`` so the emitted program is self-contained.
+# pyQuil gate name -> OpenQASM 3 gate name. The inverse of the mapping used by
+# ``openqasm3_to_pyquil``, restricted to gates recognized by qBraid's ``pyqasm``
+# engine (the official ``stdgates.inc`` set plus pyqasm built-ins such as
+# ``iswap``/``rxx``/``xy``/``cphaseshift*``) so the emitted program round-trips.
 _GATE_MAP = {
     # one-qubit, no parameters
     "I": "id",
@@ -55,8 +56,17 @@ _GATE_MAP = {
     "CNOT": "cx",
     "CZ": "cz",
     "SWAP": "swap",
+    "ISWAP": "iswap",
     # two-qubit, parameterized
     "CPHASE": "cp",
+    "CPHASE00": "cphaseshift00",
+    "CPHASE01": "cphaseshift01",
+    "CPHASE10": "cphaseshift10",
+    "PSWAP": "pswap",
+    "XY": "xy",
+    "RXX": "rxx",
+    "RYY": "ryy",
+    "RZZ": "rzz",
     # three-qubit
     "CCNOT": "ccx",
     "CSWAP": "cswap",
@@ -64,6 +74,18 @@ _GATE_MAP = {
 
 # pyQuil gate (under a single DAGGER modifier) -> OpenQASM 3 adjoint gate.
 _DAGGER_MAP = {"S": "sdg", "T": "tdg"}
+
+
+def _qubit_index(qubit: object) -> int:
+    """Return the integer index of a concrete pyQuil qubit.
+
+    ``QubitPlaceholder``/``FormalArgument`` (e.g. from parsed Quil text or
+    DefCircuit bodies) have no fixed index, so they raise a clear error.
+    """
+    index = getattr(qubit, "index", qubit)
+    if not isinstance(index, int):
+        raise ProgramConversionError(f"Unsupported non-fixed qubit reference: {qubit!r}")
+    return index
 
 
 def _angle(param: object) -> float:
@@ -77,9 +99,18 @@ def _angle(param: object) -> float:
     return value.real
 
 
-@weight(1)
+@weight(1)  # pylint: disable-next=too-many-statements
 def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
     """Returns an OpenQASM 3 string equivalent to the input pyQuil Program.
+
+    Supports the gates recognized by ``pyqasm`` (Clifford+T, rotations, ``U``,
+    ``iswap``/``pswap``/``xy``/``rxx``/``ryy``/``rzz``/``cphaseshift00|01|10``),
+    ``S``/``T`` daggers, measurement, ``RESET`` (-> ``reset``), ``FENCE``
+    (-> ``barrier``), and ``DELAY`` (-> ``delay``).
+
+    Known limitation: classical feed-forward (pyQuil ``JUMP``/``JUMP-WHEN``) has
+    no straightforward OpenQASM 3 structured-control reconstruction and raises
+    ``ProgramConversionError`` rather than being silently dropped.
 
     Args:
         program (pyquil.quil.Program): pyQuil Program to convert.
@@ -91,7 +122,7 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
         ProgramConversionError: If the program contains an instruction, gate, or
             modifier that this conversion does not support.
     """
-    qubits = program.get_qubits()
+    qubits = program.get_qubit_indices()
     num_qubits = (max(qubits) + 1) if qubits else 0
 
     lines = ["OPENQASM 3.0;", 'include "stdgates.inc";']
@@ -122,7 +153,7 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
             else:
                 raise ProgramConversionError(f"Unsupported gate: {instruction.name}")
 
-            targets = ", ".join(f"q[{qubit.index}]" for qubit in instruction.qubits)
+            targets = ", ".join(f"q[{_qubit_index(qubit)}]" for qubit in instruction.qubits)
             if instruction.params:
                 params = ", ".join(str(_angle(param)) for param in instruction.params)
                 lines.append(f"{name}({params}) {targets};")
@@ -130,7 +161,7 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
                 lines.append(f"{name} {targets};")
 
         elif isinstance(instruction, quilbase.Measurement):
-            src = instruction.qubit.index
+            src = _qubit_index(instruction.qubit)
             target = instruction.classical_reg
             if target is None:
                 lines.append(f"measure q[{src}];")
@@ -140,6 +171,26 @@ def pyquil_to_qasm3(program: pyquil.quil.Program) -> Qasm3StringType:
                 raise ProgramConversionError(
                     f"Unsupported measurement target: {target.name}[{target.offset}]"
                 )
+
+        elif isinstance(instruction, quilbase.ResetQubit):
+            lines.append(f"reset q[{_qubit_index(instruction.qubit)}];")
+
+        elif isinstance(instruction, quilbase.Reset):
+            # bare RESET resets the whole register
+            for index in range(num_qubits):
+                lines.append(f"reset q[{index}];")
+
+        elif isinstance(instruction, quilbase.FenceAll):
+            if num_qubits:
+                lines.append("barrier " + ", ".join(f"q[{i}]" for i in range(num_qubits)) + ";")
+
+        elif isinstance(instruction, quilbase.Fence):
+            targets = ", ".join(f"q[{_qubit_index(q)}]" for q in instruction.qubits)
+            lines.append(f"barrier {targets};")
+
+        elif isinstance(instruction, quilbase.DelayQubits):
+            targets = ", ".join(f"q[{_qubit_index(q)}]" for q in instruction.qubits)
+            lines.append(f"delay[{instruction.duration}s] {targets};")
 
         else:
             raise ProgramConversionError(f"Unsupported instruction: {instruction}")

@@ -94,6 +94,13 @@ def test_pytket_to_pyqir_extra():
     program = transpile(pytket_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, pyqir.Module)
 
+    # the module is valid QIR and actually encodes the H -> CX -> measure circuit
+    assert program.verify() is None
+    ir = str(program)
+    assert "__quantum__qis__h__body" in ir
+    assert "__quantum__qis__cnot__body" in ir
+    assert "__quantum__qis__mz__body" in ir
+
 
 def autoqasm_bell_circuit():
     """Function that returns autoqasm bell circuit."""
