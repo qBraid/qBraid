@@ -25,6 +25,7 @@ import pytest
 
 try:
     from qbraid.interface import circuits_allclose
+    from qbraid.programs.exceptions import QasmError
     from qbraid.transpiler import ConversionGraph, transpile
     from qbraid.transpiler.conversions.qasm3 import qasm3_to_cirq
 
@@ -96,11 +97,22 @@ graph = ConversionGraph(require_native=True)
 def convert_from_openqasm3_to_x(target, gate_name):
     """Transpile a single-gate OpenQASM 3 program to the target program type
     (via a require-native conversion graph) and check equivalence against a cirq
-    reference."""
+    reference.
+
+    Returns ``False`` if the cirq reference parser cannot represent the gate on
+    the installed cirq version (e.g. cirq < 1.6 lacks ``p``/``cp``/``crx``/``cry``/
+    ``u`` in its QASM importer). Without a ground-truth reference the gate cannot
+    be scored, so it is excluded from the accuracy rather than counted as a
+    converter failure. Returns ``True`` when the conversion was scored.
+    """
     qasm = QASM_GATES[gate_name]
     result = transpile(qasm, target, conversion_graph=graph)
-    reference = qasm3_to_cirq(qasm)
+    try:
+        reference = qasm3_to_cirq(qasm)
+    except QasmError:
+        return False
     assert circuits_allclose(reference, result, strict_gphase=False)
+    return True
 
 
 @pytest.mark.parametrize(("target", "baseline"), ALL_TARGETS)
@@ -109,16 +121,21 @@ def test_openqasm3_coverage(target, baseline):
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
     failures = {}
+    unscoreable = []
     for gate_name in QASM_GATES:
         try:
-            convert_from_openqasm3_to_x(target, gate_name)
+            if not convert_from_openqasm3_to_x(target, gate_name):
+                unscoreable.append(gate_name)
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
-    total = len(QASM_GATES)
+    total = len(QASM_GATES) - len(unscoreable)
     nb_fails = len(failures)
-    accuracy = (total - nb_fails) / total
-    print(f"\n{target} coverage: {accuracy:.2%}  failures: {list(failures.keys())}")
+    accuracy = (total - nb_fails) / total if total else 1.0
+    print(
+        f"\n{target} coverage: {accuracy:.2%}  failures: {list(failures.keys())}  "
+        f"unscoreable (no cirq reference): {unscoreable}"
+    )
 
     assert accuracy >= ACCURACY_BASELINE - ALLOWANCE, (
         f"Coverage threshold not met. {nb_fails}/{total} failed. " f"Failures: {failures.keys()}"
