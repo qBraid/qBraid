@@ -51,6 +51,13 @@ def test_remove_idle_qubits_qrisp():
     qprogram = QrispCircuit(circuit)
     qprogram.remove_idle_qubits()
     assert qprogram.num_qubits == 2
+    
+    circuit = QuantumCircuit(3)
+    circuit.h(0)
+    circuit.cx(0, 2)
+    qprogram = QrispCircuit(circuit)
+    qprogram.remove_idle_qubits()
+    assert qprogram.num_qubits == 2
 
 
 def test_raise_program_type_error():

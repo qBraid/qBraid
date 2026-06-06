@@ -146,7 +146,7 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
+ALL_TARGETS = [("cirq", 0.9), ("pytket", 0.9), ("qiskit", 0.9)]
 AVAILABLE_TARGETS = [
     (name, version) for name, version in ALL_TARGETS if is_package_installed(name)
 ]

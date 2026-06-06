@@ -21,17 +21,16 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from cirq import Circuit
-
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import weight
 
-
+cirq = LazyLoader("cirq", globals(), "cirq")
 qrisp = LazyLoader("qrisp", globals(), "qrisp")
 
 if TYPE_CHECKING:
     import qrisp as qrisp_
+    from cirq import Circuit
 
 
 @weight(1)

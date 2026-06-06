@@ -73,8 +73,14 @@ class QrispCircuit(GateModelProgram):
         num_active_qubits = self.program.num_qubits() - len(idle_qubits)
         new_program = qrisp.QuantumCircuit(num_active_qubits, self.num_clbits)
 
+        index_map = {
+            q: i
+            for i, q in enumerate(
+                q for q in self.program.qubits if q not in idle_qubits
+            )
+        }
         for instr in self.program.data:
-            qubits = [self.program.qubits.index(q) for q in instr.qubits if q not in idle_qubits]
+            qubits = [index_map[q] for q in instr.qubits]
             clbits = [self.program.clbits.index(c) for c in instr.clbits]
             new_program.append(instr.op, qubits, clbits)
 
