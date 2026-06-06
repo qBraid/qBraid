@@ -163,6 +163,7 @@ def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
     target_circuit = transpile(cirq_circuit, target)
     assert circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
+
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
     """Test converting Qrisp circuits to supported target program type over
