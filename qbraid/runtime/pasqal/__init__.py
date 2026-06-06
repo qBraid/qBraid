@@ -1,4 +1,4 @@
-# Copyright 2025 qBraid
+# Copyright 2026 qBraid
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,24 @@
 # limitations under the License.
 
 """
-Module containing version information
+Module for submitting and managing jobs through the Pasqal Cloud Services API.
 
-Version number (major.minor.patch[-label])
+.. currentmodule:: qbraid.runtime.pasqal
+
+Classes
+--------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    PasqalProvider
+    PasqalDevice
+    PasqalJob
 
 """
 
-__version__ = "0.12.2.dev"
+from .device import PasqalDevice
+from .job import PasqalJob
+from .provider import PasqalProvider
+
+__all__ = ["PasqalDevice", "PasqalJob", "PasqalProvider"]

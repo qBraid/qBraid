@@ -20,9 +20,11 @@ import braket.circuits
 import numpy as np
 import pytest
 import qiskit
+from cirq.contrib.qasm_import._lexer import QasmLexer
 
 from qbraid.interface import circuits_allclose
 from qbraid.programs.exceptions import QasmError
+from qbraid.transpiler.conversions.qasm2.qasm2_to_cirq import qasm2_to_cirq
 from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import qasm3_to_cirq
 from qbraid.transpiler.converter import transpile
 
@@ -100,3 +102,20 @@ def test_qasm3_to_cirq_raises_for_invalid_qasm():
     invalid_qasm = "OPENQASM 2.0;\nqreg q[1];\nbarrier q;"
     with pytest.raises(QasmError):
         qasm3_to_cirq(invalid_qasm)
+
+
+def test_qasm2_to_cirq_preserves_cirq_qasm3_lexer():
+    """qasm2_to_cirq must not corrupt cirq's shared QASM lexer.
+
+    The qasm2->cirq parser previously mutated ``cirq...QasmLexer.tokens`` in
+    place at import time, dropping the OpenQASM 3 tokens (e.g. ``STDGATESINC``).
+    That broke cirq's built-in QASM 3 importer process-wide: a ``qasm3_to_cirq``
+    call after any ``qasm2_to_cirq`` rebuilt cirq's lexer from the truncated
+    token list and raised a ply ``LexError``. Assert the shared token set is
+    left intact and that qasm3_to_cirq still works afterwards.
+    """
+    qasm2_to_cirq('OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[1];\nx q[0];\n')
+
+    assert "STDGATESINC" in QasmLexer.tokens
+    circuit = qasm3_to_cirq('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nx q[0];\n')
+    assert len(circuit) == 1

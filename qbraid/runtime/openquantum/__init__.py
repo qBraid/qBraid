@@ -13,10 +13,19 @@
 # limitations under the License.
 
 """
-Module containing version information
+Module submitting and managing jobs through the OpenQuantum API.
 
-Version number (major.minor.patch[-label])
+.. currentmodule:: qbraid.runtime.openquantum
 
 """
 
-__version__ = "0.12.2.dev"
+from .device import OpenQuantumDevice
+from .job import OpenQuantumJob
+from .provider import OpenQuantumProvider, OpenQuantumSession
+
+__all__ = [
+    "OpenQuantumDevice",
+    "OpenQuantumJob",
+    "OpenQuantumProvider",
+    "OpenQuantumSession",
+]

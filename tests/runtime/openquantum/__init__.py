@@ -12,11 +12,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Module containing version information
-
-Version number (major.minor.patch[-label])
-
-"""
-
-__version__ = "0.12.2.dev"
+"""Tests for qBraid OpenQuantum runtime."""

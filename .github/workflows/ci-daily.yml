@@ -62,5 +62,8 @@ jobs:
         AZURE_QUANTUM_CONNECTION_STRING: ${{ secrets.AZURE_QUANTUM_CONNECTION_STRING }}
         OQC_AUTH_TOKEN: ${{ secrets.OQC_AUTH_TOKEN }}
         IONQ_API_KEY: ${{ secrets.IONQ_API_KEY }}
+        PASQAL_USERNAME: ${{ secrets.PASQAL_USERNAME }}
+        PASQAL_PASSWORD: ${{ secrets.PASQAL_PASSWORD }}
+        PASQAL_PROJECT_ID: ${{ secrets.PASQAL_PROJECT_ID }}
         QBRAID_RUN_REMOTE_TESTS: True
       timeout-minutes: 20
