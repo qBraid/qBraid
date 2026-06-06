@@ -73,7 +73,7 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
     try:
         qasm = replace_gate_names(qasm, _GATE_ALIASES)
         qasm_module = pyqasm.loads(qasm)
-        qasm_module.unroll(external_gates=["rzz"])
+        qasm_module.unroll()
         if qasm_module.has_barriers():
             logger.warning(
                 "Barriers are not supported in Cirq, "
