@@ -44,7 +44,7 @@ print(result.data.get_counts())
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 - Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
-- Removed the cirq-specific fallback in `transpile` that, on a failed conversion step, round-tripped the cirq intermediate through QASM (`circuit_from_qasm(circuit.to_qasm())`) and retried. This flatten-and-retry is already provided generically by the conversion graph's `cirq -> qasm2 -> target` paths combined with the multi-path retry, making the hardcoded special case redundant (cirq conversion coverage is unchanged) ([#PRNUM](https://github.com/qBraid/qBraid/pull/PRNUM))
+- Removed the cirq-specific fallback in `transpile` that, on a failed conversion step, round-tripped the cirq intermediate through QASM (`circuit_from_qasm(circuit.to_qasm())`) and retried. This flatten-and-retry is already provided generically by the conversion graph's `cirq -> qasm2 -> target` paths combined with the multi-path retry, making the hardcoded special case redundant (cirq conversion coverage is unchanged) ([#1217](https://github.com/qBraid/qBraid/pull/1217))
 
 ### Deprecated
 
