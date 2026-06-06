@@ -22,11 +22,17 @@ import math
 import pytest
 
 try:
+    from openqasm3 import ast
     from pyquil import Program
     from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, T, U, X
 
     from qbraid.interface import circuits_allclose
-    from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import openqasm3_to_pyquil
+    from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import (
+        _branch_target,
+        _duration_seconds,
+        _literal_bit,
+        openqasm3_to_pyquil,
+    )
     from qbraid.transpiler.exceptions import ProgramConversionError
 
     pyquil_not_installed = False
@@ -240,6 +246,104 @@ def test_openqasm3_to_pyquil_gate_modifiers():
     # inv @ s -> S-dagger; ctrl @ x -> CNOT; pow(2) @ x -> X X; negctrl @ x -> X CNOT X
     expected = Program(S(0).dagger(), CNOT(0, 1), X(0), X(0), X(0), CNOT(0, 1), X(0))
     assert circuits_allclose(result, expected, strict_gphase=False)
+
+
+def test_openqasm3_to_pyquil_two_qubit_registers():
+    """Multiple qubit registers map to offset flat indices."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[1] a;
+    qubit[1] b;
+    x a[0];
+    x b[0];
+    """
+    result = openqasm3_to_pyquil(qasm)
+    assert circuits_allclose(result, Program(X(0), X(1)), strict_gphase=False)
+
+
+def test_openqasm3_to_pyquil_measure_without_target():
+    """A bare ``measure q;`` (no classical target) emits MEASURE with no readout slot."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[1] q;
+    measure q[0];
+    """
+    out = openqasm3_to_pyquil(qasm).out()
+    assert "MEASURE 0" in out
+    assert "ro" not in out
+
+
+def test_openqasm3_to_pyquil_unsupported_statement_raises():
+    """A statement type with no pyQuil equivalent (e.g. box) raises."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[1] q;
+    box {
+        x q[0];
+    }
+    """
+    with pytest.raises(ProgramConversionError):
+        openqasm3_to_pyquil(qasm)
+
+
+# --- direct unit tests for the helper functions (guard branches) ---
+
+
+def test_literal_bit():
+    """_literal_bit reads 0/1 from boolean or integer literals, else raises."""
+    assert _literal_bit(ast.BooleanLiteral(value=True)) == 1
+    assert _literal_bit(ast.BooleanLiteral(value=False)) == 0
+    assert _literal_bit(ast.IntegerLiteral(value=1)) == 1
+    assert _literal_bit(ast.IntegerLiteral(value=0)) == 0
+    with pytest.raises(ProgramConversionError):
+        _literal_bit(ast.IntegerLiteral(value=2))
+
+
+def test_duration_seconds():
+    """_duration_seconds converts known units and raises on unsupported ones (e.g. dt)."""
+    assert _duration_seconds(
+        ast.DurationLiteral(value=100.0, unit=ast.TimeUnit.ns)
+    ) == pytest.approx(100e-9)
+    with pytest.raises(ProgramConversionError):
+        _duration_seconds(ast.DurationLiteral(value=5.0, unit=ast.TimeUnit.dt))
+
+
+def _cond(lhs, rhs, op="=="):
+    return ast.BinaryExpression(op=ast.BinaryOperator[op], lhs=lhs, rhs=rhs)
+
+
+def _index(name, idx=0):
+    return ast.IndexExpression(
+        collection=ast.Identifier(name=name), index=[ast.IntegerLiteral(value=idx)]
+    )
+
+
+def test_branch_target():
+    """_branch_target resolves c[i] == 0|1 conditions and rejects everything else."""
+    ro = Program().declare("ro", "BIT", 2)
+    offsets = {"c": 0}
+
+    # canonical form c[0] == true
+    reg, expected = _branch_target(
+        _cond(_index("c", 0), ast.BooleanLiteral(value=True)), offsets, ro
+    )
+    assert expected == 1
+    assert reg == ro[0]
+    # reversed operands (literal on the left) are normalized
+    _branch_target(_cond(ast.BooleanLiteral(value=True), _index("c", 0)), offsets, ro)
+
+    # non-"==" operator
+    with pytest.raises(ProgramConversionError):
+        _branch_target(_cond(_index("c", 0), ast.BooleanLiteral(value=True), op="!="), offsets, ro)
+    # target is not an indexed classical bit
+    with pytest.raises(ProgramConversionError):
+        _branch_target(_cond(ast.Identifier(name="c"), ast.BooleanLiteral(value=True)), offsets, ro)
+    # unknown classical register
+    with pytest.raises(ProgramConversionError):
+        _branch_target(_cond(_index("d", 0), ast.BooleanLiteral(value=True)), offsets, ro)
 
 
 def test_openqasm3_to_pyquil_malformed_raises():

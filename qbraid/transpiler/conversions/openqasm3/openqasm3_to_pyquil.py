@@ -80,12 +80,13 @@ _GATE_MAP = {
 }
 
 
-def _flat_qubit(qubit: ast.IndexedIdentifier | ast.Identifier, offsets: dict[str, int]) -> int:
-    """Map an (unrolled) qubit reference to a flat pyQuil integer index."""
-    if isinstance(qubit, ast.IndexedIdentifier):
-        return offsets[qubit.name.name] + qubit.indices[0][0].value
-    # bare Identifier => single-qubit register
-    return offsets[qubit.name]
+def _flat_qubit(qubit: ast.IndexedIdentifier, offsets: dict[str, int]) -> int:
+    """Map an (unrolled) qubit reference to a flat pyQuil integer index.
+
+    After ``pyqasm.unroll()`` every qubit reference is an ``IndexedIdentifier``
+    (single-qubit registers are normalized to ``name[0]``).
+    """
+    return offsets[qubit.name.name] + qubit.indices[0][0].value
 
 
 def _duration_seconds(duration: ast.DurationLiteral) -> float:
@@ -103,6 +104,24 @@ def _literal_bit(node: ast.Expression) -> int:
     if isinstance(node, ast.IntegerLiteral) and node.value in (0, 1):
         return node.value
     raise ProgramConversionError("Unsupported branch comparison value (expected 0 or 1).")
+
+
+def _branch_target(
+    condition: ast.Expression, clbit_offsets: dict[str, int], ro: object
+) -> tuple[object, int]:
+    """Resolve a branch condition ``c[i] == 0|1`` to ``(memory_ref, expected_bit)``."""
+    if not isinstance(condition, ast.BinaryExpression) or condition.op.name != "==":
+        raise ProgramConversionError("Unsupported branch condition (expected '==').")
+    lhs, rhs = condition.lhs, condition.rhs
+    if isinstance(lhs, (ast.BooleanLiteral, ast.IntegerLiteral)):
+        lhs, rhs = rhs, lhs
+    if not isinstance(lhs, ast.IndexExpression) or ro is None:
+        raise ProgramConversionError("Unsupported branch condition target.")
+    name = lhs.collection.name
+    if name not in clbit_offsets:
+        raise ProgramConversionError(f"Unknown classical register in branch: {name}")
+    ro_index = clbit_offsets[name] + lhs.index[0].value
+    return ro[ro_index], _literal_bit(rhs)
 
 
 @weight(1.0)  # pylint: disable-next=too-many-statements
@@ -164,21 +183,6 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         used_qubits.add(index)
         return index
 
-    def branch_target(condition: ast.Expression) -> tuple[object, int]:
-        """Resolve a branch condition ``c[i] == 0|1`` to (memory_ref, expected_bit)."""
-        if not isinstance(condition, ast.BinaryExpression) or condition.op.name != "==":
-            raise ProgramConversionError("Unsupported branch condition (expected '==').")
-        lhs, rhs = condition.lhs, condition.rhs
-        if isinstance(lhs, (ast.BooleanLiteral, ast.IntegerLiteral)):
-            lhs, rhs = rhs, lhs
-        if not isinstance(lhs, ast.IndexExpression) or ro is None:
-            raise ProgramConversionError("Unsupported branch condition target.")
-        name = lhs.collection.name
-        if name not in clbit_offsets:
-            raise ProgramConversionError(f"Unknown classical register in branch: {name}")
-        ro_index = clbit_offsets[name] + lhs.index[0].value
-        return ro[ro_index], _literal_bit(rhs)
-
     # pylint: disable-next=too-many-statements
     def emit(statement: ast.Statement, prog: Program) -> None:
         # statements with no observable pyQuil equivalent that are safe to drop:
@@ -201,9 +205,9 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
             prog.inst(pyquil_quilbase.DelayQubits(qubits, _duration_seconds(statement.duration)))
 
         elif isinstance(statement, ast.QuantumGate):
+            # pyqasm.unroll() strips gate modifiers and decomposes non-basis gates
+            # (e.g. sxdg, u, u3, controlled/inverse forms) into the gates below.
             name = statement.name.name.lower()
-            if statement.modifiers:
-                raise ProgramConversionError(f"Unsupported gate modifier on: {name}")
             params = [arg.value for arg in statement.arguments]
             qubits = [flat(q) for q in statement.qubits]
 
@@ -213,10 +217,6 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
                 prog.inst(pyquil_gates.T(*qubits).dagger())
             elif name == "sx":
                 prog.inst(pyquil_gates.RX(math.pi / 2, *qubits))
-            elif name == "sxdg":
-                prog.inst(pyquil_gates.RX(-math.pi / 2, *qubits))
-            elif name in ("u", "u3"):
-                prog.inst(pyquil_gates.U(*params, *qubits))
             elif name in _GATE_MAP:
                 prog.inst(getattr(pyquil_gates, _GATE_MAP[name])(*params, *qubits))
             else:
@@ -233,7 +233,7 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
 
         elif isinstance(statement, ast.BranchingStatement):
             # classical feedforward: if (c[i] == 1) { ... } else { ... } -> JUMP-WHEN
-            reg, expected = branch_target(statement.condition)
+            reg, expected = _branch_target(statement.condition, clbit_offsets, ro)
             then_block, else_block = statement.if_block, statement.else_block
             if expected == 0:  # run the if-body when the bit is 0 => swap into the else slot
                 then_block, else_block = else_block, then_block
