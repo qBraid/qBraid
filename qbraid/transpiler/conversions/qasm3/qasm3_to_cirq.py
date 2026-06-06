@@ -21,7 +21,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyqasm
-from ply.lex import LexError
 from qbraid_core._import import LazyLoader
 
 from qbraid._logging import logger
@@ -68,7 +67,7 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
     """
     try:
         return cirq_qasm_import.circuit_from_qasm(qasm)
-    except (cirq_qasm_import.QasmException, LexError):
+    except cirq_qasm_import.QasmException:
         pass
 
     try:
@@ -83,5 +82,5 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
             qasm_module.remove_barriers()
         qasm = normalize_if_blocks(pyqasm.dumps(qasm_module))
         return cirq_qasm_import.circuit_from_qasm(qasm)
-    except (cirq_qasm_import.QasmException, LexError) as err:
+    except cirq_qasm_import.QasmException as err:
         raise QasmError(err) from err
