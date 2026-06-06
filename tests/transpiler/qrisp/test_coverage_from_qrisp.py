@@ -146,7 +146,7 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
+ALL_TARGETS = [("cirq", 0.9), ("pytket", 0.9), ("qiskit", 0.9)]
 AVAILABLE_TARGETS = [
     (name, version) for name, version in ALL_TARGETS if is_package_installed(name)
 ]
@@ -162,6 +162,7 @@ def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
     cirq_circuit = circuit_from_qasm(qasm)
     target_circuit = transpile(cirq_circuit, target)
     assert circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
+
 
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):

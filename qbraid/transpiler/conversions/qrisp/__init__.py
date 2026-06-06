@@ -26,14 +26,20 @@ Functions
    qrisp_to_cirq
    qrisp_to_pytket
    qrisp_to_qiskit
+   qrisp_to_qasm2
+   qrisp_to_qasm3
 
 """
 from .qrisp_to_cirq import qrisp_to_cirq
 from .qrisp_to_pytket import qrisp_to_pytket
 from .qrisp_to_qiskit import qrisp_to_qiskit
+from .qrisp_to_qasm2 import qrisp_to_qasm2
+from .qrisp_to_qasm3 import qrisp_to_qasm3
 
 __all__ = [
     "qrisp_to_cirq",
     "qrisp_to_pytket",
     "qrisp_to_qiskit",
+    "qrisp_to_qasm2",
+    "qrisp_to_qasm3",
 ]

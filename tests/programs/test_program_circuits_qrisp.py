@@ -16,11 +16,20 @@
 Unit tests for qbraid.programs.qrisp.QrispCircuit
 
 """
+
 import pytest
-from qrisp import QuantumCircuit
+
+try:
+    from qrisp import QuantumCircuit
+    from qbraid.programs.gate_model.qrisp import QrispCircuit
+
+    qrisp_not_installed = False
+except ImportError:
+    qrisp_not_installed = True
+
+pytestmark = pytest.mark.skipif(qrisp_not_installed, reason="qrisp not installed")
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.gate_model.qrisp import QrispCircuit
 
 
 def test_reverse_qubit_order():
@@ -38,9 +47,9 @@ def test_reverse_qubit_order():
     expected_circ.cx(2, 0)
 
     # Since qubit names will differ we need to compare via cirq
-    assert (
-        reversed_circ.to_cirq() == expected_circ.to_cirq()
-    ), "The reversed circuit does not match the expected output."
+    assert reversed_circ.to_cirq() == expected_circ.to_cirq(), (
+        "The reversed circuit does not match the expected output."
+    )
 
 
 def test_remove_idle_qubits_qrisp():
@@ -48,6 +57,13 @@ def test_remove_idle_qubits_qrisp():
     circuit = QuantumCircuit(3)
     circuit.h(0)
     circuit.cx(0, 1)
+    qprogram = QrispCircuit(circuit)
+    qprogram.remove_idle_qubits()
+    assert qprogram.num_qubits == 2
+
+    circuit = QuantumCircuit(3)
+    circuit.h(0)
+    circuit.cx(0, 2)
     qprogram = QrispCircuit(circuit)
     qprogram.remove_idle_qubits()
     assert qprogram.num_qubits == 2
