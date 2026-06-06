@@ -48,6 +48,7 @@ print(result.data.get_counts())
 ### Removed
 
 ### Fixed
+- Fixed Cirq → pyQuil transpilation of the `XXPowGate`, `YYPowGate`, and `ZZPowGate` interaction gates for non-integer exponents. These were previously decomposed into independent single-qubit rotations, producing a circuit whose unitary did not match the input. They now round-trip exactly (including global phase) via `PHASE`/`CPHASE` decompositions. ([#386](https://github.com/qBraid/qBraid/issues/386))
 
 ### Dependencies
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
