@@ -62,19 +62,19 @@ autodoc_mock_imports = [
     "qiskit_ibm_runtime",
     "scc",
     "stim",
+    "sympy",
     "qibo",
     "cudaq",
     "flair_visual",
     "bloqade",
+    "pasqal_cloud",
+    "pulser",
     "pandas",
     "pyqpanda3",
-    "pulser",
     "pyqubo",
     "azure",
     "qnexus",
     "quantinuum_schemas",
-    "pasqal_cloud",
-    "pulser"
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True

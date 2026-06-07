@@ -20,9 +20,6 @@ Types of changes:
 
 - Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
 
-- Added `qasm2_to_qat`, `qiskit_to_qat`, `qat_to_qiskit`, and `cirq_to_qat`
-  extras-based conversion functions, integrating myQLM (`qat.core.wrappers.circuit.Circuit`)
-  as a new `"qat"` program type in the transpiler conversion graph [#1212](https://github.com/qBraid/qBraid/pull/1212).
 
 
 ```python
@@ -42,6 +39,10 @@ job = device.run(sequence, shots=200)
 result = job.result()
 print(result.data.get_counts())
 ```
+
+- Added `qasm2_to_qat`, `qiskit_to_qat`, `qat_to_qiskit`, and `cirq_to_qat`
+  extras-based conversion functions, integrating myQLM (`qat.core.wrappers.circuit.Circuit`)
+  as a new `"qat"` program type in the transpiler conversion graph [#1212](https://github.com/qBraid/qBraid/pull/1212).
 
 ### Improved / Modified
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))

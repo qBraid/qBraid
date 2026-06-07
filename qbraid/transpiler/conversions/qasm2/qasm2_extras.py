@@ -28,10 +28,12 @@ from qbraid.transpiler.annotations import requires_extras
 
 qibo = LazyLoader("qibo", globals(), "qibo")
 pyqpanda3 = LazyLoader("pyqpanda3", globals(), "pyqpanda3")
+qat_interop_openqasm = LazyLoader("qat_interop_openqasm", globals(), "qat.interop.openqasm")
 
 if TYPE_CHECKING:
     import pyqpanda3 as pyqpanda3_  # type: ignore
     import qibo as qibo_  # type: ignore
+    from qat.core.wrappers.circuit import Circuit as QatCircuit  # type: ignore
 
     from qbraid.programs.typer import Qasm2StringType
 
@@ -101,11 +103,8 @@ def pyqpanda3_to_qasm2(circuit: pyqpanda3_.core.QProg) -> Qasm2StringType:
     return remove_empty_registers(qasm)
 
 
-qat_interop_openqasm = LazyLoader("qat_interop_openqasm", globals(), "qat.interop.openqasm")
-
-
 @requires_extras("qat.interop.openqasm")
-def qasm2_to_qat(qasm: Qasm2StringType):
+def qasm2_to_qat(qasm: Qasm2StringType) -> QatCircuit:
     """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input OpenQASM 2 circuit.
 
     Args:

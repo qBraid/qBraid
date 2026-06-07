@@ -26,11 +26,13 @@ from qbraid.transpiler.annotations import requires_extras
 
 stimcirq = LazyLoader("stimcirq", globals(), "stimcirq")
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
+qat_interop_cirq = LazyLoader("qat_interop_cirq", globals(), "qat.interop.cirq")
 
 if TYPE_CHECKING:
     import cirq
     import pyqir  # type: ignore
     import stim  # type: ignore
+    from qat.core.wrappers.circuit import Circuit as QatCircuit  # type: ignore
 
 
 @requires_extras("stim", "stimcirq")
@@ -72,11 +74,8 @@ def cirq_to_pyqir(circuit: cirq.Circuit) -> pyqir.Module:
     return qbraid_qir.cirq.cirq_to_qir(circuit)
 
 
-qat_interop_cirq = LazyLoader("qat_interop_cirq", globals(), "qat.interop.cirq")
-
-
 @requires_extras("qat.interop.cirq", "cirq")
-def cirq_to_qat(circuit: "cirq.Circuit"):
+def cirq_to_qat(circuit: cirq.Circuit) -> QatCircuit:
     """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input Cirq circuit.
 
     Args:
