@@ -19,6 +19,7 @@ Unit tests for OpenQASM 3.0 to CUDA-Q kernel transpilation.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -27,6 +28,7 @@ from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
 
 from qbraid.interface import assert_allclose_up_to_global_phase, circuits_allclose
+from qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2 import cudaq_to_qasm2
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_cudaq import make_gate_kernel
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
@@ -350,6 +352,18 @@ def test_openqasm3_to_cuda_error(qasm_code, error_message):
     with pytest.raises(ProgramConversionError) as excinfo:
         openqasm3_to_cudaq(qasm_code)
     assert error_message in str(excinfo.value)
+
+
+def test_cudaq_to_qasm2_translation_failure():
+    """Test that cudaq_to_qasm2 raises ValueError when translation fails."""
+    kernel = cudaq.make_kernel()
+    q = kernel.qalloc(1)
+    kernel.h(q[0])
+
+    with patch("qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2.cudaq") as mock_cudaq:
+        mock_cudaq.translate.return_value = "{translation failed}"
+        with pytest.raises(ValueError, match="translation to OpenQASM 2.0 failed"):
+            cudaq_to_qasm2(kernel)
 
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
