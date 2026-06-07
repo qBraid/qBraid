@@ -79,6 +79,13 @@ _GATE_MAP = {
     "cswap": "CSWAP",
 }
 
+# Multi-qubit gates that pyQuil supports natively. Marking them external to
+# ``pyqasm.unroll`` keeps them intact (mapped directly via ``_GATE_MAP``) instead
+# of decomposing them into long RZ/RX/CNOT sequences, giving exact, compact
+# output. Limited to multi-qubit gates so single-qubit gate modifiers (e.g.
+# ``ctrl @ x``) still decompose normally.
+_NATIVE_EXTERNAL_GATES = ["cp", "iswap", "rxx", "ryy", "rzz", "xy", "cswap"]
+
 
 def _flat_qubit(qubit: ast.IndexedIdentifier, offsets: dict[str, int]) -> int:
     """Map an (unrolled) qubit reference to a flat pyQuil integer index.
@@ -150,7 +157,7 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
     except Exception as e:
         raise ProgramConversionError("QASM program is not well-formed.") from e
 
-    module.unroll()
+    module.unroll(external_gates=_NATIVE_EXTERNAL_GATES)
     unrolled = module.unrolled_ast
 
     quil = pyquil.Program()
