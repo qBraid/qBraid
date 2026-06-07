@@ -50,7 +50,7 @@ print(result.data.get_counts())
 ### Removed
 
 ### Fixed
-- Fixed `circuits_allclose` raising `IndexError` instead of returning `False` when the two programs' unitaries have different dimensions (e.g. comparing a measurement-only circuit against a target that drops measurements, yielding an empty unitary). The comparison now short-circuits to `False` on a shape mismatch and only computes the qubit-reversed unitary when `allow_rev_qubits=True`; `unitary_rev_qubits` also raises its documented `ValueError` for non-2D matrices ([#PRNUM](https://github.com/qBraid/qBraid/pull/PRNUM))
+- Fixed `circuits_allclose` raising `IndexError` instead of returning `False` when the two programs' unitaries have different dimensions (e.g. comparing a measurement-only circuit against a target that drops measurements, yielding an empty unitary). The comparison now short-circuits to `False` on a shape mismatch and only computes the qubit-reversed unitary when `allow_rev_qubits=True`; `unitary_rev_qubits` also raises its documented `ValueError` for non-2D matrices ([#1218](https://github.com/qBraid/qBraid/pull/1218))
 - Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
 
 ### Dependencies
