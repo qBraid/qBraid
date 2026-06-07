@@ -44,6 +44,7 @@ print(result.data.get_counts())
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 - Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
+- Removed the cirq-specific fallback in `transpile` that, on a failed conversion step, round-tripped the cirq intermediate through QASM (`circuit_from_qasm(circuit.to_qasm())`) and retried. This flatten-and-retry is already provided generically by the conversion graph's `cirq -> qasm2 -> target` paths combined with the multi-path retry, making the hardcoded special case redundant (cirq conversion coverage is unchanged) ([#1217](https://github.com/qBraid/qBraid/pull/1217))
 
 ### Deprecated
 
@@ -51,11 +52,15 @@ print(result.data.get_counts())
 
 ### Fixed
 - Fixed `circuits_allclose` raising `IndexError` instead of returning `False` when the two programs' unitaries have different dimensions (e.g. comparing a measurement-only circuit against a target that drops measurements, yielding an empty unitary). The comparison now short-circuits to `False` on a shape mismatch and only computes the qubit-reversed unitary when `allow_rev_qubits=True`; `unitary_rev_qubits` also raises its documented `ValueError` for non-2D matrices ([#1218](https://github.com/qBraid/qBraid/pull/1218))
+- Fixed Cirq → pyQuil transpilation of the `XXPowGate`, `YYPowGate`, `ZZPowGate`, and `SwapPowGate` two-qubit gates for non-integer exponents. The interaction gates were previously decomposed into independent single-qubit rotations, and `SwapPowGate` was emitted as `PSWAP` (a parametric swap-with-phase), both producing a circuit whose unitary did not match the input. The interaction gates now round-trip exactly (including global phase) via `PHASE`/`CPHASE` decompositions, and `SwapPowGate` falls back to cirq's `CNOT`/`RY`/`CPHASE` decomposition. ([#386](https://github.com/qBraid/qBraid/issues/386))
+- Implemented `remove_idle_qubits` and `reverse_qubit_order` on `PyQuilProgram` (previously inherited base stubs that raised `NotImplementedError`). They remap the program's qubits onto contiguous indices, which also fixes incorrect unitaries for programs acting on non-contiguous qubits and unblocks `circuits_allclose(..., index_contig=True)` for pyQuil targets ([#622](https://github.com/qBraid/qBraid/issues/622))
+- Removed the intermediate cirq round-trip from the PyTKET transpiler coverage test; it now transpiles each PyTKET source circuit directly to the target and compares with `circuits_allclose(..., index_contig=True)`, which drops idle qubits so the source and target unitaries have matching dimensions ([#622](https://github.com/qBraid/qBraid/issues/622))
 - Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
 
 ### Dependencies
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
+- Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
 
 ## [0.12.1] - 2026-05-17
 

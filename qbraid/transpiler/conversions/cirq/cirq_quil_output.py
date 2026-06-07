@@ -255,13 +255,15 @@ def _quiltwoqubit_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
-def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
+def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.SwapPowGate, op.gate)
     if gate._exponent % 2 == 1:
         return formatter.format("SWAP {0} {1}\n", op.qubits[0], op.qubits[1])
-    return formatter.format(
-        "PSWAP({0}) {1} {2}\n", gate._exponent * np.pi, op.qubits[0], op.qubits[1]
-    )
+    # Non-integer powers: Quil's PSWAP is a parametric swap-with-phase, not a
+    # fractional SWAP, so PSWAP(pi*t) does not reproduce SWAP**t. Return None to
+    # fall back to cirq's decomposition (CNOT / RY / CPHASE), which Quil
+    # represents exactly.
+    return None
 
 
 def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
@@ -310,15 +312,18 @@ def _xpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
 
 
 def _xxpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
-    gate = cast(cirq.XPowGate, op.gate)
+    gate = cast(cirq.XXPowGate, op.gate)
     if gate._exponent == 1:
         return formatter.format("X {0}\nX {1}\n", op.qubits[0], op.qubits[1])
+    # XX**t = (H (x) H) . ZZ**t . (H (x) H), with ZZ**t = diag(1, e^{i pi t},
+    # e^{i pi t}, 1) realized exactly (including global phase) by single-qubit
+    # PHASE gates and a CPHASE.
     return formatter.format(
-        "RX({0}) {1}\nRX({2}) {3}\n",
-        gate._exponent * np.pi,
+        "H {0}\nH {1}\nPHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\nH {0}\nH {1}\n",
         op.qubits[0],
-        gate._exponent * np.pi,
         op.qubits[1],
+        gate._exponent * np.pi,
+        -2 * gate._exponent * np.pi,
     )
 
 
@@ -334,12 +339,19 @@ def _yypow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     if gate._exponent == 1:
         return formatter.format("Y {0}\nY {1}\n", op.qubits[0], op.qubits[1])
 
+    # YY**t = (RX(pi/2) (x) RX(pi/2)) . ZZ**t . (RX(-pi/2) (x) RX(-pi/2)); the
+    # RX conjugation rotates the Y eigenbasis onto the Z eigenbasis and cancels
+    # exactly, so the global phase of ZZ**t is preserved.
     return formatter.format(
-        "RY({0}) {1}\nRY({2}) {3}\n",
-        gate._exponent * np.pi,
+        "RX({4}) {0}\nRX({4}) {1}\n"
+        "PHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\n"
+        "RX({5}) {0}\nRX({5}) {1}\n",
         op.qubits[0],
-        gate._exponent * np.pi,
         op.qubits[1],
+        gate._exponent * np.pi,
+        -2 * gate._exponent * np.pi,
+        np.pi / 2,
+        -np.pi / 2,
     )
 
 
@@ -355,12 +367,14 @@ def _zzpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     if gate._exponent == 1:
         return formatter.format("Z {0}\nZ {1}\n", op.qubits[0], op.qubits[1])
 
+    # ZZ**t = diag(1, e^{i pi t}, e^{i pi t}, 1) is realized exactly (including
+    # global phase) by a PHASE on each qubit and a compensating CPHASE.
     return formatter.format(
-        "RZ({0}) {1}\nRZ({2}) {3}\n",
-        gate._exponent * np.pi,
+        "PHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\n",
         op.qubits[0],
-        gate._exponent * np.pi,
         op.qubits[1],
+        gate._exponent * np.pi,
+        -2 * gate._exponent * np.pi,
     )
 
 

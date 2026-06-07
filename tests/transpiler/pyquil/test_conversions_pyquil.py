@@ -159,3 +159,35 @@ def test_cirq_to_quil_output_rzz():
     cirq_circuit = qasm2_to_cirq(qasm)
     p_test: Program = cirq_to_pyquil(cirq_circuit)
     assert p_test.out().replace("pi/2", f"{np.pi/2}") == p.out()
+
+
+@pytest.mark.parametrize(
+    "gate",
+    [cirq_ops.XXPowGate, cirq_ops.YYPowGate, cirq_ops.ZZPowGate],
+)
+@pytest.mark.parametrize("exponent", [0.5, 1.0, 0.75, -0.8, 2.0, 0.0])
+def test_cirq_to_pyquil_ising_gate_roundtrip(gate, exponent):
+    """Cirq XX/YY/ZZ interaction gates round-trip through pyQuil exactly.
+
+    Regression test for https://github.com/qBraid/qBraid/issues/386, where the
+    non-integer-exponent cases were decomposed into single-qubit rotations that
+    did not preserve the two-qubit unitary.
+    """
+    q0, q1 = LineQubit.range(2)
+    cirq_in = Circuit(gate(exponent=exponent).on(q0, q1))
+    cirq_out = pyquil_to_cirq(cirq_to_pyquil(cirq_in))
+    assert circuits_allclose(cirq_in, cirq_out, strict_gphase=True)
+
+
+@pytest.mark.parametrize("exponent", [0.5, 1.0, 0.75, -0.8, 2.0, 0.0])
+def test_cirq_to_pyquil_swappow_roundtrip(exponent):
+    """Cirq SwapPowGate round-trips through pyQuil exactly.
+
+    Non-integer powers were previously emitted as ``PSWAP(pi*t)``, a parametric
+    swap-with-phase whose unitary differs from a fractional ``SWAP**t``. They now
+    fall back to cirq's CNOT / RY / CPHASE decomposition.
+    """
+    q0, q1 = LineQubit.range(2)
+    cirq_in = Circuit(cirq_ops.SwapPowGate(exponent=exponent).on(q0, q1))
+    cirq_out = pyquil_to_cirq(cirq_to_pyquil(cirq_in))
+    assert circuits_allclose(cirq_in, cirq_out, strict_gphase=True)
