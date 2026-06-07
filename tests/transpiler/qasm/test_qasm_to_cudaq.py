@@ -28,7 +28,6 @@ from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
 
 from qbraid.interface import assert_allclose_up_to_global_phase, circuits_allclose
-from qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2 import cudaq_to_qasm2
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_cudaq import make_gate_kernel
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
@@ -37,6 +36,9 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 cudaq = pytest.importorskip("cudaq")
 
 qiskit_aer = pytest.importorskip("qiskit_aer")
+
+# pylint: disable=wrong-import-position
+from qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2 import cudaq_to_qasm2  # noqa: E402
 
 if TYPE_CHECKING:
     from cudaq import PyKernel  # type: ignore
