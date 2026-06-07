@@ -587,7 +587,6 @@ def test_extract_params_index_error_caught():
     assert extract_params(statement) == []
 
 
-@pytest.mark.skip(reason="To validate in pyqasm through definition of ms gate")
 @pytest.mark.parametrize(
     "program_text",
     [
