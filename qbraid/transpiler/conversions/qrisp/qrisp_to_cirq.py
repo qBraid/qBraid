@@ -43,4 +43,19 @@ def qrisp_to_cirq(qrisp_qc: qrisp_.QuantumCircuit) -> Circuit:
     Returns:
         Cirq Circuit object equivalent to the input Qrisp circuit.
     """
-    return qrisp_qc.to_cirq()
+    circuit = qrisp_qc.to_cirq()
+    # qrisp emits extended-precision (numpy.longdouble) gate exponents, which cirq's QASM
+    # exporter cannot format ("Invalid format specifier 'half_turns'"). Recast them to
+    # plain Python float so downstream to_qasm() works.
+    normalized = cirq.Circuit()
+    for op in circuit.all_operations():
+        gate = op.gate
+        exponent = getattr(gate, "_exponent", None)
+        if exponent is not None and not isinstance(exponent, (int, float)):
+            global_shift = float(getattr(gate, "_global_shift", 0.0))
+            try:
+                gate = type(gate)(exponent=float(exponent), global_shift=global_shift)
+            except TypeError:
+                gate = type(gate)(exponent=float(exponent))
+        normalized.append(gate.on(*op.qubits))
+    return normalized
