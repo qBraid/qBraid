@@ -326,7 +326,11 @@ CPHASE({np.pi / 2}) 0 1
 RY({np.pi / 2}) 1
 SWAP 0 1
 SWAP 1 0
-PSWAP({3 * np.pi / 4}) 0 1
+CNOT 0 1
+RY({-np.pi / 2}) 0
+CPHASE({3 * np.pi / 4}) 1 0
+RY({np.pi / 2}) 0
+CNOT 0 1
 H 2
 CCNOT 0 1 2
 H 2
@@ -366,16 +370,27 @@ H 2
 CSWAP 0 1 2
 X 0
 X 1
-RX({3 * np.pi / 4}) 0
-RX({3 * np.pi / 4}) 1
+H 0
+H 1
+PHASE({0.75 * np.pi}) 0
+PHASE({0.75 * np.pi}) 1
+CPHASE({-2 * 0.75 * np.pi}) 0 1
+H 0
+H 1
 Y 0
 Y 1
-RY({3 * np.pi / 4}) 0
-RY({3 * np.pi / 4}) 1
+RX({np.pi / 2}) 0
+RX({np.pi / 2}) 1
+PHASE({0.75 * np.pi}) 0
+PHASE({0.75 * np.pi}) 1
+CPHASE({-2 * 0.75 * np.pi}) 0 1
+RX({-np.pi / 2}) 0
+RX({-np.pi / 2}) 1
 Z 0
 Z 1
-RZ({3 * np.pi / 4}) 0
-RZ({3 * np.pi / 4}) 1
+PHASE({0.75 * np.pi}) 0
+PHASE({0.75 * np.pi}) 1
+CPHASE({-2 * 0.75 * np.pi}) 0 1
 I 0
 I 0
 I 1

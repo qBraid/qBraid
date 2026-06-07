@@ -135,6 +135,17 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
 
     unitary0 = program0.unitary()
     unitary1 = program1.unitary()
-    unitary_rev = program1.unitary_rev_qubits()
+
+    # Unitaries of different dimensions cannot be equivalent. Guarding here also
+    # avoids a broadcasting error in the np.allclose comparison below and an
+    # IndexError in unitary_rev_qubits when a circuit has no operating qubits
+    # (e.g. a measurement-only circuit converted to a target that drops
+    # measurements, yielding an empty unitary).
+    if unitary0.shape != unitary1.shape:
+        return False
+
+    # unitary_rev is only consulted when allow_rev_qubits is set, so skip the
+    # (expensive) qubit-reversal permutation otherwise.
+    unitary_rev = program1.unitary_rev_qubits() if allow_rev_qubits else None
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
