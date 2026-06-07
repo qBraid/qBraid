@@ -35,6 +35,14 @@ if TYPE_CHECKING:
     from qbraid.programs.typer import QasmStringType
 
 
+def _safe_getattr(obj: object, name: str) -> Optional[object]:
+    """getattr that returns None instead of recursing on cudaq 0.12's buggy __getattr__."""
+    try:
+        return getattr(obj, name)
+    except (AttributeError, RecursionError):
+        return None
+
+
 def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
     """Returns CUDA-Q kernel for pure standard gates (no modifiers - ctrl or adj)."""
 
@@ -170,7 +178,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                 ), f"non-ctrl modifiers should've be unrolled: {mod}"
 
                 ctrl_name = "c" + name
-                ctrl_op = getattr(kernel, ctrl_name, None)
+                ctrl_op = _safe_getattr(kernel, ctrl_name)
                 if ctrl_op is not None:
                     if args:
                         ctrl_op(*args, *qubit_refs)
@@ -189,7 +197,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                     "rz",
                 ]:
                     # pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
-                    ctrl_op = getattr(kernel, namel, None)
+                    ctrl_op = _safe_getattr(kernel, namel)
                     if ctrl_op is not None:
                         if args:
                             ctrl_op(*args, *qubit_refs)
@@ -199,7 +207,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                         gate = get_gate(namel[1:], targs)
                         kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
                 else:
-                    op = getattr(kernel, name, None)
+                    op = _safe_getattr(kernel, name)
                     if op is not None:
                         if args:
                             op(*args, *qubit_refs)
