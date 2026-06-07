@@ -184,7 +184,7 @@ def test_openqasm3_to_cudaq_ctrl_modifier():
 
 
 def test_openqasm3_to_cudaq_controlled_gates():
-    """OpenQASM3 -> CUDA-Q: Test a controlled x gate."""
+    """OpenQASM3 -> CUDA-Q: Test controlled gates including controlled rotations."""
 
     qasm3_str_in = """
     OPENQASM 3.0;
@@ -195,6 +195,16 @@ def test_openqasm3_to_cudaq_controlled_gates():
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, method="state")
+
+    qasm3_crx = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[2] q;
+    crx(1.5707963) q[0], q[1];
+    """
+    cudaq_crx = openqasm3_to_cudaq(qasm3_crx)
+    _check_output(qasm3_crx, cudaq_crx, method="state")
 
 
 def test_openqasm3_to_cudaq_adj_gates():

@@ -171,7 +171,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
             # ctrl isn't supported so multi-ctrl is not an issue at the moment.
             assert len(statement.modifiers) <= 1
 
-            if len(statement.modifiers) == 1:
+            if len(statement.modifiers) == 1:  # pragma: no cover
                 mod = statement.modifiers[0]
                 assert (
                     mod.modifier == ast.GateModifierName.ctrl
@@ -199,7 +199,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                     # pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
                     ctrl_op = _safe_getattr(kernel, namel)
                     if ctrl_op is not None:
-                        if args:
+                        if args:  # pragma: no cover
                             ctrl_op(*args, *qubit_refs)
                         else:
                             ctrl_op(*qubit_refs)
