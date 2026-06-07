@@ -99,6 +99,13 @@ def _to_braket_instruction(
     ) and qbraid.programs.gate_model.cirq.CirqCircuit.is_measurement_gate(operation):
         return []
 
+    if isinstance(operation, cirq_ops.ClassicallyControlledOperation):
+        raise ProgramConversionError(
+            "Classically controlled operations (mid-circuit measurement conditionals) "
+            "cannot be converted to Amazon Braket circuits. The Braket Circuit object "
+            "does not support classical control flow."
+        )
+
     nqubits = protocols.num_qubits(operation)
     cirq_qubits = operation.qubits
     cirq_qubits = [
