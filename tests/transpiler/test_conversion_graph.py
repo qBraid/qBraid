@@ -33,9 +33,9 @@ except ImportError:
     pyqir_installed = False
 
 from qbraid.programs import ExperimentType, register_program_type, unregister_program_type
-from qbraid.programs.exceptions import PackageValueError
 from qbraid.programs.analog import submodules as ahs_submodules
 from qbraid.programs.annealing import submodules as annealing_submodules
+from qbraid.programs.exceptions import PackageValueError
 from qbraid.programs.gate_model import submodules as gate_model_submodules
 from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
 from qbraid.transpiler.conversions import conversion_functions
