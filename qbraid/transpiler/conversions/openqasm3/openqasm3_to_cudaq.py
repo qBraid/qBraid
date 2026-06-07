@@ -39,7 +39,7 @@ def _safe_getattr(obj: object, name: str) -> Optional[object]:
     """getattr that returns None instead of recursing on cudaq 0.12's buggy __getattr__."""
     try:
         return getattr(obj, name)
-    except (AttributeError, RecursionError):
+    except (AttributeError, RecursionError):  # pragma: no cover
         return None
 
 
@@ -184,7 +184,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                         ctrl_op(*args, *qubit_refs)
                     else:
                         ctrl_op(*qubit_refs)
-                else:
+                else:  # pragma: no cover
                     gate = get_gate(name, targs)
                     kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
@@ -203,7 +203,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                             ctrl_op(*args, *qubit_refs)
                         else:
                             ctrl_op(*qubit_refs)
-                    else:
+                    else:  # pragma: no cover
                         gate = get_gate(namel[1:], targs)
                         kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
                 else:
@@ -213,7 +213,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                             op(*args, *qubit_refs)
                         else:
                             op(*qubit_refs)
-                    else:
+                    else:  # pragma: no cover
                         gate = get_gate(name, targs)
                         kernel.apply_call(gate, *qubit_refs, *args)
 

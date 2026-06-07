@@ -58,7 +58,7 @@ class CudaQKernel(GateModelProgram):
         """Return the program in a format suitable for submission to the qBraid API."""
         try:
             self.program.compile()
-        except (AttributeError, RecursionError):
+        except (AttributeError, RecursionError):  # pragma: no cover
             pass
         qir: str = cudaq.translate(self.program, format="qir-base")
         return Program(

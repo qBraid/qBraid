@@ -16,9 +16,11 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- QASM conditional (`if`) statement support for Cirq conversions: `qasm2_to_cirq` and `qasm3_to_cirq` now translate classically-controlled (`if (c == val)`) operations into Cirq, backed by a new `normalize_if_blocks` pass that rewrites QASM 3 braced `if` blocks to the single-line form Cirq's parser accepts ([#1183](https://github.com/qBraid/qBraid/pull/1183))
+- Added `openqasm3_to_pyquil` conversion, providing a direct, `pyqasm`-backed transpiler edge from OpenQASM 3 to pyQuil (previously only reachable via a lossy multi-hop path through cirq). Supports the standard gate set (incl. modifiers and controlled gates via `pyqasm` decomposition), measurement, `barrier` (→ `FENCE`), `reset` (→ `RESET`), `delay` (→ `DELAY`), and `if (c == 0|1)` classical feedforward (→ `JUMP-WHEN`); declared-but-idle qubits are padded with `I` so the operator dimension matches the source ([#1203](https://github.com/qBraid/qBraid/pull/1203))
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 
-- Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). Closes [#1185](https://github.com/qBraid/qBraid/issues/1185).
+- Added `PasqalProvider`, `PasqalDevice`, and `PasqalJob` classes implementing the qBraid runtime interface for Pasqal Cloud Services (neutral-atom QPUs and emulators, using Pulser as the native IR). ([#1196](https://github.com/qBraid/qBraid/pull/1196))
 
 ```python
 from pulser import Register, Sequence
@@ -42,16 +44,26 @@ print(result.data.get_counts())
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 - Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
+- Removed the cirq-specific fallback in `transpile` that, on a failed conversion step, round-tripped the cirq intermediate through QASM (`circuit_from_qasm(circuit.to_qasm())`) and retried. This flatten-and-retry is already provided generically by the conversion graph's `cirq -> qasm2 -> target` paths combined with the multi-path retry, making the hardcoded special case redundant (cirq conversion coverage is unchanged) ([#1217](https://github.com/qBraid/qBraid/pull/1217))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Fixed `cirq_to_pyquil` raising `TypeError` when converting a `TwoQubitDiagonalGate` (e.g. a pyQuil `CPHASE00`/`CPHASE01`/`CPHASE10` round-tripped through cirq), whose diagonal angles are stored as a complex array: `exponent_to_pi_string` could not build a `Fraction` from a complex value. The angles are now coerced to their real part before formatting ([#1220](https://github.com/qBraid/qBraid/pull/1220))
+- `ConversionGraph` now raises `PackageValueError` when the `nodes` argument contains a program type that is neither a registered alias nor an endpoint of one of the graph's conversions, instead of silently adding an unusable isolated node (or silently dropping it when `require_native=True`) ([#987](https://github.com/qBraid/qBraid/issues/987))
+- Fixed `circuits_allclose` raising `IndexError` instead of returning `False` when the two programs' unitaries have different dimensions (e.g. comparing a measurement-only circuit against a target that drops measurements, yielding an empty unitary). The comparison now short-circuits to `False` on a shape mismatch and only computes the qubit-reversed unitary when `allow_rev_qubits=True`; `unitary_rev_qubits` also raises its documented `ValueError` for non-2D matrices ([#1218](https://github.com/qBraid/qBraid/pull/1218))
+- Fixed Cirq → pyQuil transpilation of the `XXPowGate`, `YYPowGate`, `ZZPowGate`, and `SwapPowGate` two-qubit gates for non-integer exponents. The interaction gates were previously decomposed into independent single-qubit rotations, and `SwapPowGate` was emitted as `PSWAP` (a parametric swap-with-phase), both producing a circuit whose unitary did not match the input. The interaction gates now round-trip exactly (including global phase) via `PHASE`/`CPHASE` decompositions, and `SwapPowGate` falls back to cirq's `CNOT`/`RY`/`CPHASE` decomposition. ([#386](https://github.com/qBraid/qBraid/issues/386))
+- Implemented `remove_idle_qubits` and `reverse_qubit_order` on `PyQuilProgram` (previously inherited base stubs that raised `NotImplementedError`). They remap the program's qubits onto contiguous indices, which also fixes incorrect unitaries for programs acting on non-contiguous qubits and unblocks `circuits_allclose(..., index_contig=True)` for pyQuil targets ([#622](https://github.com/qBraid/qBraid/issues/622))
+- Removed the intermediate cirq round-trip from the PyTKET transpiler coverage test; it now transpiles each PyTKET source circuit directly to the target and compares with `circuits_allclose(..., index_contig=True)`, which drops idle qubits so the source and target unitaries have matching dimensions ([#622](https://github.com/qBraid/qBraid/issues/622))
+- Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
 
 ### Dependencies
+- Added `sympy` to the `cirq` extra, since `cirq_qasm_parser` now imports it directly for conditional (`if`) statement parsing (previously only available transitively via `cirq-core`). Left unpinned to mirror `cirq-core`'s own `sympy` requirement ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
+- Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
 
 ## [0.12.1] - 2026-05-17
 
@@ -289,7 +301,7 @@ print(result.data.get_counts())
 ### Improved / Modified
 - Updated Azure Quantum provider to be compatible with `azure-quantum>=3.6.0`: replaced private `_current_availability` attribute access with public `current_availability` property on `Target`; simplified `AzureQuantumProvider.__init__` to accept only an optional `Workspace` (removed `credential` parameter) ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Added `ccx` → `ccnot` gate mapping in QASM3-to-Braket conversion
-- Updated PennyLane-to-QASM2 conversion to use `pennylane.to_openqasm()` module-level function, replacing the removed `QuantumTape.to_openqasm()` instance method ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated PennyLane-to-QASM2 conversion to use `pennylane.to_openqasm()` module-level function, replacing the removed `QuantumTape.to_openqasm()` instance method ([#1130](https://github.com/qBraid/qBraid/pull/1130))
 - Added credential validation check in Azure Quantum test workspace fixture to skip tests when `resource_id` or `credential` are not fully configured ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Added skip marker to `test_submit_qasm2_to_quantinuum` due to Quantinuum emulator usage quota exceeded ([#1136](https://github.com/qBraid/qBraid/pull/1136))
 - Added device status checks to QIR simulator remote tests (`test_qir_simulator_qasm_circuit` and `test_qir_simulator_qir_module`) to skip when device is not `ONLINE` ([#1150](https://github.com/qBraid/qBraid/pull/1150))
@@ -311,7 +323,7 @@ print(result.data.get_counts())
 ### Dependencies
 - Updated `azure-quantum` optional dependency from `>=2.0,<2.3` to `>=3.6.0,<4.0`; removed `azure-identity` from the `azure` extra ([#1125](https://github.com/qBraid/qBraid/pull/1125))
 - Bumped `pyqasm` minimum version from `>=0.5.0` to `>=1.0.1` ([#1126](https://github.com/qBraid/qBraid/pull/1126))
-- Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1128](https://github.com/qBraid/qBraid/issues/1128))
+- Updated `pennylane` optional dependency from `<0.43` to `>=0.43` ([#1130](https://github.com/qBraid/qBraid/pull/1130))
 - Updated `pytket-braket` requirement from `<0.46,>=0.30` to `>=0.30,<0.47` in braket optional dependency and development requirements ([#1111](https://github.com/qBraid/qBraid/pull/1111))
 - Updated `azure-quantum` development requirement from `>=2.0,<2.3` to `>=3.6.0,<4.0` in `requirements-dev.txt` ([#1135](https://github.com/qBraid/qBraid/pull/1135))
 - Updated `cudaq` optional dependency from `>=0.9.0` to `>=0.9.0,<0.14.0` in the `cudaq` extra and development requirements ([#1139](https://github.com/qBraid/qBraid/pull/1139))
