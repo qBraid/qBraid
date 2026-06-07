@@ -45,6 +45,7 @@ print(result.data.get_counts())
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
 - Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 - Removed the cirq-specific fallback in `transpile` that, on a failed conversion step, round-tripped the cirq intermediate through QASM (`circuit_from_qasm(circuit.to_qasm())`) and retried. This flatten-and-retry is already provided generically by the conversion graph's `cirq -> qasm2 -> target` paths combined with the multi-path retry, making the hardcoded special case redundant (cirq conversion coverage is unchanged) ([#1217](https://github.com/qBraid/qBraid/pull/1217))
+- `openqasm3_to_pyquil` now emits native pyQuil two-qubit gates (`CPHASE`, `RXX`, `RYY`, `RZZ`, `XY`, `ISWAP`, `CSWAP`) by keeping them external to `pyqasm.unroll`, instead of expanding them into long `RZ`/`RX`/`CNOT` sequences (e.g. `cp` went from 17 instructions to one `CPHASE`). The results match exactly, including global phase. This also fixes `xy`, which previously raised `Unsupported gate: sxdg` because its decomposition produced an `sxdg` the converter could not handle ([#PRNUM](https://github.com/qBraid/qBraid/pull/PRNUM))
 
 ### Deprecated
 

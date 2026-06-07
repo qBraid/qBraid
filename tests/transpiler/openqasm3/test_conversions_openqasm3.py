@@ -68,7 +68,39 @@ def test_openqasm3_to_pyquil_parameterized():
     """
     result = openqasm3_to_pyquil(qasm)
     expected = Program(RX(0.5, 0), RZ(1.2, 1), CPHASE(0.3, 0, 1))
-    assert circuits_allclose(result, expected, strict_gphase=False)
+    # cp emits a native CPHASE (not an RZ/RX/CNOT decomposition), so it matches
+    # exactly including global phase.
+    assert "CPHASE(0.3) 0 1" in result.out()
+    assert circuits_allclose(result, expected, strict_gphase=True)
+
+
+@pytest.mark.parametrize(
+    ("qasm_gate", "pyquil_gate"),
+    [
+        ("cp(0.3) q[0], q[1]", "CPHASE(0.3) 0 1"),
+        ("rxx(0.3) q[0], q[1]", "RXX(0.3) 0 1"),
+        ("ryy(0.3) q[0], q[1]", "RYY(0.3) 0 1"),
+        ("rzz(0.3) q[0], q[1]", "RZZ(0.3) 0 1"),
+        ("xy(0.3) q[0], q[1]", "XY(0.3) 0 1"),
+        ("iswap q[0], q[1]", "ISWAP 0 1"),
+    ],
+)
+def test_openqasm3_to_pyquil_native_two_qubit_gates(qasm_gate, pyquil_gate):
+    """Native pyQuil two-qubit gates are emitted directly rather than decomposed.
+
+    Without keeping them external to ``pyqasm.unroll``, these decomposed into long
+    RZ/RX/CNOT sequences (lossy on global phase), and ``xy`` raised because its
+    decomposition used ``sxdg``, which the converter does not handle.
+    """
+    qasm = f"""
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    {qasm_gate};
+    """
+    out = openqasm3_to_pyquil(qasm)
+    body = [line for line in out.out().splitlines() if line.strip()]
+    assert body == [pyquil_gate]
 
 
 def test_openqasm3_to_pyquil_measurement():
