@@ -20,12 +20,16 @@ import os
 from typing import Optional
 
 import pytest
-from azure.identity import ClientSecretCredential
-from azure.quantum import Workspace
-from azure.quantum._constants import ConnectionConstants, EnvironmentVariables
-from qiskit import QuantumCircuit
 
-from qbraid.runtime.azure import AzureQuantumProvider
+pytest.importorskip("azure.quantum", reason="azure-quantum not installed")
+
+# pylint: disable=wrong-import-position
+from azure.identity import ClientSecretCredential  # noqa: E402
+from azure.quantum import Workspace  # noqa: E402
+from azure.quantum._constants import ConnectionConstants, EnvironmentVariables  # noqa: E402
+from qiskit import QuantumCircuit  # noqa: E402
+
+from qbraid.runtime.azure import AzureQuantumProvider  # noqa: E402
 
 
 @pytest.fixture

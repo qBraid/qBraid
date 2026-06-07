@@ -53,7 +53,7 @@ def test_openqasm3_to_pyquil_bell():
     """
     result = openqasm3_to_pyquil(qasm)
     expected = Program(H(0), CNOT(0, 1))
-    assert circuits_allclose(result, expected, strict_gphase=False)
+    assert circuits_allclose(result, expected, strict_gphase=True)
 
 
 def test_openqasm3_to_pyquil_parameterized():
@@ -151,7 +151,7 @@ def test_openqasm3_to_pyquil_idle_qubits_padded():
     # q[1] is idle; without padding the program would be 3-qubit and mismatch the
     # 4-qubit reference operator.
     expected = Program(X(0), X(2), X(3), I(1))
-    assert circuits_allclose(result, expected, strict_gphase=False)
+    assert circuits_allclose(result, expected, strict_gphase=True)
 
 
 def test_openqasm3_to_pyquil_reset():
@@ -291,7 +291,7 @@ def test_openqasm3_to_pyquil_two_qubit_registers():
     x b[0];
     """
     result = openqasm3_to_pyquil(qasm)
-    assert circuits_allclose(result, Program(X(0), X(1)), strict_gphase=False)
+    assert circuits_allclose(result, Program(X(0), X(1)), strict_gphase=True)
 
 
 def test_openqasm3_to_pyquil_measure_without_target():
