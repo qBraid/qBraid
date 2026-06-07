@@ -167,7 +167,7 @@ def is_package_installed(package_name: str) -> bool:
 # regressions while tolerating cross-version gate-support variance. (They were
 # previously ~0.65, set for the older via-cirq comparison path that #1215 replaced
 # with a direct, index-contiguous comparison.)
-ALL_TARGETS = [("braket", 0.90), ("cirq", 0.90), ("pyquil", 0.85), ("qiskit", 0.90)]
+ALL_TARGETS = [("braket", 0.96), ("cirq", 0.96), ("pyquil", 0.92), ("qiskit", 0.96)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 
