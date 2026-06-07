@@ -26,9 +26,13 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-from azure.quantum import Workspace
 
-from qbraid.runtime import (
+pytest.importorskip("azure.quantum", reason="azure-quantum not installed")
+
+# pylint: disable=wrong-import-position
+from azure.quantum import Workspace  # noqa: E402
+
+from qbraid.runtime import (  # noqa: E402
     AnalogResultData,
     AzureQuantumProvider,
     DeviceStatus,

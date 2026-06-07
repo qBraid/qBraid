@@ -25,9 +25,13 @@ from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
-from azure.core.exceptions import ResourceExistsError
-from azure.quantum import Job, JobDetails, Workspace
-from azure.quantum.target.target import Target
+
+pytest.importorskip("azure.quantum", reason="azure-quantum not installed")
+
+# pylint: disable=wrong-import-position
+from azure.core.exceptions import ResourceExistsError  # noqa: E402
+from azure.quantum import Job, JobDetails, Workspace  # noqa: E402
+from azure.quantum.target.target import Target  # noqa: E402
 
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
 from qbraid.runtime import (
