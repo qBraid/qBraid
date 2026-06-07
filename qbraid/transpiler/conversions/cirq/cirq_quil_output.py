@@ -268,7 +268,11 @@ def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]
 
 def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.TwoQubitDiagonalGate, op.gate)
-    diag_angles_radians = np.asarray(gate._diag_angles_radians)
+    # The diagonal angles are real phase angles, but may be stored as a complex
+    # array (e.g. when the gate originates from a pyQuil CPHASExx round-trip).
+    # Take the real part so they can be formatted as Quil parameters; a complex
+    # value would otherwise raise a TypeError in exponent_to_pi_string's Fraction.
+    diag_angles_radians = np.real(np.asarray(gate._diag_angles_radians))
     if np.count_nonzero(diag_angles_radians) != 1:
         return None
     if diag_angles_radians[0] != 0:
