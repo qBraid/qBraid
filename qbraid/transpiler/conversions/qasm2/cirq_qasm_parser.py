@@ -30,6 +30,7 @@ import operator
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Union, cast
 
 import numpy as np
+import sympy
 from cirq import CX, Circuit, NamedQubit, ops
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
@@ -46,8 +47,9 @@ yacc = LazyLoader('yacc', globals(), 'ply.yacc')
 # process-wide once this module is imported: cirq's lexer would no longer
 # recognize the QASM 3 tokens it defines rules for (e.g. ``STDGATESINC`` for
 # ``stdgates.inc``), raising a ply ``LexError`` on every subsequent QASM 3 parse.
-# The reduced list also suppresses the original ply "token defined but not used"
-# warning (e.g. ``IF``/``NE``) for this grammar.
+# ``IF``/``EQ`` are included here because this grammar implements conditional
+# (``if``) statements; the reduced list still suppresses the original ply
+# "token defined but not used" warning for tokens this grammar does not use.
 class _QasmLexer(QasmLexer):
     tokens = [
         "FORMAT_SPEC",
@@ -60,6 +62,8 @@ class _QasmLexer(QasmLexer):
         "CREG",
         "MEASURE",
         "ARROW",
+        "IF",
+        "EQ",
     ]
 
 if TYPE_CHECKING:
@@ -407,7 +411,8 @@ class QasmParser:
 
     def p_circuit_gate_or_measurement(self, p):
         """circuit :  circuit gate_op
-        |  circuit measurement"""
+        |  circuit measurement
+        |  circuit if"""
         self.circuit.append(p[2])
         p[0] = self.circuit
 
@@ -613,17 +618,17 @@ class QasmParser:
     # if operations
     # if : IF '(' carg EQ NATURAL_NUMBER ')' ID qargs
 
-    # def p_if(self, p):
-    #     """if : IF '(' carg EQ NATURAL_NUMBER ')' gate_op"""
-    #     # We have to split the register into bits (since that's what measurement does above),
-    #     # and create one condition per bit, checking against that part of the binary value.
-    #     conditions = []
-    #     for i, key in enumerate(p[3]):
-    #         v = (p[5] >> i) & 1
-    #         conditions.append(sympy.Eq(sympy.Symbol(key), v))
-    #     p[0] = [
-    #         ops.ClassicallyControlledOperation(conditions=conditions, sub_operation=tuple(p[7])[0])
-    #     ]
+    def p_if(self, p):
+        """if : IF '(' carg EQ NATURAL_NUMBER ')' gate_op"""
+        # We have to split the register into bits (since that's what measurement does above),
+        # and create one condition per bit, checking against that part of the binary value.
+        conditions = []
+        for i, key in enumerate(p[3]):
+            v = (p[5] >> i) & 1
+            conditions.append(sympy.Eq(sympy.Symbol(key), v))
+        p[0] = [
+            ops.ClassicallyControlledOperation(conditions=conditions, sub_operation=tuple(p[7])[0])
+        ]
 
     def p_error(self, p):
         if p is None:
