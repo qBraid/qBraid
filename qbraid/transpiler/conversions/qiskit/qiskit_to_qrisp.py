@@ -43,9 +43,11 @@ def qiskit_to_qrisp(qiskit_qc: qiskit_.QuantumCircuit) -> qrisp_.QuantumCircuit:
     Returns:
         Qrisp Circuit equivalent to the input Qiskit circuit.
     """
+    # pylint: disable=import-outside-toplevel
     from qrisp.interface.converter import convert_from_qiskit  # type: ignore
     from qiskit import transpile
     from qiskit.transpiler import Target
+    # pylint: enable=import-outside-toplevel
 
     basis_set = [
         "x",
