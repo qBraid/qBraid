@@ -56,6 +56,7 @@ print(result.data.get_counts())
 ### Dependencies
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
+- Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
 
 ## [0.12.1] - 2026-05-17
 
