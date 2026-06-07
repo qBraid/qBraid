@@ -166,7 +166,6 @@ def test_openqasm3_to_cudaq_u3_gate():
     _check_output(qasm3_str_in, kernel, method="state")
 
 
-@pytest.mark.skip(reason="pyqasm don't support ctrl modifiers")
 def test_openqasm3_to_cudaq_ctrl_modifier():
     """OpenQASM3 -> CUDA-Q: Test a ctrl modifier on an x gate."""
 
