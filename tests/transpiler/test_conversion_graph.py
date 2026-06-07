@@ -33,6 +33,7 @@ except ImportError:
     pyqir_installed = False
 
 from qbraid.programs import ExperimentType, register_program_type, unregister_program_type
+from qbraid.programs.exceptions import PackageValueError
 from qbraid.programs.analog import submodules as ahs_submodules
 from qbraid.programs.annealing import submodules as annealing_submodules
 from qbraid.programs.gate_model import submodules as gate_model_submodules
@@ -465,3 +466,40 @@ def test_subgraph_by_experiment_type():
     with pytest.raises(ValueError) as excinfo:
         graph.subgraph(ExperimentType.OTHER)
     assert "No program type nodes found with experiment type(s)" in str(excinfo.value)
+
+
+def test_unregistered_node_arg_raises():
+    """Specifying an unregistered program type as a node raises PackageValueError."""
+    aliases_backup = QPROGRAM_ALIASES.copy()
+    registry_backup = QPROGRAM_REGISTRY.copy()
+    unregister_program_type("qasm2")
+    try:
+        with pytest.raises(PackageValueError):
+            ConversionGraph(nodes=["qasm2"])
+    finally:
+        QPROGRAM_ALIASES.clear()
+        QPROGRAM_ALIASES.update(aliases_backup)
+        QPROGRAM_REGISTRY.clear()
+        QPROGRAM_REGISTRY.update(registry_backup)
+
+
+def test_unknown_node_arg_raises():
+    """Specifying a node that was never a registered program type raises."""
+    with pytest.raises(PackageValueError):
+        ConversionGraph(nodes=["not_a_program_type"])
+
+
+def test_unknown_node_arg_raises_with_require_native():
+    """Unregistered nodes are rejected even when require_native is True."""
+    with pytest.raises(PackageValueError):
+        ConversionGraph(nodes=["not_a_program_type"], require_native=True)
+
+
+def test_custom_conversion_endpoints_allowed_as_nodes():
+    """Nodes that are endpoints of a supplied conversion are permitted even if
+    they are not registered program types."""
+    conversion = Conversion("custom_a", "custom_b", lambda program: program)
+    graph = ConversionGraph(
+        conversions=[conversion], nodes=["custom_a", "custom_b"], include_isolated=True
+    )
+    assert set(graph.nodes()) == {"custom_a", "custom_b"}
