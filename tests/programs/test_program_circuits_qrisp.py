@@ -19,8 +19,11 @@ Unit tests for qbraid.programs.qrisp.QrispCircuit
 
 import pytest
 
+from qbraid.programs.exceptions import ProgramTypeError
+
 try:
     from qrisp import QuantumCircuit
+
     from qbraid.programs.gate_model.qrisp import QrispCircuit
 
     qrisp_not_installed = False
@@ -28,8 +31,6 @@ except ImportError:
     qrisp_not_installed = True
 
 pytestmark = pytest.mark.skipif(qrisp_not_installed, reason="qrisp not installed")
-
-from qbraid.programs.exceptions import ProgramTypeError
 
 
 def test_reverse_qubit_order():
