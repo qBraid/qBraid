@@ -28,9 +28,8 @@ from qbraid.transpiler.annotations import weight
 qrisp = LazyLoader("qrisp", globals(), "qrisp")
 
 if TYPE_CHECKING:
-    import qrisp as qrisp_
-
     import qiskit as qiskit_
+    import qrisp as qrisp_
 
 
 @weight(1)

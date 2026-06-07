@@ -31,7 +31,7 @@ from qbraid.transpiler import ConversionGraph, transpile
 
 try:
     import qrisp
-    from qrisp.circuit.library import *  # pylint: disable=wildcard-import, unused-wildcard-import
+    from qrisp.circuit.library import *  # pylint: disable=wildcard-import, unused-wildcard-import  # noqa: F403
 
     qrisp_not_installed = False
 except ImportError:
@@ -115,11 +115,7 @@ def qrisp_circuits():
             if gates_param_map[gate] is None:
                 continue
             qubits = gates_param_map[gate]["qubits"]
-            clbits = (
-                gates_param_map[gate]["clbits"]
-                if "clbits" in gates_param_map[gate]
-                else []
-            )
+            clbits = gates_param_map[gate]["clbits"] if "clbits" in gates_param_map[gate] else []
             gate_op = eval(gate)(  # pylint: disable=eval-used
                 **{
                     key: gates_param_map[gate][key]
@@ -146,10 +142,8 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
-AVAILABLE_TARGETS = [
-    (name, version) for name, version in ALL_TARGETS if is_package_installed(name)
-]
+ALL_TARGETS = [("cirq", 1.0), ("pytket", 1.0), ("qiskit", 1.0), ("qasm2", 1.0), ("qasm3", 1.0)]
+AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 
 def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
@@ -157,7 +151,8 @@ def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
     target program type, and check equivalence.
     """
     source_circuit = circuits[circuit_name]
-    circuit = transpile(source_circuit, "cirq", conversion_graph=graph)
+    circuit = transpile(source_circuit, target, conversion_graph=graph)
+    circuit = transpile(circuit, "cirq", conversion_graph=graph)
     qasm = circuit.to_qasm()
     cirq_circuit = circuit_from_qasm(qasm)
     target_circuit = transpile(cirq_circuit, target)

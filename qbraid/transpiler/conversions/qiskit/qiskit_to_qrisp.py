@@ -28,9 +28,8 @@ from qbraid.transpiler.annotations import weight
 qrisp = LazyLoader("qrisp", globals(), "qrisp")
 
 if TYPE_CHECKING:
-    import qrisp as qrisp_
-
     import qiskit as qiskit_
+    import qrisp as qrisp_
 
 
 @weight(1.0)
@@ -44,9 +43,10 @@ def qiskit_to_qrisp(qiskit_qc: qiskit_.QuantumCircuit) -> qrisp_.QuantumCircuit:
         Qrisp Circuit equivalent to the input Qiskit circuit.
     """
     # pylint: disable=import-outside-toplevel
-    from qrisp.interface.converter import convert_from_qiskit  # type: ignore
     from qiskit import transpile
     from qiskit.transpiler import Target
+    from qrisp.interface.converter import convert_from_qiskit  # type: ignore
+
     # pylint: enable=import-outside-toplevel
 
     basis_set = [

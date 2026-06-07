@@ -23,8 +23,8 @@ from typing import TYPE_CHECKING
 
 import qrisp
 from qrisp.circuit import Qubit
-from qbraid.programs.exceptions import ProgramTypeError
 
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model._model import GateModelProgram
 
 if TYPE_CHECKING:
@@ -74,10 +74,7 @@ class QrispCircuit(GateModelProgram):
         new_program = qrisp.QuantumCircuit(num_active_qubits, self.num_clbits)
 
         index_map = {
-            q: i
-            for i, q in enumerate(
-                q for q in self.program.qubits if q not in idle_qubits
-            )
+            q: i for i, q in enumerate(q for q in self.program.qubits if q not in idle_qubits)
         }
         for instr in self.program.data:
             qubits = [index_map[q] for q in instr.qubits]

@@ -17,6 +17,7 @@ Unit tests for qbraid.programs.qrisp.QrispCircuit
 
 """
 
+import numpy as np
 import pytest
 
 from qbraid.programs.exceptions import ProgramTypeError
@@ -24,7 +25,7 @@ from qbraid.programs.exceptions import ProgramTypeError
 try:
     from qrisp import QuantumCircuit
 
-    from qbraid.programs.gate_model.qrisp import QrispCircuit
+    from qbraid.programs.gate_model.qrisp import QrispCircuit  # pylint: disable=ungrouped-imports
 
     qrisp_not_installed = False
 except ImportError:
@@ -48,9 +49,9 @@ def test_reverse_qubit_order():
     expected_circ.cx(2, 0)
 
     # Since qubit names will differ we need to compare via cirq
-    assert reversed_circ.to_cirq() == expected_circ.to_cirq(), (
-        "The reversed circuit does not match the expected output."
-    )
+    assert (
+        reversed_circ.to_cirq() == expected_circ.to_cirq()
+    ), "The reversed circuit does not match the expected output."
 
 
 def test_remove_idle_qubits_qrisp():
@@ -86,3 +87,19 @@ def test_circuit_properties():
     assert qprogram.num_qubits == 2
     assert qprogram.num_clbits == 0
     assert qprogram.depth == 2
+
+
+def test_circuit_unitary():
+    """Test unitary of QrispCircuit"""
+    circuit = QuantumCircuit(2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    qprogram = QrispCircuit(circuit)
+    unitary = qprogram.unitary()
+    expected_unitary = np.array(
+        [[1, 0, 1, 0], [0, 1, 0, 1], [0, 1, 0, -1], [1, 0, -1, 0]], dtype=complex
+    ) * (1 / np.sqrt(2))
+    assert unitary.shape == (4, 4)
+    assert all(
+        abs(unitary[i][j] - expected_unitary[i][j]) < 1e-6 for i in range(4) for j in range(4)
+    ), "The unitary does not match the expected output."
