@@ -99,3 +99,20 @@ def pyqpanda3_to_qasm2(circuit: pyqpanda3_.core.QProg) -> Qasm2StringType:
     """
     qasm = pyqpanda3.intermediate_compiler.convert_qprog_to_qasm(circuit)
     return remove_empty_registers(qasm)
+
+
+qat_interop_openqasm = LazyLoader("qat_interop_openqasm", globals(), "qat.interop.openqasm")
+
+
+@requires_extras("qat.interop.openqasm")
+def qasm2_to_qat(qasm: Qasm2StringType):
+    """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input OpenQASM 2 circuit.
+
+    Args:
+        qasm: OpenQASM 2 string to convert.
+
+    Returns:
+        qat.core.wrappers.circuit.Circuit equivalent to the input OpenQASM 2 string.
+    """
+    parser = qat_interop_openqasm.OqasmParser()
+    return parser.compile(qasm)

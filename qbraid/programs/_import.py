@@ -118,6 +118,8 @@ def _get_class(module: str):
         return pyqpanda3.core.QProg  # type: ignore # noqa: F821
     if module == "autoqasm":
         return autoqasm.program.program.Program  # type: ignore # noqa: F821
+    if module == "qat.core.wrappers.circuit":  # pragma: no cover
+        return qat.core.wrappers.circuit.Circuit  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -139,7 +141,16 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
-    ["bloqade.analog.builder.assign", "qibo", "stim", "pyqir", "pulser", "pyqpanda3", "autoqasm"]
+    [
+        "bloqade.analog.builder.assign",
+        "qibo",
+        "stim",
+        "pyqir",
+        "pulser",
+        "pyqpanda3",
+        "autoqasm",
+        "qat.core.wrappers.circuit",
+    ]
 )
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
@@ -154,13 +165,3 @@ NATIVE_REGISTRY: dict[str, Type[Any]] = (
 _QPROGRAM_REGISTRY: dict[str, Type[Any]] = deepcopy(NATIVE_REGISTRY) | dynamic_non_native
 _QPROGRAM_TYPES: set[Type[Any]] = set(_QPROGRAM_REGISTRY.values())
 _QPROGRAM_ALIASES: set[str] = set(_QPROGRAM_REGISTRY.keys())
-
-# Register myQLM type with "myqlm" alias (optional dependency via myqlm-interop)
-try:
-    from qat.core.wrappers.circuit import Circuit as _MyQLMCircuit  # noqa: PLC0415
-
-    _QPROGRAM_REGISTRY["myqlm"] = _MyQLMCircuit
-    _QPROGRAM_ALIASES.add("myqlm")
-    _QPROGRAM_TYPES.add(_MyQLMCircuit)
-except ImportError:  # pragma: no cover
-    pass

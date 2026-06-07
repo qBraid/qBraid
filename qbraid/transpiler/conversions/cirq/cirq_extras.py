@@ -70,3 +70,19 @@ def cirq_to_pyqir(circuit: cirq.Circuit) -> pyqir.Module:
         pyqir.Module: module equivalent to input cirq circuit.
     """
     return qbraid_qir.cirq.cirq_to_qir(circuit)
+
+
+qat_interop_cirq = LazyLoader("qat_interop_cirq", globals(), "qat.interop.cirq")
+
+
+@requires_extras("qat.interop.cirq", "cirq")
+def cirq_to_qat(circuit: "cirq.Circuit"):
+    """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input Cirq circuit.
+
+    Args:
+        circuit: Cirq Circuit to convert.
+
+    Returns:
+        qat.core.wrappers.circuit.Circuit equivalent to the input Cirq circuit.
+    """
+    return qat_interop_cirq.cirq_to_qlm(circuit)

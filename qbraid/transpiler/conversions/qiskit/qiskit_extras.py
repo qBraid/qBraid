@@ -90,3 +90,32 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
         "qubits": circuit.num_qubits,
         "circuit": instrs,
     }
+
+
+qat_interop_qiskit = LazyLoader("qat_interop_qiskit", globals(), "qat.interop.qiskit")
+
+
+@requires_extras("qat.interop.qiskit", "qiskit")
+def qiskit_to_qat(circuit: "qiskit.circuit.QuantumCircuit"):
+    """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input Qiskit circuit.
+
+    Args:
+        circuit: Qiskit QuantumCircuit to convert.
+
+    Returns:
+        qat.core.wrappers.circuit.Circuit equivalent to the input Qiskit circuit.
+    """
+    return qat_interop_qiskit.qiskit_to_qlm(circuit)
+
+
+@requires_extras("qat.interop.qiskit", "qiskit")
+def qat_to_qiskit(circuit):
+    """Returns a Qiskit QuantumCircuit equivalent to the input qat circuit.
+
+    Args:
+        circuit: qat.core.wrappers.circuit.Circuit to convert.
+
+    Returns:
+        Qiskit QuantumCircuit equivalent to the input qat circuit.
+    """
+    return qat_interop_qiskit.qlm_to_qiskit(circuit)

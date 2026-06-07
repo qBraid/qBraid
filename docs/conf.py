@@ -47,6 +47,7 @@ autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = [
     "autoqasm",
+    "qat",
     "boto3",
     "braket",
     "cirq",
@@ -65,14 +66,15 @@ autodoc_mock_imports = [
     "cudaq",
     "flair_visual",
     "bloqade",
-    "pasqal_cloud",
-    "pulser",
     "pandas",
     "pyqpanda3",
+    "pulser",
     "pyqubo",
     "azure",
     "qnexus",
     "quantinuum_schemas",
+    "pasqal_cloud",
+    "pulser"
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True

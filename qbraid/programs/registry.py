@@ -195,7 +195,7 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
         "pyqir": ExperimentType.GATE_MODEL,
         "stim": ExperimentType.GATE_MODEL,
         "qibo": ExperimentType.GATE_MODEL,
-        "myqlm": ExperimentType.GATE_MODEL,
+        "qat": ExperimentType.GATE_MODEL,
         "bloqade": ExperimentType.ANALOG,
         "pulser": ExperimentType.ANALOG,
     }

@@ -28,9 +28,17 @@ Functions
    qiskit_to_braket
    qiskit_to_pyqir
    qiskit_to_ionq
+   qiskit_to_qat
+   qat_to_qiskit
 
 """
-from .qiskit_extras import qiskit_to_braket, qiskit_to_ionq, qiskit_to_pyqir
+from .qiskit_extras import (
+    qat_to_qiskit,
+    qiskit_to_braket,
+    qiskit_to_ionq,
+    qiskit_to_pyqir,
+    qiskit_to_qat,
+)
 from .qiskit_to_qasm2 import qiskit_to_qasm2
 from .qiskit_to_qasm3 import qiskit_to_qasm3
 
@@ -40,4 +48,6 @@ __all__ = [
     "qiskit_to_braket",
     "qiskit_to_pyqir",
     "qiskit_to_ionq",
+    "qiskit_to_qat",
+    "qat_to_qiskit",
 ]
