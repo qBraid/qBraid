@@ -255,13 +255,15 @@ def _quiltwoqubit_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
-def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
+def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.SwapPowGate, op.gate)
     if gate._exponent % 2 == 1:
         return formatter.format("SWAP {0} {1}\n", op.qubits[0], op.qubits[1])
-    return formatter.format(
-        "PSWAP({0}) {1} {2}\n", gate._exponent * np.pi, op.qubits[0], op.qubits[1]
-    )
+    # Non-integer powers: Quil's PSWAP is a parametric swap-with-phase, not a
+    # fractional SWAP, so PSWAP(pi*t) does not reproduce SWAP**t. Return None to
+    # fall back to cirq's decomposition (CNOT / RY / CPHASE), which Quil
+    # represents exactly.
+    return None
 
 
 def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
@@ -317,9 +319,7 @@ def _xxpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     # e^{i pi t}, 1) realized exactly (including global phase) by single-qubit
     # PHASE gates and a CPHASE.
     return formatter.format(
-        "H {0}\nH {1}\n"
-        "PHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\n"
-        "H {0}\nH {1}\n",
+        "H {0}\nH {1}\nPHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\nH {0}\nH {1}\n",
         op.qubits[0],
         op.qubits[1],
         gate._exponent * np.pi,

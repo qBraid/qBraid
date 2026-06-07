@@ -177,3 +177,17 @@ def test_cirq_to_pyquil_ising_gate_roundtrip(gate, exponent):
     cirq_in = Circuit(gate(exponent=exponent).on(q0, q1))
     cirq_out = pyquil_to_cirq(cirq_to_pyquil(cirq_in))
     assert circuits_allclose(cirq_in, cirq_out, strict_gphase=True)
+
+
+@pytest.mark.parametrize("exponent", [0.5, 1.0, 0.75, -0.8, 2.0, 0.0])
+def test_cirq_to_pyquil_swappow_roundtrip(exponent):
+    """Cirq SwapPowGate round-trips through pyQuil exactly.
+
+    Non-integer powers were previously emitted as ``PSWAP(pi*t)``, a parametric
+    swap-with-phase whose unitary differs from a fractional ``SWAP**t``. They now
+    fall back to cirq's CNOT / RY / CPHASE decomposition.
+    """
+    q0, q1 = LineQubit.range(2)
+    cirq_in = Circuit(cirq_ops.SwapPowGate(exponent=exponent).on(q0, q1))
+    cirq_out = pyquil_to_cirq(cirq_to_pyquil(cirq_in))
+    assert circuits_allclose(cirq_in, cirq_out, strict_gphase=True)

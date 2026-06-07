@@ -326,7 +326,11 @@ CPHASE({np.pi / 2}) 0 1
 RY({np.pi / 2}) 1
 SWAP 0 1
 SWAP 1 0
-PSWAP({3 * np.pi / 4}) 0 1
+CNOT 0 1
+RY({-np.pi / 2}) 0
+CPHASE({3 * np.pi / 4}) 1 0
+RY({np.pi / 2}) 0
+CNOT 0 1
 H 2
 CCNOT 0 1 2
 H 2

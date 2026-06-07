@@ -50,7 +50,7 @@ print(result.data.get_counts())
 ### Removed
 
 ### Fixed
-- Fixed Cirq → pyQuil transpilation of the `XXPowGate`, `YYPowGate`, and `ZZPowGate` interaction gates for non-integer exponents. These were previously decomposed into independent single-qubit rotations, producing a circuit whose unitary did not match the input. They now round-trip exactly (including global phase) via `PHASE`/`CPHASE` decompositions. ([#386](https://github.com/qBraid/qBraid/issues/386))
+- Fixed Cirq → pyQuil transpilation of the `XXPowGate`, `YYPowGate`, `ZZPowGate`, and `SwapPowGate` two-qubit gates for non-integer exponents. The interaction gates were previously decomposed into independent single-qubit rotations, and `SwapPowGate` was emitted as `PSWAP` (a parametric swap-with-phase), both producing a circuit whose unitary did not match the input. The interaction gates now round-trip exactly (including global phase) via `PHASE`/`CPHASE` decompositions, and `SwapPowGate` falls back to cirq's `CNOT`/`RY`/`CPHASE` decomposition. ([#386](https://github.com/qBraid/qBraid/issues/386))
 - Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
 
 ### Dependencies
