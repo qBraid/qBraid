@@ -23,7 +23,6 @@ import string
 
 import numpy as np
 import pytest
-from cirq.contrib.qasm_import import circuit_from_qasm
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler import ConversionGraph, transpile
@@ -172,11 +171,11 @@ def convert_from_pytket_to_x(target, circuit_name, circuits, graph):
     target program type, and check equivalence.
     """
     source_circuit = circuits[circuit_name]
-    circuit = transpile(source_circuit, "cirq", conversion_graph=graph)
-    qasm = circuit.to_qasm()
-    cirq_circuit = circuit_from_qasm(qasm)
-    target_circuit = transpile(cirq_circuit, target)
-    assert circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
+    target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    # index_contig drops idle qubits before comparing unitaries; some targets
+    # (e.g. cirq, braket) omit idle qubits on conversion while the source keeps
+    # the full register, so without it the unitary dimensions would mismatch.
+    assert circuits_allclose(source_circuit, target_circuit, index_contig=True, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
