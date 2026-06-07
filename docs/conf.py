@@ -59,6 +59,7 @@ autodoc_mock_imports = [
     "qcaas_client",
     "qiskit",
     "qiskit_ibm_runtime",
+    "qrisp",
     "scc",
     "stim",
     "sympy",

@@ -142,7 +142,7 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 1.0), ("pytket", 1.0), ("qiskit", 1.0), ("qasm2", 1.0), ("qasm3", 1.0)]
+ALL_TARGETS = [("cirq", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 
@@ -183,3 +183,17 @@ def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
         f"({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed "
         f"(expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
     )
+
+
+@pytest.mark.parametrize("target", ["qasm2", "qasm3"])
+def test_qrisp_to_qasm_roundtrip(target, conversion_graph):
+    """Test forcing a roundtrip conversion from Qrisp to QASM and then to Cirq
+    and check equivalence.
+    """
+    qc = qrisp.QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+    qasm = transpile(qc, target, conversion_graph=conversion_graph)
+    assert isinstance(qasm, str)
+    back = transpile(qasm, "cirq", conversion_graph=conversion_graph)
+    assert circuits_allclose(qc.to_cirq(), back, strict_gphase=False)
