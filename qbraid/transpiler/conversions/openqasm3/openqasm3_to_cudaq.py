@@ -18,7 +18,7 @@ Module defining OpenQASM 3 to CUDA-Q conversion function.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import pyqasm
 from openqasm3 import ast
@@ -33,14 +33,6 @@ if TYPE_CHECKING:
     from cudaq import PyKernel, QuakeValue
 
     from qbraid.programs.typer import QasmStringType
-
-
-def _safe_getattr(obj: object, name: str) -> Optional[object]:
-    """getattr that returns None instead of recursing on cudaq 0.12's buggy __getattr__."""
-    try:
-        return getattr(obj, name)
-    except (AttributeError, RecursionError):  # pragma: no cover
-        return None
 
 
 def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
@@ -105,7 +97,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
     program = module.unrolled_ast
 
     kernel: PyKernel = cudaq.make_kernel()
-    ctx: dict[str, Optional[QuakeValue]] = {}
+    ctx: dict[str, QuakeValue | None] = {}
     gate_kernels: dict[str, PyKernel] = {}
 
     def get_gate(name: str, targs: tuple[type]) -> PyKernel:
@@ -178,7 +170,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                 ), f"non-ctrl modifiers should've be unrolled: {mod}"
 
                 ctrl_name = "c" + name
-                ctrl_op = _safe_getattr(kernel, ctrl_name)
+                ctrl_op = getattr(kernel, ctrl_name, None)
                 if ctrl_op is not None:
                     if args:
                         ctrl_op(*args, *qubit_refs)
@@ -197,7 +189,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                     "rz",
                 ]:
                     # pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
-                    ctrl_op = _safe_getattr(kernel, namel)
+                    ctrl_op = getattr(kernel, namel, None)
                     if ctrl_op is not None:
                         if args:  # pragma: no cover
                             ctrl_op(*args, *qubit_refs)
@@ -207,7 +199,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                         gate = get_gate(namel[1:], targs)
                         kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
                 else:
-                    op = _safe_getattr(kernel, name)
+                    op = getattr(kernel, name, None)
                     if op is not None:
                         if args:
                             op(*args, *qubit_refs)

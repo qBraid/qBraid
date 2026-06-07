@@ -33,11 +33,8 @@ if TYPE_CHECKING:
 @weight(1)
 def cudaq_to_qasm2(kernel: PyKernel) -> Qasm2StringType:
     """Converts a CUDA-Q kernel to QASM2."""
-    try:
-        kernel.compile()
-    except (AttributeError, RecursionError):  # pragma: no cover
-        pass
+    kernel.compile()
     result = cudaq.translate(kernel, format="openqasm2")
-    if result == "{translation failed}":  # pragma: no cover
+    if result == "{translation failed}":
         raise ValueError("CUDA-Q kernel translation to OpenQASM 2.0 failed.")
     return result
