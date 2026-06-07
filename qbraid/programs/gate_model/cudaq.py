@@ -56,8 +56,10 @@ class CudaQKernel(GateModelProgram):
 
     def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
-        if hasattr(self.program, "compile"):
+        try:
             self.program.compile()
+        except (AttributeError, RecursionError):
+            pass
         qir: str = cudaq.translate(self.program, format="qir-base")
         return Program(
             format="qir.ll",

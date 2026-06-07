@@ -51,8 +51,10 @@ def _check_output(qasm3_str_in: str, cudaq_out: PyKernel, atol=1e-7, method="cir
         - 'state' to compute statevectors -> all close. requires no measurement.
     """
     if method == "circ":
-        if hasattr(cudaq_out, "compile"):
+        try:
             cudaq_out.compile()
+        except (AttributeError, RecursionError):
+            pass
         qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
         qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
         circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)

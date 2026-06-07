@@ -35,8 +35,10 @@ pyqir = LazyLoader("pyqir", globals(), "pyqir")
 @requires_extras("pyqir")
 def cudaq_to_pyqir(kernel: PyKernel) -> Module:
     """Converts a CUDA-Q kernel to PyQIR."""
-    if hasattr(kernel, "compile"):
+    try:
         kernel.compile()
+    except (AttributeError, RecursionError):
+        pass
     llvm_ir = cudaq.translate(kernel, format="qir")
     context = pyqir.Context()
     module = pyqir.Module.from_ir(context, llvm_ir, "main")
