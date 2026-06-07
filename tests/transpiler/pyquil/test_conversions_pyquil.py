@@ -20,7 +20,6 @@ import numpy as np
 import pytest
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
-from cirq.contrib.qasm_import import circuit_from_qasm
 
 try:
     from pyquil import Program
@@ -102,9 +101,7 @@ def test_to_from_pyquil_quil_string():
     and forth perfectly (in terms of labels -- the program unitaries and
     number of measurements are equivalent)."""
     p = Program(QUIL_STRING)
-    p_cirq = pyquil_to_cirq(p)
-    p_cirq = circuit_from_qasm(p_cirq.to_qasm())
-    p_test = cirq_to_pyquil(p_cirq)
+    p_test = cirq_to_pyquil(pyquil_to_cirq(p))
     assert circuits_allclose(p, p_test)
 
 
@@ -191,3 +188,18 @@ def test_cirq_to_pyquil_swappow_roundtrip(exponent):
     cirq_in = Circuit(cirq_ops.SwapPowGate(exponent=exponent).on(q0, q1))
     cirq_out = pyquil_to_cirq(cirq_to_pyquil(cirq_in))
     assert circuits_allclose(cirq_in, cirq_out, strict_gphase=True)
+
+
+@pytest.mark.parametrize(
+    "instr", ["CPHASE00(pi/2) 0 1", "CPHASE01(pi/2) 0 1", "CPHASE10(pi/2) 0 1"]
+)
+def test_cirq_to_pyquil_two_qubit_diagonal_roundtrip(instr):
+    """pyQuil CPHASExx gates round-trip through cirq.
+
+    ``pyquil_to_cirq`` represents these as a ``TwoQubitDiagonalGate`` whose
+    diagonal angles are stored as a complex array; ``cirq_to_pyquil`` previously
+    raised ``TypeError`` formatting them (``Fraction`` of a complex value).
+    """
+    p = Program(instr)
+    p_test = cirq_to_pyquil(pyquil_to_cirq(p))
+    assert circuits_allclose(p, p_test)
