@@ -68,4 +68,4 @@ def qiskit_to_qrisp(qiskit_qc: qiskit_.QuantumCircuit) -> qrisp_.QuantumCircuit:
 
     target = Target.from_configuration(basis_gates=basis_set)
 
-    return convert_from_qiskit(transpile(qiskit_qc, target=target))
+    return convert_from_qiskit(transpile(qiskit_qc, target=target, optimization_level=0))
