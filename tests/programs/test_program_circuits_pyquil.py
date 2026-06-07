@@ -21,7 +21,7 @@ import pytest
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, H
+    from pyquil.gates import CNOT, MEASURE, H
     from qbraid_core.services.runtime.schemas import Program as RuntimeProgram
 
     from qbraid.programs.exceptions import ProgramTypeError
@@ -89,3 +89,20 @@ def test_reverse_qubit_order():
     out = program.program.out()
     assert "H 1" in out
     assert "CNOT 1 0" in out
+
+
+def test_remove_idle_qubits_remaps_measurements_and_passes_through_declarations():
+    """Measurements are remapped and non-gate instructions (e.g. DECLARE) are
+    preserved when remapping qubits."""
+    program = Program()
+    ro = program.declare("ro", "BIT", 1)
+    program += H(2)
+    program += MEASURE(2, ro[0])
+
+    qprogram = PyQuilProgram(program)
+    qprogram.remove_idle_qubits()
+    out = qprogram.program.out()
+
+    assert "DECLARE ro BIT[1]" in out
+    assert "H 0" in out
+    assert "MEASURE 0 ro[0]" in out
