@@ -49,6 +49,7 @@ print(result.data.get_counts())
 ### Deprecated
 
 ### Removed
+- Removed pytket-braket dependency from braket optional dependencies ([#1176](https://github.com/qBraid/qBraid/pull/1176))
 
 ### Fixed
 - Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
