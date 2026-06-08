@@ -135,11 +135,14 @@ def test_pennylane_to_qasm3_basic():
     """Test basic pennylane to QASM3 conversion with Clifford gates."""
     tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
     result = pennylane_to_qasm3(tape)
-    assert "OPENQASM 3.0;" in result
-    assert 'include "stdgates.inc";' in result
-    assert "qubit[2] q;" in result
-    assert "h q[0];" in result
-    assert "cx q[0], q[1];" in result
+    lines = result.splitlines()
+    assert lines == [
+        "OPENQASM 3.0;",
+        'include "stdgates.inc";',
+        "qubit[2] q;",
+        "h q[0];",
+        "cx q[0], q[1];",
+    ]
 
 
 @pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
@@ -147,9 +150,15 @@ def test_pennylane_to_qasm3_parameterized():
     """Test pennylane to QASM3 with parameterized rotation gates."""
     tape = qml.tape.QuantumScript([qml.RX(1.5707963, 0), qml.RY(3.1415926, 1), qml.RZ(0.5, 0)])
     result = pennylane_to_qasm3(tape)
-    assert "rx(1.5707963) q[0];" in result
-    assert "ry(3.1415926) q[1];" in result
-    assert "rz(0.5) q[0];" in result
+    lines = result.splitlines()
+    assert lines == [
+        "OPENQASM 3.0;",
+        'include "stdgates.inc";',
+        "qubit[2] q;",
+        "rx(1.5707963) q[0];",
+        "ry(3.1415926) q[1];",
+        "rz(0.5) q[0];",
+    ]
 
 
 @pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
@@ -157,8 +166,14 @@ def test_pennylane_to_qasm3_adjoint_gates():
     """Test pennylane to QASM3 with adjoint (dagger) gates."""
     tape = qml.tape.QuantumScript([qml.adjoint(qml.S)(0), qml.adjoint(qml.T)(1)])
     result = pennylane_to_qasm3(tape)
-    assert "sdg q[0];" in result
-    assert "tdg q[1];" in result
+    lines = result.splitlines()
+    assert lines == [
+        "OPENQASM 3.0;",
+        'include "stdgates.inc";',
+        "qubit[2] q;",
+        "sdg q[0];",
+        "tdg q[1];",
+    ]
 
 
 @pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
@@ -166,8 +181,15 @@ def test_pennylane_to_qasm3_multiqubit():
     """Test pennylane to QASM3 with multi-qubit gates including Toffoli."""
     tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1]), qml.Toffoli([0, 1, 2])])
     result = pennylane_to_qasm3(tape)
-    assert "qubit[3] q;" in result
-    assert "ccx q[0], q[1], q[2];" in result
+    lines = result.splitlines()
+    assert lines == [
+        "OPENQASM 3.0;",
+        'include "stdgates.inc";',
+        "qubit[3] q;",
+        "h q[0];",
+        "cx q[0], q[1];",
+        "ccx q[0], q[1], q[2];",
+    ]
 
 
 @pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
