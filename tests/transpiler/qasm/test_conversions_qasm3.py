@@ -28,6 +28,15 @@ from qbraid.transpiler.conversions.qasm2.qasm2_to_cirq import qasm2_to_cirq
 from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import qasm3_to_cirq
 from qbraid.transpiler.converter import transpile
 
+try:
+    import pennylane as qml
+
+    from qbraid.transpiler.conversions.pennylane.pennylane_to_qasm3 import pennylane_to_qasm3
+
+    pennylane_not_installed = False
+except ImportError:
+    pennylane_not_installed = True
+
 
 def test_one_qubit_qiskit_to_braket():
     """Test converting qiskit to braket for one qubit circuit."""
@@ -119,3 +128,60 @@ def test_qasm2_to_cirq_preserves_cirq_qasm3_lexer():
     assert "STDGATESINC" in QasmLexer.tokens
     circuit = qasm3_to_cirq('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nx q[0];\n')
     assert len(circuit) == 1
+
+
+@pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
+def test_pennylane_to_qasm3_basic():
+    """Test basic pennylane to QASM3 conversion with Clifford gates."""
+    tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1])])
+    result = pennylane_to_qasm3(tape)
+    assert "OPENQASM 3.0;" in result
+    assert 'include "stdgates.inc";' in result
+    assert "qubit[2] q;" in result
+    assert "h q[0];" in result
+    assert "cx q[0], q[1];" in result
+
+
+@pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
+def test_pennylane_to_qasm3_parameterized():
+    """Test pennylane to QASM3 with parameterized rotation gates."""
+    tape = qml.tape.QuantumScript([qml.RX(1.5707963, 0), qml.RY(3.1415926, 1), qml.RZ(0.5, 0)])
+    result = pennylane_to_qasm3(tape)
+    assert "rx(1.5707963) q[0];" in result
+    assert "ry(3.1415926) q[1];" in result
+    assert "rz(0.5) q[0];" in result
+
+
+@pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
+def test_pennylane_to_qasm3_adjoint_gates():
+    """Test pennylane to QASM3 with adjoint (dagger) gates."""
+    tape = qml.tape.QuantumScript([qml.adjoint(qml.S)(0), qml.adjoint(qml.T)(1)])
+    result = pennylane_to_qasm3(tape)
+    assert "sdg q[0];" in result
+    assert "tdg q[1];" in result
+
+
+@pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
+def test_pennylane_to_qasm3_multiqubit():
+    """Test pennylane to QASM3 with multi-qubit gates including Toffoli."""
+    tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1]), qml.Toffoli([0, 1, 2])])
+    result = pennylane_to_qasm3(tape)
+    assert "qubit[3] q;" in result
+    assert "ccx q[0], q[1], q[2];" in result
+
+
+@pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
+def test_pennylane_to_qasm3_unsupported_gate():
+    """Test pennylane to QASM3 raises ValueError for unsupported gates."""
+    tape = qml.tape.QuantumScript([qml.QubitUnitary(np.eye(2), 0)])
+    with pytest.raises(ValueError, match="Unsupported PennyLane gate"):
+        pennylane_to_qasm3(tape)
+
+
+@pytest.mark.skipif(pennylane_not_installed, reason="pennylane not installed")
+def test_pennylane_to_qasm3_roundtrip():
+    """Test roundtrip: pennylane tape -> QASM3 -> pennylane function."""
+    tape = qml.tape.QuantumScript([qml.Hadamard(0), qml.CNOT([0, 1]), qml.RX(1.5707963, 0)])
+    qasm3_str = pennylane_to_qasm3(tape)
+    recovered_fn = qml.from_qasm3(qasm3_str)
+    assert callable(recovered_fn)

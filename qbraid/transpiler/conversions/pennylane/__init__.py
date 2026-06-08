@@ -24,8 +24,10 @@ Functions
    :toctree: ../stubs/
 
    pennylane_to_qasm2
+   pennylane_to_qasm3
 
 """
 from .pennylane_to_qasm2 import pennylane_to_qasm2
+from .pennylane_to_qasm3 import pennylane_to_qasm3
 
-__all__ = ["pennylane_to_qasm2"]
+__all__ = ["pennylane_to_qasm2", "pennylane_to_qasm3"]
