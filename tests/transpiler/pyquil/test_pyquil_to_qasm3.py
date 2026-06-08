@@ -19,9 +19,6 @@ Unit tests for pyQuil to OpenQASM 3 conversion.
 
 import pytest
 
-# Imported at top (not inside the pyquil guard) so a regression in the converter
-# surfaces as a test failure rather than being masked as "pyquil not installed".
-from qbraid.transpiler.conversions.pyquil.pyquil_to_qasm3 import pyquil_to_qasm3
 from qbraid.transpiler.exceptions import ProgramConversionError
 
 try:
@@ -45,6 +42,8 @@ try:
     )
     from pyquil.quilatom import QubitPlaceholder
     from pyquil.quilbase import DelayQubits, Fence
+
+    from qbraid.transpiler.conversions.pyquil.pyquil_to_qasm3 import pyquil_to_qasm3
 
     pyquil_not_installed = False
 except ImportError:
