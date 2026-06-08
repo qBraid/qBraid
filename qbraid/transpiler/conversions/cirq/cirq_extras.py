@@ -74,7 +74,7 @@ def cirq_to_pyqir(circuit: cirq.Circuit) -> pyqir.Module:
     return qbraid_qir.cirq.cirq_to_qir(circuit)
 
 
-@requires_extras("qat.interop.cirq", "cirq")
+@requires_extras("qat.interop.cirq")
 def cirq_to_qat(circuit: cirq.Circuit) -> QatCircuit:
     """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input Cirq circuit.
 

@@ -26,17 +26,11 @@ from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
 
 try:
-    from qbraid.transpiler.conversions.qiskit.qiskit_extras import (
-        qat_to_qiskit,
-        qiskit_to_qat,
-    )
-except (ImportError, ModuleNotFoundError):
-    qiskit_to_qat = None  # type: ignore[assignment]
-    qat_to_qiskit = None  # type: ignore[assignment]
-
-try:
     from qbraid.transpiler.conversions.cirq.cirq_extras import cirq_to_qat
+
+    HAS_CIRQ_PKG = True
 except (ImportError, ModuleNotFoundError):
+    HAS_CIRQ_PKG = False
     cirq_to_qat = None  # type: ignore[assignment]
 
 
@@ -96,65 +90,6 @@ def test_qasm2_to_qat_graph_reachable():
 
 
 # ---------------------------------------------------------------------------
-# qiskit_to_qat / qat_to_qiskit
-# ---------------------------------------------------------------------------
-
-
-@pytest.mark.skipif(not has_extra(qiskit_to_qat), reason="Extra not installed")
-def test_qiskit_to_qat_returns_circuit():
-    """qiskit_to_qat should return a qat Circuit."""
-    from qat.core import Circuit as QatCircuit
-    from qiskit import QuantumCircuit
-
-    qc = QuantumCircuit(2)
-    qc.h(0)
-    qc.cx(0, 1)
-    result = qiskit_to_qat(qc)
-    assert isinstance(result, QatCircuit)
-
-
-@pytest.mark.skipif(not has_extra(qat_to_qiskit), reason="Extra not installed")
-def test_qat_to_qiskit_roundtrip():
-    """qiskit to qat to qiskit round-trip should preserve qubit count."""
-    from qiskit import QuantumCircuit
-    from qiskit.circuit import QuantumCircuit as QiskitCircuit
-
-    qc = QuantumCircuit(2)
-    qc.h(0)
-    qc.cx(0, 1)
-    result = qat_to_qiskit(qiskit_to_qat(qc))
-    assert isinstance(result, QiskitCircuit)
-    assert result.num_qubits == qc.num_qubits
-
-
-@pytest.mark.skipif(not has_extra(qiskit_to_qat), reason="Extra not installed")
-def test_qiskit_qat_graph_reachable():
-    """qiskit and qat edges should be reachable via ConversionGraph."""
-    graph = ConversionGraph(
-        conversions=[
-            Conversion("qiskit", "qat", qiskit_to_qat),
-            Conversion("qat", "qiskit", qat_to_qiskit),
-        ]
-    )
-    assert graph.has_path("qiskit", "qat")
-    assert graph.has_path("qat", "qiskit")
-
-
-@pytest.mark.skipif(not has_extra(qiskit_to_qat), reason="Extra not installed")
-def test_qiskit_qat_semantic_equivalence():
-    """qiskit to qat to qiskit round-trip should be semantically equivalent."""
-    from qiskit import QuantumCircuit
-
-    from qbraid.interface import circuits_allclose
-
-    qc = QuantumCircuit(2)
-    qc.h(0)
-    qc.cx(0, 1)
-    round_tripped = qat_to_qiskit(qiskit_to_qat(qc))
-    assert circuits_allclose(qc, round_tripped, strict_gphase=False)
-
-
-# ---------------------------------------------------------------------------
 # cirq_to_qat
 # ---------------------------------------------------------------------------
 
@@ -209,19 +144,9 @@ def test_qasm2_to_qat_requires_extras_attribute():
     assert "qat.interop.openqasm" in qasm2_to_qat.requires_extras
 
 
-def test_qiskit_to_qat_requires_extras_attribute():
-    """qiskit_to_qat must declare extras as importable module names."""
-    if not has_extra(qiskit_to_qat):
-        pytest.skip("qiskit extras not available")
-    assert hasattr(qiskit_to_qat, "requires_extras")
-    assert "qat.interop.qiskit" in qiskit_to_qat.requires_extras
-    assert "qiskit" in qiskit_to_qat.requires_extras
-
-
 def test_cirq_to_qat_requires_extras_attribute():
     """cirq_to_qat must declare extras as importable module names."""
     if not has_extra(cirq_to_qat):
         pytest.skip("cirq extras not available")
     assert hasattr(cirq_to_qat, "requires_extras")
     assert "qat.interop.cirq" in cirq_to_qat.requires_extras
-    assert "cirq" in cirq_to_qat.requires_extras

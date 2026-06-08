@@ -28,13 +28,11 @@ from qbraid.transpiler.annotations import requires_extras
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 qbraid_qir_qiskit = LazyLoader("qbraid_qir_qiskit", globals(), "qbraid_qir.qiskit")
 qiskit_ionq = LazyLoader("qiskit_ionq", globals(), "qiskit_ionq")
-qat_interop_qiskit = LazyLoader("qat_interop_qiskit", globals(), "qat.interop.qiskit")
 
 if TYPE_CHECKING:
     import braket.circuits
     import pyqir
     import qiskit.circuit
-    from qat.core.wrappers.circuit import Circuit as QatCircuit  # type: ignore
 
     import qbraid.programs
 
@@ -92,29 +90,3 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
         "qubits": circuit.num_qubits,
         "circuit": instrs,
     }
-
-
-@requires_extras("qat.interop.qiskit", "qiskit")
-def qiskit_to_qat(circuit: qiskit.circuit.QuantumCircuit) -> QatCircuit:
-    """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input Qiskit circuit.
-
-    Args:
-        circuit: Qiskit QuantumCircuit to convert.
-
-    Returns:
-        qat.core.wrappers.circuit.Circuit equivalent to the input Qiskit circuit.
-    """
-    return qat_interop_qiskit.qiskit_to_qlm(circuit)
-
-
-@requires_extras("qat.interop.qiskit", "qiskit")
-def qat_to_qiskit(circuit: QatCircuit) -> qiskit.circuit.QuantumCircuit:
-    """Returns a Qiskit QuantumCircuit equivalent to the input qat circuit.
-
-    Args:
-        circuit: qat.core.wrappers.circuit.Circuit to convert.
-
-    Returns:
-        Qiskit QuantumCircuit equivalent to the input qat circuit.
-    """
-    return qat_interop_qiskit.qlm_to_qiskit(circuit)
