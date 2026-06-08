@@ -19,8 +19,6 @@ Unit tests for pyQuil to OpenQASM 3 conversion.
 
 import pytest
 
-from qbraid.transpiler.exceptions import ProgramConversionError
-
 try:
     from pyquil import Program
     from pyquil.gates import (
@@ -44,6 +42,7 @@ try:
     from pyquil.quilbase import DelayQubits, Fence
 
     from qbraid.transpiler.conversions.pyquil.pyquil_to_qasm3 import pyquil_to_qasm3
+    from qbraid.transpiler.exceptions import ProgramConversionError
 
     pyquil_not_installed = False
 except ImportError:
