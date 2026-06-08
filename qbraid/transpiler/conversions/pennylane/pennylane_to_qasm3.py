@@ -48,6 +48,7 @@ _PENNYLANE_TO_QASM3_GATE_MAP: dict[str, str] = {
     "Toffoli": "ccx",
     "CSWAP": "cswap",
     "CPhaseShift": "cp",
+    "ControlledPhaseShift": "cp",
     "IsingXX": "rxx",
     "IsingYY": "ryy",
     "IsingZZ": "rzz",
