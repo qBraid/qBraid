@@ -162,7 +162,12 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("braket", 0.64), ("cirq", 0.66), ("pyquil", 0.66), ("qiskit", 0.66)]
+# Per-target accuracy baselines. Measured coverage is ~0.96 for braket/cirq/qiskit
+# and ~0.92 for pyquil; the baselines sit a few points below to catch real
+# regressions while tolerating cross-version gate-support variance. (They were
+# previously ~0.65, set for the older via-cirq comparison path that #1215 replaced
+# with a direct, index-contiguous comparison.)
+ALL_TARGETS = [("braket", 0.96), ("cirq", 0.96), ("pyquil", 0.92), ("qiskit", 0.96)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 
