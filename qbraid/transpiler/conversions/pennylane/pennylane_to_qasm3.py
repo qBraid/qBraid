@@ -94,9 +94,7 @@ def pennylane_to_qasm3(tape: QuantumScript) -> "Qasm3StringType":
     ]
 
     # classical registers for measurements
-    meas_ops = [
-        op for op in tape.operations if op.name == "Measure"
-    ] + [
+    meas_ops = [op for op in tape.operations if op.name == "Measure"] + [
         obs for obs in getattr(tape, "observables", []) if getattr(obs, "name", "") == "Measure"
     ]
     if meas_ops or any(m.return_type is not None for m in getattr(tape, "measurements", [])):
