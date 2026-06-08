@@ -59,6 +59,8 @@ _PENNYLANE_TO_QASM3_GATE_MAP: dict[str, str] = {
     "CRY": "cry",
     "CRZ": "crz",
     "Identity": "id",
+    "Measure": "measure",
+    "Reset": "reset",
 }
 
 
@@ -91,6 +93,15 @@ def pennylane_to_qasm3(tape: QuantumScript) -> "Qasm3StringType":
         f"qubit[{n_qubits}] q;",
     ]
 
+    # classical registers for measurements
+    meas_ops = [
+        op for op in tape.operations if op.name == "Measure"
+    ] + [
+        obs for obs in getattr(tape, "observables", []) if getattr(obs, "name", "") == "Measure"
+    ]
+    if meas_ops or any(m.return_type is not None for m in getattr(tape, "measurements", [])):
+        lines.append(f"bit[{n_qubits}] c;")
+
     for op in tape.operations:
         name = op.name
         if name not in _PENNYLANE_TO_QASM3_GATE_MAP:
@@ -102,7 +113,14 @@ def pennylane_to_qasm3(tape: QuantumScript) -> "Qasm3StringType":
         wires = [wire_index[w] for w in op.wires.tolist()]
         qubit_str = ", ".join(f"q[{w}]" for w in wires)
 
-        if op.parameters:
+        if name == "Measure":
+            # measure q[i] -> c[i];
+            for w in wires:
+                lines.append(f"measure q[{w}] -> c[{w}];")
+        elif name == "Reset":
+            for w in wires:
+                lines.append(f"reset q[{w}];")
+        elif op.parameters:
             param_str = ", ".join(str(float(p)) for p in op.parameters)
             lines.append(f"{qasm_name}({param_str}) {qubit_str};")
         else:

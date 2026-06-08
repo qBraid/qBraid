@@ -168,6 +168,34 @@ def test_roundtrip_via_from_qasm3():
     assert "cx" in roundtrip
 
 
+def test_measure_operation():
+    """Measure operation produces 'bit[n] c;' register and 'measure q[i] -> c[i];' lines."""
+    ops = [
+        qml.Hadamard(wires=0),
+        qml.CNOT(wires=[0, 1]),
+        qml.measure(0),
+        qml.measure(1),
+    ]
+    tape = QuantumScript(ops)
+    qasm3 = pennylane_to_qasm3(tape)
+
+    assert "bit[2] c;" in qasm3
+    assert "measure q[0] -> c[0];" in qasm3
+    assert "measure q[1] -> c[1];" in qasm3
+
+
+def test_reset_operation():
+    """Reset operation produces 'reset q[i];' lines."""
+    ops = [
+        qml.Hadamard(wires=0),
+        qml.Reset(wires=[0]),
+    ]
+    tape = QuantumScript(ops)
+    qasm3 = pennylane_to_qasm3(tape)
+
+    assert "reset q[0];" in qasm3
+
+
 def test_unsupported_gate_raises():
     """Converting a tape with an unsupported gate raises ValueError."""
 
