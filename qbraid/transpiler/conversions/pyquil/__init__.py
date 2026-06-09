@@ -24,8 +24,11 @@ Functions
    :toctree: ../stubs/
 
    pyquil_to_cirq
+   pyquil_to_qasm3
 
 """
-from .pyquil_to_cirq import pyquil_to_cirq
 
-__all__ = ["pyquil_to_cirq"]
+from .pyquil_to_cirq import pyquil_to_cirq
+from .pyquil_to_qasm3 import pyquil_to_qasm3
+
+__all__ = ["pyquil_to_cirq", "pyquil_to_qasm3"]
