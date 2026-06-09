@@ -16,16 +16,16 @@
 Module defining Pennylane OpenQASM conversions
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-import pennylane
-from pennylane.tape import QuantumTape
-
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
+    from pennylane.tape import QuantumTape
+
     from qbraid.programs.typer import Qasm2StringType
 
 
@@ -40,4 +40,6 @@ def pennylane_to_qasm2(tape: QuantumTape) -> Qasm2StringType:
         str: OpenQASM 2.0 representation of the tape
 
     """
+    import pennylane  # pylint: disable=import-outside-toplevel
+
     return pennylane.to_openqasm(tape, measure_all=False)

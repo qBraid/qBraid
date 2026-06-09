@@ -47,6 +47,7 @@ autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = [
     "autoqasm",
+    "qat",
     "boto3",
     "braket",
     "cirq",

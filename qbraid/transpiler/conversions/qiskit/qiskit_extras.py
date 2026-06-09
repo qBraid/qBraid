@@ -16,6 +16,7 @@
 Module defining Qiskit conversion extras.
 
 """
+
 from __future__ import annotations
 
 import warnings
@@ -28,9 +29,11 @@ from qbraid.transpiler.annotations import requires_extras
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 qbraid_qir_qiskit = LazyLoader("qbraid_qir_qiskit", globals(), "qbraid_qir.qiskit")
 qiskit_ionq = LazyLoader("qiskit_ionq", globals(), "qiskit_ionq")
+pennylane_qiskit = LazyLoader("pennylane_qiskit", globals(), "pennylane_qiskit")
 
 if TYPE_CHECKING:
     import braket.circuits
+    import pennylane.tape
     import pyqir
     import qiskit.circuit
 
@@ -90,3 +93,23 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
         "qubits": circuit.num_qubits,
         "circuit": instrs,
     }
+
+
+@requires_extras("pennylane_qiskit")
+def qiskit_to_pennylane(
+    circuit: qiskit.circuit.QuantumCircuit, **kwargs
+) -> pennylane.tape.QuantumTape:
+    """Returns a PennyLane tape equivalent to the input Qiskit quantum circuit.
+
+    Args:
+        circuit (qiskit.circuit.QuantumCircuit): Qiskit circuit to convert to a PennyLane tape.
+
+    Returns:
+        pennylane.tape.QuantumTape: PennyLane tape equivalent to input Qiskit circuit.
+    """
+    import pennylane as qml  # pylint: disable=import-outside-toplevel
+
+    quantum_fn = pennylane_qiskit.load(circuit)
+    with qml.tape.QuantumTape() as tape:
+        quantum_fn(**kwargs)
+    return tape
