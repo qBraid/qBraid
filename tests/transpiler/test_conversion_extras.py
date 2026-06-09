@@ -30,7 +30,9 @@ except ImportError:
     pyqir_installed = False
 
 
+from qbraid.interface import assert_allclose_up_to_global_phase
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
+from qbraid.programs import load_program
 from qbraid.transpiler.conversions.pennylane import pennylane_to_braket, pennylane_to_cirq, pennylane_to_qiskit
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pennylane, qiskit_to_pyqir
@@ -227,7 +229,9 @@ def test_pennylane_qiskit_roundtrip_bell():
     qiskit_program = transpile(tape, "qiskit", conversion_graph=graph, max_path_depth=1)
     back = transpile(qiskit_program, "pennylane", conversion_graph=graph, max_path_depth=1)
     assert isinstance(back, pennylane.tape.QuantumTape)
-    assert len(back.operations) == len(tape.operations)
+    assert_allclose_up_to_global_phase(
+        load_program(back).unitary(), load_program(tape).unitary(), atol=1e-7
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -244,17 +248,11 @@ def test_pennylane_to_braket_extra_bell():
     program = transpile(tape, "braket", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, braket.circuits.Circuit)
     assert program.qubit_count == 2
-
-
-@pytest.mark.skipif(not has_extra(pennylane_to_braket), reason="Extra not installed")
-def test_pennylane_to_braket_extra_instruction_count():
-    """Test that converted Braket circuit has the expected number of instructions."""
-    tape = pennylane_bell_tape()
-    conversions = [Conversion("pennylane", "braket", pennylane_to_braket)]
-    graph = ConversionGraph(conversions)
-    program = transpile(tape, "braket", conversion_graph=graph, max_path_depth=1)
     # Bell circuit: H + CNOT = 2 instructions
     assert len(list(program.instructions)) == 2
+    assert_allclose_up_to_global_phase(
+        load_program(program).unitary(), load_program(tape).unitary(), atol=1e-7
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -273,3 +271,6 @@ def test_pennylane_to_cirq_extra_bell_and_qubit_count():
     program = transpile(tape, "cirq", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, cirq.Circuit)
     assert len(program.all_qubits()) == 2
+    assert_allclose_up_to_global_phase(
+        load_program(program).unitary(), load_program(tape).unitary(), atol=1e-7
+    )
