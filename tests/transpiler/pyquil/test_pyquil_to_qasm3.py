@@ -38,8 +38,8 @@ try:
         T,
         U,
     )
-    from pyquil.quilatom import QubitPlaceholder
-    from pyquil.quilbase import DelayQubits, Fence
+    from pyquil.quilatom import MemoryReference, Parameter, Qubit, QubitPlaceholder
+    from pyquil.quilbase import DelayQubits, Fence, FenceAll, Gate, Measurement
 
     from qbraid.transpiler.conversions.pyquil.pyquil_to_qasm3 import pyquil_to_qasm3
     from qbraid.transpiler.exceptions import ProgramConversionError
@@ -166,5 +166,54 @@ def test_pyquil_to_qasm3_feedforward_unsupported_raises():
     ro = program.declare("ro", "BIT", 1)
     program += MEASURE(0, ro[0])
     program.if_then(ro[0], Program(H(1)))
+    with pytest.raises(ProgramConversionError):
+        pyquil_to_qasm3(program)
+
+
+def test_pyquil_to_qasm3_bare_reset_clears_whole_register():
+    """A bare RESET (no target) resets every qubit in the register."""
+    result = pyquil_to_qasm3(Program(H(0), CNOT(0, 1), RESET()))
+    expected = _HEADER + "qubit[2] q;\nh q[0];\ncx q[0], q[1];\nreset q[0];\nreset q[1];\n"
+    assert result == expected
+
+
+def test_pyquil_to_qasm3_measure_without_target():
+    """MEASURE without a classical register emits a target-less measure."""
+    result = pyquil_to_qasm3(Program(H(0), MEASURE(0, None)))
+    expected = _HEADER + "qubit[1] q;\nh q[0];\nmeasure q[0];\n"
+    assert result == expected
+
+
+def test_pyquil_to_qasm3_fence_all_barriers_every_qubit():
+    """A FENCE over all qubits (FenceAll) barriers the whole register."""
+    program = Program(H(0), CNOT(0, 1))
+    program += FenceAll()
+    result = pyquil_to_qasm3(program)
+    expected = _HEADER + "qubit[2] q;\nh q[0];\ncx q[0], q[1];\nbarrier q[0], q[1];\n"
+    assert result == expected
+
+
+def test_pyquil_to_qasm3_unsupported_modifier_raises():
+    """A DAGGER on a gate with no adjoint mapping (e.g. H) raises."""
+    with pytest.raises(ProgramConversionError):
+        pyquil_to_qasm3(Program(H(0).dagger()))
+
+
+def test_pyquil_to_qasm3_unsupported_measurement_target_raises():
+    """Measuring into a register that was never DECLAREd raises."""
+    program = Program(Measurement(Qubit(0), MemoryReference("undeclared", 0)))
+    with pytest.raises(ProgramConversionError):
+        pyquil_to_qasm3(program)
+
+
+def test_pyquil_to_qasm3_non_numeric_param_raises():
+    """A symbolic (non-numeric) gate parameter raises."""
+    with pytest.raises(ProgramConversionError):
+        pyquil_to_qasm3(Program(RX(Parameter("theta"), 0)))
+
+
+def test_pyquil_to_qasm3_complex_param_raises():
+    """A gate parameter with a non-zero imaginary part raises."""
+    program = Program(Gate("RX", [1j], [Qubit(0)]))
     with pytest.raises(ProgramConversionError):
         pyquil_to_qasm3(program)
