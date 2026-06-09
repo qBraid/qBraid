@@ -154,7 +154,11 @@ def test_bell(bell_circuit, bell_unitary, target):
     if not conversion_graph.has_path(source, target):
         pytest.skip(f"{source} to {target} conversion not yet supported")
     qbraid_circuit = load_program(circuit)
-    transpiled_circuit = transpile(qbraid_circuit.program, target, conversion_graph=conversion_graph)
+    transpiled_circuit = transpile(
+        qbraid_circuit.program,
+        target,
+        conversion_graph=conversion_graph
+    )
     try:
         transpiled_unitary = load_program(transpiled_circuit).unitary()
         assert_allclose_up_to_global_phase(transpiled_unitary, bell_unitary, atol=1e-7)
