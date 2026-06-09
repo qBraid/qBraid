@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """
-Qiskit conversions
+Qrisp conversions
 
-.. currentmodule:: qbraid.transpiler.conversions.qiskit
+.. currentmodule:: qbraid.transpiler.conversions.qrisp
 
 Functions
 ----------
@@ -23,26 +23,24 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   qiskit_to_qasm2
-   qiskit_to_qasm3
-   qiskit_to_braket
-   qiskit_to_pyqir
-   qiskit_to_ionq
-   qiskit_to_qrisp
-   qiskit_to_pennylane
+   qrisp_to_cirq
+   qrisp_to_pytket
+   qrisp_to_qiskit
+   qrisp_to_qasm2
+   qrisp_to_qasm3
 
 """
-from .qiskit_extras import qiskit_to_braket, qiskit_to_ionq, qiskit_to_pennylane, qiskit_to_pyqir
-from .qiskit_to_qasm2 import qiskit_to_qasm2
-from .qiskit_to_qasm3 import qiskit_to_qasm3
-from .qiskit_to_qrisp import qiskit_to_qrisp
+
+from .qrisp_to_cirq import qrisp_to_cirq
+from .qrisp_to_pytket import qrisp_to_pytket
+from .qrisp_to_qasm2 import qrisp_to_qasm2
+from .qrisp_to_qasm3 import qrisp_to_qasm3
+from .qrisp_to_qiskit import qrisp_to_qiskit
 
 __all__ = [
-    "qiskit_to_qasm2",
-    "qiskit_to_qasm3",
-    "qiskit_to_braket",
-    "qiskit_to_pyqir",
-    "qiskit_to_ionq",
-    "qiskit_to_qrisp",
-    "qiskit_to_pennylane",
+    "qrisp_to_cirq",
+    "qrisp_to_pytket",
+    "qrisp_to_qiskit",
+    "qrisp_to_qasm2",
+    "qrisp_to_qasm3",
 ]
