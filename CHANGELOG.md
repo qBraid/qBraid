@@ -16,6 +16,12 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `cirq_to_pytket` and `pytket_to_cirq` transpiler conversions (via the `pytket-cirq` extension), giving a direct Cirq <-> PyTKET edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
+
+- Added `pytket_to_pyqir` transpiler conversion (via the `pytket-qir` extension), giving a direct PyTKET -> PyQIR edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
+
+- Added `pyquil_to_qasm3` conversion, providing a direct transpiler edge from pyQuil to OpenQASM 3 (previously only reachable via a lossy multi-hop path through cirq), and completing the pyQuil <-> OpenQASM 3 round trip alongside `openqasm3_to_pyquil` ([#1203](https://github.com/qBraid/qBraid/pull/1203)). ([#1208](https://github.com/qBraid/qBraid/pull/1208))
+
 - QASM conditional (`if`) statement support for Cirq conversions: `qasm2_to_cirq` and `qasm3_to_cirq` now translate classically-controlled (`if (c == val)`) operations into Cirq, backed by a new `normalize_if_blocks` pass that rewrites QASM 3 braced `if` blocks to the single-line form Cirq's parser accepts ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Added `openqasm3_to_pyquil` conversion, providing a direct, `pyqasm`-backed transpiler edge from OpenQASM 3 to pyQuil (previously only reachable via a lossy multi-hop path through cirq). Supports the standard gate set (incl. modifiers and controlled gates via `pyqasm` decomposition), measurement, `barrier` (→ `FENCE`), `reset` (→ `RESET`), `delay` (→ `DELAY`), and `if (c == 0|1)` classical feedforward (→ `JUMP-WHEN`); declared-but-idle qubits are padded with `I` so the operator dimension matches the source ([#1203](https://github.com/qBraid/qBraid/pull/1203))
 - Added `include_retired` parameter to `QbraidProvider.get_devices` method to optionally include retired devices in the device list ([#1201](https://github.com/qBraid/qBraid/pull/1201))

@@ -16,6 +16,7 @@
 Unit tests for conversions between Cirq circuits and pytket circuits.
 
 """
+
 import pytest
 
 try:
@@ -25,6 +26,8 @@ try:
     from pytket.qasm import circuit_to_qasm_str
 
     from qbraid.interface import circuits_allclose
+    from qbraid.transpiler.conversions.cirq import cirq_to_pytket
+    from qbraid.transpiler.conversions.pytket import pytket_to_cirq
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
     from qbraid.transpiler.converter import transpile
 
@@ -46,6 +49,18 @@ def test_bell_state_to_from_circuits():
     pytket_circuit = transpile(cirq_circuit, "pytket")  # pytket from Cirq
     circuit_cirq = transpile(pytket_circuit, "cirq")  # Cirq from pytket
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
+
+
+def test_cirq_pytket_direct_conversions():
+    """Directly exercises cirq_to_pytket / pytket_to_cirq (the new extras edges)."""
+    qreg = LineQubit.range(2)
+    cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
+
+    pytket_circuit = cirq_to_pytket(cirq_circuit)
+    assert isinstance(pytket_circuit, TKCircuit)
+
+    circuit_cirq = pytket_to_cirq(pytket_circuit)
+    assert circuits_allclose(cirq_circuit, circuit_cirq, strict_gphase=False)
 
 
 def test_random_circuit_to_from_circuits():
