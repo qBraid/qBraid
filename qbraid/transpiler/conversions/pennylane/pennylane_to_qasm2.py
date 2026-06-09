@@ -25,8 +25,8 @@ import pennylane
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
-    from pennylane.tape import QuantumTape
     from qbraid.programs.typer import Qasm2StringType
+    from pennylane.tape import QuantumTape
 
 
 @weight(1)
