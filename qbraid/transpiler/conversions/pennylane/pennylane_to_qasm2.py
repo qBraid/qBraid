@@ -16,6 +16,7 @@
 Module defining Pennylane OpenQASM conversions
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -26,7 +27,6 @@ if TYPE_CHECKING:
     from pennylane.tape import QuantumTape
 
     from qbraid.programs.typer import Qasm2StringType
-
 
 
 @weight(1)
