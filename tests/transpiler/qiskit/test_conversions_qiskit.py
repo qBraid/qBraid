@@ -178,15 +178,24 @@ def test_common_gates_from_qiskit():
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
-@pytest.mark.skip(reason="Phase gates resulting in error")
 def test_phase_gates_from_qiskit():
-    """Tests converting standard gates from Qiskit to Cirq."""
+    """Tests converting phase-family gates (p, sxdg, cp) from Qiskit to Cirq.
+
+    The gates act on a subset of the register, so ``index_contig=True`` drops the
+    idle qubits to give the source and converted unitaries matching dimensions.
+
+    Equivalence is checked up to global phase: these gates are not OpenQASM
+    stdgates, so Qiskit exports them as decompositions (e.g. ``sxdg`` becomes
+    ``s; h; s`` = ``exp(i*pi/4) . SXdg``), and QASM carries no global phase, so the
+    exact phase is not recoverable through the QASM-mediated path (and the
+    decomposition Qiskit chooses can vary by version).
+    """
     qiskit_circuit = QuantumCircuit(4)
     qiskit_circuit.p(np.pi / 8, 3)
     qiskit_circuit.sxdg(1)
     qiskit_circuit.cp(np.pi / 4, 2, 3)
     cirq_circuit = transpile(qiskit_circuit, "cirq")
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, index_contig=True, strict_gphase=False)
 
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))

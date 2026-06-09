@@ -23,6 +23,7 @@ from typing import Any, Callable, Optional, Union
 
 import rustworkx as rx
 
+from qbraid.programs.exceptions import PackageValueError
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.registry import (
     QPROGRAM_ALIASES,
@@ -130,7 +131,33 @@ class ConversionGraph(rx.PyDiGraph):
         self._node_alias_id_map: dict[str, int] = {}
         self._include_isolated = include_isolated
         self._init_nodes = set(nodes) if nodes is not None else set()
+        self._validate_init_nodes()
         self.create_conversion_graph()
+
+    def _validate_init_nodes(self) -> None:
+        """Validate that every explicitly requested node is a usable program type.
+
+        A node is valid if it is a registered program type alias or an endpoint of
+        one of this graph's conversions (the latter allows custom conversions to
+        introduce their own program types). Specifying any other node is treated as
+        a user error and rejected, rather than silently producing an isolated,
+        unusable node in the graph.
+
+        Raises:
+            PackageValueError: If ``nodes`` contains an unregistered program type
+                that is not connected by any of the graph's conversions.
+        """
+        if not self._init_nodes:
+            return
+        conversion_endpoints = {
+            endpoint
+            for conversion in self._conversions
+            for endpoint in (conversion.source, conversion.target)
+        }
+        valid_nodes = set(QPROGRAM_ALIASES) | conversion_endpoints
+        invalid_nodes = self._init_nodes - valid_nodes
+        if invalid_nodes:
+            raise PackageValueError(", ".join(sorted(invalid_nodes)))
 
     @staticmethod
     def load_default_conversions(bias: Optional[float] = None) -> list[Conversion]:
