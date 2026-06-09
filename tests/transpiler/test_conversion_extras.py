@@ -16,6 +16,7 @@
 Tests for qBraid transpiler conversion extras.
 
 """
+
 import importlib.util
 from typing import Callable
 
@@ -30,12 +31,15 @@ except ImportError:
     pyqir_installed = False
 
 
+from qbraid.interface import assert_allclose_up_to_global_phase
 from qbraid.passes.qasm.compat import normalize_qasm_gate_params
+from qbraid.programs import load_program
 from qbraid.transpiler.conversions.pennylane import (
     pennylane_to_braket,
     pennylane_to_cirq,
     pennylane_to_qiskit,
 )
+from qbraid.transpiler.conversions.pytket import pytket_to_pyqir
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import (
     qiskit_to_braket,
@@ -82,6 +86,31 @@ def test_qiskit_to_pyqir_extra(bell_circuit):
     graph = ConversionGraph(conversions)
     program = transpile(qiskit_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, pyqir.Module)
+
+
+@pytest.mark.skipif(not has_extra(pytket_to_pyqir), reason="Extra not installed")
+@pytest.mark.skipif(not pyqir_installed, reason="pyqir not installed")
+def test_pytket_to_pyqir_extra():
+    """Test pytket-qir transpiler conversion extra."""
+    # pylint: disable-next=import-outside-toplevel
+    from pytket.circuit import Circuit
+
+    pytket_circuit = Circuit(2)
+    pytket_circuit.H(0)
+    pytket_circuit.CX(0, 1)
+    pytket_circuit.measure_all()
+
+    conversions = [Conversion("pytket", "pyqir", pytket_to_pyqir)]
+    graph = ConversionGraph(conversions)
+    program = transpile(pytket_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
+    assert isinstance(program, pyqir.Module)
+
+    # the module is valid QIR and actually encodes the H -> CX -> measure circuit
+    assert program.verify() is None
+    ir = str(program)
+    assert "__quantum__qis__h__body" in ir
+    assert "__quantum__qis__cnot__body" in ir
+    assert "__quantum__qis__mz__body" in ir
 
 
 def autoqasm_bell_circuit():
@@ -237,7 +266,9 @@ def test_pennylane_qiskit_roundtrip_bell():
     qiskit_program = transpile(tape, "qiskit", conversion_graph=graph, max_path_depth=1)
     back = transpile(qiskit_program, "pennylane", conversion_graph=graph, max_path_depth=1)
     assert isinstance(back, pennylane.tape.QuantumTape)
-    assert len(back.operations) == len(tape.operations)
+    assert_allclose_up_to_global_phase(
+        load_program(back).unitary(), load_program(tape).unitary(), atol=1e-7
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -254,17 +285,11 @@ def test_pennylane_to_braket_extra_bell():
     program = transpile(tape, "braket", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, braket.circuits.Circuit)
     assert program.qubit_count == 2
-
-
-@pytest.mark.skipif(not has_extra(pennylane_to_braket), reason="Extra not installed")
-def test_pennylane_to_braket_extra_instruction_count():
-    """Test that converted Braket circuit has the expected number of instructions."""
-    tape = pennylane_bell_tape()
-    conversions = [Conversion("pennylane", "braket", pennylane_to_braket)]
-    graph = ConversionGraph(conversions)
-    program = transpile(tape, "braket", conversion_graph=graph, max_path_depth=1)
     # Bell circuit: H + CNOT = 2 instructions
     assert len(list(program.instructions)) == 2
+    assert_allclose_up_to_global_phase(
+        load_program(program).unitary(), load_program(tape).unitary(), atol=1e-7
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -283,3 +308,6 @@ def test_pennylane_to_cirq_extra_bell_and_qubit_count():
     program = transpile(tape, "cirq", conversion_graph=graph, max_path_depth=1)
     assert isinstance(program, cirq.Circuit)
     assert len(program.all_qubits()) == 2
+    assert_allclose_up_to_global_phase(
+        load_program(program).unitary(), load_program(tape).unitary(), atol=1e-7
+    )
