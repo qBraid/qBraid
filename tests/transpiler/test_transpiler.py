@@ -18,6 +18,7 @@
 Unit tests for the qbraid transpiler.
 
 """
+
 import cirq
 import numpy as np
 import pytest
@@ -155,9 +156,7 @@ def test_bell(bell_circuit, bell_unitary, target):
         pytest.skip(f"{source} to {target} conversion not yet supported")
     qbraid_circuit = load_program(circuit)
     transpiled_circuit = transpile(
-        qbraid_circuit.program,
-        target,
-        conversion_graph=conversion_graph
+        qbraid_circuit.program, target, conversion_graph=conversion_graph
     )
     try:
         transpiled_unitary = load_program(transpiled_circuit).unitary()
