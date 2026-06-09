@@ -21,7 +21,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyquil
-from pyquil.quilbase import Declare, Measurement
+from pyquil.quilatom import Qubit
+from pyquil.quilbase import Declare, Gate, Measurement
 from pyquil.simulation.tools import program_unitary
 from qbraid_core.services.runtime.schemas import Program
 
@@ -57,6 +58,39 @@ class PyQuilProgram(GateModelProgram):
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
         return len(self.program)
+
+    def _remap_qubits(self, mapping: dict[int, int]) -> None:
+        """Rebuild the program with each qubit index replaced via ``mapping``."""
+        remapped = pyquil.Program()
+        for instruction in self.program:
+            if isinstance(instruction, Gate):
+                remapped += Gate(
+                    instruction.name,
+                    list(instruction.params),
+                    [Qubit(mapping[qubit.index]) for qubit in instruction.qubits],
+                    instruction.modifiers,
+                )
+            elif isinstance(instruction, Measurement):
+                remapped += Measurement(
+                    Qubit(mapping[instruction.qubit.index]), instruction.classical_reg
+                )
+            else:
+                remapped += instruction
+        self._program = remapped
+
+    def remove_idle_qubits(self) -> None:
+        """Remap the program's qubits onto contiguous indices starting at zero."""
+        qubits = sorted(self.program.get_qubits())
+        mapping = {qubit: index for index, qubit in enumerate(qubits)}
+        if all(qubit == index for qubit, index in mapping.items()):
+            return
+        self._remap_qubits(mapping)
+
+    def reverse_qubit_order(self) -> None:
+        """Reverse the qubit ordering of the program."""
+        qubits = sorted(self.program.get_qubits())
+        mapping = dict(zip(qubits, reversed(qubits)))
+        self._remap_qubits(mapping)
 
     @staticmethod
     def remove_measurements(original_program):

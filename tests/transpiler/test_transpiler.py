@@ -339,7 +339,11 @@ yes_cirq_no_braket = list(set(cirq_gates_dict).difference(braket_gates_dict))
 yes_cirq_no_qiskit = list(set(cirq_gates_dict).difference(qiskit_gates_dict))
 yes_qiskit_no_cirq = list(set(qiskit_gates_dict).difference(cirq_gates_dict))
 
-NOT_SUPPORTED = ["RCCX", "RXX", "RYY", "RZX", "CSX", "CRX", "CRY", "U"]
+# Gates that cannot currently be transpiled from Qiskit to Braket/Cirq (e.g. due
+# to missing decompositions). Previously held ["RCCX", "RXX", "RYY", "RZX",
+# "CSX", "CRX", "CRY", "U"], all of which now transpile correctly, so the test
+# coverage they were gating is re-enabled. Keep the guard for future gaps.
+NOT_SUPPORTED: list[str] = []
 
 
 @pytest.mark.parametrize("gate_str", yes_braket_no_qiskit)
