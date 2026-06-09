@@ -21,11 +21,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pennylane
-from pennylane.tape import QuantumTape
 
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
+    from pennylane.tape import QuantumTape
     from qbraid.programs.typer import Qasm2StringType
 
 
