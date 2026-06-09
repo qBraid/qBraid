@@ -24,7 +24,6 @@ import string
 
 import numpy as np
 import pytest
-from cirq.contrib.qasm_import import circuit_from_qasm
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler import ConversionGraph, transpile
