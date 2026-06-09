@@ -27,10 +27,7 @@ from qbraid.transpiler.graph import ConversionGraph
 
 try:
     from qbraid.transpiler.conversions.cirq.cirq_extras import cirq_to_qat
-
-    HAS_CIRQ_PKG = True
 except (ImportError, ModuleNotFoundError):
-    HAS_CIRQ_PKG = False
     cirq_to_qat = None  # type: ignore[assignment]
 
 
