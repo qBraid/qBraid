@@ -42,8 +42,8 @@ class OpenQuantumSession(Session):
         token_provider: Optional[Callable[[], tuple[str, float]]] = None,
     ):
         # token_provider lets a caller supply (access_token, expires_at_epoch) on
-        # demand — used to act as a specific user's linked OpenQuantum account
-        # instead of qBraid's own client_credentials identity. When set, the
+        # demand — e.g. an externally-managed per-user token — instead of the
+        # session minting its own via the client_credentials grant. When set, the
         # client_credentials grant (and so client_id/secret) is not needed.
         self._token_provider = token_provider
 
@@ -68,7 +68,7 @@ class OpenQuantumSession(Session):
         self._token = None
         self._token_expires_at = 0
 
-    def _fetch_token(self):
+    def _fetch_token(self) -> None:
         if self._token_provider is not None:
             self._token, self._token_expires_at = self._token_provider()
             return
