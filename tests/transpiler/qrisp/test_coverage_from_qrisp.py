@@ -98,6 +98,9 @@ def qrisp_circuits():
         attr: None
         for attr in dir(qrisp.circuit.standard_operations)
         if attr[0] in string.ascii_uppercase
+        # qrisp 0.9 leaks non-gate upper-case names (e.g. ``TYPE_CHECKING``) into the
+        # module namespace; restrict enumeration to callables (gate classes/factories).
+        and callable(getattr(qrisp.circuit.standard_operations, attr))
     }
 
     qrisp_gates.pop("Operation")
