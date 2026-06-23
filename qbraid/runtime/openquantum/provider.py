@@ -18,7 +18,7 @@ Module defining OpenQuantum session and provider classes
 """
 import os
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import requests
 from qbraid_core.sessions import Session
@@ -39,15 +39,26 @@ class OpenQuantumSession(Session):
         self,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
+        token_provider: Optional[Callable[[], tuple[str, float]]] = None,
     ):
-        self.client_id = client_id or os.getenv("OPENQUANTUM_CLIENT_ID")
-        self.client_secret = client_secret or os.getenv("OPENQUANTUM_CLIENT_SECRET")
+        # token_provider lets a caller supply (access_token, expires_at_epoch) on
+        # demand — used to act as a specific user's linked OpenQuantum account
+        # instead of qBraid's own client_credentials identity. When set, the
+        # client_credentials grant (and so client_id/secret) is not needed.
+        self._token_provider = token_provider
 
-        if not self.client_id or not self.client_secret:
-            raise ValueError(
-                "OpenQuantum client_id and client_secret are required. "
-                "Set OPENQUANTUM_CLIENT_ID and OPENQUANTUM_CLIENT_SECRET environment variables."
-            )
+        if token_provider is None:
+            self.client_id = client_id or os.getenv("OPENQUANTUM_CLIENT_ID")
+            self.client_secret = client_secret or os.getenv("OPENQUANTUM_CLIENT_SECRET")
+
+            if not self.client_id or not self.client_secret:
+                raise ValueError(
+                    "OpenQuantum client_id and client_secret are required. "
+                    "Set OPENQUANTUM_CLIENT_ID and OPENQUANTUM_CLIENT_SECRET environment variables."
+                )
+        else:
+            self.client_id = client_id
+            self.client_secret = client_secret
 
         self.auth_url = "https://id.openquantum.com"
         self.scheduler_url = "https://scheduler.openquantum.com"
@@ -58,6 +69,9 @@ class OpenQuantumSession(Session):
         self._token_expires_at = 0
 
     def _fetch_token(self):
+        if self._token_provider is not None:
+            self._token, self._token_expires_at = self._token_provider()
+            return
         url = f"{self.auth_url}/realms/platform/protocol/openid-connect/token"
         payload = {
             "grant_type": "client_credentials",

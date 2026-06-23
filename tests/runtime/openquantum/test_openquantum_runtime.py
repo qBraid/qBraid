@@ -503,6 +503,32 @@ def test_session_fetch_token(mock_post):
     assert session._token_expires_at > 0
 
 
+def test_session_token_provider():
+    """A token_provider supplies the bearer token without client_id/secret and
+    is re-invoked only when the cached token is near expiry."""
+    calls = []
+
+    def provider():
+        calls.append(1)
+        return (f"user_token_{len(calls)}", 9_999_999_999.0)  # far-future expiry
+
+    # No client_id/secret required when a token_provider is supplied.
+    session = OpenQuantumSession(token_provider=provider)
+    session._ensure_token()
+    assert session._token == "user_token_1"
+    assert len(calls) == 1
+
+    # Still fresh -> provider not called again.
+    session._ensure_token()
+    assert len(calls) == 1
+
+    # Expired -> provider re-invoked for a new token (covers long prepare waits).
+    session._token_expires_at = 0
+    session._ensure_token()
+    assert session._token == "user_token_2"
+    assert len(calls) == 2
+
+
 @patch("requests.post")
 @patch("qbraid_core.sessions.Session.request")
 def test_session_request(mock_super_request, mock_post):
