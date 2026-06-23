@@ -50,6 +50,8 @@ print(result.data.get_counts())
   integrating myQLM (`qat.core.wrappers.circuit.Circuit`) as a new `"qat"`
   program type in the transpiler conversion graph [#1212](https://github.com/qBraid/qBraid/pull/1212).
 
+- Added `qbraid/runtime/rigetti/availability.py` (modeled on `qbraid/runtime/aws/availability.py`) exposing `is_in_maintenance()` and `next_available_time()`, derived from the QCS maintenance calendar. `RigettiDevice` gains `maintenance_calendar()` (the raw RFC 5545 maintenance iCalendar fetched from the QCS REST API `GET /v1/calendars/{id}`) and `availability_window()`, which returns `(is_available, "HH:MM:SS"_until_switch, switch_datetime)` and merges contiguous/overlapping maintenance windows so the reported next-available time is when the device truly leaves maintenance ([#1239](https://github.com/qBraid/qBraid/pull/1239))
+
 ### Improved / Modified
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
@@ -62,6 +64,7 @@ print(result.data.get_counts())
 ### Removed
 
 ### Fixed
+- Fixed `RigettiDevice.status()` incorrectly reporting devices as `ONLINE` while under scheduled maintenance (e.g. Cepheus-1-108Q). It previously only checked whether the processor appeared in `list_quantum_processors()` and then always returned `ONLINE`. It now also consults Rigetti's maintenance schedule, returning `UNAVAILABLE` while a maintenance window is in progress (the QCS gateway queues jobs during maintenance), `OFFLINE` when the processor is absent from the catalog, and `ONLINE` otherwise. A calendar lookup/parse failure degrades to `ONLINE` with a logged warning so `status()` never raises on a transient calendar issue ([#1239](https://github.com/qBraid/qBraid/pull/1239))
 - Fixed `cirq_to_pyquil` raising `TypeError` when converting a `TwoQubitDiagonalGate` (e.g. a pyQuil `CPHASE00`/`CPHASE01`/`CPHASE10` round-tripped through cirq), whose diagonal angles are stored as a complex array: `exponent_to_pi_string` could not build a `Fraction` from a complex value. The angles are now coerced to their real part before formatting ([#1220](https://github.com/qBraid/qBraid/pull/1220))
 - `ConversionGraph` now raises `PackageValueError` when the `nodes` argument contains a program type that is neither a registered alias nor an endpoint of one of the graph's conversions, instead of silently adding an unusable isolated node (or silently dropping it when `require_native=True`) ([#987](https://github.com/qBraid/qBraid/issues/987))
 - Fixed `circuits_allclose` raising `IndexError` instead of returning `False` when the two programs' unitaries have different dimensions (e.g. comparing a measurement-only circuit against a target that drops measurements, yielding an empty unitary). The comparison now short-circuits to `False` on a shape mismatch and only computes the qubit-reversed unitary when `allow_rev_qubits=True`; `unitary_rev_qubits` also raises its documented `ValueError` for non-2D matrices ([#1218](https://github.com/qBraid/qBraid/pull/1218))
@@ -75,6 +78,7 @@ print(result.data.get_counts())
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 - Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
+- Added `icalendar>=6.0` and `recurring-ical-events>=3.0` to the `rigetti` extra for RFC 5545 maintenance-calendar parsing and recurrence handling ([#1239](https://github.com/qBraid/qBraid/pull/1239))
 
 ## [0.12.1] - 2026-05-17
 
