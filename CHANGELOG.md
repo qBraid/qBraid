@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added an optional `token_provider` to `OpenQuantumSession`, letting a caller supply a per-user access token on demand (`token_provider: () -> (access_token, expires_at_epoch)`) instead of the session minting its own via `client_credentials`. When set, `_fetch_token` calls the provider and `_ensure_token` re-invokes it on near-expiry, so long `wait_for_preparation` waits still get a fresh token; `client_id`/`client_secret` are not required in this mode. Purely additive — the existing `client_credentials` path is unchanged ([#1240](https://github.com/qBraid/qBraid/pull/1240))
 - Added `cirq_to_pytket` and `pytket_to_cirq` transpiler conversions (via the `pytket-cirq` extension), giving a direct Cirq <-> PyTKET edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
 
 - Added `pytket_to_pyqir` transpiler conversion (via the `pytket-qir` extension), giving a direct PyTKET -> PyQIR edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
