@@ -12,16 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=no-name-in-module,redefined-outer-name,possibly-used-before-assignment,ungrouped-imports
+# pylint: disable=no-name-in-module,redefined-outer-name,possibly-used-before-assignment,ungrouped-imports,protected-access,too-many-lines
 
 """Unit tests for RigettiDevice."""
 
 from __future__ import annotations
 
+import datetime
 import importlib.util
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from qbraid.runtime.enums import DeviceStatus
 
@@ -54,37 +56,91 @@ else:
 # ===========================================================================
 
 
+# A maintenance calendar with a single fixed window: 2026-06-23 08:00–12:00 UTC.
+MAINTENANCE_ICAL = (
+    "BEGIN:VCALENDAR\r\n"
+    "VERSION:2.0\r\n"
+    "PRODID:-//Rigetti//QCS//EN\r\n"
+    "BEGIN:VEVENT\r\n"
+    "UID:maint-1@qcs.rigetti.com\r\n"
+    "SUMMARY:Scheduled Maintenance\r\n"
+    "DTSTART:20260623T080000Z\r\n"
+    "DTEND:20260623T120000Z\r\n"
+    "END:VEVENT\r\n"
+    "END:VCALENDAR\r\n"
+)
+
+
 class TestRigettiDeviceStatus:
     """Tests for RigettiDevice.status."""
 
-    def test_status_online_when_processor_list_contains_device(
+    def test_status_online_when_listed_and_no_maintenance(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """Device is ONLINE when list_quantum_processors includes the device ID."""
-        with patch(
-            "qbraid.runtime.rigetti.device.list_quantum_processors",
-            return_value=[DEVICE_ID, "Lyra-1"],
+        """Device is ONLINE when listed and not inside a maintenance window."""
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID, "Lyra-1"],
+            ),
+            patch.object(rigetti_device, "_fetch_maintenance_ical", return_value=""),
         ):
             assert rigetti_device.status() == DeviceStatus.ONLINE
 
-    def test_status_offline_when_processor_list_does_not_contain_device(
-        self, rigetti_device: RigettiDevice
-    ) -> None:
-        """Device is OFFLINE when list_quantum_processors omits the device ID."""
-        with patch(
-            "qbraid.runtime.rigetti.device.list_quantum_processors",
-            return_value=["Lyra-1", "QVM-1"],
+    def test_status_unavailable_during_maintenance(self, rigetti_device: RigettiDevice) -> None:
+        """Device is UNAVAILABLE when listed but inside a maintenance window."""
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch.object(rigetti_device, "_fetch_maintenance_ical", return_value=MAINTENANCE_ICAL),
+            patch("qbraid.runtime.rigetti.availability.is_in_maintenance", return_value=True),
+        ):
+            assert rigetti_device.status() == DeviceStatus.UNAVAILABLE
+
+    def test_status_offline_skips_maintenance_check(self, rigetti_device: RigettiDevice) -> None:
+        """OFFLINE devices (not in the catalog) must not trigger a calendar lookup."""
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=["Lyra-1", "QVM-1"],
+            ),
+            patch.object(rigetti_device, "_fetch_maintenance_ical") as mock_fetch,
+            patch("qbraid.runtime.rigetti.availability.is_in_maintenance") as mock_maint,
         ):
             assert rigetti_device.status() == DeviceStatus.OFFLINE
+            mock_fetch.assert_not_called()
+            mock_maint.assert_not_called()
+
+    def test_status_degrades_to_online_when_calendar_fails(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A calendar fetch/parse failure must not raise; status() falls back to ONLINE."""
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch.object(
+                rigetti_device,
+                "_fetch_maintenance_ical",
+                side_effect=RigettiDeviceError("calendar service down"),
+            ),
+        ):
+            assert rigetti_device.status() == DeviceStatus.ONLINE
 
     def test_status_calls_list_quantum_processors_with_client(
         self, rigetti_device: RigettiDevice
     ) -> None:
         """status() must call list_quantum_processors with the device client."""
-        with patch(
-            "qbraid.runtime.rigetti.device.list_quantum_processors",
-            return_value=[DEVICE_ID],
-        ) as mock_list_qpus:
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ) as mock_list_qpus,
+            patch.object(rigetti_device, "_fetch_maintenance_ical", return_value=""),
+        ):
             rigetti_device.status()
 
         mock_list_qpus.assert_called_once_with(client=rigetti_device.client)
@@ -110,6 +166,66 @@ class TestRigettiDeviceStatus:
                 RigettiDeviceError, match="Failed to retrieve quantum processor list"
             ):
                 rigetti_device.status()
+
+
+# ===========================================================================
+# Device – maintenance calendar
+# ===========================================================================
+
+
+class TestRigettiDeviceMaintenance:
+    """Tests for the QCS maintenance-calendar integration on the device."""
+
+    def test_maintenance_calendar_builds_request_and_returns_ical(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """maintenance_calendar() must hit /v1/calendars/{id} with a bearer token."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {"maintenanceICal": MAINTENANCE_ICAL}
+        with patch(
+            "qbraid.runtime.rigetti.device.requests.get", return_value=mock_response
+        ) as mock_get:
+            result = rigetti_device.maintenance_calendar()
+
+        assert result == MAINTENANCE_ICAL
+        url = mock_get.call_args.args[0]
+        headers = mock_get.call_args.kwargs["headers"]
+        assert url == f"https://api.qcs.rigetti.com/v1/calendars/{DEVICE_ID}"
+        assert headers["Authorization"] == "Bearer test-access-token"
+        mock_response.raise_for_status.assert_called_once()
+
+    def test_maintenance_calendar_empty_when_field_absent(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A response without maintenanceICal yields an empty string."""
+        mock_response = MagicMock()
+        mock_response.json.return_value = {}
+        with patch("qbraid.runtime.rigetti.device.requests.get", return_value=mock_response):
+            assert rigetti_device.maintenance_calendar() == ""
+
+    def test_maintenance_calendar_wraps_http_error(self, rigetti_device: RigettiDevice) -> None:
+        """A failed QCS request must be wrapped in RigettiDeviceError."""
+        with patch(
+            "qbraid.runtime.rigetti.device.requests.get",
+            side_effect=requests.RequestException("boom"),
+        ):
+            with pytest.raises(RigettiDeviceError, match="Failed to fetch maintenance calendar"):
+                rigetti_device.maintenance_calendar()
+
+    def test_availability_window_delegates_to_availability(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """availability_window() must delegate to availability.next_available_time(self)."""
+        sentinel = (
+            False,
+            "01:30:00",
+            datetime.datetime(2026, 6, 23, 12, 0, tzinfo=datetime.timezone.utc),
+        )
+        with patch(
+            "qbraid.runtime.rigetti.availability.next_available_time", return_value=sentinel
+        ) as mock_next:
+            assert rigetti_device.availability_window() == sentinel
+        mock_next.assert_called_once_with(rigetti_device)
 
 
 # ===========================================================================
