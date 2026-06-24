@@ -40,6 +40,8 @@ pulser-simulation>=1.4.0,<1.8.0; python_version < "3.13"
 pasqal-cloud>=0.20.3
 pyquil>=5.0.0rc3; python_version < "3.13"
 qcs-sdk-python>=0.26.1; python_version < "3.13"
+icalendar>=6.0; python_version < "3.13"
+recurring-ical-events>=3.0; python_version < "3.13"
 
 # visualization
 ipython
