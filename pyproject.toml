@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: 3 :: Only",
     "Topic :: Software Development",
     "Topic :: Scientific/Engineering",
@@ -54,7 +55,7 @@ qat = ["myqlm-interop>=2.0"]
 quantinuum = ["qnexus>=0.39.0", "pytket>=1.31"]
 pennylane = ["pennylane>=0.43"]
 pulser = ["pulser-core>=1.4.0,<1.8.0", "pulser-simulation>=1.4.0,<1.8.0"]
-pyqubo = ["pyqubo>=1.4.0"]
+pyqubo = ["pyqubo>=1.4.0; python_version < '3.14'"]
 pyquil = ["pyquil>=5.0.0rc3", "qcs-sdk-python>=0.26.1"]
 pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2.0,<=0.5.1"]
