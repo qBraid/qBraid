@@ -76,6 +76,7 @@ print(result.data.get_counts())
 - Fixed `qasm2_to_cirq` corrupting cirq's shared OpenQASM lexer: the QASM 2 parser assigned a reduced token list onto `cirq.contrib.qasm_import._lexer.QasmLexer.tokens` at import time, stripping the OpenQASM 3 tokens (e.g. `STDGATESINC`) process-wide and causing `qasm3_to_cirq` to raise a ply `LexError` on any QASM 3 parse that followed a `qasm2_to_cirq` call. The reduced token set now lives on a local `QasmLexer` subclass, leaving cirq's class intact ([#1214](https://github.com/qBraid/qBraid/pull/1214))
 
 ### Dependencies
+- Bumped the `amazon-braket-sdk` upper bound from `<1.111.0` to `<1.121.0` (latest tested: `1.120.0`) in both `pyproject.toml` (`braket` extra) and `requirements-dev.txt` ([#1243](https://github.com/qBraid/qBraid/pull/1243))
 - Added `sympy` to the `cirq` extra, since `cirq_qasm_parser` now imports it directly for conditional (`if`) statement parsing (previously only available transitively via `cirq-core`). Left unpinned to mirror `cirq-core`'s own `sympy` requirement ([#1183](https://github.com/qBraid/qBraid/pull/1183))
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
