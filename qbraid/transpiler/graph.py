@@ -656,8 +656,7 @@ class ConversionGraph(rx.PyDiGraph):
 
     def __eq__(self, value: object) -> bool:
         return (
-            super().__eq__(value)
-            and isinstance(value, ConversionGraph)
+            isinstance(value, ConversionGraph)
             and self.conversions() == value.conversions()
             and self.require_native == value.require_native
             and self._node_alias_id_map == value._node_alias_id_map
