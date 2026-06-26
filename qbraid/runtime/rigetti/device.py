@@ -114,10 +114,13 @@ class RigettiDevice(QuantumDevice):
         Maintenance windows are evaluated by
         :func:`qbraid.runtime.rigetti.availability.is_in_maintenance` against
         the calendar fetched from the QCS REST API (see
-        :meth:`maintenance_calendar`). If that lookup or its parsing fails, the
-        device is reported as ``ONLINE`` (catalog membership still holds) and a
-        warning is logged, so a transient calendar-service issue never makes
-        ``status()`` raise.
+        :meth:`maintenance_calendar`). If that fetch or its parsing fails
+        (``RigettiDeviceError`` from the QCS request, or a ``ValueError`` /
+        ``TypeError`` from malformed calendar data), the device is reported as
+        ``ONLINE`` (catalog membership still holds) and a warning is logged, so
+        a transient calendar-service issue never makes ``status()`` raise. Any
+        other (unexpected) exception is not suppressed and propagates, so
+        genuine bugs are not masked as ``ONLINE``.
         """
         try:
             quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
@@ -132,10 +135,13 @@ class RigettiDevice(QuantumDevice):
         try:
             if availability.is_in_maintenance(self._fetch_maintenance_ical()):
                 return DeviceStatus.UNAVAILABLE
-        except Exception as e:  # pylint: disable=broad-exception-caught
+        except (RigettiDeviceError, ValueError, TypeError) as e:
             # The device is in the catalog and reachable; maintenance data is
             # supplemental, so a calendar fetch/parse failure must not break
             # status(). Degrade to ONLINE and surface the reason as a warning.
+            # RigettiDeviceError covers QCS fetch failures; ValueError/TypeError
+            # cover malformed calendar data (icalendar / recurring_ical_events).
+            # Unexpected exceptions propagate so real bugs aren't masked.
             logger.warning(
                 "Could not determine maintenance status for Rigetti device '%s'; "
                 "assuming ONLINE. Reason: %s",

@@ -101,6 +101,11 @@ class TestHelpers:
         result = availability._as_utc_datetime(datetime.date(2026, 6, 23))
         assert result == datetime.datetime(2026, 6, 23, 0, 0, tzinfo=datetime.timezone.utc)
 
+    def test_as_utc_datetime_returns_none_for_non_date(self) -> None:
+        """A value that is neither a date nor a datetime yields None."""
+        assert availability._as_utc_datetime("not-a-date") is None
+        assert availability._as_utc_datetime(None) is None
+
 
 # ===========================================================================
 # is_in_maintenance
@@ -176,4 +181,24 @@ class TestNextAvailableTime:
     def test_unavailable_with_empty_calendar_has_no_eta(self) -> None:
         """UNAVAILABLE but no published calendar yields no return time."""
         device = _mock_device(DeviceStatus.UNAVAILABLE, "")
+        assert availability.next_available_time(device) == (False, "", None)
+
+    def test_unavailable_stops_at_gap_before_later_window(self) -> None:
+        """A later window separated by a gap must not extend the current block."""
+        now = availability._current_utc_datetime()
+        in_progress = (now - datetime.timedelta(minutes=30), now + datetime.timedelta(minutes=30))
+        after_gap = (now + datetime.timedelta(minutes=60), now + datetime.timedelta(minutes=90))
+        device = _mock_device(DeviceStatus.UNAVAILABLE, _build_ical(in_progress, after_gap))
+
+        _, _, switch = availability.next_available_time(device)
+
+        assert switch is not None
+        # The block ends at the in-progress window's end, not the post-gap window.
+        assert abs((switch - in_progress[1]).total_seconds()) < 1
+
+    def test_unavailable_with_no_current_window_has_no_eta(self) -> None:
+        """UNAVAILABLE with a calendar but no window covering now yields no return time."""
+        now = availability._current_utc_datetime()
+        future = (now + datetime.timedelta(hours=2), now + datetime.timedelta(hours=3))
+        device = _mock_device(DeviceStatus.UNAVAILABLE, _build_ical(future))
         assert availability.next_available_time(device) == (False, "", None)

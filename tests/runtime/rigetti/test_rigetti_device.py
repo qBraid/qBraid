@@ -130,6 +130,41 @@ class TestRigettiDeviceStatus:
         ):
             assert rigetti_device.status() == DeviceStatus.ONLINE
 
+    def test_status_degrades_to_online_when_calendar_parse_fails(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Malformed calendar data (ValueError) must degrade to ONLINE, not raise."""
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch.object(rigetti_device, "_fetch_maintenance_ical", return_value=MAINTENANCE_ICAL),
+            patch(
+                "qbraid.runtime.rigetti.availability.is_in_maintenance",
+                side_effect=ValueError("malformed iCalendar"),
+            ),
+        ):
+            assert rigetti_device.status() == DeviceStatus.ONLINE
+
+    def test_status_propagates_unexpected_maintenance_error(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """An unexpected error during the maintenance check must not be swallowed."""
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch.object(rigetti_device, "_fetch_maintenance_ical", return_value=MAINTENANCE_ICAL),
+            patch(
+                "qbraid.runtime.rigetti.availability.is_in_maintenance",
+                side_effect=AttributeError("genuine bug"),
+            ),
+        ):
+            with pytest.raises(AttributeError, match="genuine bug"):
+                rigetti_device.status()
+
     def test_status_calls_list_quantum_processors_with_client(
         self, rigetti_device: RigettiDevice
     ) -> None:
@@ -192,6 +227,7 @@ class TestRigettiDeviceMaintenance:
         headers = mock_get.call_args.kwargs["headers"]
         assert url == f"https://api.qcs.rigetti.com/v1/calendars/{DEVICE_ID}"
         assert headers["Authorization"] == "Bearer test-access-token"
+        assert mock_get.call_args.kwargs.get("timeout") is not None
         mock_response.raise_for_status.assert_called_once()
 
     def test_maintenance_calendar_empty_when_field_absent(
