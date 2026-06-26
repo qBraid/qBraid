@@ -25,10 +25,11 @@ from __future__ import annotations
 
 import socket
 from multiprocessing.pool import ThreadPool
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
 import pyquil
+import requests
 from qcs_sdk.client import QCSClient
 from qcs_sdk.compiler.quilc import (
     QuilcClient,
@@ -41,15 +42,23 @@ from qcs_sdk.qpu.api import submit as qpu_submit
 from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
 from qcs_sdk.qpu.translation import TranslationOptions, translate
 
+from qbraid._logging import logger
 from qbraid.runtime import QuantumDevice, TargetProfile
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
+from . import availability
 from .job import RigettiJob, RigettiJobError
+
+if TYPE_CHECKING:
+    import datetime
 
 # Short timeout (seconds) for the quilc TCP reachability probe so that
 # transform() fails fast instead of hanging when the quilc server is down.
 _QUILC_PROBE_TIMEOUT_S = 2.0
+
+# Timeout (seconds) for the QCS REST call that fetches the maintenance calendar.
+_QCS_CALENDAR_TIMEOUT_S = 10.0
 
 
 class RigettiDeviceError(QbraidRuntimeError):
@@ -89,19 +98,128 @@ class RigettiDevice(QuantumDevice):
         return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self) -> DeviceStatus:
-        """
-        Return the current status of the device.
+        """Return the current status of the device.
+
+        The status reflects both QCS catalog membership and Rigetti's
+        published maintenance schedule:
+
+        - ``OFFLINE`` when the quantum processor is absent from the QCS
+          catalog (``list_quantum_processors``).
+        - ``UNAVAILABLE`` when the processor is in the catalog but currently
+          inside a scheduled maintenance window. During maintenance the QCS
+          gateway queues jobs rather than executing them, so the device is
+          reachable but not running programs.
+        - ``ONLINE`` otherwise.
+
+        Maintenance windows are evaluated by
+        :func:`qbraid.runtime.rigetti.availability.is_in_maintenance` against
+        the calendar fetched from the QCS REST API (see
+        :meth:`maintenance_calendar`). If that fetch or its parsing fails
+        (``RigettiDeviceError`` from the QCS request, or a ``ValueError`` /
+        ``TypeError`` from malformed calendar data), the device is reported as
+        ``ONLINE`` (catalog membership still holds) and a warning is logged, so
+        a transient calendar-service issue never makes ``status()`` raise. Any
+        other (unexpected) exception is not suppressed and propagates, so
+        genuine bugs are not masked as ``ONLINE``.
         """
         try:
-            # Otherwise, check if the quantum processor ID is in the list of available processors
             quantum_processor_ids = set(list_quantum_processors(client=self._qcs_client))
-            if self.id not in quantum_processor_ids:
-                return DeviceStatus.OFFLINE
         except ListQuantumProcessorsError as e:
             raise RigettiDeviceError(  # pylint: disable=bad-exception-cause
                 "Failed to retrieve quantum processor list from Rigetti QCS."
             ) from e
+
+        if self.id not in quantum_processor_ids:
+            return DeviceStatus.OFFLINE
+
+        try:
+            if availability.is_in_maintenance(self._fetch_maintenance_ical()):
+                return DeviceStatus.UNAVAILABLE
+        except (RigettiDeviceError, ValueError, TypeError) as e:
+            # The device is in the catalog and reachable; maintenance data is
+            # supplemental, so a calendar fetch/parse failure must not break
+            # status(). Degrade to ONLINE and surface the reason as a warning.
+            # RigettiDeviceError covers QCS fetch failures; ValueError/TypeError
+            # cover malformed calendar data (icalendar / recurring_ical_events).
+            # Unexpected exceptions propagate so real bugs aren't masked.
+            logger.warning(
+                "Could not determine maintenance status for Rigetti device '%s'; "
+                "assuming ONLINE. Reason: %s",
+                self.id,
+                e,
+            )
+
         return DeviceStatus.ONLINE
+
+    def _fetch_maintenance_ical(self) -> str:
+        """Fetch the raw maintenance iCalendar for this processor from QCS.
+
+        ``qcs_sdk`` exposes no calendar/maintenance route (it is
+        execution-only), so this issues the REST call directly against
+        ``GET {api_url}/v1/calendars/{id}``, reusing the device's
+        ``QCSClient`` for the API base URL and the (auto-refreshing) OAuth
+        bearer token. The response contains a ``maintenanceICal`` field whose
+        value is an RFC 5545 calendar listing the windows during which
+        execution on the QPU is unavailable.
+
+        Returns:
+            The iCalendar text, or an empty string when no maintenance
+            calendar is published for the processor.
+
+        Raises:
+            RigettiDeviceError: If the QCS calendar request fails.
+        """
+        api_url = self._qcs_client.api_url.rstrip("/")
+        url = f"{api_url}/v1/calendars/{self.id}"
+        try:
+            access_token = self._qcs_client.oauth_session.request_access_token().secret
+            response = requests.get(
+                url,
+                headers={
+                    "Authorization": f"Bearer {access_token}",
+                    "Accept": "application/json",
+                },
+                timeout=_QCS_CALENDAR_TIMEOUT_S,
+            )
+            response.raise_for_status()
+            payload = response.json()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            raise RigettiDeviceError(
+                f"Failed to fetch maintenance calendar for quantum processor '{self.id}' "
+                "from the Rigetti QCS API."
+            ) from e
+
+        return payload.get("maintenanceICal") or ""
+
+    def maintenance_calendar(self) -> str:
+        """Return the raw maintenance iCalendar (RFC 5545) for this processor.
+
+        The returned string lists the scheduled maintenance windows during
+        which execution on this device is unavailable. It is empty when no
+        maintenance is published for the processor.
+
+        Raises:
+            RigettiDeviceError: If the QCS calendar request fails.
+        """
+        return self._fetch_maintenance_ical()
+
+    def availability_window(self) -> tuple[bool, str, datetime.datetime | None]:
+        """Provide device availability based on the QCS maintenance calendar.
+
+        Indicates current availability, the time remaining (``HH:MM:SS``)
+        until the next change in availability, and the future UTC datetime of
+        that change. Delegates to
+        :func:`qbraid.runtime.rigetti.availability.next_available_time`.
+
+        Returns:
+            tuple[bool, str, Optional[datetime.datetime]]: Current
+                availability, ``HH:MM:SS`` until the availability switch, and
+                the future UTC datetime of the switch.
+
+        Raises:
+            RigettiDeviceError: If a QCS request fails.
+        """
+        return availability.next_available_time(self)
 
     def _probe_quilc_reachable(self) -> None:
         """Verify that the configured quilc endpoint accepts TCP connections.

@@ -52,6 +52,8 @@ print(result.data.get_counts())
   integrating myQLM (`qat.core.wrappers.circuit.Circuit`) as a new `"qat"`
   program type in the transpiler conversion graph [#1212](https://github.com/qBraid/qBraid/pull/1212).
 
+- Added `qbraid/runtime/rigetti/availability.py` (modeled on `qbraid/runtime/aws/availability.py`) exposing `is_in_maintenance()` and `next_available_time()`, derived from the QCS maintenance calendar. `RigettiDevice` gains `maintenance_calendar()` (the raw RFC 5545 maintenance iCalendar fetched from the QCS REST API `GET /v1/calendars/{id}`) and `availability_window()`, which returns `(is_available, "HH:MM:SS"_until_switch, switch_datetime)` and merges contiguous/overlapping maintenance windows so the reported next-available time is when the device truly leaves maintenance ([#1239](https://github.com/qBraid/qBraid/pull/1239))
+
 ### Improved / Modified
 - Replaced `logging.getLogger(__name__)` with centralized `from qbraid._logging import logger` in Rigetti, Origin Quantum, and Quantinuum runtime modules ([#1197](https://github.com/qBraid/qBraid/pull/1197))
 - Modified `get_devices` and `get_device` methods in `IonQProvider` to use public endpoint access instead of authenticated requests ([#1194](https://github.com/qBraid/qBraid/pull/1194))
@@ -64,6 +66,7 @@ print(result.data.get_counts())
 ### Removed
 
 ### Fixed
+- Fixed `RigettiDevice.status()` incorrectly reporting devices as `ONLINE` while under scheduled maintenance (e.g. Cepheus-1-108Q). It previously only checked whether the processor appeared in `list_quantum_processors()` and then always returned `ONLINE`. It now also consults Rigetti's maintenance schedule, returning `UNAVAILABLE` while a maintenance window is in progress (the QCS gateway queues jobs during maintenance), `OFFLINE` when the processor is absent from the catalog, and `ONLINE` otherwise. A calendar lookup/parse failure degrades to `ONLINE` with a logged warning so `status()` never raises on a transient calendar issue ([#1239](https://github.com/qBraid/qBraid/pull/1239))
 - Fixed `ConversionGraph.__eq__` raising `TypeError: NotImplemented should not be used in a boolean context` on Python 3.14. It chained `super().__eq__(value)` (which resolves to `object.__eq__` and returns `NotImplemented` for any distinct object) into a boolean `and`; Python 3.14 promotes using `NotImplemented` in a boolean context from a `DeprecationWarning` to a hard error. The redundant `super()` term is removed and the `isinstance` guard leads the structural comparison, which is behaviour-preserving ([#1085](https://github.com/qBraid/qBraid/issues/1085))
 - Fixed the qrisp-to-X transpiler coverage benchmark dropping below its accuracy baselines after the qrisp 0.9 release. qrisp 0.9 imports `TYPE_CHECKING` at module scope in `qrisp.circuit.standard_operations` (with no `__all__`), leaking the name into `dir()`; the benchmark's upper-case-name gate enumeration counted it as a non-buildable "gate", producing a guaranteed conversion failure on every target. Enumeration is now restricted to callables, so the leaked constant is ignored; accuracy thresholds are unchanged ([#1241](https://github.com/qBraid/qBraid/pull/1241))
 - Fixed test collection failing under pytest 9.1, which promotes "marks applied to fixtures" from a silent no-op into a hard collection error. Four fixtures in the Azure remote test modules stacked `@pytest.mark.skipif(...)` on `@pytest.fixture`, aborting collection of the entire suite. The marks (which pytest never honored on fixtures) are removed and the dependency skip guards moved into the fixture bodies; the consuming tests keep their own `skipif` marks, so behavior is unchanged ([#1241](https://github.com/qBraid/qBraid/pull/1241))
@@ -81,6 +84,7 @@ print(result.data.get_counts())
 - Replaced `qiskit-qir` dependency with `qbraid-qir[qiskit]>=0.6.0`; the `qiskit_to_pyqir` conversion now uses `qbraid_qir.qiskit.qiskit_to_qir` instead of the archived `qiskit-qir` package ([#1132](https://github.com/qBraid/qBraid/pull/1132))
 - Updated `qbraid-core` requirement from `>=0.3.2,<0.4.0` to `>=0.3.3,<0.4.0` ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 - Updated `qiskit-ibm-runtime` optional dependency upper bound from `<0.42` to `<0.46`; replaced deprecated `RuntimeJob` (V1) with `RuntimeJobV2` in `QiskitJob` and updated tests accordingly ([#1131](https://github.com/qBraid/qBraid/pull/1131))
+- Added `icalendar>=6.0` and `recurring-ical-events>=3.0` to the `rigetti` extra for RFC 5545 maintenance-calendar parsing and recurrence handling ([#1239](https://github.com/qBraid/qBraid/pull/1239))
 
 ## [0.12.1] - 2026-05-17
 

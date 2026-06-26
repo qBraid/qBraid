@@ -59,6 +59,10 @@ def mock_qcs_client() -> MagicMock:
     mock.quilc_url = "tcp://127.0.0.1:5555"
     mock.qvm_url = "http://127.0.0.1:5000"
     mock.grpc_api_url = "https://grpc.qcs.rigetti.com"
+    mock.api_url = "https://api.qcs.rigetti.com"
+    # ``oauth_session.request_access_token().secret`` yields the bearer token
+    # used by the maintenance-calendar REST call.
+    mock.oauth_session.request_access_token.return_value.secret = "test-access-token"
     return mock
 
 
