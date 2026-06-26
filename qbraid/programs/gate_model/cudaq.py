@@ -56,6 +56,7 @@ class CudaQKernel(GateModelProgram):
 
     def serialize(self) -> Program:
         """Return the program in a format suitable for submission to the qBraid API."""
+        self.program.compile()
         qir: str = cudaq.translate(self.program, format="qir-base")
         return Program(
             format="qir.ll",
