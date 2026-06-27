@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-lines
 
 """
 Unit tests for BraketProvider class
@@ -327,7 +327,8 @@ def test_provider_get_devices_skips_unbuildable_profiles(mock_sv1):
             raise QbraidError("Device exposes no supported program type")
         return original_build(self, device, *args, **kwargs)
 
-    BraketProvider.get_devices.cache_clear()
+    provider = BraketProvider()
+    provider.get_devices.cache_clear()
     with (
         patch(
             "qbraid.runtime.aws.provider.AwsDevice.get_devices",
@@ -337,13 +338,12 @@ def test_provider_get_devices_skips_unbuildable_profiles(mock_sv1):
         patch.object(BraketProvider, "_build_runtime_profile", build_or_raise),
     ):
         mock_aws_device_2.return_value = mock_sv1
-        provider = BraketProvider()
         devices = provider.get_devices(statuses=["ONLINE", "OFFLINE", "RETIRED"])
 
     # Only the SV1 device comes back; the unsupported device is silently skipped.
     assert len(devices) == 1
     assert devices[0].id == SV1_ARN
-    BraketProvider.get_devices.cache_clear()
+    provider.get_devices.cache_clear()
 
 
 @patch("qbraid.runtime.aws.device.AwsDevice")
