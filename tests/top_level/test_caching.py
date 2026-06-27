@@ -66,3 +66,44 @@ def test_clear_cache(test_instance, monkeypatch):
     clear_cache()
 
     assert test_instance.adjusted_factorial.cache_info().currsize == 0
+
+
+class ListArgClass:
+    """Class with a cached method that accepts an unhashable (list) argument."""
+
+    def __init__(self):
+        self.call_count = 0
+
+    @cached_method
+    def total(self, items: list, offset: int = 0) -> int:
+        """Sum ``items`` plus ``offset``; counts invocations of the real body."""
+        self.call_count += 1
+        return sum(items) + offset
+
+    def __hash__(self):
+        return id(self)
+
+
+def test_cached_method_accepts_unhashable_args(monkeypatch):
+    """A cached method can be called with list args and is cached.
+
+    Regression: the previous implementation routed calls through ``functools.lru_cache``,
+    which raised ``TypeError: unhashable type: 'list'``. The cache key is derived from a
+    JSON serialization, so unhashable arguments are supported.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    obj = ListArgClass()
+    obj.total.cache_clear()
+
+    # Repeated identical call (incl. list arg) is served from cache: body runs once.
+    assert obj.total([1, 2, 3], offset=10) == 16
+    assert obj.total([1, 2, 3], offset=10) == 16
+    assert obj.call_count == 1
+
+    # A different list is a distinct key and re-invokes the body.
+    assert obj.total([4, 5]) == 9
+    assert obj.call_count == 2
+    assert obj.total.cache_info().currsize == 2
+
+    obj.total.cache_clear()
+    assert obj.total.cache_info().currsize == 0
