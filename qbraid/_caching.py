@@ -17,6 +17,7 @@ Functions and decorators for efficient caching to improve function and method pe
 Includes per-instance LRU caching, TTL expiration, and customizable caching for specific needs.
 
 """
+
 import functools
 import hashlib
 import json
@@ -73,11 +74,13 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
 
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
-            if os.getenv("DISABLE_CACHE") == "1":
+            # When caching is disabled (globally or per-instance) bypass the cache
+            # entirely: don't read, write, evict, or mutate stats.
+            if os.getenv("DISABLE_CACHE") == "1" or getattr(self, "__cache_disabled", False):
                 return func(self, *args, **kwargs)
             key = _generate_cache_key(self, func.__name__, args, kwargs)
 
-            if not getattr(self, "__cache_disabled", False) and key in cache:
+            if key in cache:
                 cached_result, timestamp = cache[key]
                 if (time.time() - timestamp) < ttl:
                     stats["hits"] += 1
