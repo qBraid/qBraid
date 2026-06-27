@@ -107,3 +107,33 @@ def test_cached_method_accepts_unhashable_args(monkeypatch):
 
     obj.total.cache_clear()
     assert obj.total.cache_info().currsize == 0
+
+
+class BoundedClass:
+    """Class whose cached method has a small ``maxsize`` to exercise eviction."""
+
+    @cached_method(maxsize=2)
+    def square(self, n: int) -> int:
+        """Return ``n`` squared."""
+        return n * n
+
+    def __hash__(self):
+        return id(self)
+
+
+def test_cached_method_evicts_oldest_when_maxsize_reached(monkeypatch):
+    """Once ``maxsize`` entries are cached, the oldest is evicted on the next miss."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    obj = BoundedClass()
+    obj.square.cache_clear()
+
+    obj.square(1)
+    obj.square(2)
+    assert obj.square.cache_info().currsize == 2
+
+    # A third distinct key evicts the oldest entry; the cache stays bounded at maxsize.
+    obj.square(3)
+    assert obj.square.cache_info().currsize == 2
+
+    obj.square.cache_clear()
+    assert obj.square.cache_info().currsize == 0
