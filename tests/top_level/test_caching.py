@@ -16,11 +16,13 @@
 Unit tests for caching module.
 
 """
+
 import math
+import time
 
 import pytest
 
-from qbraid._caching import _generate_cache_key, cached_method, clear_cache
+from qbraid._caching import _generate_cache_key, cache_disabled, cached_method, clear_cache
 
 
 class TestClass:
@@ -66,3 +68,127 @@ def test_clear_cache(test_instance, monkeypatch):
     clear_cache()
 
     assert test_instance.adjusted_factorial.cache_info().currsize == 0
+
+
+class ListArgClass:
+    """Class with a cached method that accepts an unhashable (list) argument."""
+
+    def __init__(self):
+        self.call_count = 0
+
+    @cached_method
+    def total(self, items: list, offset: int = 0) -> int:
+        """Sum ``items`` plus ``offset``; counts invocations of the real body."""
+        self.call_count += 1
+        return sum(items) + offset
+
+    def __hash__(self):
+        return id(self)
+
+
+def test_cached_method_accepts_unhashable_args(monkeypatch):
+    """A cached method can be called with list args and is cached.
+
+    Regression: the previous implementation routed calls through ``functools.lru_cache``,
+    which raised ``TypeError: unhashable type: 'list'``. The cache key is derived from a
+    JSON serialization, so unhashable arguments are supported.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    obj = ListArgClass()
+    obj.total.cache_clear()
+
+    # Repeated identical call (incl. list arg) is served from cache: body runs once.
+    assert obj.total([1, 2, 3], offset=10) == 16
+    assert obj.total([1, 2, 3], offset=10) == 16
+    assert obj.call_count == 1
+
+    # A different list is a distinct key and re-invokes the body.
+    assert obj.total([4, 5]) == 9
+    assert obj.call_count == 2
+    assert obj.total.cache_info().currsize == 2
+
+    obj.total.cache_clear()
+    assert obj.total.cache_info().currsize == 0
+
+
+class BoundedClass:
+    """Class whose cached method has a small ``maxsize`` to exercise eviction."""
+
+    def __init__(self):
+        self.call_count = 0
+
+    @cached_method(maxsize=2)
+    def square(self, n: int) -> int:
+        """Return ``n`` squared; counts invocations of the real body."""
+        self.call_count += 1
+        return n * n
+
+    def __hash__(self):
+        return id(self)
+
+
+def test_cached_method_evicts_oldest_when_maxsize_reached(monkeypatch):
+    """Once ``maxsize`` entries are cached, the oldest (by insertion) is evicted.
+
+    Asserted via ``call_count`` rather than ``currsize`` alone: after a third distinct
+    call evicts the oldest key, re-calling that key must recompute (body runs again)
+    while the retained key is still served from cache.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+
+    # Strictly-increasing timestamps so the "oldest" entry is unambiguous.
+    ticks = iter(range(1, 1000))
+    monkeypatch.setattr(time, "time", lambda: next(ticks))
+
+    obj = BoundedClass()
+    obj.square.cache_clear()
+
+    assert obj.square(1) == 1  # cache: {1}
+    assert obj.square(2) == 4  # cache: {1, 2}
+    assert obj.square.cache_info().currsize == 2
+    assert obj.call_count == 2
+
+    # A third distinct key evicts the oldest entry (1); cache stays bounded at maxsize.
+    assert obj.square(3) == 9  # evicts 1 -> cache: {2, 3}
+    assert obj.square.cache_info().currsize == 2
+    assert obj.call_count == 3
+
+    # The retained key (2) is still cached: no recompute.
+    assert obj.square(2) == 4
+    assert obj.call_count == 3
+
+    # The evicted key (1) must be recomputed: body runs again.
+    assert obj.square(1) == 1
+    assert obj.call_count == 4
+    assert obj.square.cache_info().currsize == 2
+
+    obj.square.cache_clear()
+    assert obj.square.cache_info().currsize == 0
+
+
+def test_cache_disabled_does_not_populate_cache(monkeypatch):
+    """Calls made under ``cache_disabled`` recompute and leave the cache untouched.
+
+    Previously the disabled path skipped only the cache *read*, still writing results
+    and bumping stats. ``cache_disabled`` now bypasses the cache entirely.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    obj = BoundedClass()
+    obj.square.cache_clear()
+
+    with cache_disabled(obj):
+        assert obj.square(2) == 4
+        assert obj.square(2) == 4
+
+    # Body ran every time and nothing was cached or counted as a hit/miss.
+    assert obj.call_count == 2
+    info = obj.square.cache_info()
+    assert info.currsize == 0
+    assert info.hits == 0
+    assert info.misses == 0
+
+    # Re-enabling caches normally again.
+    assert obj.square(2) == 4
+    assert obj.call_count == 3
+    assert obj.square.cache_info().currsize == 1
+    obj.square.cache_clear()
