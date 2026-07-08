@@ -101,21 +101,7 @@ jobs:
           CHANGELOG_SHA=$(gh api "repos/$GITHUB_REPOSITORY/contents/CHANGELOG.md?ref=$HEAD_REF" \
             --jq '.sha')
 
-          SECTION=$(python3 -c "
-          import re, sys
-          content = sys.stdin.read()
-          match = re.search(r'(## \[Unreleased\].*?)(?=\n## \[)', content, re.DOTALL)
-          if match:
-              print(match.group(1))
-          else:
-              print('## [Unreleased]')
-          " <<< "$CHANGELOG")
-
           EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
-          echo "section<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
-          echo "$SECTION" >> "$GITHUB_OUTPUT"
-          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
-
           echo "full_changelog<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
           echo "$CHANGELOG" >> "$GITHUB_OUTPUT"
           echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
@@ -130,33 +116,24 @@ jobs:
           PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
           PR_TITLE: ${{ steps.pr_meta.outputs.pr_title }}
           PR_DIFF: ${{ steps.diff.outputs.diff }}
-          CURRENT_SECTION: ${{ steps.current.outputs.section }}
         run: |
           PROMPT=$(cat <<'PROMPT_EOF'
-          You are updating a CHANGELOG.md for a Python project. You will be given:
-          1. The current [Unreleased] section of the changelog (which may already have entries from other PRs)
-          2. A git diff from a pull request
-          3. The PR number and title
+          You are writing the CHANGELOG entries for a single pull request in a Python project.
+          You are given a git diff, the PR number, and the PR title.
 
-          Your task: Output the complete updated [Unreleased] section, incorporating new entries for this PR's changes.
+          Analyze the diff and produce the changelog bullet(s) for THIS PR only, as a JSON
+          object mapping category names to arrays of bullet descriptions. Use ONLY these
+          category keys (omit a category, or use an empty array, when it has no entries):
+            "Added", "Improved / Modified", "Deprecated", "Removed", "Fixed", "Dependencies"
 
-          FORMAT RULES:
-          - Start with exactly: ## [Unreleased]
-          - Include ALL 6 category headers in this exact order, each as ### level:
-            ### Added
-            ### Improved / Modified
-            ### Deprecated
-            ### Removed
-            ### Fixed
-            ### Dependencies
-          - Each entry is a bullet: - Description ([#NUMBER](https://github.com/qBraid/qBraid/pull/NUMBER))
-          - Preserve ALL existing entries from other PRs (different PR numbers). Do not remove or modify them.
-          - If this PR number already has entries, replace them with your new analysis.
+          RULES:
+          - Each array element is a plain-text description (one to two sentences).
+          - Do NOT include a leading "- ", and do NOT include the PR number or link — those
+            are appended automatically. Never write "(#NUMBER)" yourself.
           - Reference specific class names, methods, modules, and parameters from the diff.
-          - Keep descriptions concise but informative (one to two sentences each).
-          - Leave category sections empty (just the header, no bullets) if there are no entries for them.
-          - Do NOT include any text before "## [Unreleased]" or after the last category section.
-          - Do NOT wrap the output in markdown code fences.
+          - Describe only changes present in THIS diff. Do not invent entries.
+          - If the PR has no changelog-worthy, user-facing changes, output exactly: {}
+          - Output ONLY the JSON object. No markdown code fences, no prose before or after.
           PROMPT_EOF
           )
 
@@ -165,14 +142,13 @@ jobs:
             --arg pr_number "$PR_NUMBER" \
             --arg pr_title "$PR_TITLE" \
             --arg diff "$PR_DIFF" \
-            --arg current "$CURRENT_SECTION" \
             '{
               model: "claude-sonnet-5",
               max_tokens: 4096,
               thinking: {type: "disabled"},
               messages: [{
                 role: "user",
-                content: ($prompt + "\n\nCURRENT [Unreleased] SECTION:\n" + $current + "\n\nPR #" + $pr_number + ": " + $pr_title + "\n\nDIFF:\n" + $diff)
+                content: ($prompt + "\n\nPR #" + $pr_number + ": " + $pr_title + "\n\nDIFF:\n" + $diff)
               }]
             }')
 
@@ -182,18 +158,28 @@ jobs:
             -H "anthropic-version: 2023-06-01" \
             -d "$REQUEST_BODY")
 
-          CHANGELOG_CONTENT=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+          TEXT=$(echo "$RESPONSE" | jq -r '.content[0].text // empty')
+          STOP=$(echo "$RESPONSE" | jq -r '.stop_reason // empty')
 
-          if [ -z "$CHANGELOG_CONTENT" ]; then
+          if [ -z "$TEXT" ]; then
             ERROR=$(echo "$RESPONSE" | jq -r '.error.message // .type // "Unknown error"')
             echo "::error::Claude API error: $ERROR"
             exit 1
           fi
+          if [ "$STOP" = "max_tokens" ]; then
+            echo "::error::Claude response was truncated (stop_reason=max_tokens); refusing to write a partial result"
+            exit 1
+          fi
 
-          EOF_MARKER=$(dd if=/dev/urandom bs=15 count=1 2>/dev/null | base64)
-          echo "changelog<<$EOF_MARKER" >> "$GITHUB_OUTPUT"
-          echo "$CHANGELOG_CONTENT" >> "$GITHUB_OUTPUT"
-          echo "$EOF_MARKER" >> "$GITHUB_OUTPUT"
+          # Strip any stray code fences, then validate + compact the JSON. Append-only:
+          # the model only returns THIS PR's new bullets, so the payload is always small.
+          TEXT=$(printf '%s' "$TEXT" | sed '/^```/d')
+          ENTRIES=$(printf '%s' "$TEXT" | jq -c '.') || {
+            echo "::error::Model did not return valid JSON: $TEXT"
+            exit 1
+          }
+
+          echo "entries=$ENTRIES" >> "$GITHUB_OUTPUT"
 
       - name: Update CHANGELOG.md via API
         if: steps.pr_meta.outputs.is_fork != 'true'
@@ -201,24 +187,75 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ steps.pr_meta.outputs.head_ref }}
           PR_NUMBER: ${{ steps.pr_meta.outputs.pr_number }}
-          NEW_SECTION: ${{ steps.claude.outputs.changelog }}
+          ENTRIES: ${{ steps.claude.outputs.entries }}
           FULL_CHANGELOG: ${{ steps.current.outputs.full_changelog }}
           CHANGELOG_SHA: ${{ steps.current.outputs.changelog_sha }}
         run: |
-          UPDATED=$(python3 -c "
-          import os, re, base64, json
-          new_section = os.environ['NEW_SECTION'].strip()
-          content = os.environ['FULL_CHANGELOG']
-          pattern = r'## \[Unreleased\].*?(?=\n## \[)'
-          replacement = new_section + '\n'
-          updated = re.sub(pattern, replacement, content, count=1, flags=re.DOTALL)
-          encoded = base64.b64encode(updated.encode()).decode()
-          print(encoded)
-          ")
+          # Append-only: insert THIS PR's bullets into the existing [Unreleased]
+          # section without re-rendering it, so pre-existing entries can never be
+          # dropped. A re-run replaces only this PR's own bullets (idempotent).
+          UPDATED=$(python3 <<'PYEOF'
+          import os, re, base64, sys, json
+
+          CATEGORIES = ["Added", "Improved / Modified", "Deprecated", "Removed", "Fixed", "Dependencies"]
+          pr = os.environ["PR_NUMBER"]
+          url = "https://github.com/" + os.environ["GITHUB_REPOSITORY"] + "/pull/" + pr
+          entries = json.loads(os.environ["ENTRIES"])
+          content = os.environ["FULL_CHANGELOG"]
+
+          for cat in entries:
+              if cat not in CATEGORIES:
+                  sys.stderr.write("Unknown category from model: " + repr(cat) + "\n")
+                  sys.exit(1)
+
+          m = re.search(r"## \[Unreleased\].*?(?=\n## \[)", content, flags=re.DOTALL)
+          if not m:
+              sys.stderr.write("Could not locate [Unreleased] section\n")
+              sys.exit(1)
+          lines = m.group(0).split("\n")
+
+          # Idempotent re-run: drop only the single-line bullets this workflow
+          # previously created for THIS PR (exact trailing "([#<pr>](<url>))").
+          suffix = "([#" + pr + "](" + url + "))"
+          lines = [ln for ln in lines if not (ln.startswith("- ") and ln.rstrip().endswith(suffix))]
+
+          def find_header(cat):
+              for i, ln in enumerate(lines):
+                  if ln.strip() == "### " + cat:
+                      return i
+              return None
+
+          added = 0
+          for cat in CATEGORIES:
+              descs = [d.strip() for d in entries.get(cat, []) if d.strip()]
+              if not descs:
+                  continue
+              hdr = find_header(cat)
+              if hdr is None:
+                  sys.stderr.write("Missing header: ### " + cat + "\n")
+                  sys.exit(1)
+              end = len(lines)
+              for j in range(hdr + 1, len(lines)):
+                  if lines[j].startswith("### ") or lines[j].startswith("## "):
+                      end = j
+                      break
+              ins = hdr + 1
+              for j in range(hdr + 1, end):
+                  if lines[j].strip():
+                      ins = j + 1
+              lines[ins:ins] = ["- " + d + " " + suffix for d in descs]
+              added += len(descs)
+
+          if added == 0:
+              sys.exit(0)
+          updated = content[:m.start()] + "\n".join(lines) + content[m.end():]
+          print(base64.b64encode(updated.encode()).decode())
+          PYEOF
+          )
 
           if [ -z "$UPDATED" ]; then
-            echo "::error::Failed to generate updated changelog"
-            exit 1
+            echo "No changelog-worthy entries for this PR; leaving CHANGELOG.md unchanged."
+            exit 0
           fi
 
           jq -n \
