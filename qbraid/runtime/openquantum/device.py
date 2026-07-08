@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import EXECUTION_PLAN_TYPES, QUEUE_PRIORITY_TYPES, OpenQuantumJob
 
@@ -89,11 +90,11 @@ class OpenQuantumDevice(QuantumDevice):
                 for i, item in enumerate(run_input)
             ]
 
-        # Auto-select organization (your logic — perfect)
+        # Auto-select the user's first organization when none is specified.
         if organization_id is None:
             orgs = self.session.get_user_organizations()
             if not orgs:
-                raise ValueError("No organization found for user.")
+                raise QbraidRuntimeError("Failed to connect to Open Quantum.")
             organization_id = orgs[0]["id"]
 
         # Encode QASM
