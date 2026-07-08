@@ -167,8 +167,9 @@ jobs:
             --arg diff "$PR_DIFF" \
             --arg current "$CURRENT_SECTION" \
             '{
-              model: "claude-sonnet-4-20250514",
+              model: "claude-sonnet-5",
               max_tokens: 4096,
+              thinking: {type: "disabled"},
               messages: [{
                 role: "user",
                 content: ($prompt + "\n\nCURRENT [Unreleased] SECTION:\n" + $current + "\n\nPR #" + $pr_number + ": " + $pr_title + "\n\nDIFF:\n" + $diff)
