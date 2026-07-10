@@ -289,8 +289,14 @@ def test_provider_get_tasks_by_tag_paginates(mock_boto_client):
     mock_client = MagicMock()
     mock_boto_client.return_value = mock_client
     mock_client.get_resources.side_effect = [
-        {"ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource1"}], "PaginationToken": "tok"},
-        {"ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource2"}], "PaginationToken": ""},
+        {
+            "ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource1"}],
+            "PaginationToken": "tok",
+        },
+        {
+            "ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource2"}],
+            "PaginationToken": "",
+        },
     ]
 
     provider = BraketProvider()
