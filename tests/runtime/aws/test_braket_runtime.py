@@ -289,20 +289,14 @@ def test_provider_get_tasks_by_tag_paginates(mock_boto_client):
     mock_client = MagicMock()
     mock_boto_client.return_value = mock_client
     mock_client.get_resources.side_effect = [
-        {
-            "ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource1"}],
-            "PaginationToken": "tok",
-        },
-        {
-            "ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource2"}],
-            "PaginationToken": "",
-        },
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:1"}], "PaginationToken": "tok"},
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:2"}], "PaginationToken": ""},
     ]
 
     provider = BraketProvider()
     result = provider.get_tasks_by_tag("Project", ["X"], ["us-west-1"])
 
-    assert result == ["arn:aws:resource1", "arn:aws:resource2"]
+    assert result == ["arn:1", "arn:2"]
     assert mock_client.get_resources.call_count == 2
     mock_client.get_resources.assert_any_call(
         TagFilters=[{"Key": "Project", "Values": ["X"]}], PaginationToken="tok"
