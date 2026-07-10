@@ -480,6 +480,26 @@ class QuantumDevice(ABC):
         run_input = run_input[0] if is_single_output else run_input
         return run_input
 
+    def supported_run_inputs(self) -> list[str] | ValueError:
+        """
+        Gives the program type aliases for a given devices run method
+
+        Returns:
+            list[str]: Sorted supported program type aliases
+        """
+        target = self._target_spec
+        graph = self.scheme.conversion_graph
+
+        if target is None:
+            return []
+
+        supported_inputs = []
+
+        for program_type in graph.nodes():
+            if graph.has_path(program_type, target.alias):
+                supported_inputs.append(program_type)
+        return sorted(supported_inputs)
+
     @abstractmethod
     def submit(
         self,
