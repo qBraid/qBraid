@@ -237,20 +237,25 @@ class BraketProvider(QuantumProvider):
 
     @staticmethod
     def _fetch_resources(region_names: list[str], key: str, values: list[str]) -> list[str]:
-        """Fetch resources from AWS."""
-        tasks = []
+        """Fetch matching resource ARNs from AWS across the given regions.
+
+        The Resource Groups Tagging API returns at most 100 resources per page
+        and signals further pages via a non-empty ``PaginationToken``. Loop until
+        the token is exhausted so all matches are returned, not just the first page.
+        """
+        tasks: list[str] = []
         for region_name in region_names:
             client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
-            response = client.get_resources(
-                TagFilters=[
-                    {
-                        "Key": key,
-                        "Values": values,
-                    }
-                ],
-            )
-            matches = [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
-            tasks += matches
+            pagination_token = ""
+            while True:
+                response = client.get_resources(
+                    TagFilters=[{"Key": key, "Values": values}],
+                    PaginationToken=pagination_token,
+                )
+                tasks += [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
+                pagination_token = response.get("PaginationToken", "")
+                if not pagination_token:
+                    break
         return tasks
 
     def get_tasks_by_tag(
