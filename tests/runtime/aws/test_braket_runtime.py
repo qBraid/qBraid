@@ -277,8 +277,30 @@ def test_provider_get_tasks_by_tag(mock_boto_client, region_names, key, values, 
 
     # Assert the results
     mock_boto_client.assert_called_with("resourcegroupstaggingapi", region_name="us-west-1")
-    mock_client.get_resources.assert_called_once_with(TagFilters=[{"Key": key, "Values": values}])
+    mock_client.get_resources.assert_called_once_with(
+        TagFilters=[{"Key": key, "Values": values}], PaginationToken=""
+    )
     assert result == expected
+
+
+@patch("boto3.client")
+def test_provider_get_tasks_by_tag_paginates(mock_boto_client):
+    """Resources spanning multiple pages are all returned by following PaginationToken."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_resources.side_effect = [
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource1"}], "PaginationToken": "tok"},
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:aws:resource2"}], "PaginationToken": ""},
+    ]
+
+    provider = BraketProvider()
+    result = provider.get_tasks_by_tag("Project", ["X"], ["us-west-1"])
+
+    assert result == ["arn:aws:resource1", "arn:aws:resource2"]
+    assert mock_client.get_resources.call_count == 2
+    mock_client.get_resources.assert_any_call(
+        TagFilters=[{"Key": "Project", "Values": ["X"]}], PaginationToken="tok"
+    )
 
 
 def test_provider_get_device(mock_sv1):
