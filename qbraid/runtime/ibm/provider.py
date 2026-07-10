@@ -244,7 +244,9 @@ class QiskitRuntimeProvider(QuantumProvider):
 
         url = f"{_IBM_RUNTIME_BASE}{path}"
         if params:
-            url += "?" + urlencode(params)
+            # doseq=True so list values (e.g. tags=[...]) serialize as repeated
+            # query params (tags=a&tags=b) instead of the literal "['a', 'b']".
+            url += "?" + urlencode(params, doseq=True)
 
         req = Request(url)
         req.add_header("Authorization", f"Bearer {access_token}")
