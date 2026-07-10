@@ -479,7 +479,7 @@ class QuantumDevice(ABC):
 
         run_input = run_input[0] if is_single_output else run_input
         return run_input
-    
+
     def supported_run_inputs(self) -> list[str] | ValueError:
         """
         Gives the program type aliases for a given devices run method
@@ -492,7 +492,7 @@ class QuantumDevice(ABC):
 
         if target is None:
             return []
-        
+
         supported_inputs = []
 
         for program_type in graph.nodes():
