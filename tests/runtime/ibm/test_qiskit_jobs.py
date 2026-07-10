@@ -289,6 +289,23 @@ class TestIbmApiGet:
         assert "limit=10" in req.full_url
         assert "pending=true" in req.full_url
 
+    def test_appends_list_query_params_with_doseq(self, provider, mock_ibm_api):
+        """List-valued params serialize as repeated params, not a bracketed repr."""
+        mock_resp = mock_ibm_api({"jobs": []})
+
+        with (
+            patch.object(provider, "_exchange_api_key", return_value=FAKE_IAM_TOKEN),
+            patch("qbraid.runtime.ibm.provider.urlopen", return_value=mock_resp) as mock_urlopen,
+        ):
+            provider._ibm_api_get("/jobs", params={"tags": ["alpha", "beta"]})
+
+        url = mock_urlopen.call_args[0][0].full_url
+        assert "tags=alpha" in url
+        assert "tags=beta" in url
+        # Guard against the pre-fix behavior where the list was stringified to
+        # "['alpha', 'beta']" (URL-encoded "%5B..."), which IBM never matched.
+        assert "%5B" not in url
+
     def test_raises_on_missing_instance(self):
         """Raises ValueError when CRN instance is not configured."""
         with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService"):
