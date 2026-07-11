@@ -16,6 +16,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.12.2] - 2026-07-11
+
+### Added
 - Added support for Python 3.14: added the `Programming Language :: Python :: 3.14` classifier and 3.14 to the CI test matrices ([#1085](https://github.com/qBraid/qBraid/issues/1085))
 - Added an optional `token_provider` to `OpenQuantumSession`, letting a caller supply a per-user access token on demand (`token_provider: () -> (access_token, expires_at_epoch)`) instead of the session minting its own via `client_credentials`. When set, `_fetch_token` calls the provider and `_ensure_token` re-invokes it on near-expiry, so long `wait_for_preparation` waits still get a fresh token; `client_id`/`client_secret` are not required in this mode. Purely additive — the existing `client_credentials` path is unchanged ([#1240](https://github.com/qBraid/qBraid/pull/1240))
 - Added `cirq_to_pytket` and `pytket_to_cirq` transpiler conversions (via the `pytket-cirq` extension), giving a direct Cirq <-> PyTKET edge in the conversion graph. ([#1208](https://github.com/qBraid/qBraid/pull/1208))
@@ -60,10 +74,6 @@ print(result.data.get_counts())
 - Updated `QbraidProvider.get_devices` method to accept `**kwargs` and pass them through to the underlying `client.list_devices` call ([#1201](https://github.com/qBraid/qBraid/pull/1201))
 - Removed the cirq-specific fallback in `transpile` that, on a failed conversion step, round-tripped the cirq intermediate through QASM (`circuit_from_qasm(circuit.to_qasm())`) and retried. This flatten-and-retry is already provided generically by the conversion graph's `cirq -> qasm2 -> target` paths combined with the multi-path retry, making the hardcoded special case redundant (cirq conversion coverage is unchanged) ([#1217](https://github.com/qBraid/qBraid/pull/1217))
 - `openqasm3_to_pyquil` now emits native pyQuil two-qubit gates (`CPHASE`, `RXX`, `RYY`, `RZZ`, `XY`, `ISWAP`, `CSWAP`) by keeping them external to `pyqasm.unroll`, instead of expanding them into long `RZ`/`RX`/`CNOT` sequences (e.g. `cp` went from 17 instructions to one `CPHASE`). The results match exactly, including global phase. This also fixes `xy`, which previously raised `Unsupported gate: sxdg` because its decomposition produced an `sxdg` the converter could not handle ([#1224](https://github.com/qBraid/qBraid/pull/1224))
-
-### Deprecated
-
-### Removed
 
 ### Fixed
 - Fixed `BraketProvider._fetch_resources` (used by `get_tasks_by_tag` and, transitively, `list_jobs(tags=...)`) reading only the first page of the AWS Resource Groups Tagging API. It called `get_resources` once per region with no `PaginationToken` loop, so tag-based task lookups silently capped at ~100 resources and missed matches in accounts with more tagged tasks. It now follows `PaginationToken` until exhausted, returning all matching task ARNs across every page ([#1253](https://github.com/qBraid/qBraid/pull/1253))
