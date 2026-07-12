@@ -648,3 +648,29 @@ class TestApiErrorTyping:
                 provider._exchange_api_key()
 
         assert exc_info.value.status_code == 401
+
+    def test_exchange_api_key_server_error_is_not_an_auth_error(self, provider):
+        """An IAM 500 is a transient service failure, not bad credentials."""
+        with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(500)):
+            with pytest.raises(RuntimeAPIError) as exc_info:
+                provider._exchange_api_key()
+
+        assert not isinstance(exc_info.value, AuthorizationError)
+        assert exc_info.value.status_code == 500
+
+    def test_ibm_api_get_network_error_has_no_status_code(self, provider):
+        """A transport failure has no HTTP response, so status_code stays None."""
+        from urllib.error import URLError
+
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=URLError("timeout")),
+        ):
+            with pytest.raises(RuntimeAPIError) as exc_info:
+                provider._ibm_api_get("/jobs")
+
+        assert exc_info.value.status_code is None
+        assert not isinstance(exc_info.value, (AuthorizationError, JobNotFoundError))
