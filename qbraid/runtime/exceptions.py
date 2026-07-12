@@ -16,6 +16,9 @@
 Module defining exceptions for errors raised while processing a device.
 
 """
+
+from typing import Optional
+
 from qbraid.exceptions import QbraidError
 
 
@@ -29,6 +32,41 @@ class QbraidRuntimeError(QbraidError):
 
 class ResourceNotFoundError(QbraidError):
     """Exception raised when the desired resource could not be found."""
+
+
+class RuntimeAPIError(QbraidRuntimeError, ValueError):
+    """Exception raised when a provider's REST API returns an error response.
+
+    Carries the HTTP status code so callers can branch on the failure mode
+    (e.g. distinguish "job doesn't exist" from "credentials rejected") instead
+    of string-matching the exception message.
+
+    Note: this also subclasses ``ValueError`` because these provider paths
+    previously raised a bare ``ValueError``. Keeping that base means existing
+    ``except ValueError`` code keeps working. It is transitional and can be
+    dropped in a future major release.
+    """
+
+    def __init__(self, message: str, status_code: Optional[int] = None):
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class AuthorizationError(RuntimeAPIError):
+    """Exception raised when provider credentials are missing, expired, or rejected.
+
+    Corresponds to a 401/403 from the provider — the request was well-formed but
+    the caller is not authenticated/authorized.
+    """
+
+
+class JobNotFoundError(RuntimeAPIError, ResourceNotFoundError):
+    """Exception raised when the requested job/task does not exist (404).
+
+    Inherits from :class:`ResourceNotFoundError` so existing handlers that catch
+    that keep working, and from :class:`RuntimeAPIError` so callers get
+    ``status_code`` and can catch every provider API error uniformly.
+    """
 
 
 class JobStateError(QbraidError):

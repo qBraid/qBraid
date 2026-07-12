@@ -16,14 +16,17 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added typed runtime exceptions so callers can branch on *why* a provider API call failed instead of string-matching the message: `RuntimeAPIError` (carries the HTTP `status_code`), `AuthorizationError` (401/403 — credentials missing, expired, or rejected), and `JobNotFoundError` (404). `JobNotFoundError` subclasses both `RuntimeAPIError` and the existing `ResourceNotFoundError`. All are exported from `qbraid.runtime`.
 
 ### Improved / Modified
+- `QiskitRuntimeProvider._ibm_api_get` and `._exchange_api_key` now raise the typed exceptions above instead of a bare `ValueError`, preserving IBM's HTTP status on the exception. For backwards compatibility `RuntimeAPIError` still subclasses `ValueError`, so existing `except ValueError` code keeps working; that base is transitional and may be dropped in a future major release.
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Fixed a 404 from the IBM API (e.g. looking up a job ID that doesn't exist) being indistinguishable from a credentials failure. Both previously collapsed into `ValueError("IBM API request failed: ...")`, so consumers had to parse the message; downstream this caused qBraid Lab to tell users with perfectly valid credentials to go re-save their IBM credentials to disk. A 404 now raises `JobNotFoundError` and a 401/403 raises `AuthorizationError`.
 
 ### Dependencies
 

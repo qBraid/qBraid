@@ -16,6 +16,7 @@
 Module for configuring IBM provider credentials and authentication.
 
 """
+
 from __future__ import annotations
 
 import json
@@ -23,7 +24,7 @@ import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -33,6 +34,7 @@ from qiskit_ibm_runtime.accounts import ChannelType
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.runtime.exceptions import AuthorizationError, JobNotFoundError, RuntimeAPIError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -224,8 +226,15 @@ class QiskitRuntimeProvider(QuantumProvider):
                 if not access_token:
                     raise ValueError("No access_token in IAM response")
                 return access_token
+        except HTTPError as e:
+            # IAM rejects a bad/expired API key with 400 or 401 — that's a
+            # credentials problem, not a generic failure.
+            message = f"Failed to exchange IBM API key: {e}"
+            if e.code in (400, 401, 403):
+                raise AuthorizationError(message, status_code=e.code) from e
+            raise RuntimeAPIError(message, status_code=e.code) from e
         except (URLError, OSError) as e:
-            raise ValueError(f"Failed to exchange IBM API key: {e}") from e
+            raise RuntimeAPIError(f"Failed to exchange IBM API key: {e}") from e
 
     def _ibm_api_get(self, path: str, params: Optional[dict] = None) -> dict[str, Any]:
         """Make an authenticated GET request to the IBM Runtime API."""
@@ -259,8 +268,19 @@ class QiskitRuntimeProvider(QuantumProvider):
         try:
             with urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read().decode("utf-8"))
+        except HTTPError as e:
+            # Preserve the provider's status code in the exception type so callers
+            # can tell "this job doesn't exist" apart from "your credentials were
+            # rejected" without parsing the message text.
+            message = f"IBM API request failed: {e}"
+            if e.code == 404:
+                raise JobNotFoundError(message, status_code=e.code) from e
+            if e.code in (401, 403):
+                raise AuthorizationError(message, status_code=e.code) from e
+            raise RuntimeAPIError(message, status_code=e.code) from e
         except (URLError, OSError) as e:
-            raise ValueError(f"IBM API request failed: {e}") from e
+            # No HTTP response at all (DNS failure, timeout, connection reset).
+            raise RuntimeAPIError(f"IBM API request failed: {e}") from e
 
     def list_jobs(  # pylint: disable=too-many-arguments
         self,

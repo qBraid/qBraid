@@ -28,6 +28,12 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qbraid.runtime.exceptions import (
+    AuthorizationError,
+    JobNotFoundError,
+    ResourceNotFoundError,
+    RuntimeAPIError,
+)
 from qbraid.runtime.ibm.provider import QiskitRuntimeProvider
 
 # ---------------------------------------------------------------------------
@@ -558,3 +564,87 @@ class TestEndToEndHandlerUsage:
             provider.list_jobs(pending=None)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert "pending" not in params
+
+
+class TestApiErrorTyping:
+    """The IBM REST paths must raise typed exceptions carrying the HTTP status.
+
+    Consumers (e.g. qbraid-lab's cloud-jobs handlers) need to tell "this job does
+    not exist" apart from "your credentials were rejected". Previously both
+    collapsed into a bare ValueError, forcing callers to string-match the message
+    — so a 404 for a nonexistent job ID was misreported as a credentials problem.
+    """
+
+    @staticmethod
+    def _http_error(code):
+        from urllib.error import HTTPError
+
+        return HTTPError(
+            url="https://quantum.cloud.ibm.com/api/v1/jobs/nope",
+            code=code,
+            msg={404: "Not Found", 401: "Unauthorized", 403: "Forbidden"}.get(code, "Error"),
+            hdrs=None,
+            fp=None,
+        )
+
+    @pytest.mark.parametrize(
+        "code,expected",
+        [
+            (404, JobNotFoundError),
+            (401, AuthorizationError),
+            (403, AuthorizationError),
+            (500, RuntimeAPIError),
+        ],
+    )
+    def test_ibm_api_get_raises_typed_error(self, provider, code, expected):
+        """Each HTTP status maps to its own exception type, with status_code set."""
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(code)),
+        ):
+            with pytest.raises(expected) as exc_info:
+                provider._ibm_api_get("/jobs/nope")
+
+        assert exc_info.value.status_code == code
+
+    def test_not_found_is_not_an_auth_error(self, provider):
+        """A 404 must NOT be catchable as an authorization failure.
+
+        This is the exact bug: a nonexistent job ID was surfacing credential
+        guidance to users whose credentials were perfectly valid.
+        """
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(404)),
+        ):
+            with pytest.raises(JobNotFoundError) as exc_info:
+                provider._ibm_api_get("/jobs/nope")
+
+        assert not isinstance(exc_info.value, AuthorizationError)
+        assert isinstance(exc_info.value, ResourceNotFoundError)
+
+    def test_typed_errors_remain_value_errors(self, provider):
+        """Backwards compat: these paths used to raise ValueError."""
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(404)),
+        ):
+            with pytest.raises(ValueError):
+                provider._ibm_api_get("/jobs/nope")
+
+    def test_exchange_api_key_rejects_bad_key_as_auth_error(self, provider):
+        """IAM rejecting the API key is a credentials problem, not a generic one."""
+        with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(401)):
+            with pytest.raises(AuthorizationError) as exc_info:
+                provider._exchange_api_key()
+
+        assert exc_info.value.status_code == 401
