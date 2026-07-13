@@ -41,15 +41,28 @@ class RuntimeAPIError(QbraidRuntimeError, ValueError):
     (e.g. distinguish "job doesn't exist" from "credentials rejected") instead
     of string-matching the exception message.
 
+    Where the provider returns a structured error body, ``error_code`` holds the
+    provider's own error identifier (finer-grained than the HTTP status) and
+    ``trace`` the request id to quote in a support ticket. Both are None when the
+    provider returned no structured error.
+
     Note: this also subclasses ``ValueError`` because these provider paths
     previously raised a bare ``ValueError``. Keeping that base means existing
     ``except ValueError`` code keeps working. It is transitional and can be
     dropped in a future major release.
     """
 
-    def __init__(self, message: str, status_code: Optional[int] = None):
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        error_code: Optional[str] = None,
+        trace: Optional[str] = None,
+    ):
         super().__init__(message)
         self.status_code = status_code
+        self.error_code = error_code
+        self.trace = trace
 
 
 class AuthorizationError(RuntimeAPIError):

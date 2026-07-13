@@ -23,8 +23,11 @@ actual IBM Quantum REST API responses.
 """
 
 import json
+from io import BytesIO
 from pathlib import Path
+from typing import Optional
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 import pytest
 
@@ -678,3 +681,105 @@ class TestApiErrorTyping:
 
         assert exc_info.value.status_code is None
         assert not isinstance(exc_info.value, (AuthorizationError, JobNotFoundError))
+
+
+class TestIbmErrorBody:
+    """IBM returns a structured ErrorContainer body alongside the HTTP status.
+
+    Responses captured live from us-east.quantum-computing.cloud.ibm.com:
+
+      404 (bad job id)  -> {"errors": [{"code": 1291, "message": "Job not found..."}],
+                            "trace": "..."}
+      403 (bad CRN)     -> {"errors": [{"code": 1200, "message": "You are not authorized..."}],
+                            "trace": "..."}
+
+    An edge proxy in front of the API (e.g. rejecting a blocked User-Agent) also answers
+    403, but with an HTML block page instead of an ErrorContainer. That is not a
+    credentials failure and must not be reported as one -- doing so would tell users with
+    perfectly valid credentials to go re-save them, which is the bug this PR exists to fix.
+    """
+
+    WAF_BLOCK_PAGE = b"<!DOCTYPE html>\n<html><body>Access denied</body></html>"
+
+    @staticmethod
+    def _http_error(code, body: Optional[bytes]):
+        return HTTPError(
+            url="https://us-east.quantum-computing.cloud.ibm.com/jobs",
+            code=code,
+            msg="Error",
+            hdrs=None,
+            fp=None if body is None else BytesIO(body),
+        )
+
+    @staticmethod
+    def _error_container(code, message):
+        """An ErrorContainer body. `code` is an int, as IBM actually sends it."""
+        return json.dumps(
+            {
+                "errors": [{"code": code, "message": message, "solution": "Verify the job ID."}],
+                "trace": "c4dd86aa-1150-485e-85f3-2e4e5f410317",
+            }
+        ).encode()
+
+    def _get(self, provider, error):
+        """Run _ibm_api_get against a mocked HTTPError and return the raised exception."""
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=error),
+        ):
+            with pytest.raises(RuntimeAPIError) as exc_info:
+                provider._ibm_api_get("/jobs")
+        return exc_info.value
+
+    def test_ibm_error_code_and_trace_are_captured(self, provider):
+        """IBM's own error code and request trace ride along on the exception."""
+        body = self._error_container(1291, "Job not found. Job ID: deadbeef")
+        err = self._get(provider, self._http_error(404, body))
+
+        assert type(err) is JobNotFoundError
+        assert err.status_code == 404
+        # IBM's spec declares `code` a string but sends an int -- normalize.
+        assert err.error_code == "1291"
+        assert err.trace == "c4dd86aa-1150-485e-85f3-2e4e5f410317"
+        assert "Job not found" in str(err)
+
+    def test_forbidden_with_ibm_body_is_an_auth_error(self, provider):
+        """A 403 that IBM itself produced is a genuine authorization failure."""
+        body = self._error_container(1200, "You are not authorized to perform this action.")
+        err = self._get(provider, self._http_error(403, body))
+
+        assert type(err) is AuthorizationError
+        assert err.status_code == 403
+        assert err.error_code == "1200"
+
+    def test_forbidden_from_edge_proxy_is_not_an_auth_error(self, provider):
+        """A 403 with an HTML body did not come from IBM's API.
+
+        The credentials may be perfectly valid -- the request was blocked upstream.
+        Reporting this as AuthorizationError sends users to re-save working credentials.
+        """
+        err = self._get(provider, self._http_error(403, self.WAF_BLOCK_PAGE))
+
+        assert type(err) is RuntimeAPIError
+        assert not isinstance(err, AuthorizationError)
+        assert err.status_code == 403
+        assert err.error_code is None
+        assert err.trace is None
+
+    def test_bodyless_error_falls_back_to_status_mapping(self, provider):
+        """With no body at all we have nothing better to go on than the status."""
+        err = self._get(provider, self._http_error(401, None))
+
+        assert type(err) is AuthorizationError
+        assert err.status_code == 401
+        assert err.error_code is None
+
+    def test_malformed_json_body_is_not_an_auth_error(self, provider):
+        """A body that is present but unparseable is treated like any other foreign body."""
+        err = self._get(provider, self._http_error(403, b'{"truncated": '))
+
+        assert type(err) is RuntimeAPIError
+        assert err.status_code == 403
