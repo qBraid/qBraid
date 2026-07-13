@@ -251,6 +251,69 @@ def test_cache_key_falls_back_to_id_for_unhashable_instances(monkeypatch):
     UnhashableClass.get_data.cache_clear()
 
 
+class ZeroSizeClass:
+    """Class whose cached method has ``maxsize=0`` (caching disabled)."""
+
+    def __init__(self):
+        self.call_count = 0
+
+    @cached_method(maxsize=0)
+    def double(self, n: int) -> int:
+        """Return ``n`` doubled; counts invocations of the real body."""
+        self.call_count += 1
+        return n * 2
+
+    def __hash__(self):
+        return id(self)
+
+
+def test_cached_method_maxsize_zero_disables_caching(monkeypatch):
+    """``maxsize=0`` disables caching entirely, matching ``functools.lru_cache``.
+
+    Regression: the eviction path ran ``min()`` over the (empty) cache whenever
+    ``len(cache) >= maxsize``, so with ``maxsize=0`` the first call raised
+    ``ValueError: min() arg is an empty sequence``.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    obj = ZeroSizeClass()
+
+    assert obj.double(3) == 6
+    assert obj.double(3) == 6
+    assert obj.call_count == 2  # body ran every time; nothing cached
+    assert obj.double.cache_info().currsize == 0
+
+
+def test_cached_method_concurrent_calls_are_safe(monkeypatch):
+    """Concurrent hits/misses/evictions on one cached method don't corrupt the cache.
+
+    Smoke test for the per-method lock: many threads hammer distinct keys with a
+    small ``maxsize`` so eviction (which iterates the cache dict) runs while other
+    threads insert. Without the lock this could raise ``RuntimeError: dictionary
+    changed size during iteration``; results must also stay correct per-key.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+
+    class Hammer:
+        @cached_method(maxsize=4)
+        def square(self, n: int) -> int:
+            """Return ``n`` squared."""
+            return n * n
+
+        def __hash__(self):
+            return 7  # all instances share the cache, maximizing contention
+
+    from concurrent.futures import ThreadPoolExecutor
+
+    obj = Hammer()
+    obj.square.cache_clear()
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        results = list(pool.map(obj.square, [i % 16 for i in range(400)]))
+
+    assert results == [(i % 16) ** 2 for i in range(400)]
+    assert obj.square.cache_info().currsize <= 4
+    obj.square.cache_clear()
+
+
 def test_cache_disabled_does_not_populate_cache(monkeypatch):
     """Calls made under ``cache_disabled`` recompute and leave the cache untouched.
 

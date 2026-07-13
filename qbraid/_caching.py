@@ -14,7 +14,8 @@
 
 """
 Functions and decorators for efficient caching to improve function and method performance.
-Includes per-instance LRU caching, TTL expiration, and customizable caching for specific needs.
+Includes bounded method-result caching with TTL expiration and customizable caching for
+specific needs.
 
 """
 
@@ -22,6 +23,7 @@ import functools
 import hashlib
 import json
 import os
+import threading
 import time
 from collections import namedtuple
 from contextlib import contextmanager
@@ -70,6 +72,13 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
     rather than by hashing the raw arguments, decorated methods may be called with
     unhashable arguments (e.g. ``list`` / ``dict``) and still be cached — unlike a plain
     ``functools.lru_cache``, which raises ``TypeError: unhashable type`` for such args.
+
+    ``maxsize`` bounds the cache, evicting the oldest entry *by insertion time* — not
+    strict LRU, since reads don't refresh the timestamp (it also drives TTL expiry, and
+    refreshing it on hits would keep hot entries stale forever). ``maxsize=0`` disables
+    caching entirely, matching ``functools.lru_cache``. Cache reads/writes are guarded
+    by a per-method lock; the decorated function itself runs outside the lock, so slow
+    concurrent misses may compute duplicates but never serialize.
     """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -77,47 +86,55 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
         # unhashable positional/keyword arguments are supported.
         cache: dict[str, tuple[Any, float]] = {}
         stats = {"hits": 0, "misses": 0}
+        lock = threading.RLock()
 
         def _evict_if_needed() -> None:
-            # Bound the cache the way the previous lru_cache(maxsize) did, evicting the
-            # oldest entry by insertion timestamp once the limit is reached.
-            if maxsize is not None and len(cache) >= maxsize:
+            # Bound the cache size by evicting the oldest entry by insertion timestamp.
+            if maxsize is not None and cache and len(cache) >= maxsize:
                 oldest_key = min(cache, key=lambda k: cache[k][1])
                 del cache[oldest_key]
 
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
-            # When caching is disabled (globally or per-instance) bypass the cache
-            # entirely: don't read, write, evict, or mutate stats.
-            if os.getenv("DISABLE_CACHE") == "1" or getattr(self, "__cache_disabled", False):
+            # When caching is disabled (globally, per-instance, or maxsize=0) bypass
+            # the cache entirely: don't read, write, evict, or mutate stats.
+            if (
+                os.getenv("DISABLE_CACHE") == "1"
+                or getattr(self, "__cache_disabled", False)
+                or maxsize == 0
+            ):
                 return func(self, *args, **kwargs)
             key = _generate_cache_key(self, func.__name__, args, kwargs)
 
-            if key in cache:
-                cached_result, timestamp = cache[key]
-                if (time.time() - timestamp) < ttl:
-                    stats["hits"] += 1
-                    return cached_result
-
-            stats["misses"] += 1
+            with lock:
+                if key in cache:
+                    cached_result, timestamp = cache[key]
+                    if (time.time() - timestamp) < ttl:
+                        stats["hits"] += 1
+                        return cached_result
+                stats["misses"] += 1
 
             result = func(self, *args, **kwargs)
-            _evict_if_needed()
-            cache[key] = (result, time.time())
+
+            with lock:
+                _evict_if_needed()
+                cache[key] = (result, time.time())
             return result
 
         def cache_clear() -> None:
-            cache.clear()
-            stats["hits"] = 0
-            stats["misses"] = 0
+            with lock:
+                cache.clear()
+                stats["hits"] = 0
+                stats["misses"] = 0
 
         def cache_info() -> CacheInfo:
-            return CacheInfo(
-                hits=stats["hits"],
-                misses=stats["misses"],
-                maxsize=maxsize,
-                currsize=len(cache),
-            )
+            with lock:
+                return CacheInfo(
+                    hits=stats["hits"],
+                    misses=stats["misses"],
+                    maxsize=maxsize,
+                    currsize=len(cache),
+                )
 
         wrapper.cache_clear = cache_clear
         wrapper.cache_info = cache_info
@@ -193,7 +210,7 @@ def cache_disabled(instance) -> Generator[None, None, None]:
 
 def clear_cache():
     """
-    Clear all least-recently-used (LRU) caches that have been registered with the
+    Clear all method-result caches that have been registered with the
     :py:func:`qbraid._caching.cached_method` decorator.
 
     Use this function to completely reset the cache state for all decorated methods, which
