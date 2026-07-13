@@ -608,6 +608,10 @@ class TestApiErrorTyping:
             with pytest.raises(expected) as exc_info:
                 provider._ibm_api_get("/jobs/nope")
 
+        # Exact type, not just an instance: pytest.raises accepts subclasses, so
+        # without this the 500 -> RuntimeAPIError row would pass even if the code
+        # mis-mapped 500 to JobNotFoundError or AuthorizationError.
+        assert type(exc_info.value) is expected
         assert exc_info.value.status_code == code
 
     def test_not_found_is_not_an_auth_error(self, provider):
