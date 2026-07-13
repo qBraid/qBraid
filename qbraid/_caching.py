@@ -38,9 +38,22 @@ CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
 
 
 def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict) -> str:
-    """Generate a cache key based on the class name, function name, args, and kwargs."""
+    """Generate a cache key based on the class name, instance identity, function name,
+    args, and kwargs.
+
+    Instance identity comes from ``hash(instance)``, so two instances of the same class
+    only share cache entries when their hashes match (providers hash their credentials,
+    so same credentials → shared cache; different credentials → separate entries). Classes
+    that are unhashable (e.g. define ``__eq__`` without ``__hash__``) fall back to
+    ``id(instance)``, degrading to per-instance caching rather than raising.
+    """
+    try:
+        instance_key = hash(instance)
+    except TypeError:
+        instance_key = id(instance)
     key_data = {
         "class_name": instance.__class__.__name__,
+        "instance_key": instance_key,
         "func_name": func_name,
         "args": args,
         "kwargs": kwargs,

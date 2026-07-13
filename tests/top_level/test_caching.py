@@ -166,6 +166,91 @@ def test_cached_method_evicts_oldest_when_maxsize_reached(monkeypatch):
     assert obj.square.cache_info().currsize == 0
 
 
+class CredentialedClass:
+    """Class hashed by its 'credentials', mimicking QuantumProvider subclasses."""
+
+    def __init__(self, api_key: str):
+        self.api_key = api_key
+        self.call_count = 0
+
+    def __hash__(self):
+        return hash(self.api_key)
+
+    @cached_method
+    def get_data(self) -> str:
+        """Return a value derived from the credentials; counts real invocations."""
+        self.call_count += 1
+        return f"data-for-{self.api_key}"
+
+
+class UnhashableClass:
+    """Class that defines ``__eq__`` without ``__hash__``, making instances unhashable."""
+
+    def __init__(self):
+        self.call_count = 0
+
+    def __eq__(self, other):
+        return isinstance(other, type(self))
+
+    @cached_method
+    def get_data(self) -> int:
+        """Count real invocations."""
+        self.call_count += 1
+        return self.call_count
+
+
+def test_cache_key_separates_instances_with_different_hashes(monkeypatch):
+    """Instances with different hashes must not share cache entries.
+
+    Regression: the cache key previously included only the class name, so two
+    providers with different credentials shared entries — provider B could be
+    served provider A's cached result. The key now includes ``hash(instance)``.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    CredentialedClass.get_data.cache_clear()
+
+    alice = CredentialedClass("alice-key")
+    bob = CredentialedClass("bob-key")
+
+    assert alice.get_data() == "data-for-alice-key"
+    # Different hash -> distinct key: bob must NOT receive alice's cached result.
+    assert bob.get_data() == "data-for-bob-key"
+    assert alice.call_count == 1
+    assert bob.call_count == 1
+
+    # Equal hash -> shared entry: a new instance with the same credentials hits the cache.
+    alice2 = CredentialedClass("alice-key")
+    assert alice2.get_data() == "data-for-alice-key"
+    assert alice2.call_count == 0
+
+    CredentialedClass.get_data.cache_clear()
+
+
+def test_cache_key_falls_back_to_id_for_unhashable_instances(monkeypatch):
+    """An unhashable instance (``__eq__`` without ``__hash__``) caches per-instance.
+
+    ``hash(instance)`` raises ``TypeError`` for such classes; the key falls back to
+    ``id(instance)`` instead of propagating the error, so each live instance gets
+    its own entry.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    UnhashableClass.get_data.cache_clear()
+
+    obj_a = UnhashableClass()
+    obj_b = UnhashableClass()
+    with pytest.raises(TypeError):
+        hash(obj_a)
+
+    # Each instance computes once, then is served from its own entry.
+    assert obj_a.get_data() == 1
+    assert obj_a.get_data() == 1
+    assert obj_b.get_data() == 1
+    assert obj_b.call_count == 1
+    assert UnhashableClass.get_data.cache_info().currsize == 2
+
+    UnhashableClass.get_data.cache_clear()
+
+
 def test_cache_disabled_does_not_populate_cache(monkeypatch):
     """Calls made under ``cache_disabled`` recompute and leave the cache untouched.
 
