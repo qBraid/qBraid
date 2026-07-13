@@ -58,6 +58,8 @@ class _IBMError(NamedTuple):
     error_code: Optional[str]
     message: Optional[str]
     trace: Optional[str]
+    solution: Optional[str]
+    more_info: Optional[str]
 
 
 def _parse_ibm_error(error: HTTPError) -> tuple[bool, Optional[_IBMError]]:
@@ -93,6 +95,10 @@ def _parse_ibm_error(error: HTTPError) -> tuple[bool, Optional[_IBMError]]:
         error_code=None if code is None else str(code),
         message=first.get("message"),
         trace=body.get("trace") if isinstance(body, dict) else None,
+        # `solution` is absent from IBM's published ErrorContainer schema, but the API
+        # does send it. Treat it as best-effort: read it if it's there, never rely on it.
+        solution=first.get("solution"),
+        more_info=first.get("more_info"),
     )
 
 
@@ -322,7 +328,12 @@ class QiskitRuntimeProvider(QuantumProvider):
                 message = f"IBM API request failed ({e.code}): {detail.message}"
             kwargs: dict[str, Any] = {"status_code": e.code}
             if detail:
-                kwargs.update(error_code=detail.error_code, trace=detail.trace)
+                kwargs.update(
+                    error_code=detail.error_code,
+                    trace=detail.trace,
+                    solution=detail.solution,
+                    more_info=detail.more_info,
+                )
 
             if e.code == 404:
                 raise JobNotFoundError(message, **kwargs) from e

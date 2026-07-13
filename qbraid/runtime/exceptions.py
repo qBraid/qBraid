@@ -42,9 +42,14 @@ class RuntimeAPIError(QbraidRuntimeError, ValueError):
     of string-matching the exception message.
 
     Where the provider returns a structured error body, ``error_code`` holds the
-    provider's own error identifier (finer-grained than the HTTP status) and
-    ``trace`` the request id to quote in a support ticket. Both are None when the
-    provider returned no structured error.
+    provider's own error identifier (finer-grained than the HTTP status), ``trace``
+    the request id to quote in a support ticket, ``solution`` the provider's
+    user-facing remediation text, and ``more_info`` a link to its error docs. All
+    are None when the provider returned no structured error.
+
+    ``solution`` is a suggestion from the provider, not gospel: it may be stale, may
+    contain markup, and may reference the provider's own SDK rather than the caller's.
+    Present it to users deliberately, not blindly.
 
     Note: this also subclasses ``ValueError`` because these provider paths
     previously raised a bare ``ValueError``. Keeping that base means existing
@@ -52,17 +57,22 @@ class RuntimeAPIError(QbraidRuntimeError, ValueError):
     dropped in a future major release.
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         message: str,
         status_code: Optional[int] = None,
         error_code: Optional[str] = None,
         trace: Optional[str] = None,
+        solution: Optional[str] = None,
+        more_info: Optional[str] = None,
     ):
         super().__init__(message)
         self.status_code = status_code
         self.error_code = error_code
         self.trace = trace
+        self.solution = solution
+        self.more_info = more_info
 
 
 class AuthorizationError(RuntimeAPIError):

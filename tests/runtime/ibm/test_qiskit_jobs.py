@@ -700,6 +700,7 @@ class TestIbmErrorBody:
     """
 
     WAF_BLOCK_PAGE = b"<!DOCTYPE html>\n<html><body>Access denied</body></html>"
+    MORE_INFO = "https://cloud.ibm.com/apidocs/quantum-computing#error-handling"
 
     @staticmethod
     def _http_error(code, body: Optional[bytes]):
@@ -712,11 +713,18 @@ class TestIbmErrorBody:
         )
 
     @staticmethod
-    def _error_container(code, message):
+    def _error_container(code, message, solution="Verify the job ID.", more_info=MORE_INFO):
         """An ErrorContainer body. `code` is an int, as IBM actually sends it."""
         return json.dumps(
             {
-                "errors": [{"code": code, "message": message, "solution": "Verify the job ID."}],
+                "errors": [
+                    {
+                        "code": code,
+                        "message": message,
+                        "solution": solution,
+                        "more_info": more_info,
+                    }
+                ],
                 "trace": "c4dd86aa-1150-485e-85f3-2e4e5f410317",
             }
         ).encode()
@@ -783,3 +791,28 @@ class TestIbmErrorBody:
 
         assert type(err) is RuntimeAPIError
         assert err.status_code == 403
+
+    def test_solution_and_more_info_are_captured(self, provider):
+        """IBM ships user-facing remediation text with every error; keep it.
+
+        Captured live from a 404: the `solution` field is exactly the guidance a UI
+        wants to show, and it is authored by the party that knows why the call failed.
+        Note `solution` is NOT declared in IBM's OpenAPI schema, so it is optional.
+        """
+        solution = "Verify the job ID is correct and that you have the correct access permissions."
+        body = self._error_container(1291, "Job not found. Job ID: deadbeef", solution=solution)
+        err = self._get(provider, self._http_error(404, body))
+
+        assert err.solution == solution
+        assert err.more_info == self.MORE_INFO
+
+    def test_missing_solution_is_none_not_an_error(self, provider):
+        """`solution` is undeclared in IBM's schema, so it may simply not be there."""
+        body = json.dumps({"errors": [{"code": 1291, "message": "Job not found."}]}).encode()
+        err = self._get(provider, self._http_error(404, body))
+
+        assert type(err) is JobNotFoundError
+        assert err.error_code == "1291"
+        assert err.solution is None
+        assert err.more_info is None
+        assert err.trace is None
