@@ -22,13 +22,15 @@ _load_ibm_cloud_credentials() using realistic mock data modeled after
 actual IBM Quantum REST API responses.
 """
 
+import io
 import json
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 import pytest
 
-from qbraid.runtime.ibm.provider import QiskitRuntimeProvider
+from qbraid.runtime.ibm.provider import _IAM_TOKEN_URL, QiskitRuntimeProvider, _format_http_error
 
 # ---------------------------------------------------------------------------
 # Realistic mock data — modeled after IBM Quantum REST API responses
@@ -250,6 +252,55 @@ class TestExchangeApiKey:
             with pytest.raises(ValueError, match="No access_token"):
                 provider._exchange_api_key()
 
+    def test_surfaces_iam_error_code_on_http_error(self, provider):
+        """The IAM errorCode/errorMessage from a 400 body appear in the ValueError.
+
+        Regression: HTTPError was formatted as just "HTTP Error 400: Bad Request",
+        discarding the response body that says WHY the key was rejected (e.g. an
+        invalid/mis-copied API key -> BXNIM0415E).
+        """
+        body = json.dumps(
+            {"errorCode": "BXNIM0415E", "errorMessage": "Provided API key could not be found."}
+        ).encode("utf-8")
+        error = HTTPError(_IAM_TOKEN_URL, 400, "Bad Request", None, io.BytesIO(body))
+
+        with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=error):
+            with pytest.raises(ValueError, match="BXNIM0415E.*could not be found"):
+                provider._exchange_api_key()
+
+
+# ---------------------------------------------------------------------------
+# _format_http_error
+# ---------------------------------------------------------------------------
+
+
+class TestFormatHttpError:
+    """Test HTTPError body extraction fallbacks (happy paths covered above)."""
+
+    @staticmethod
+    def _http_error(body: bytes | None) -> HTTPError:
+        fp = io.BytesIO(body) if body is not None else None
+        return HTTPError("https://example.com", 400, "Bad Request", None, fp)
+
+    def test_non_json_body_included_truncated(self):
+        """A non-JSON body (e.g. an HTML error page) is appended raw, capped at 500 chars."""
+        result = _format_http_error(self._http_error(b"<html>Service unavailable</html>" * 100))
+        assert result.startswith("HTTP Error 400: Bad Request: <html>")
+        assert len(result) <= 500 + len("HTTP Error 400: Bad Request: ")
+
+    def test_empty_body_falls_back_to_str(self):
+        """An empty body degrades to the plain HTTPError string."""
+        assert _format_http_error(self._http_error(b"")) == "HTTP Error 400: Bad Request"
+
+    def test_unreadable_body_falls_back_to_str(self):
+        """A missing/unreadable body (fp=None) degrades to the plain HTTPError string."""
+        assert _format_http_error(self._http_error(None)) == "HTTP Error 400: Bad Request"
+
+    def test_unrecognized_json_shape_included_raw(self):
+        """JSON that matches neither IAM nor Runtime API shapes is appended as-is."""
+        result = _format_http_error(self._http_error(b'{"detail": "something else"}'))
+        assert '"detail": "something else"' in result
+
 
 # ---------------------------------------------------------------------------
 # _ibm_api_get
@@ -305,6 +356,30 @@ class TestIbmApiGet:
         # Guard against the pre-fix behavior where the list was stringified to
         # "['alpha', 'beta']" (URL-encoded "%5B..."), which IBM never matched.
         assert "%5B" not in url
+
+    def test_surfaces_runtime_api_error_on_http_error(self, provider):
+        """The Quantum API's errors[].code/message and trace id appear in the ValueError."""
+        body = json.dumps(
+            {
+                "trace": "req-abc123",
+                "errors": [
+                    {"code": "1217", "message": "Job not found.", "more_info": "https://ibm.co/x"}
+                ],
+            }
+        ).encode("utf-8")
+        error = HTTPError("https://example.com/jobs/xyz", 404, "Not Found", None, io.BytesIO(body))
+
+        with (
+            patch.object(provider, "_exchange_api_key", return_value=FAKE_IAM_TOKEN),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=error),
+        ):
+            with pytest.raises(ValueError) as excinfo:
+                provider._ibm_api_get("/jobs/xyz")
+
+        message = str(excinfo.value)
+        assert "1217" in message
+        assert "Job not found." in message
+        assert "trace: req-abc123" in message
 
     def test_raises_on_missing_instance(self):
         """Raises ValueError when CRN instance is not configured."""

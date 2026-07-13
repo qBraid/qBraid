@@ -23,7 +23,7 @@ import logging
 import os
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
@@ -48,6 +48,55 @@ logger = logging.getLogger(__name__)
 # IBM Cloud endpoints for direct REST API access
 _IAM_TOKEN_URL = "https://iam.cloud.ibm.com/identity/token"
 _IBM_RUNTIME_BASE = "https://us-east.quantum-computing.cloud.ibm.com"
+
+
+def _format_http_error(error: HTTPError) -> str:
+    """Format an HTTPError, surfacing the error code/message from the response body.
+
+    IBM error responses carry the actionable detail in the body, which ``str(error)``
+    discards (leaving e.g. just "HTTP Error 400: Bad Request"). Extracts the two shapes
+    IBM uses — IAM (``errorCode``/``errorMessage``/``errorDetails``) and the Quantum
+    Runtime API (``errors: [{code, message, more_info}]`` plus a ``trace`` request id) —
+    falling back to the raw (truncated) body for anything else.
+    """
+    try:
+        body = error.read().decode("utf-8", errors="replace").strip()
+    except (OSError, AttributeError):
+        body = ""
+    if not body:
+        return str(error)
+
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return f"{error}: {body[:500]}"
+
+    if isinstance(data, dict):
+        # IBM Cloud IAM shape, e.g. {"errorCode": "BXNIM0415E",
+        # "errorMessage": "Provided API key could not be found."}
+        if "errorCode" in data or "errorMessage" in data:
+            fields = (data.get("errorCode"), data.get("errorMessage"), data.get("errorDetails"))
+            detail = " - ".join(str(f) for f in fields if f)
+            return f"{error}: {detail}"
+
+        # IBM Quantum Runtime API shape (ErrorContainer), e.g.
+        # {"trace": "...", "errors": [{"code": "...", "message": "...", "more_info": "..."}]}
+        errors = data.get("errors")
+        if isinstance(errors, list) and errors:
+            messages = []
+            for err in errors:
+                if isinstance(err, dict):
+                    fields = (err.get("code"), err.get("message"), err.get("more_info"))
+                    messages.append(" - ".join(str(f) for f in fields if f) or json.dumps(err))
+                else:
+                    messages.append(str(err))
+            detail = "; ".join(messages)
+            trace = data.get("trace")
+            if trace:
+                detail += f" (trace: {trace})"
+            return f"{error}: {detail}"
+
+    return f"{error}: {body[:500]}"
 
 
 class QiskitRuntimeProvider(QuantumProvider):
@@ -224,6 +273,8 @@ class QiskitRuntimeProvider(QuantumProvider):
                 if not access_token:
                     raise ValueError("No access_token in IAM response")
                 return access_token
+        except HTTPError as e:
+            raise ValueError(f"Failed to exchange IBM API key: {_format_http_error(e)}") from e
         except (URLError, OSError) as e:
             raise ValueError(f"Failed to exchange IBM API key: {e}") from e
 
@@ -259,6 +310,8 @@ class QiskitRuntimeProvider(QuantumProvider):
         try:
             with urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read().decode("utf-8"))
+        except HTTPError as e:
+            raise ValueError(f"IBM API request failed: {_format_http_error(e)}") from e
         except (URLError, OSError) as e:
             raise ValueError(f"IBM API request failed: {e}") from e
 
