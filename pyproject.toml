@@ -42,6 +42,7 @@ Documentation = "https://docs.qbraid.com/v2/sdk"
 Discord = "https://discord.gg/TPBU2sa8Et"
 
 [project.optional-dependencies]
+aqt = ["qiskit-aqt-provider>=1.15.0", "aqt-connector"]
 azure = ["azure-quantum>=3.6.0,<4.0"]
 bloqade = ["bloqade-analog>=0.16.1,<0.17.0"]
 braket = ["amazon-braket-sdk>=1.83.0,<1.121.0", "pytket-braket>=0.30,<0.47"]
@@ -81,6 +82,7 @@ cudaq = "qbraid.programs.gate_model.cudaq:CudaQKernel"
 qrisp = "qbraid.programs.gate_model.qrisp:QrispCircuit"
 
 [project.entry-points."qbraid.providers"]
+aqt = "qbraid.runtime.aqt.provider:AQTProvider"
 aws = "qbraid.runtime.aws.provider:BraketProvider"
 azure = "qbraid.runtime.azure.provider:AzureQuantumProvider"
 ibm = "qbraid.runtime.ibm.provider:QiskitRuntimeProvider"
@@ -93,6 +95,7 @@ oqc = "qbraid.runtime.oqc.provider:OQCProvider"
 rigetti = "qbraid.runtime.rigetti.provider:RigettiProvider"
 
 [project.entry-points."qbraid.jobs"]
+aqt = "qbraid.runtime.aqt.job:AQTJob"
 aws = "qbraid.runtime.aws.job:BraketQuantumTask"
 azure = "qbraid.runtime.azure.job:AzureQuantumJob"
 ibm = "qbraid.runtime.ibm.job:QiskitJob"
