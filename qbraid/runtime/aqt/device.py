@@ -129,6 +129,4 @@ class AQTDevice(QuantumDevice):
         job_id = response.get("job", {}).get("job_id")
         if not job_id:
             raise ValueError("Job ID not found in the AQT submission response.")
-        return AQTJob(
-            job_id=str(job_id), session=self.session, device=self, shots=shots
-        )
+        return AQTJob(job_id=str(job_id), session=self.session, device=self, shots=shots)

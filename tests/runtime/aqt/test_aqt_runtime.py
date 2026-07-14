@@ -19,6 +19,8 @@ All AQT arnica HTTP calls are mocked; no network access occurs.
 
 """
 
+import sys
+import types
 from unittest.mock import MagicMock
 
 import pytest
@@ -328,3 +330,152 @@ def test_job_result_failure(mock_session):
     job = AQTJob("job-1", session=mock_session)
     with pytest.raises(AQTJobError, match="calibration drift"):
         job.result()
+
+
+def test_job_session_none_fallback(monkeypatch):
+    """AQTJob(session=None) lazily builds a default AQTSession."""
+    sentinel = MagicMock(name="AQTSession()")
+    monkeypatch.setattr("qbraid.runtime.aqt.provider.AQTSession", lambda: sentinel)
+    assert AQTJob("job-1").session is sentinel
+
+
+def test_job_result_without_device_uses_metadata(mock_session):
+    """With no attached device, the result device_id is derived from arnica job metadata."""
+    mock_session.get_result.return_value = {
+        "job": {"workspace_id": "ws", "resource_id": "res"},
+        "response": {"status": "finished", "result": {"0": [[0], [1]]}},
+    }
+    result = AQTJob("job-1", session=mock_session).result()
+    assert result.device_id == "ws/res"
+
+
+# --------------------------------------------------------------------------- AQTSession HTTP
+
+
+def _mock_http_session():
+    """A real AQTSession with its ``requests`` transport (get/post/delete) mocked out."""
+    session = AQTSession(access_token="tok")
+    session.get = MagicMock()
+    session.post = MagicMock()
+    session.delete = MagicMock()
+    return session
+
+
+def test_session_base_url_and_token():
+    session = AQTSession(access_token="tok", arnica_url="https://example.test/api")
+    assert session.base_url == "https://example.test/api/v1"
+    assert session.access_token == "tok"
+
+
+def test_session_http_methods():
+    session = _mock_http_session()
+
+    session.get.return_value.json.return_value = [{"id": "w"}]
+    assert session.get_workspaces() == [{"id": "w"}]
+    session.get.assert_called_with("/workspaces")
+
+    session.get.return_value.json.return_value = {"id": "sim1", "status": "online"}
+    assert session.get_resource("sim1")["status"] == "online"
+
+    session.post.return_value.json.return_value = {"job": {"job_id": "j1"}}
+    assert session.submit_job("ws", "res", {"payload": {}}) == {"job": {"job_id": "j1"}}
+
+    session.get.return_value.json.return_value = {"response": {"status": "finished"}}
+    assert session.get_result("j1")["response"]["status"] == "finished"
+
+    session.cancel_job("j1")
+    session.delete.assert_called_once_with("/jobs/j1")
+
+
+def test_session_get_resource_not_found():
+    session = _mock_http_session()
+    session.get.side_effect = RuntimeError("boom")
+    with pytest.raises(ResourceNotFoundError):
+        session.get_resource("missing")
+
+
+# --------------------------------------------------------------------------- auth resolution
+
+
+def _fake_aqt_connector(stored=None, cc_token="cc-token"):
+    """A stand-in ``aqt_connector`` module so the auth path runs without the real dependency."""
+    module = types.ModuleType("aqt_connector")
+
+    class _Config:  # pylint: disable=too-few-public-methods
+        def __init__(self):
+            self.client_id = None
+            self.client_secret = None
+
+    module.ArnicaConfig = _Config
+    module.ArnicaApp = lambda config: types.SimpleNamespace(config=config)
+    module.get_access_token = lambda app: stored
+    module.log_in = lambda app: cc_token
+    return module
+
+
+def test_resolve_token_stored_session(monkeypatch):
+    monkeypatch.delenv("AQT_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("AQT_CLIENT_ID", raising=False)
+    monkeypatch.delenv("AQT_CLIENT_SECRET", raising=False)
+    monkeypatch.setitem(sys.modules, "aqt_connector", _fake_aqt_connector(stored="stored"))
+    assert _resolve_access_token() == "stored"
+
+
+def test_resolve_token_client_credentials_from_env(monkeypatch):
+    monkeypatch.delenv("AQT_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("AQT_CLIENT_ID", "cid")
+    monkeypatch.setenv("AQT_CLIENT_SECRET", "sec")
+    monkeypatch.setitem(
+        sys.modules, "aqt_connector", _fake_aqt_connector(stored=None, cc_token="cc")
+    )
+    assert _resolve_access_token() == "cc"
+
+
+def test_resolve_token_none_available_raises(monkeypatch):
+    monkeypatch.delenv("AQT_ACCESS_TOKEN", raising=False)
+    monkeypatch.delenv("AQT_CLIENT_ID", raising=False)
+    monkeypatch.delenv("AQT_CLIENT_SECRET", raising=False)
+    monkeypatch.setitem(sys.modules, "aqt_connector", _fake_aqt_connector(stored=None))
+    with pytest.raises(ValueError, match="No AQT access token"):
+        _resolve_access_token()
+
+
+def test_resolve_token_missing_aqt_connector(monkeypatch):
+    monkeypatch.delenv("AQT_ACCESS_TOKEN", raising=False)
+    monkeypatch.setitem(sys.modules, "aqt_connector", None)  # forces ImportError on import
+    with pytest.raises(ValueError, match="aqt-connector"):
+        _resolve_access_token()
+
+
+# --------------------------------------------------------------------------- device + converter edges
+
+
+def test_device_str(device):
+    assert str(device) == "AQTDevice('default/sim1')"
+
+
+def test_device_submit_ignores_runtime_options(device):
+    """runtime_options are accepted and ignored (debug-logged)."""
+    job = device.submit(_SERIALIZED_CIRCUIT, shots=10, runtime_options={"foo": "bar"})
+    assert isinstance(job, AQTJob)
+
+
+def test_qiskit_to_aqt_mocked_vendor(monkeypatch):
+    """Cover the serialize hook without the real qiskit-aqt-provider installed."""
+    from qbraid.runtime.aqt import converter
+
+    fake_payload = MagicMock()
+    fake_payload.model_dump.return_value = [{"operation": "MEASURE"}]
+    fake_mod = types.ModuleType("qiskit_aqt_provider.circuit_to_aqt")
+    fake_mod.qiskit_to_aqt_circuit = lambda transpiled: fake_payload
+    monkeypatch.setitem(sys.modules, "qiskit_aqt_provider", types.ModuleType("qiskit_aqt_provider"))
+    monkeypatch.setitem(sys.modules, "qiskit_aqt_provider.circuit_to_aqt", fake_mod)
+
+    fake_qiskit = MagicMock()
+    monkeypatch.setattr(converter, "qiskit", fake_qiskit)
+
+    circuit = MagicMock()
+    circuit.num_qubits = 3
+    payload = converter.qiskit_to_aqt(circuit)
+    assert payload == {"quantum_circuit": [{"operation": "MEASURE"}], "number_of_qubits": 3}
+    fake_qiskit.transpile.assert_called_once()
