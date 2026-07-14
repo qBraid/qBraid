@@ -21,9 +21,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
+from .converter import AQTCircuitPayload
 from .job import AQTJob
 
 if TYPE_CHECKING:
@@ -39,7 +41,7 @@ _STATUS_MAP = {
 
 
 def _build_submit_body(
-    circuits: list[dict[str, Any]], shots: int, label: Optional[str] = None
+    circuits: list[AQTCircuitPayload], shots: int, label: Optional[str] = None
 ) -> dict[str, Any]:
     """Assemble the arnica ``SubmitJobRequest`` body from serialized AQT circuit payloads.
 
@@ -96,26 +98,37 @@ class AQTDevice(QuantumDevice):
     # pylint: disable-next=arguments-differ
     def submit(
         self,
-        run_input: Union[Any, list[Any]],
+        run_input: Union[AQTCircuitPayload, list[AQTCircuitPayload]],
         shots: int = 100,
         name: Optional[str] = None,
-        **kwargs,  # pylint: disable=unused-argument
+        runtime_options: Optional[dict[str, Any]] = None,
     ) -> AQTJob:
         """Submit one or more AQT circuit payloads to the device.
 
         Args:
-            run_input: A single AQT circuit payload or a list of them (already produced by the
-                ``qiskit_to_aqt`` conversion during ``run``).
+            run_input: A single AQT circuit payload, or a list of them for a batch, as produced
+                by the ``qiskit_to_aqt`` serialize hook during ``run``.
             shots: Number of repetitions per circuit. Defaults to 100.
             name: Optional human-readable label for the job.
+            runtime_options: Forwarded by :meth:`QuantumDevice.run`. The AQT arnica submission
+                defines no runtime options, so any provided options are ignored.
 
         Returns:
             AQTJob: A handle to the submitted job.
         """
-        circuits = run_input if isinstance(run_input, list) else [run_input]
+        if runtime_options:
+            logger.debug(
+                "AQT submission ignores unsupported runtime_options: %s",
+                runtime_options,
+            )
+        circuits: list[AQTCircuitPayload] = (
+            run_input if isinstance(run_input, list) else [run_input]
+        )
         body = _build_submit_body(circuits, shots, label=name)
         response = self.session.submit_job(self.workspace_id, self.resource_id, body)
         job_id = response.get("job", {}).get("job_id")
         if not job_id:
             raise ValueError("Job ID not found in the AQT submission response.")
-        return AQTJob(job_id=str(job_id), session=self.session, device=self, shots=shots)
+        return AQTJob(
+            job_id=str(job_id), session=self.session, device=self, shots=shots
+        )

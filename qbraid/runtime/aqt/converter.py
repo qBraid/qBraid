@@ -26,7 +26,7 @@ and serialization) is delegated to ``qiskit-aqt-provider``; no hardware connecti
 from __future__ import annotations
 
 import warnings
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from qbraid_core._import import LazyLoader
 
@@ -39,16 +39,31 @@ if TYPE_CHECKING:
 # and the Molmer-Sorensen entangler (RXX).
 AQT_BASIS_GATES = ["rz", "r", "rxx"]
 
+#: A single AQT native operation, e.g. ``{"operation": "RZ", "qubit": 0, "phi": 0.5}``.
+AQTOperation = dict[str, Any]
 
-def qiskit_to_aqt(circuit: qiskit_typing.QuantumCircuit) -> dict[str, Any]:
+
+class AQTCircuitPayload(TypedDict):
+    """A single AQT ``quantum_circuit`` submission payload, minus ``repetitions``.
+
+    Produced by :func:`qiskit_to_aqt`. ``quantum_circuit`` is the ordered list of AQT native
+    operations (``RZ`` / ``R`` / ``RXX`` / ``MEASURE``) and ``number_of_qubits`` is the circuit's
+    register size. ``repetitions`` (shots) is added per circuit at submit time.
+    """
+
+    quantum_circuit: list[AQTOperation]
+    number_of_qubits: int
+
+
+def qiskit_to_aqt(circuit: qiskit_typing.QuantumCircuit) -> AQTCircuitPayload:
     """Convert a Qiskit ``QuantumCircuit`` into an AQT per-circuit submission payload.
 
     Args:
         circuit (qiskit.QuantumCircuit): Qiskit quantum circuit.
 
     Returns:
-        dict: ``{"quantum_circuit": [...operations...], "number_of_qubits": <int>}`` — the
-            arnica per-circuit payload without ``repetitions`` (added at submit time). The
+        AQTCircuitPayload: ``{"quantum_circuit": [...operations...], "number_of_qubits": <int>}``
+            — the arnica per-circuit payload without ``repetitions`` (added at submit time). The
             ``number_of_qubits`` is taken directly from the circuit's ``num_qubits`` property.
     """
     # pylint: disable-next=import-outside-toplevel
