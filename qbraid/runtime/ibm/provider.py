@@ -55,13 +55,15 @@ def _format_http_error(error: HTTPError) -> str:
 
     IBM error responses carry the actionable detail in the body, which ``str(error)``
     discards (leaving e.g. just "HTTP Error 400: Bad Request"). Extracts the two shapes
-    IBM uses — IAM (``errorCode``/``errorMessage``/``errorDetails``) and the Quantum
-    Runtime API (``errors: [{code, message, more_info}]`` plus a ``trace`` request id) —
-    falling back to the raw (truncated) body for anything else.
+    IBM uses — IAM (``errorCode``/``errorMessage``/``errorDetails`` plus a
+    ``context.requestId``) and the Quantum Runtime API (``errors: [{code, message,
+    more_info}]`` plus a ``trace`` request id) — falling back to the raw (truncated)
+    body for anything else.
     """
     try:
         body = error.read().decode("utf-8", errors="replace").strip()
-    except (OSError, AttributeError):
+    except (OSError, AttributeError, ValueError):
+        # AttributeError: no underlying fp; ValueError: fp already closed/exhausted.
         body = ""
     if not body:
         return str(error)
@@ -77,6 +79,10 @@ def _format_http_error(error: HTTPError) -> str:
         if "errorCode" in data or "errorMessage" in data:
             fields = (data.get("errorCode"), data.get("errorMessage"), data.get("errorDetails"))
             detail = " - ".join(str(f) for f in fields if f)
+            context = data.get("context")
+            request_id = context.get("requestId") if isinstance(context, dict) else None
+            if request_id:
+                detail += f" (requestId: {request_id})"
             return f"{error}: {detail}"
 
         # IBM Quantum Runtime API shape (ErrorContainer), e.g.

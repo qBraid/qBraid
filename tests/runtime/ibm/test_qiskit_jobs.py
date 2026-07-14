@@ -260,12 +260,18 @@ class TestExchangeApiKey:
         invalid/mis-copied API key -> BXNIM0415E).
         """
         body = json.dumps(
-            {"errorCode": "BXNIM0415E", "errorMessage": "Provided API key could not be found."}
+            {
+                "errorCode": "BXNIM0415E",
+                "errorMessage": "Provided API key could not be found.",
+                "context": {"requestId": "req-iam-42"},
+            }
         ).encode("utf-8")
         error = HTTPError(_IAM_TOKEN_URL, 400, "Bad Request", None, io.BytesIO(body))
 
         with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=error):
-            with pytest.raises(ValueError, match="BXNIM0415E.*could not be found"):
+            with pytest.raises(
+                ValueError, match=r"BXNIM0415E.*could not be found.*requestId: req-iam-42"
+            ):
                 provider._exchange_api_key()
 
 
@@ -295,6 +301,13 @@ class TestFormatHttpError:
     def test_unreadable_body_falls_back_to_str(self):
         """A missing/unreadable body (fp=None) degrades to the plain HTTPError string."""
         assert _format_http_error(self._http_error(None)) == "HTTP Error 400: Bad Request"
+
+    def test_closed_stream_falls_back_to_str(self):
+        """An already-closed/exhausted body stream raises ValueError from read();
+        it must degrade to the plain HTTPError string, not mask the original error."""
+        error = self._http_error(b'{"errorCode": "X"}')
+        error.fp.close()
+        assert _format_http_error(error) == "HTTP Error 400: Bad Request"
 
     def test_unrecognized_json_shape_included_raw(self):
         """JSON that matches neither IAM nor Runtime API shapes is appended as-is."""

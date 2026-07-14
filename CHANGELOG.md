@@ -24,7 +24,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
-- Improved error visibility for IBM REST API failures in `QiskitRuntimeProvider`: `_exchange_api_key` and `_ibm_api_get` raised `ValueError` with only the `HTTPError` status line (e.g. "Failed to exchange IBM API key: HTTP Error 400: Bad Request"), discarding the response body that explains the failure. Both now surface the body's error code and message — IBM Cloud IAM's `errorCode`/`errorMessage`/`errorDetails` (e.g. `BXNIM0415E - Provided API key could not be found.`, the signature of an invalid or mis-copied API key) and the Quantum Runtime API's `errors[].code`/`message`/`more_info` plus the `trace` request id (useful for IBM support), falling back to the raw body (truncated) for unrecognized shapes ([#1263](https://github.com/qBraid/qBraid/pull/1263))
+- Improved error visibility for IBM REST API failures in `QiskitRuntimeProvider`: `_exchange_api_key` and `_ibm_api_get` raised `ValueError` with only the `HTTPError` status line (e.g. "Failed to exchange IBM API key: HTTP Error 400: Bad Request"), discarding the response body that explains the failure. Both now surface the body's error code and message — IBM Cloud IAM's `errorCode`/`errorMessage`/`errorDetails` plus its `context.requestId` (e.g. `BXNIM0415E - Provided API key could not be found.`, the signature of an invalid or mis-copied API key) and the Quantum Runtime API's `errors[].code`/`message`/`more_info` plus the `trace` request id (useful for IBM support), falling back to the raw body (truncated) for unrecognized shapes ([#1263](https://github.com/qBraid/qBraid/pull/1263))
 
 ### Dependencies
 
