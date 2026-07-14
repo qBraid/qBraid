@@ -301,7 +301,6 @@ def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
 def test_provider_get_devices_post_cache_expiry(mock_client, device_data_qir, monkeypatch):
     """Test that the cache entry is invalidated when the cache is too old."""
     monkeypatch.setenv("DISABLE_CACHE", "0")
-    monkeypatch.setenv("_QBRAID_TEST_CACHE_CALLS", "1")
 
     data = device_data_qir.copy()
 
@@ -323,7 +322,6 @@ def test_provider_get_devices_post_cache_expiry(mock_client, device_data_qir, mo
 def test_provider_get_devices_bypass_cache(mock_client, device_data_qir, monkeypatch):
     """Test that the cache is bypassed when the bypass_cache flag is set."""
     monkeypatch.setenv("DISABLE_CACHE", "0")
-    monkeypatch.setenv("_QBRAID_TEST_CACHE_CALLS", "1")
 
     data = device_data_qir.copy()
 
