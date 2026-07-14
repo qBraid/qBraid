@@ -25,6 +25,8 @@ Types of changes:
 
 ### Fixed
 
+- Fixed `ModuleNotFoundError` raised when building a `ConversionGraph` in an environment where a conversion's extras have an uninstalled parent package. `importlib.util.find_spec` imports each ancestor of a dotted module path and raises if one is missing, so `Conversion._is_conversion_supported` raised instead of reporting the conversion unsupported. Most visibly, `qbraid.transpiler` could not be imported at all with `pytket` installed but no `pytket` extensions, since the `pytket.extensions.qiskit` / `pytket.extensions.cirq` conversions added in 0.12.0 declare those extras. Such conversions are now correctly marked unsupported and excluded from the graph ([#1264](https://github.com/qBraid/qBraid/pull/1264))
+
 ### Dependencies
 
 ## [0.12.2] - 2026-07-11
