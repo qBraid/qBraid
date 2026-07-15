@@ -367,6 +367,12 @@ def test_session_base_url_and_token():
     assert session.access_token == "tok"
 
 
+def test_session_base_url_strips_duplicate_v1():
+    """A URL that already ends in /v1 is normalized rather than doubled."""
+    session = AQTSession(access_token="tok", arnica_url="https://example.test/api/v1")
+    assert session.base_url == "https://example.test/api/v1"
+
+
 def test_session_http_methods():
     session = _mock_http_session()
 
@@ -405,11 +411,19 @@ def _fake_aqt_connector(stored=None, cc_token="cc-token"):
         def __init__(self):
             self.client_id = None
             self.client_secret = None
+            # Mirror the real ArnicaConfig: audience/arnica_url default to production.
+            self.arnica_url = "https://arnica.aqt.eu/api"
+            self.oidc_config = types.SimpleNamespace(audience="https://arnica.aqt.eu/api")
+
+    def _arnica_app(config):
+        module.captured_config = config
+        return types.SimpleNamespace(config=config)
 
     module.ArnicaConfig = _Config
-    module.ArnicaApp = lambda config: types.SimpleNamespace(config=config)
+    module.ArnicaApp = _arnica_app
     module.get_access_token = lambda app: stored
     module.log_in = lambda app: cc_token
+    module.captured_config = None
     return module
 
 
@@ -429,6 +443,20 @@ def test_resolve_token_client_credentials_from_env(monkeypatch):
         sys.modules, "aqt_connector", _fake_aqt_connector(stored=None, cc_token="cc")
     )
     assert _resolve_access_token() == "cc"
+
+
+def test_resolve_token_sets_audience_from_arnica_url(monkeypatch):
+    """A non-default audience (e.g. staging) is applied to both the request and the verifier."""
+    monkeypatch.delenv("AQT_ACCESS_TOKEN", raising=False)
+    monkeypatch.setenv("AQT_CLIENT_ID", "cid")
+    monkeypatch.setenv("AQT_CLIENT_SECRET", "sec")
+    fake = _fake_aqt_connector(stored=None, cc_token="cc")
+    monkeypatch.setitem(sys.modules, "aqt_connector", fake)
+
+    staging = "https://arnica-staging.aqt.eu/api"
+    assert _resolve_access_token(audience=staging) == "cc"
+    assert fake.captured_config.arnica_url == staging
+    assert fake.captured_config.oidc_config.audience == staging
 
 
 def test_resolve_token_none_available_raises(monkeypatch):

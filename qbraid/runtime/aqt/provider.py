@@ -48,13 +48,16 @@ DEFAULT_ARNICA_URL = "https://arnica.aqt.eu/api"
 def _resolve_access_token(
     client_id: Optional[str] = None,
     client_secret: Optional[str] = None,
+    audience: Optional[str] = None,
 ) -> str:
     """Resolve a bearer access token for the AQT arnica API (no explicit token given).
 
     Resolution order (non-interactive by design — never triggers the device/QR flow):
     ``AQT_ACCESS_TOKEN`` env → a token from ``aqt-connector`` (a stored/refreshed session token,
     or the client-credentials flow). ``client_id`` / ``client_secret`` default to the
-    ``AQT_CLIENT_ID`` / ``AQT_CLIENT_SECRET`` env vars when not passed explicitly.
+    ``AQT_CLIENT_ID`` / ``AQT_CLIENT_SECRET`` env vars when not passed explicitly. ``audience``
+    (the arnica API root, e.g. staging vs production) aligns the OIDC token request and the
+    token verifier with the target deployment.
 
     Raises:
         ValueError: If no token can be resolved without interactive login.
@@ -76,10 +79,22 @@ def _resolve_access_token(
         ) from err
 
     config = ArnicaConfig()
+    # Never persist tokens to disk: aqt-connector otherwise writes to ``~/.aqt/access_token``
+    # (and crashes if the directory is absent), which is wrong for a stateless/containerized
+    # deployment (e.g. Cloud Run). The token is held in memory by ``AQTSession`` and re-minted
+    # via the client-credentials flow on demand.
+    config.store_access_token = False
     if client_id is not None:
         config.client_id = client_id
     if client_secret is not None:
         config.client_secret = client_secret
+    if audience:
+        # aqt-connector pins the OIDC audience to production and never overrides it from the
+        # environment/config file. The client-credentials grant must *request* this audience
+        # (config.oidc_config.audience), and the returned token is *verified* against
+        # config.arnica_url, so align both with the target arnica API root (prod vs staging).
+        config.arnica_url = audience
+        config.oidc_config.audience = audience
 
     app = ArnicaApp(config)
 
@@ -109,16 +124,19 @@ class AQTSession(Session):
         client_secret: Optional[str] = None,
         arnica_url: Optional[str] = None,
     ):
+        api_url = (arnica_url or os.getenv("AQT_ARNICA_URL") or DEFAULT_ARNICA_URL).rstrip("/")
+
+        if api_url.endswith("/v1"):
+            api_url = api_url[: -len("/v1")].rstrip("/")
+
+        # The OIDC audience must match the arnica API root (staging vs production), so resolve
+        # the token only after the deployment URL is known.
         token = access_token or _resolve_access_token(
-            client_id=client_id, client_secret=client_secret
+            client_id=client_id, client_secret=client_secret, audience=api_url
         )
 
-        base_url = (arnica_url or os.getenv("AQT_ARNICA_URL") or DEFAULT_ARNICA_URL).rstrip("/")
-        if not base_url.endswith("/v1"):
-            base_url = f"{base_url}/v1"
-
         super().__init__(
-            base_url=base_url,
+            base_url=f"{api_url}/v1",
             headers={"Content-Type": "application/json"},
             auth_headers={"Authorization": f"Bearer {token}"},
         )
