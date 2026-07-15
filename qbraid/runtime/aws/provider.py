@@ -31,6 +31,7 @@ from braket.aws import AwsDevice, AwsSession
 from braket.circuits import Circuit
 
 from qbraid._caching import cached_method
+from qbraid._logging import logger
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ExperimentType, ProgramSpec
 from qbraid.runtime import QuantumProvider, TargetProfile
@@ -211,10 +212,19 @@ class BraketProvider(QuantumProvider):
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
         aws_devices = AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
-        return [
-            BraketDevice(profile=self._build_runtime_profile(device), session=device.aws_session)
-            for device in aws_devices
-        ]
+        devices = []
+        for device in aws_devices:
+            try:
+                profile = self._build_runtime_profile(device)
+            except QbraidError as err:
+                # Some devices (e.g. retired or legacy hardware surfaced when
+                # statuses includes "RETIRED") expose no qBraid-supported program
+                # type, so a profile can't be built. Skip them rather than failing
+                # the whole call so the remaining devices are still returned.
+                logger.info("Skipping device '%s': %s", device.arn, err)
+                continue
+            devices.append(BraketDevice(profile=profile, session=device.aws_session))
+        return devices
 
     @cached_method
     def get_device(

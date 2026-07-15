@@ -24,10 +24,35 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import numpy as np
 
+from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 
 if TYPE_CHECKING:
     import qbraid.programs
+
+
+def _is_module_installed(module: str) -> bool:
+    """
+    Determine whether a module is installed and importable.
+
+    ``importlib.util.find_spec`` only returns None for the *leaf* of a dotted path; it
+    imports each ancestor along the way, and raises ModuleNotFoundError if one of them is
+    missing. A conversion requiring ``pytket.extensions.qiskit`` therefore raises, rather
+    than reporting unavailable, whenever pytket is installed without any of its extensions.
+
+    Args:
+        module (str): The (possibly dotted) name of the module to look for.
+
+    Returns:
+        bool: True if the module can be located, otherwise False.
+    """
+    try:
+        return importlib.util.find_spec(module) is not None
+    except (ImportError, ValueError) as err:
+        # ImportError: an ancestor package is not installed.
+        # ValueError: the module is in sys.modules, but has no __spec__.
+        logger.debug("Module '%s' is not available: %s", module, err)
+        return False
 
 
 class Conversion:
@@ -176,7 +201,7 @@ class Conversion:
         """
         if self._native:
             return True
-        return all(importlib.util.find_spec(m) is not None for m in self._extras)
+        return all(_is_module_installed(m) for m in self._extras)
 
     def convert(self, program: qbraid.programs.QPROGRAM) -> Union[qbraid.programs.QPROGRAM, Any]:
         """
