@@ -299,23 +299,6 @@ def test_qasm3_to_braket_delay_in_verbatim_box_raises():
         qasm3_to_braket(qasm_input)
 
 
-def test_qasm3_to_braket_delay_error_names_alternatives():
-    """The error should point to the two ways to actually get idle time on hardware."""
-    qasm_input = textwrap.dedent(
-        """
-        OPENQASM 3.0;
-        include "stdgates.inc";
-        qubit[1] q;
-        delay[100ns] q[0];
-        """
-    ).strip()
-    with pytest.raises(QasmError) as exc_info:
-        qasm3_to_braket(qasm_input)
-    message = str(exc_info.value)
-    assert "PulseSequence.delay" in message
-    assert "Rigetti" in message
-
-
 def test_qasm3_to_braket_no_delay_unaffected():
     """Programs without a delay convert as before."""
     qasm_input = textwrap.dedent(

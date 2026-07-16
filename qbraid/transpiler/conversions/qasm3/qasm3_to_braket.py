@@ -122,13 +122,7 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
     # when a later ``unroll`` would reject the program (e.g. a verbatim box), so this reuses
     # the parse pyqasm already did without a second one and still catches nested delays.
     if module is not None and contains_delay(module.original_program):
-        raise QasmError(
-            "Delay instructions are not supported by Amazon Braket, which has no "
-            "gate-level delay: braket.circuits.Circuit cannot represent one, and "
-            "Braket discards delays during conversion without raising. Express idle "
-            "time at the pulse level with braket.pulse.PulseSequence.delay, or run "
-            "the program on Rigetti directly, where Quil-T's DELAY is supported."
-        )
+        raise QasmError("Delay instructions are not supported by Amazon Braket.")
 
     if module is not None:
         try:
