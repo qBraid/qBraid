@@ -27,7 +27,6 @@ from qbraid.interface import circuits_allclose
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.conversions.braket import braket_to_qasm3
 from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket
-from qbraid.transpiler.conversions.qasm3.qasm3_to_braket import contains_delay
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
 
 
@@ -334,9 +333,9 @@ def test_qasm3_to_braket_no_delay_unaffected():
     assert qasm3_to_braket(qasm_input) == Circuit().h(0).cnot(0, 1).measure(0).measure(1)
 
 
-def test_contains_delay_ignores_identifiers_named_delay():
-    """The keyword prefilter is only a fast path -- a bare 'delay' substring in an
-    identifier is not a delay instruction, and must not trip the check.
+def test_qasm3_to_braket_identifier_named_delay_unaffected():
+    """An identifier that merely contains the substring 'delay' is not a delay
+    instruction, and must not trip the delay check.
     """
     qasm_input = textwrap.dedent(
         """
@@ -346,9 +345,13 @@ def test_contains_delay_ignores_identifiers_named_delay():
         x delay_reg[0];
         """
     ).strip()
-    assert contains_delay(qasm_input) is False
+    assert qasm3_to_braket(qasm_input) == Circuit().x(0)
 
 
-def test_contains_delay_malformed_input_defers():
-    """Malformed input is left to the downstream parsers, which report it in context."""
-    assert contains_delay("delay this is not valid openqasm") is False
+def test_qasm3_to_braket_malformed_input_defers_downstream():
+    """Malformed input is left to the downstream parsers, which report it in context --
+    it must not be misreported as an (unsupported) delay instruction.
+    """
+    with pytest.raises(QasmError) as exc_info:
+        qasm3_to_braket("delay this is not valid openqasm")
+    assert "Delay instructions are not supported" not in str(exc_info.value)

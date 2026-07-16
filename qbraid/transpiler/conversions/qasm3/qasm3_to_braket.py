@@ -21,8 +21,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyqasm
-from openqasm3 import ast, parse
-from openqasm3.parser import QASM3ParsingError
+from openqasm3 import ast
 from openqasm3.visitor import QASMVisitor
 from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
@@ -55,26 +54,17 @@ class _DelayFinder(QASMVisitor):
         self.found = True
 
 
-def contains_delay(qasm3: str) -> bool:
-    """Check whether an OpenQASM 3 program contains a ``delay`` instruction.
+def contains_delay(program: ast.Program) -> bool:
+    """Check whether a parsed OpenQASM 3 program contains a ``delay`` instruction.
+
+    Traverses the AST directly so nested delays (e.g. inside a ``box``) are caught too.
 
     Args:
-        qasm3: OpenQASM 3 string
+        program: A parsed OpenQASM 3 AST (e.g. ``pyqasm.loads(qasm).original_program``).
 
     Returns:
         True if the program contains a delay instruction, False otherwise.
     """
-    # ``delay`` is a reserved keyword, so its absence rules out a DelayInstruction
-    # without paying to parse. Programs reaching this converter rarely have one.
-    if "delay" not in qasm3.lower():
-        return False
-
-    try:
-        program = parse(qasm3)
-    except QASM3ParsingError:
-        # Leave malformed input to the parsers downstream, which report it in context.
-        return False
-
     finder = _DelayFinder()
     finder.visit(program)
     return finder.found
@@ -118,7 +108,20 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
             a delay instruction, which Braket cannot represent.
 
     """
-    if contains_delay(qasm):
+    prior_errors: list[tuple[str, BaseException]] = []
+
+    try:
+        module = pyqasm.loads(qasm)
+    except ValidationError as err:
+        module = None
+        prior_errors.append(("PyQASM validation", err))
+
+    # Braket has no gate-level delay and silently drops delay instructions inside
+    # Circuit.from_ir, producing a circuit that runs but measures the wrong thing. Detect
+    # delays up front and fail loudly. ``original_program`` is populated by ``loads`` even
+    # when a later ``unroll`` would reject the program (e.g. a verbatim box), so this reuses
+    # the parse pyqasm already did without a second one and still catches nested delays.
+    if module is not None and contains_delay(module.original_program):
         raise QasmError(
             "Delay instructions are not supported by Amazon Braket, which has no "
             "gate-level delay: braket.circuits.Circuit cannot represent one, and "
@@ -127,14 +130,12 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
             "the program on Rigetti directly, where Quil-T's DELAY is supported."
         )
 
-    prior_errors: list[tuple[str, BaseException]] = []
-
-    try:
-        module = pyqasm.loads(qasm)
-        module.unroll()
-        qasm = pyqasm.dumps(module)
-    except ValidationError as err:
-        prior_errors.append(("PyQASM validation", err))
+    if module is not None:
+        try:
+            module.unroll()
+            qasm = pyqasm.dumps(module)
+        except ValidationError as err:
+            prior_errors.append(("PyQASM validation", err))
 
     try:
         qasm = transform_notation(qasm)
