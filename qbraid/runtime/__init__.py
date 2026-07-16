@@ -66,10 +66,13 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
+    AuthorizationError
+    JobNotFoundError
     JobStateError
     ProgramValidationError
     QbraidRuntimeError
     ResourceNotFoundError
+    RuntimeAPIError
     DeviceProgramTypeMismatchError
     JobLoaderError
     ProviderLoaderError
@@ -82,11 +85,14 @@ from typing import TYPE_CHECKING
 from .device import QuantumDevice
 from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
+    AuthorizationError,
     DeviceProgramTypeMismatchError,
+    JobNotFoundError,
     JobStateError,
     ProgramValidationError,
     QbraidRuntimeError,
     ResourceNotFoundError,
+    RuntimeAPIError,
 )
 from .group import GroupJobSession, GroupResult, get_active_group
 from .job import QuantumJob
@@ -122,10 +128,13 @@ __all__ = [
     "load_job",
     "get_providers",
     "load_provider",
+    "AuthorizationError",
+    "JobNotFoundError",
     "JobStateError",
     "ProgramValidationError",
     "QbraidRuntimeError",
     "ResourceNotFoundError",
+    "RuntimeAPIError",
     "DeviceProgramTypeMismatchError",
     "JobLoaderError",
     "ProviderLoaderError",
