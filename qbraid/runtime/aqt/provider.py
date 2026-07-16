@@ -27,7 +27,9 @@ from __future__ import annotations
 import os
 from typing import Any, Optional
 
-from qbraid_core._import import LazyLoader
+from aqt_connector import ArnicaApp, ArnicaConfig, get_access_token, log_in
+from aqt_connector.models.circuits import QuantumCircuit as AQTQuantumCircuit
+from qbraid_core.exceptions import RequestsApiError
 from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
@@ -37,10 +39,7 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
-from .converter import qiskit_to_aqt
 from .device import AQTDevice
-
-qiskit = LazyLoader("qiskit", globals(), "qiskit")
 
 DEFAULT_ARNICA_URL = "https://arnica.aqt.eu/api"
 
@@ -52,31 +51,20 @@ def _resolve_access_token(
 ) -> str:
     """Resolve a bearer access token for the AQT arnica API (no explicit token given).
 
-    Resolution order (non-interactive by design — never triggers the device/QR flow):
-    ``AQT_ACCESS_TOKEN`` env → a token from ``aqt-connector`` (a stored/refreshed session token,
-    or the client-credentials flow). ``client_id`` / ``client_secret`` default to the
-    ``AQT_CLIENT_ID`` / ``AQT_CLIENT_SECRET`` env vars when not passed explicitly. ``audience``
-    (the arnica API root, e.g. staging vs production) aligns the OIDC token request and the
-    token verifier with the target deployment.
+    Resolution order (non-interactive by design — never triggers the device/QR flow): a token from
+    ``aqt-connector`` (a stored/refreshed session token, else the client-credentials flow).
+    ``client_id`` / ``client_secret`` default to the ``AQT_CLIENT_ID`` / ``AQT_CLIENT_SECRET`` env
+    vars when not passed explicitly. ``audience`` (the arnica API root, e.g. staging vs production)
+    aligns the OIDC token request and the token verifier with the target deployment.
+
+    A pre-obtained token can instead be supplied directly via the ``access_token`` argument of
+    :class:`AQTProvider` / :class:`AQTSession` (which bypasses this function).
 
     Raises:
         ValueError: If no token can be resolved without interactive login.
     """
-    token = os.getenv("AQT_ACCESS_TOKEN")
-    if token:
-        return token
-
     client_id = client_id or os.getenv("AQT_CLIENT_ID")
     client_secret = client_secret or os.getenv("AQT_CLIENT_SECRET")
-
-    try:
-        # pylint: disable-next=import-outside-toplevel
-        from aqt_connector import ArnicaApp, ArnicaConfig, get_access_token, log_in
-    except ImportError as err:  # pragma: no cover - exercised only without the aqt extra
-        raise ValueError(
-            "AQT authentication requires the 'aqt-connector' package. Install the AQT extra "
-            "with `pip install qbraid[aqt]`, or pass an access_token / set AQT_ACCESS_TOKEN."
-        ) from err
 
     config = ArnicaConfig()
     # Never persist tokens to disk: aqt-connector otherwise writes to ``~/.aqt/access_token``
@@ -107,9 +95,9 @@ def _resolve_access_token(
         return log_in(app)
 
     raise ValueError(
-        "No AQT access token available. Provide one of: an access_token argument, the "
-        "AQT_ACCESS_TOKEN env var, AQT_CLIENT_ID/AQT_CLIENT_SECRET for the client-credentials "
-        "flow, or an interactive session via `python -m aqt_connector log-in`."
+        "No AQT access token available. Provide one of: an access_token argument, "
+        "AQT_CLIENT_ID/AQT_CLIENT_SECRET for the client-credentials flow, or an interactive "
+        "session via `python -m aqt_connector log-in`."
     )
 
 
@@ -156,8 +144,13 @@ class AQTSession(Session):
         """Return the details (status, available qubits, characterization) of a resource."""
         try:
             return self.get(f"/resources/{resource_id}").json()
-        except Exception as err:  # pylint: disable=broad-except
-            raise ResourceNotFoundError(f"Resource '{resource_id}' not found.") from err
+        except RequestsApiError as err:
+            # Only a genuine 404 means "no such resource"; let auth (401/403), server, and network
+            # errors propagate instead of masking every failure as not-found.
+            response = getattr(err.__cause__, "response", None)
+            if getattr(response, "status_code", None) == 404:
+                raise ResourceNotFoundError(f"Resource '{resource_id}' not found.") from err
+            raise
 
     def submit_job(
         self, workspace_id: str, resource_id: str, body: dict[str, Any]
@@ -203,11 +196,9 @@ class AQTProvider(QuantumProvider):
             simulator=resource_type == "simulator",
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=resource.get("available_qubits"),
-            # Target qiskit: the transpiler routes any supported program to a qiskit circuit,
-            # then the serialize hook converts it to the AQT native-basis payload.
-            program_spec=ProgramSpec(
-                qiskit.QuantumCircuit, alias="qiskit", serialize=qiskit_to_aqt
-            ),
+            # Target the native "aqt" program type: the transpiler routes any supported program to
+            # a qiskit circuit and then to the AQT native circuit via the qiskit -> aqt edge.
+            program_spec=ProgramSpec(AQTQuantumCircuit, alias="aqt"),
             provider_name="AQT",
             # Extras (accessible via ``device.profile.<key>``): arnica routing + metadata.
             aqt_workspace_id=workspace_id,
@@ -216,7 +207,7 @@ class AQTProvider(QuantumProvider):
         )
 
     @cached_method
-    def get_devices(self, **kwargs) -> list[AQTDevice]:  # pylint: disable=unused-argument
+    def get_devices(self) -> list[AQTDevice]:
         """Get a list of available AQT devices across all visible workspaces."""
         devices: list[AQTDevice] = []
         for workspace in self.session.get_workspaces():

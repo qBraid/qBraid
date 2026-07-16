@@ -42,7 +42,7 @@ Documentation = "https://docs.qbraid.com/v2/sdk"
 Discord = "https://discord.gg/TPBU2sa8Et"
 
 [project.optional-dependencies]
-aqt = ["qiskit-aqt-provider>=1.15.0", "aqt-connector"]
+aqt = ["aqt-connector", "qiskit>=1.0,<3.0"]
 azure = ["azure-quantum>=3.6.0,<4.0"]
 bloqade = ["bloqade-analog>=0.16.1,<0.17.0"]
 braket = ["amazon-braket-sdk>=1.83.0,<1.121.0", "pytket-braket>=0.30,<0.47"]
@@ -72,6 +72,7 @@ braket_ahs = "qbraid.programs.analog.braket_ahs:BraketAHS"
 braket = "qbraid.programs.gate_model.braket:BraketCircuit"
 cirq = "qbraid.programs.gate_model.cirq:CirqCircuit"
 ionq = "qbraid.programs.gate_model.ionq:IonQProgram"
+aqt = "qbraid.programs.gate_model.aqt:AQTProgram"
 pennylane = "qbraid.programs.gate_model.pennylane:PennylaneTape"
 pyquil = "qbraid.programs.gate_model.pyquil:PyQuilProgram"
 qiskit = "qbraid.programs.gate_model.qiskit:QiskitCircuit"

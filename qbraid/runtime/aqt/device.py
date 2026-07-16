@@ -19,16 +19,18 @@ Module defining AQT device class.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
-from qbraid._logging import logger
+from aqt_connector.models.arnica.request_bodies.jobs import QuantumCircuits, SubmitJobRequest
+
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
-from .converter import AQTCircuitPayload
 from .job import AQTJob
 
 if TYPE_CHECKING:
+    from aqt_connector.models.circuits import QuantumCircuit as AQTQuantumCircuit
+
     import qbraid.runtime
     import qbraid.runtime.aqt.provider
 
@@ -38,23 +40,6 @@ _STATUS_MAP = {
     "maintenance": DeviceStatus.UNAVAILABLE,
     "unavailable": DeviceStatus.UNAVAILABLE,
 }
-
-
-def _build_submit_body(
-    circuits: list[AQTCircuitPayload], shots: int, label: Optional[str] = None
-) -> dict[str, Any]:
-    """Assemble the arnica ``SubmitJobRequest`` body from serialized AQT circuit payloads.
-
-    Each item in ``circuits`` is a serialized per-circuit payload produced by the device's
-    ``qiskit_to_aqt`` serialize hook (``{"quantum_circuit": [...], "number_of_qubits": <int>}``);
-    this wraps each with the per-circuit ``repetitions`` (shots).
-    """
-    entries = [{"repetitions": shots, **circuit} for circuit in circuits]
-    return {
-        "job_type": "quantum_circuit",
-        "label": label or "qbraid",
-        "payload": {"circuits": entries},
-    }
 
 
 class AQTDevice(QuantumDevice):
@@ -79,12 +64,12 @@ class AQTDevice(QuantumDevice):
     @property
     def workspace_id(self) -> str:
         """Return the arnica workspace id for this device."""
-        return self.profile.get("aqt_workspace_id") or self.id.split("/", 1)[0]
+        return self.profile["aqt_workspace_id"]
 
     @property
     def resource_id(self) -> str:
         """Return the arnica resource id for this device."""
-        return self.profile.get("aqt_resource_id") or self.id.split("/", 1)[-1]
+        return self.profile["aqt_resource_id"]
 
     def status(self) -> DeviceStatus:
         """Return the current status of the AQT device."""
@@ -98,34 +83,40 @@ class AQTDevice(QuantumDevice):
     # pylint: disable-next=arguments-differ
     def submit(
         self,
-        run_input: Union[AQTCircuitPayload, list[AQTCircuitPayload]],
+        run_input: Union[AQTQuantumCircuit, list[AQTQuantumCircuit]],
         shots: int = 100,
         name: Optional[str] = None,
-        runtime_options: Optional[dict[str, Any]] = None,
     ) -> AQTJob:
-        """Submit one or more AQT circuit payloads to the device.
+        """Submit one or more AQT circuits to the device.
 
         Args:
-            run_input: A single AQT circuit payload, or a list of them for a batch, as produced
-                by the ``qiskit_to_aqt`` serialize hook during ``run``.
+            run_input: A native AQT ``QuantumCircuit`` (or a list of them for a batch), as produced
+                by the ``qiskit -> aqt`` transpiler conversion during ``run``. Each carries a
+                placeholder ``repetitions`` that is overwritten with ``shots`` here.
             shots: Number of repetitions per circuit. Defaults to 100.
             name: Optional human-readable label for the job.
-            runtime_options: Forwarded by :meth:`QuantumDevice.run`. The AQT arnica submission
-                defines no runtime options, so any provided options are ignored.
 
         Returns:
             AQTJob: A handle to the submitted job.
         """
-        if runtime_options:
-            logger.debug(
-                "AQT submission ignores unsupported runtime_options: %s",
-                runtime_options,
-            )
-        circuits: list[AQTCircuitPayload] = (
-            run_input if isinstance(run_input, list) else [run_input]
+        circuits = run_input if isinstance(run_input, list) else [run_input]
+        request = SubmitJobRequest(
+            label=name or "qbraid",
+            payload=QuantumCircuits(
+                circuits=[
+                    # rebuild via type(circuit) to stamp the requested shots (re-validating ranges)
+                    type(circuit)(
+                        repetitions=shots,
+                        quantum_circuit=circuit.quantum_circuit,
+                        number_of_qubits=circuit.number_of_qubits,
+                    )
+                    for circuit in circuits
+                ]
+            ),
         )
-        body = _build_submit_body(circuits, shots, label=name)
-        response = self.session.submit_job(self.workspace_id, self.resource_id, body)
+        response = self.session.submit_job(
+            self.workspace_id, self.resource_id, request.model_dump(mode="json")
+        )
         job_id = response.get("job", {}).get("job_id")
         if not job_id:
             raise ValueError("Job ID not found in the AQT submission response.")
