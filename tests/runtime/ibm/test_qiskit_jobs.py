@@ -785,6 +785,20 @@ class TestIbmErrorBody:
         assert err.status_code == 401
         assert err.error_code is None
 
+    def test_unreadable_body_falls_back_to_status_mapping(self, provider):
+        """A body that raises on read() is treated as no body at all.
+
+        A real HTTPError's stream can be closed or already consumed by the time it
+        is inspected, in which case read() raises instead of returning bytes.
+        """
+        http_error = self._http_error(401, None)
+        with patch.object(http_error, "read", side_effect=OSError("stream closed")):
+            err = self._get(provider, http_error)
+
+        assert type(err) is AuthorizationError
+        assert err.status_code == 401
+        assert err.error_code is None
+
     def test_malformed_json_body_is_not_an_auth_error(self, provider):
         """A body that is present but unparseable is treated like any other foreign body."""
         err = self._get(provider, self._http_error(403, b'{"truncated": '))
