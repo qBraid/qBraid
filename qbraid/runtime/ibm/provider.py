@@ -16,13 +16,14 @@
 Module for configuring IBM provider credentials and authentication.
 
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import os
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, NamedTuple, Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
@@ -33,6 +34,7 @@ from qiskit_ibm_runtime.accounts import ChannelType
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.runtime.exceptions import AuthorizationError, JobNotFoundError, RuntimeAPIError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -50,59 +52,98 @@ _IAM_TOKEN_URL = "https://iam.cloud.ibm.com/identity/token"
 _IBM_RUNTIME_BASE = "https://us-east.quantum-computing.cloud.ibm.com"
 
 
-def _format_http_error(error: HTTPError) -> str:
-    """Format an HTTPError, surfacing the error code/message from the response body.
+class _IBMError(NamedTuple):
+    """The parts of IBM's ``ErrorContainer`` response body that we surface."""
 
-    IBM error responses carry the actionable detail in the body, which ``str(error)``
-    discards (leaving e.g. just "HTTP Error 400: Bad Request"). Extracts the two shapes
-    IBM uses — IAM (``errorCode``/``errorMessage``/``errorDetails`` plus a
-    ``context.requestId``) and the Quantum Runtime API (``errors: [{code, message,
-    more_info}]`` plus a ``trace`` request id) — falling back to the raw (truncated)
-    body for anything else.
+    error_code: Optional[str]
+    message: Optional[str]
+    trace: Optional[str]
+    solution: Optional[str]
+    more_info: Optional[str]
+
+
+def _parse_ibm_error(error: HTTPError) -> tuple[bool, Optional[_IBMError]]:
+    """Parse IBM's ``ErrorContainer`` error body, if that is what came back.
+
+    Returns a ``(has_body, parsed)`` pair:
+
+    * ``(False, None)`` — the response carried no readable body, so the HTTP status
+      is all we have to go on.
+    * ``(True, None)`` — a body came back, but it is not an ``ErrorContainer``. It
+      therefore did not come from the Runtime API: an edge proxy in front of IBM
+      answers with an HTML block page, and a 403 from *that* says nothing about
+      whether the caller's credentials are valid.
+    * ``(True, _IBMError(...))`` — IBM's own structured error.
     """
     try:
-        body = error.read().decode("utf-8", errors="replace").strip()
-    except (OSError, AttributeError, ValueError):
-        # AttributeError: no underlying fp; ValueError: fp already closed/exhausted.
-        body = ""
-    if not body:
-        return str(error)
+        raw = error.read()
+    except (AttributeError, OSError, ValueError):  # fp is None, or closed/already consumed
+        return False, None
+    if not raw:
+        return False, None
 
     try:
-        data = json.loads(body)
+        body = json.loads(raw)
+        errors = body["errors"]
+        first = errors[0]
+    except (ValueError, TypeError, LookupError):
+        return True, None
+
+    code = first.get("code")
+    return True, _IBMError(
+        # IBM's OpenAPI spec declares `code` a string, but the API sends an int.
+        error_code=None if code is None else str(code),
+        message=first.get("message"),
+        trace=body.get("trace") if isinstance(body, dict) else None,
+        # `solution` is absent from IBM's published ErrorContainer schema, but the API
+        # does send it. Treat it as best-effort: read it if it's there, never rely on it.
+        solution=first.get("solution"),
+        more_info=first.get("more_info"),
+    )
+
+
+class _IAMError(NamedTuple):
+    """The parts of IBM Cloud IAM's error response body that we surface."""
+
+    error_code: Optional[str]
+    message: Optional[str]
+    request_id: Optional[str]
+
+
+def _parse_iam_error(error: HTTPError) -> Optional[_IAMError]:
+    """Parse IBM Cloud IAM's error body, if there is one.
+
+    IAM (``iam.cloud.ibm.com/identity/token``) reports failures as
+    ``{"errorCode": "BXNIM0415E", "errorMessage": "Provided API key could not be
+    found.", "context": {"requestId": ...}}``. The error code says *why* the key
+    was rejected — invalid/mis-copied (``BXNIM0415E``), empty (``BXNIM0109E``),
+    suspended account, etc. — which ``str(error)`` flattens into "Bad Request".
+
+    A body that is not IAM's JSON shape (e.g. an HTML error page) is surfaced
+    raw, truncated to 500 chars. No readable body -> ``None``.
+    """
+    try:
+        raw = error.read().decode("utf-8", errors="replace").strip()
+    except (AttributeError, OSError, ValueError):  # fp is None, or closed/already consumed
+        return None
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
     except json.JSONDecodeError:
-        return f"{error}: {body[:500]}"
+        return _IAMError(error_code=None, message=raw[:500], request_id=None)
+    if not isinstance(data, dict) or not ("errorCode" in data or "errorMessage" in data):
+        return _IAMError(error_code=None, message=raw[:500], request_id=None)
 
-    if isinstance(data, dict):
-        # IBM Cloud IAM shape, e.g. {"errorCode": "BXNIM0415E",
-        # "errorMessage": "Provided API key could not be found."}
-        if "errorCode" in data or "errorMessage" in data:
-            fields = (data.get("errorCode"), data.get("errorMessage"), data.get("errorDetails"))
-            detail = " - ".join(str(f) for f in fields if f)
-            context = data.get("context")
-            request_id = context.get("requestId") if isinstance(context, dict) else None
-            if request_id:
-                detail += f" (requestId: {request_id})"
-            return f"{error}: {detail}"
-
-        # IBM Quantum Runtime API shape (ErrorContainer), e.g.
-        # {"trace": "...", "errors": [{"code": "...", "message": "...", "more_info": "..."}]}
-        errors = data.get("errors")
-        if isinstance(errors, list) and errors:
-            messages = []
-            for err in errors:
-                if isinstance(err, dict):
-                    fields = (err.get("code"), err.get("message"), err.get("more_info"))
-                    messages.append(" - ".join(str(f) for f in fields if f) or json.dumps(err))
-                else:
-                    messages.append(str(err))
-            detail = "; ".join(messages)
-            trace = data.get("trace")
-            if trace:
-                detail += f" (trace: {trace})"
-            return f"{error}: {detail}"
-
-    return f"{error}: {body[:500]}"
+    code = data.get("errorCode")
+    fields = (code, data.get("errorMessage"), data.get("errorDetails"))
+    context = data.get("context")
+    return _IAMError(
+        error_code=None if code is None else str(code),
+        message=" - ".join(str(f) for f in fields if f) or raw[:500],
+        request_id=context.get("requestId") if isinstance(context, dict) else None,
+    )
 
 
 class QiskitRuntimeProvider(QuantumProvider):
@@ -280,9 +321,20 @@ class QiskitRuntimeProvider(QuantumProvider):
                     raise ValueError("No access_token in IAM response")
                 return access_token
         except HTTPError as e:
-            raise ValueError(f"Failed to exchange IBM API key: {_format_http_error(e)}") from e
+            # IAM rejects a bad/expired API key with 400 or 401 — that's a
+            # credentials problem, not a generic failure. Its body says why the
+            # key was rejected; str(e) alone flattens that into "Bad Request".
+            detail = _parse_iam_error(e)
+            message = f"Failed to exchange IBM API key: {e}"
+            kwargs: dict[str, Any] = {"status_code": e.code}
+            if detail and detail.message:
+                message = f"{message}: {detail.message}"
+                kwargs.update(error_code=detail.error_code, trace=detail.request_id)
+            if e.code in (400, 401, 403):
+                raise AuthorizationError(message, **kwargs) from e
+            raise RuntimeAPIError(message, **kwargs) from e
         except (URLError, OSError) as e:
-            raise ValueError(f"Failed to exchange IBM API key: {e}") from e
+            raise RuntimeAPIError(f"Failed to exchange IBM API key: {e}") from e
 
     def _ibm_api_get(self, path: str, params: Optional[dict] = None) -> dict[str, Any]:
         """Make an authenticated GET request to the IBM Runtime API."""
@@ -317,9 +369,35 @@ class QiskitRuntimeProvider(QuantumProvider):
             with urlopen(req, timeout=15) as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except HTTPError as e:
-            raise ValueError(f"IBM API request failed: {_format_http_error(e)}") from e
+            # Preserve the provider's status code in the exception type so callers
+            # can tell "this job doesn't exist" apart from "your credentials were
+            # rejected" without parsing the message text.
+            has_body, detail = _parse_ibm_error(e)
+            message = f"IBM API request failed: {e}"
+            if detail and detail.message:
+                message = f"IBM API request failed ({e.code}): {detail.message}"
+            kwargs: dict[str, Any] = {"status_code": e.code}
+            if detail:
+                kwargs.update(
+                    error_code=detail.error_code,
+                    trace=detail.trace,
+                    solution=detail.solution,
+                    more_info=detail.more_info,
+                )
+
+            if e.code == 404:
+                raise JobNotFoundError(message, **kwargs) from e
+            # Only IBM can tell us that credentials were rejected. A 401/403 carrying
+            # a body that is not an ErrorContainer came from an edge proxy, not the
+            # API, and the caller's credentials may be perfectly valid -- reporting
+            # that as an AuthorizationError is what sends users off to re-save
+            # working credentials.
+            if e.code in (401, 403) and not (has_body and detail is None):
+                raise AuthorizationError(message, **kwargs) from e
+            raise RuntimeAPIError(message, **kwargs) from e
         except (URLError, OSError) as e:
-            raise ValueError(f"IBM API request failed: {e}") from e
+            # No HTTP response at all (DNS failure, timeout, connection reset).
+            raise RuntimeAPIError(f"IBM API request failed: {e}") from e
 
     def list_jobs(  # pylint: disable=too-many-arguments
         self,
