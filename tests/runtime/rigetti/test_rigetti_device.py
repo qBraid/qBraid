@@ -419,7 +419,8 @@ class TestRigettiDeviceTransform:
     def test_transform_compilation_failure_raises_device_error(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """A compilation failure must be wrapped in RigettiDeviceError."""
+        """A compilation failure must be wrapped in RigettiDeviceError, and must surface
+        quilc's own reason -- that is the only thing that says *why* it failed."""
         # pylint: disable=import-outside-toplevel
         import pyquil
         import pyquil.gates
@@ -434,9 +435,67 @@ class TestRigettiDeviceTransform:
                 "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
                 side_effect=RuntimeError("ISA unavailable"),
             ),
-            pytest.raises(RigettiDeviceError, match="Compilation failed"),
+            pytest.raises(RigettiDeviceError, match="quilc failed to compile") as exc_info,
         ):
             rigetti_device.transform(program)
+
+        # The underlying cause must be in the message, not only the __cause__ chain:
+        # the job document persists str(exc), so a generic message strands the reason.
+        assert "ISA unavailable" in str(exc_info.value)
+
+    @pytest.mark.parametrize(
+        "quil_t_line",
+        [
+            "DELAY 0 0.0005",
+            'DELAY 0 "rf" 1e-6',
+            "FENCE 0",
+            'SHIFT-PHASE 0 "rf" 1.0',
+        ],
+        ids=["delay_qubit", "delay_frame", "fence", "shift_phase"],
+    )
+    def test_transform_bypasses_quilc_for_quil_t(
+        self, rigetti_device: RigettiDevice, quil_t_line: str
+    ) -> None:
+        """quilc cannot compile Quil-T, so such programs must skip it untouched.
+
+        Sending them to quilc is what produced the opaque
+        "5.0d-4 is not of type QUBIT" failure from the RPCQ server.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import pyquil
+
+        program = pyquil.Program(f"DECLARE ro BIT[1]\nRX(pi) 0\n{quil_t_line}\nMEASURE 0 ro[0]")
+
+        with (
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+            patch.object(rigetti_device, "_probe_quilc_reachable") as mock_probe,
+        ):
+            result = rigetti_device.transform(program)
+
+        mock_compile.assert_not_called()
+        mock_probe.assert_not_called()
+        assert result.out() == program.out()
+
+    def test_transform_still_uses_quilc_without_quil_t(self, rigetti_device: RigettiDevice) -> None:
+        """A plain gate-model program must still be compiled by quilc as before."""
+        # pylint: disable=import-outside-toplevel
+        import pyquil
+        import pyquil.gates
+
+        # pylint: enable=import-outside-toplevel
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch("qbraid.runtime.rigetti.device.get_instruction_set_architecture"),
+            patch("qbraid.runtime.rigetti.device.TargetDevice"),
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+        ):
+            mock_compile.return_value.program.to_quil.return_value = "RX(pi/2) 0\n"
+            rigetti_device.transform(program)
+
+        mock_compile.assert_called_once()
 
     def test_transform_raises_when_quilc_unreachable(self, rigetti_device: RigettiDevice) -> None:
         """transform() must fail fast with RigettiDeviceError if quilc is unreachable."""
