@@ -23,11 +23,20 @@ actual IBM Quantum REST API responses.
 """
 
 import json
+from io import BytesIO
 from pathlib import Path
+from typing import Optional
 from unittest.mock import MagicMock, patch
+from urllib.error import HTTPError
 
 import pytest
 
+from qbraid.runtime.exceptions import (
+    AuthorizationError,
+    JobNotFoundError,
+    ResourceNotFoundError,
+    RuntimeAPIError,
+)
 from qbraid.runtime.ibm.provider import QiskitRuntimeProvider
 
 # ---------------------------------------------------------------------------
@@ -558,3 +567,266 @@ class TestEndToEndHandlerUsage:
             provider.list_jobs(pending=None)
             params = mock_get.call_args[1].get("params") or mock_get.call_args[0][1]
             assert "pending" not in params
+
+
+class TestApiErrorTyping:
+    """The IBM REST paths must raise typed exceptions carrying the HTTP status.
+
+    Consumers (e.g. qbraid-lab's cloud-jobs handlers) need to tell "this job does
+    not exist" apart from "your credentials were rejected". Previously both
+    collapsed into a bare ValueError, forcing callers to string-match the message
+    — so a 404 for a nonexistent job ID was misreported as a credentials problem.
+    """
+
+    @staticmethod
+    def _http_error(code):
+        from urllib.error import HTTPError
+
+        return HTTPError(
+            url="https://quantum.cloud.ibm.com/api/v1/jobs/nope",
+            code=code,
+            msg={404: "Not Found", 401: "Unauthorized", 403: "Forbidden"}.get(code, "Error"),
+            hdrs=None,
+            fp=None,
+        )
+
+    @pytest.mark.parametrize(
+        "code,expected",
+        [
+            (404, JobNotFoundError),
+            (401, AuthorizationError),
+            (403, AuthorizationError),
+            (500, RuntimeAPIError),
+        ],
+    )
+    def test_ibm_api_get_raises_typed_error(self, provider, code, expected):
+        """Each HTTP status maps to its own exception type, with status_code set."""
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(code)),
+        ):
+            with pytest.raises(expected) as exc_info:
+                provider._ibm_api_get("/jobs/nope")
+
+        # Exact type, not just an instance: pytest.raises accepts subclasses, so
+        # without this the 500 -> RuntimeAPIError row would pass even if the code
+        # mis-mapped 500 to JobNotFoundError or AuthorizationError.
+        assert type(exc_info.value) is expected
+        assert exc_info.value.status_code == code
+
+    def test_not_found_is_not_an_auth_error(self, provider):
+        """A 404 must NOT be catchable as an authorization failure.
+
+        This is the exact bug: a nonexistent job ID was surfacing credential
+        guidance to users whose credentials were perfectly valid.
+        """
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(404)),
+        ):
+            with pytest.raises(JobNotFoundError) as exc_info:
+                provider._ibm_api_get("/jobs/nope")
+
+        assert not isinstance(exc_info.value, AuthorizationError)
+        assert isinstance(exc_info.value, ResourceNotFoundError)
+
+    def test_typed_errors_remain_value_errors(self, provider):
+        """Backwards compat: these paths used to raise ValueError."""
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(404)),
+        ):
+            with pytest.raises(ValueError):
+                provider._ibm_api_get("/jobs/nope")
+
+    def test_exchange_api_key_rejects_bad_key_as_auth_error(self, provider):
+        """IAM rejecting the API key is a credentials problem, not a generic one."""
+        with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(401)):
+            with pytest.raises(AuthorizationError) as exc_info:
+                provider._exchange_api_key()
+
+        assert exc_info.value.status_code == 401
+
+    def test_exchange_api_key_server_error_is_not_an_auth_error(self, provider):
+        """An IAM 500 is a transient service failure, not bad credentials."""
+        with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=self._http_error(500)):
+            with pytest.raises(RuntimeAPIError) as exc_info:
+                provider._exchange_api_key()
+
+        assert not isinstance(exc_info.value, AuthorizationError)
+        assert exc_info.value.status_code == 500
+
+    def test_ibm_api_get_network_error_has_no_status_code(self, provider):
+        """A transport failure has no HTTP response, so status_code stays None."""
+        from urllib.error import URLError
+
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=URLError("timeout")),
+        ):
+            with pytest.raises(RuntimeAPIError) as exc_info:
+                provider._ibm_api_get("/jobs")
+
+        assert exc_info.value.status_code is None
+        assert not isinstance(exc_info.value, (AuthorizationError, JobNotFoundError))
+
+
+class TestIbmErrorBody:
+    """IBM returns a structured ErrorContainer body alongside the HTTP status.
+
+    Responses captured live from us-east.quantum-computing.cloud.ibm.com:
+
+      404 (bad job id)  -> {"errors": [{"code": 1291, "message": "Job not found..."}],
+                            "trace": "..."}
+      403 (bad CRN)     -> {"errors": [{"code": 1200, "message": "You are not authorized..."}],
+                            "trace": "..."}
+
+    An edge proxy in front of the API (e.g. rejecting a blocked User-Agent) also answers
+    403, but with an HTML block page instead of an ErrorContainer. That is not a
+    credentials failure and must not be reported as one -- doing so would tell users with
+    perfectly valid credentials to go re-save them, which is the bug this PR exists to fix.
+    """
+
+    WAF_BLOCK_PAGE = b"<!DOCTYPE html>\n<html><body>Access denied</body></html>"
+    MORE_INFO = "https://cloud.ibm.com/apidocs/quantum-computing#error-handling"
+
+    @staticmethod
+    def _http_error(code, body: Optional[bytes]):
+        return HTTPError(
+            url="https://us-east.quantum-computing.cloud.ibm.com/jobs",
+            code=code,
+            msg="Error",
+            hdrs=None,
+            fp=None if body is None else BytesIO(body),
+        )
+
+    @staticmethod
+    def _error_container(code, message, solution="Verify the job ID.", more_info=MORE_INFO):
+        """An ErrorContainer body. `code` is an int, as IBM actually sends it."""
+        return json.dumps(
+            {
+                "errors": [
+                    {
+                        "code": code,
+                        "message": message,
+                        "solution": solution,
+                        "more_info": more_info,
+                    }
+                ],
+                "trace": "c4dd86aa-1150-485e-85f3-2e4e5f410317",
+            }
+        ).encode()
+
+    def _get(self, provider, error):
+        """Run _ibm_api_get against a mocked HTTPError and return the raised exception."""
+        with (
+            patch.object(provider, "_exchange_api_key", return_value="tok"),
+            patch.object(
+                provider, "instance", "crn:v1:bluemix:public:quantum-computing:us-east:a/x:y::"
+            ),
+            patch("qbraid.runtime.ibm.provider.urlopen", side_effect=error),
+        ):
+            with pytest.raises(RuntimeAPIError) as exc_info:
+                provider._ibm_api_get("/jobs")
+        return exc_info.value
+
+    def test_ibm_error_code_and_trace_are_captured(self, provider):
+        """IBM's own error code and request trace ride along on the exception."""
+        body = self._error_container(1291, "Job not found. Job ID: deadbeef")
+        err = self._get(provider, self._http_error(404, body))
+
+        assert type(err) is JobNotFoundError
+        assert err.status_code == 404
+        # IBM's spec declares `code` a string but sends an int -- normalize.
+        assert err.error_code == "1291"
+        assert err.trace == "c4dd86aa-1150-485e-85f3-2e4e5f410317"
+        assert "Job not found" in str(err)
+
+    def test_forbidden_with_ibm_body_is_an_auth_error(self, provider):
+        """A 403 that IBM itself produced is a genuine authorization failure."""
+        body = self._error_container(1200, "You are not authorized to perform this action.")
+        err = self._get(provider, self._http_error(403, body))
+
+        assert type(err) is AuthorizationError
+        assert err.status_code == 403
+        assert err.error_code == "1200"
+
+    def test_forbidden_from_edge_proxy_is_not_an_auth_error(self, provider):
+        """A 403 with an HTML body did not come from IBM's API.
+
+        The credentials may be perfectly valid -- the request was blocked upstream.
+        Reporting this as AuthorizationError sends users to re-save working credentials.
+        """
+        err = self._get(provider, self._http_error(403, self.WAF_BLOCK_PAGE))
+
+        assert type(err) is RuntimeAPIError
+        assert not isinstance(err, AuthorizationError)
+        assert err.status_code == 403
+        assert err.error_code is None
+        assert err.trace is None
+
+    def test_bodyless_error_falls_back_to_status_mapping(self, provider):
+        """With no body at all we have nothing better to go on than the status."""
+        err = self._get(provider, self._http_error(401, None))
+
+        assert type(err) is AuthorizationError
+        assert err.status_code == 401
+        assert err.error_code is None
+
+    def test_unreadable_body_falls_back_to_status_mapping(self, provider):
+        """A body that raises on read() is treated as no body at all.
+
+        A real HTTPError's stream can be closed or already consumed by the time it
+        is inspected, in which case read() raises instead of returning bytes.
+        """
+        http_error = self._http_error(401, None)
+        with patch.object(http_error, "read", side_effect=OSError("stream closed")):
+            err = self._get(provider, http_error)
+
+        assert type(err) is AuthorizationError
+        assert err.status_code == 401
+        assert err.error_code is None
+
+    def test_malformed_json_body_is_not_an_auth_error(self, provider):
+        """A body that is present but unparseable is treated like any other foreign body."""
+        err = self._get(provider, self._http_error(403, b'{"truncated": '))
+
+        assert type(err) is RuntimeAPIError
+        assert err.status_code == 403
+
+    def test_solution_and_more_info_are_captured(self, provider):
+        """IBM ships user-facing remediation text with every error; keep it.
+
+        Captured live from a 404: the `solution` field is exactly the guidance a UI
+        wants to show, and it is authored by the party that knows why the call failed.
+        Note `solution` is NOT declared in IBM's OpenAPI schema, so it is optional.
+        """
+        solution = "Verify the job ID is correct and that you have the correct access permissions."
+        body = self._error_container(1291, "Job not found. Job ID: deadbeef", solution=solution)
+        err = self._get(provider, self._http_error(404, body))
+
+        assert err.solution == solution
+        assert err.more_info == self.MORE_INFO
+
+    def test_missing_solution_is_none_not_an_error(self, provider):
+        """`solution` is undeclared in IBM's schema, so it may simply not be there."""
+        body = json.dumps({"errors": [{"code": 1291, "message": "Job not found."}]}).encode()
+        err = self._get(provider, self._http_error(404, body))
+
+        assert type(err) is JobNotFoundError
+        assert err.error_code == "1291"
+        assert err.solution is None
+        assert err.more_info is None
+        assert err.trace is None

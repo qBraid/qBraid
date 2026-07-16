@@ -16,6 +16,9 @@
 Module defining exceptions for errors raised while processing a device.
 
 """
+
+from typing import Optional
+
 from qbraid.exceptions import QbraidError
 
 
@@ -29,6 +32,64 @@ class QbraidRuntimeError(QbraidError):
 
 class ResourceNotFoundError(QbraidError):
     """Exception raised when the desired resource could not be found."""
+
+
+class RuntimeAPIError(QbraidRuntimeError, ValueError):
+    """Exception raised when a provider's REST API returns an error response.
+
+    Carries the HTTP status code so callers can branch on the failure mode
+    (e.g. distinguish "job doesn't exist" from "credentials rejected") instead
+    of string-matching the exception message.
+
+    Where the provider returns a structured error body, ``error_code`` holds the
+    provider's own error identifier (finer-grained than the HTTP status), ``trace``
+    the request id to quote in a support ticket, ``solution`` the provider's
+    user-facing remediation text, and ``more_info`` a link to its error docs. All
+    are None when the provider returned no structured error.
+
+    ``solution`` is a suggestion from the provider, not gospel: it may be stale, may
+    contain markup, and may reference the provider's own SDK rather than the caller's.
+    Present it to users deliberately, not blindly.
+
+    Note: this also subclasses ``ValueError`` because these provider paths
+    previously raised a bare ``ValueError``. Keeping that base means existing
+    ``except ValueError`` code keeps working. It is transitional and can be
+    dropped in a future major release.
+    """
+
+    # pylint: disable-next=too-many-arguments
+    def __init__(
+        self,
+        message: str,
+        status_code: Optional[int] = None,
+        error_code: Optional[str] = None,
+        trace: Optional[str] = None,
+        solution: Optional[str] = None,
+        more_info: Optional[str] = None,
+    ):
+        super().__init__(message)
+        self.status_code = status_code
+        self.error_code = error_code
+        self.trace = trace
+        self.solution = solution
+        self.more_info = more_info
+
+
+class AuthorizationError(RuntimeAPIError):
+    """Exception raised when provider credentials are missing, expired, or rejected.
+
+    Corresponds to a 401/403 from the provider — the request was well-formed but
+    the caller is not authenticated/authorized.
+    """
+
+
+class JobNotFoundError(RuntimeAPIError, ResourceNotFoundError):
+    """Exception raised when the requested job/task does not exist (404).
+
+    Inherits from :class:`ResourceNotFoundError` so existing handlers that catch
+    that keep working, and from :class:`RuntimeAPIError` so callers get
+    ``status_code`` and can catch every provider API error uniformly.
+    """
 
 
 class JobStateError(QbraidError):
