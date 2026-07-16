@@ -81,7 +81,7 @@ def contains_quil_t(program: pyquil.Program) -> bool:
     Returns:
         True if the program contains any Quil-T instructions or definitions.
     """
-    return program.out() != program.remove_quil_t_instructions().out()
+    return program != program.remove_quil_t_instructions()
 
 
 class RigettiDeviceError(QbraidRuntimeError):
@@ -350,7 +350,7 @@ class RigettiDevice(QuantumDevice):
             # reachability is already established by the probe above, so the failure is
             # about the program itself.
             raise RigettiDeviceError(
-                f"quilc failed to compile the program for quantum processor " f"'{self.id}': {e}"
+                f"quilc failed to compile the program for quantum processor '{self.id}': {e}"
             ) from e
 
         return pyquil.Program(compiled_quil)
