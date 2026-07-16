@@ -77,7 +77,7 @@ def _parse_ibm_error(error: HTTPError) -> tuple[bool, Optional[_IBMError]]:
     """
     try:
         raw = error.read()
-    except (AttributeError, OSError):  # fp is None, or the stream is already consumed
+    except (AttributeError, OSError, ValueError):  # fp is None, or closed/already consumed
         return False, None
     if not raw:
         return False, None
@@ -99,6 +99,50 @@ def _parse_ibm_error(error: HTTPError) -> tuple[bool, Optional[_IBMError]]:
         # does send it. Treat it as best-effort: read it if it's there, never rely on it.
         solution=first.get("solution"),
         more_info=first.get("more_info"),
+    )
+
+
+class _IAMError(NamedTuple):
+    """The parts of IBM Cloud IAM's error response body that we surface."""
+
+    error_code: Optional[str]
+    message: Optional[str]
+    request_id: Optional[str]
+
+
+def _parse_iam_error(error: HTTPError) -> Optional[_IAMError]:
+    """Parse IBM Cloud IAM's error body, if there is one.
+
+    IAM (``iam.cloud.ibm.com/identity/token``) reports failures as
+    ``{"errorCode": "BXNIM0415E", "errorMessage": "Provided API key could not be
+    found.", "context": {"requestId": ...}}``. The error code says *why* the key
+    was rejected — invalid/mis-copied (``BXNIM0415E``), empty (``BXNIM0109E``),
+    suspended account, etc. — which ``str(error)`` flattens into "Bad Request".
+
+    A body that is not IAM's JSON shape (e.g. an HTML error page) is surfaced
+    raw, truncated to 500 chars. No readable body -> ``None``.
+    """
+    try:
+        raw = error.read().decode("utf-8", errors="replace").strip()
+    except (AttributeError, OSError, ValueError):  # fp is None, or closed/already consumed
+        return None
+    if not raw:
+        return None
+
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return _IAMError(error_code=None, message=raw[:500], request_id=None)
+    if not isinstance(data, dict) or not ("errorCode" in data or "errorMessage" in data):
+        return _IAMError(error_code=None, message=raw[:500], request_id=None)
+
+    code = data.get("errorCode")
+    fields = (code, data.get("errorMessage"), data.get("errorDetails"))
+    context = data.get("context")
+    return _IAMError(
+        error_code=None if code is None else str(code),
+        message=" - ".join(str(f) for f in fields if f) or raw[:500],
+        request_id=context.get("requestId") if isinstance(context, dict) else None,
     )
 
 
@@ -278,11 +322,17 @@ class QiskitRuntimeProvider(QuantumProvider):
                 return access_token
         except HTTPError as e:
             # IAM rejects a bad/expired API key with 400 or 401 — that's a
-            # credentials problem, not a generic failure.
+            # credentials problem, not a generic failure. Its body says why the
+            # key was rejected; str(e) alone flattens that into "Bad Request".
+            detail = _parse_iam_error(e)
             message = f"Failed to exchange IBM API key: {e}"
+            kwargs: dict[str, Any] = {"status_code": e.code}
+            if detail and detail.message:
+                message = f"{message}: {detail.message}"
+                kwargs.update(error_code=detail.error_code, trace=detail.request_id)
             if e.code in (400, 401, 403):
-                raise AuthorizationError(message, status_code=e.code) from e
-            raise RuntimeAPIError(message, status_code=e.code) from e
+                raise AuthorizationError(message, **kwargs) from e
+            raise RuntimeAPIError(message, **kwargs) from e
         except (URLError, OSError) as e:
             raise RuntimeAPIError(f"Failed to exchange IBM API key: {e}") from e
 

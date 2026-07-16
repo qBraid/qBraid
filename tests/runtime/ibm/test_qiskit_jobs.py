@@ -37,7 +37,7 @@ from qbraid.runtime.exceptions import (
     ResourceNotFoundError,
     RuntimeAPIError,
 )
-from qbraid.runtime.ibm.provider import QiskitRuntimeProvider
+from qbraid.runtime.ibm.provider import QiskitRuntimeProvider, _parse_iam_error
 
 # ---------------------------------------------------------------------------
 # Realistic mock data — modeled after IBM Quantum REST API responses
@@ -665,6 +665,34 @@ class TestApiErrorTyping:
         assert not isinstance(exc_info.value, AuthorizationError)
         assert exc_info.value.status_code == 500
 
+    def test_exchange_api_key_surfaces_iam_error_body(self, provider):
+        """IAM's errorCode/errorMessage say WHY the key was rejected; keep them.
+
+        Regression: a 400 was formatted as just "HTTP Error 400: Bad Request",
+        discarding the body that distinguishes an invalid/mis-copied key
+        (BXNIM0415E) from an empty one (BXNIM0109E) or a suspended account.
+        """
+        body = json.dumps(
+            {
+                "errorCode": "BXNIM0415E",
+                "errorMessage": "Provided API key could not be found.",
+                "context": {"requestId": "req-iam-42"},
+            }
+        ).encode("utf-8")
+        error = HTTPError(
+            "https://iam.cloud.ibm.com/identity/token", 400, "Bad Request", None, BytesIO(body)
+        )
+
+        with patch("qbraid.runtime.ibm.provider.urlopen", side_effect=error):
+            with pytest.raises(
+                AuthorizationError, match="BXNIM0415E.*could not be found"
+            ) as exc_info:
+                provider._exchange_api_key()
+
+        assert exc_info.value.status_code == 400
+        assert exc_info.value.error_code == "BXNIM0415E"
+        assert exc_info.value.trace == "req-iam-42"
+
     def test_ibm_api_get_network_error_has_no_status_code(self, provider):
         """A transport failure has no HTTP response, so status_code stays None."""
         from urllib.error import URLError
@@ -830,3 +858,54 @@ class TestIbmErrorBody:
         assert err.solution is None
         assert err.more_info is None
         assert err.trace is None
+
+    def test_closed_stream_is_treated_as_no_body(self, provider):
+        """A body stream that is already closed must degrade to status-only mapping.
+
+        read() on a closed stream raises ValueError, which previously escaped the
+        parser and masked the original HTTP error entirely.
+        """
+        http_error = self._http_error(403, b'{"errors": [{"code": 1200}]}')
+        http_error.fp.close()
+        err = self._get(provider, http_error)
+
+        # No readable body -> (False, None) -> a 403 maps to AuthorizationError.
+        assert type(err) is AuthorizationError
+        assert err.status_code == 403
+        assert err.error_code is None
+
+
+class TestParseIamError:
+    """IAM error-body extraction fallbacks (the happy path is covered above)."""
+
+    @staticmethod
+    def _http_error(body: Optional[bytes]) -> HTTPError:
+        fp = None if body is None else BytesIO(body)
+        return HTTPError("https://iam.cloud.ibm.com/identity/token", 400, "Bad Request", None, fp)
+
+    def test_non_json_body_surfaced_raw_and_truncated(self):
+        """A non-JSON body (e.g. an HTML error page) is kept, capped at 500 chars."""
+        detail = _parse_iam_error(self._http_error(b"<html>Service unavailable</html>" * 100))
+
+        assert detail is not None
+        assert detail.message.startswith("<html>")
+        assert len(detail.message) <= 500
+        assert detail.error_code is None
+
+    def test_unrecognized_json_shape_surfaced_raw(self):
+        """JSON that is not IAM's error shape is kept as-is."""
+        detail = _parse_iam_error(self._http_error(b'{"detail": "something else"}'))
+
+        assert detail is not None
+        assert '"detail": "something else"' in detail.message
+
+    def test_empty_body_is_none(self):
+        assert _parse_iam_error(self._http_error(b"")) is None
+
+    def test_missing_body_is_none(self):
+        assert _parse_iam_error(self._http_error(None)) is None
+
+    def test_closed_stream_is_none(self):
+        error = self._http_error(b'{"errorCode": "BXNIM0415E"}')
+        error.fp.close()
+        assert _parse_iam_error(error) is None
