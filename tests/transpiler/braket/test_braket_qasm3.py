@@ -27,6 +27,7 @@ from qbraid.interface import circuits_allclose
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.conversions.braket import braket_to_qasm3
 from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket
+from qbraid.transpiler.conversions.qasm3.qasm3_to_braket import contains_delay
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
 
 
@@ -239,3 +240,106 @@ def test_qasm3_to_braket_error_includes_detail():
     ).strip()
     with pytest.raises(QasmError, match="c3x is not defined"):
         qasm3_to_braket(qasm_input)
+
+
+@pytest.mark.parametrize(
+    "delay_stmt",
+    [
+        "delay[100ns] q[0];",
+        "delay[100dt] q[0];",
+        "delay[20us] q[0];",
+        "delay[100ns] q;",
+    ],
+    ids=["ns", "dt", "us", "whole_register"],
+)
+def test_qasm3_to_braket_delay_raises(delay_stmt):
+    """Braket cannot represent a gate-level delay, so conversion must raise rather than
+    drop it. Silently dropping produces a circuit that runs but measures the wrong thing.
+    """
+    qasm_input = textwrap.dedent(
+        f"""
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        bit[1] c;
+        qubit[1] q;
+        x q[0];
+        {delay_stmt}
+        c[0] = measure q[0];
+        """
+    ).strip()
+    with pytest.raises(QasmError, match="Delay instructions are not supported"):
+        qasm3_to_braket(qasm_input)
+
+
+def test_qasm3_to_braket_delay_in_verbatim_box_raises():
+    """A delay nested inside a verbatim box must be caught too. Braket drops both the
+    delay and the box on this path, so verbatim is not a workaround.
+    """
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        bit[1] c;
+        #pragma braket verbatim
+        box{
+        rx(1.5707963267948966) $0;
+        delay[100ns] $0;
+        }
+        c[0] = measure $0;
+        """
+    ).strip()
+    with pytest.raises(QasmError, match="Delay instructions are not supported"):
+        qasm3_to_braket(qasm_input)
+
+
+def test_qasm3_to_braket_delay_error_names_alternatives():
+    """The error should point to the two ways to actually get idle time on hardware."""
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[1] q;
+        delay[100ns] q[0];
+        """
+    ).strip()
+    with pytest.raises(QasmError) as exc_info:
+        qasm3_to_braket(qasm_input)
+    message = str(exc_info.value)
+    assert "PulseSequence.delay" in message
+    assert "Rigetti" in message
+
+
+def test_qasm3_to_braket_no_delay_unaffected():
+    """Programs without a delay convert as before."""
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        bit[2] c;
+        qubit[2] q;
+        h q[0];
+        cx q[0], q[1];
+        c[0] = measure q[0];
+        c[1] = measure q[1];
+        """
+    ).strip()
+    assert qasm3_to_braket(qasm_input) == Circuit().h(0).cnot(0, 1).measure(0).measure(1)
+
+
+def test_contains_delay_ignores_identifiers_named_delay():
+    """The keyword prefilter is only a fast path -- a bare 'delay' substring in an
+    identifier is not a delay instruction, and must not trip the check.
+    """
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[1] delay_reg;
+        x delay_reg[0];
+        """
+    ).strip()
+    assert contains_delay(qasm_input) is False
+
+
+def test_contains_delay_malformed_input_defers():
+    """Malformed input is left to the downstream parsers, which report it in context."""
+    assert contains_delay("delay this is not valid openqasm") is False

@@ -21,6 +21,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyqasm
+from openqasm3 import ast, parse
+from openqasm3.parser import QASM3ParsingError
+from openqasm3.visitor import QASMVisitor
 from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
 
@@ -38,6 +41,43 @@ if TYPE_CHECKING:
     import braket.circuits
 
     from qbraid.programs.typer import Qasm3StringType
+
+
+class _DelayFinder(QASMVisitor):
+    """Records whether a program contains a ``delay`` instruction."""
+
+    def __init__(self):
+        self.found = False
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_DelayInstruction(self, node: ast.DelayInstruction, context=None) -> None:
+        """Record that the program contains a delay instruction."""
+        self.found = True
+
+
+def contains_delay(qasm3: str) -> bool:
+    """Check whether an OpenQASM 3 program contains a ``delay`` instruction.
+
+    Args:
+        qasm3: OpenQASM 3 string
+
+    Returns:
+        True if the program contains a delay instruction, False otherwise.
+    """
+    # ``delay`` is a reserved keyword, so its absence rules out a DelayInstruction
+    # without paying to parse. Programs reaching this converter rarely have one.
+    if "delay" not in qasm3.lower():
+        return False
+
+    try:
+        program = parse(qasm3)
+    except QASM3ParsingError:
+        # Leave malformed input to the parsers downstream, which report it in context.
+        return False
+
+    finder = _DelayFinder()
+    finder.visit(program)
+    return finder.found
 
 
 def transform_notation(qasm3: str) -> str:
@@ -74,9 +114,19 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         The Amazon Braket circuit equivalent to the input OpenQASM 3.0 string
 
     Raises:
-        ProgramConversionError: If qasm to braket conversion fails
+        QasmError: If qasm to braket conversion fails, or if the program contains
+            a delay instruction, which Braket cannot represent.
 
     """
+    if contains_delay(qasm):
+        raise QasmError(
+            "Delay instructions are not supported by Amazon Braket, which has no "
+            "gate-level delay: braket.circuits.Circuit cannot represent one, and "
+            "Braket discards delays during conversion without raising. Express idle "
+            "time at the pulse level with braket.pulse.PulseSequence.delay, or run "
+            "the program on Rigetti directly, where Quil-T's DELAY is supported."
+        )
+
     prior_errors: list[tuple[str, BaseException]] = []
 
     try:
