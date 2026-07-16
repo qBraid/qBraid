@@ -227,15 +227,24 @@ def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
 
 
 def test_qasm3_to_braket_error_includes_detail():
-    """Verify that QasmError includes the specific failure reason from the Braket parser."""
+    """Verify that QasmError includes the specific failure reason from the Braket parser.
+
+    The gate is deliberately one no QASM library will ever define. This test
+    previously used `c3x`, relying on pyqasm leaving it alone so Braket's parser
+    would reject it — but pyqasm 1.0.4 learned to decompose `c3x` during unroll,
+    so the conversion started succeeding and the test broke. Any real-but-exotic
+    gate is a moving target; a fake one is not. pyqasm's own rejection of the
+    unknown gate is caught into `prior_errors`, the original program flows to
+    Braket's parser, and its "not defined" detail must surface in the QasmError.
+    """
     qasm_input = textwrap.dedent(
         """
         OPENQASM 3.0;
         include "stdgates.inc";
         qubit[4] q;
         h q[0];
-        c3x q[0], q[1], q[2], q[3];
+        notarealgate q[0], q[1];
         """
     ).strip()
-    with pytest.raises(QasmError, match="c3x is not defined"):
+    with pytest.raises(QasmError, match="notarealgate is not defined"):
         qasm3_to_braket(qasm_input)
