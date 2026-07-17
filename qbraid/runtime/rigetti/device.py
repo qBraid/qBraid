@@ -387,9 +387,16 @@ class RigettiDevice(QuantumDevice):
                 translation_options=translation_options,
             )
         except Exception as e:
+            # Surface the translation service's own reason. It is consistently more
+            # precise than any generic hint we can offer: it names the offending
+            # instruction (e.g. ``at instruction 0 ("H 0"): this instruction must be
+            # replaced or decomposed prior to compilation``), and it distinguishes
+            # causes a fixed message cannot -- missing frames from
+            # ``prepend_default_calibrations=False``, an out-of-range
+            # ``passive_reset_delay_seconds``, or a DEFFRAME that differs from the
+            # Rigetti defaults, none of which are gate-nativity problems.
             raise RigettiJobError(
-                f"Translation failed for quantum processor '{self.id}'. "
-                "Ensure the program uses only native gates for the target QPU."
+                f"Translation failed for quantum processor '{self.id}': {e}"
             ) from e
 
         try:
