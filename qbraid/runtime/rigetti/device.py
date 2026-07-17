@@ -61,6 +61,29 @@ _QUILC_PROBE_TIMEOUT_S = 2.0
 _QCS_CALENDAR_TIMEOUT_S = 10.0
 
 
+def contains_quil_t(program: pyquil.Program) -> bool:
+    """Check whether a Quil program uses any Quil-T (pulse/timing) features.
+
+    quilc is a gate-model compiler and, per Rigetti's docs, "Quil-T instructions are not
+    supported by quilc or the QVM": it raises a type error on ``DELAY`` (binding the
+    duration into a qubit slot) and cannot rewire ``FENCE``. Such programs must skip
+    quilc and go straight to the QCS translation service, which accepts both gate-model
+    and pulse-model instructions -- at the cost of requiring native gates, since
+    nativization is what quilc would otherwise have done.
+
+    Detection defers to pyquil's own ``Program.remove_quil_t_instructions``, so what
+    counts as Quil-T stays in sync with pyquil instead of a hand-maintained list. This
+    also covers ``DEFFRAME`` / ``DEFCAL`` / ``DEFWAVEFORM`` definitions.
+
+    Args:
+        program: The Quil program to inspect.
+
+    Returns:
+        True if the program contains any Quil-T instructions or definitions.
+    """
+    return program != program.remove_quil_t_instructions()
+
+
 class RigettiDeviceError(QbraidRuntimeError):
     """Class for errors raised while processing a Rigetti device."""
 
@@ -283,6 +306,12 @@ class RigettiDevice(QuantumDevice):
         is handled by ``ProgramSpec.serialize`` (configured by the provider
         as ``lambda program: program.out()``).
 
+        Programs using Quil-T (pulse/timing) features bypass quilc entirely and
+        are returned unchanged, since quilc cannot compile them. They are handed
+        to the QCS translation service by :meth:`_submit` as-is, which requires
+        that they already use only native gates (or supply their own
+        calibrations). See :func:`contains_quil_t`.
+
         ``self._compiler_options`` may be set to a
         ``qcs_sdk.compiler.quilc.CompilerOpts`` instance before calling
         this method to customise quilc behaviour. When ``None`` (the
@@ -291,6 +320,14 @@ class RigettiDevice(QuantumDevice):
         Raises:
             RigettiDeviceError: If quilc is unreachable or compilation fails.
         """
+        if contains_quil_t(run_input):
+            logger.info(
+                "Program uses Quil-T (pulse/timing) instructions, which quilc cannot "
+                "compile; skipping quilc and passing the program to the QCS translation "
+                "service unchanged. It must already use only native gates."
+            )
+            return run_input
+
         # Fail fast if quilc isn't running, instead of hanging in compile_program.
         self._probe_quilc_reachable()
 
@@ -309,10 +346,11 @@ class RigettiDevice(QuantumDevice):
             )
             compiled_quil = compilation_result.program.to_quil()
         except Exception as e:
+            # Surface quilc's own reason: it is the only thing that says *why*. quilc's
+            # reachability is already established by the probe above, so the failure is
+            # about the program itself.
             raise RigettiDeviceError(
-                f"Compilation failed for quantum processor '{self.id}'. "
-                "Ensure the program is valid Quil and that the quilc "
-                "compiler is running and accessible"
+                f"quilc failed to compile the program for quantum processor '{self.id}': {e}"
             ) from e
 
         return pyquil.Program(compiled_quil)
@@ -349,9 +387,16 @@ class RigettiDevice(QuantumDevice):
                 translation_options=translation_options,
             )
         except Exception as e:
+            # Surface the translation service's own reason. It is consistently more
+            # precise than any generic hint we can offer: it names the offending
+            # instruction (e.g. ``at instruction 0 ("H 0"): this instruction must be
+            # replaced or decomposed prior to compilation``), and it distinguishes
+            # causes a fixed message cannot -- missing frames from
+            # ``prepend_default_calibrations=False``, an out-of-range
+            # ``passive_reset_delay_seconds``, or a DEFFRAME that differs from the
+            # Rigetti defaults, none of which are gate-nativity problems.
             raise RigettiJobError(
-                f"Translation failed for quantum processor '{self.id}'. "
-                "Ensure the program uses only native gates for the target QPU."
+                f"Translation failed for quantum processor '{self.id}': {e}"
             ) from e
 
         try:

@@ -602,7 +602,7 @@ def test_device_submit_no_orgs(provider):
     """Test submitting a job when user has no organizations."""
     provider.session.get_user_organizations.return_value = []
     device = provider.get_device("oq-sim")
-    with pytest.raises(QbraidRuntimeError, match="Failed to connect to Open Quantum."):
+    with pytest.raises(QbraidRuntimeError, match="No organization found for user."):
         device.submit("OPENQASM 3.0; h q[0];")
 
 
