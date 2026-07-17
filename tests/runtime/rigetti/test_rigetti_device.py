@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime
 import importlib.util
+import re
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -723,6 +724,45 @@ class TestRigettiDeviceSubmit:
             pytest.raises(RigettiJobError, match="Translation failed"),
         ):
             rigetti_device.submit(quil_str, shots=shots)
+
+    def test_submit_translation_failure_surfaces_underlying_reason(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """The translation service's own reason must reach the user.
+
+        Not every translation failure is a gate-nativity problem, so the message
+        must carry the real cause rather than a fixed hint.
+        """
+        quil_str, shots = self._make_quil(shots=1)
+        reason = 'at instruction 0 ("H 0"): this instruction must be replaced or decomposed'
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                side_effect=RuntimeError(reason),
+            ),
+            pytest.raises(RigettiJobError, match=re.escape(reason)) as exc_info,
+        ):
+            rigetti_device.submit(quil_str, shots=shots)
+
+        assert isinstance(exc_info.value.__cause__, RuntimeError)
+
+    def test_submit_translation_failure_reports_non_nativity_causes(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A non-gate-related failure must not be described as a gate problem."""
+        quil_str, shots = self._make_quil(shots=1)
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                side_effect=RuntimeError("input program error: program has no defined frames"),
+            ),
+            pytest.raises(RigettiJobError, match="program has no defined frames") as exc_info,
+        ):
+            rigetti_device.submit(quil_str, shots=shots)
+
+        assert "only native gates" not in str(exc_info.value)
 
     def test_submit_job_stores_correct_num_shots(self, rigetti_device: RigettiDevice) -> None:
         """The returned RigettiJob must store the same num_shots passed to submit."""
