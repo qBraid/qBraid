@@ -95,7 +95,8 @@ class OpenQuantumDevice(QuantumDevice):
             orgs = self.session.get_user_organizations()
             if not orgs:
                 raise QbraidRuntimeError(
-                    "No organization found -- please accept Open Quantum terms of use to continue."
+                    "No organization found. Please accept the Open Quantum "
+                    "terms of use to continue."
                 )
             organization_id = orgs[0]["id"]
 

@@ -604,7 +604,7 @@ def test_device_submit_no_orgs(provider):
     device = provider.get_device("oq-sim")
     with pytest.raises(
         QbraidRuntimeError,
-        match="No organization found -- please accept Open Quantum terms of use to continue.",
+        match="No organization found. Please accept the Open Quantum terms of use to continue.",
     ):
         device.submit("OPENQASM 3.0; h q[0];")
 
