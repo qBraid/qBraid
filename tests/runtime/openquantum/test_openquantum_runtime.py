@@ -202,6 +202,8 @@ def test_device_run_and_submit(mock_requests_put, provider):
 
     provider.session.upload_input.assert_called_once_with(qasm_input.encode("utf-8"))
     provider.session.prepare_job.assert_called_once()
+    prepare_payload = provider.session.prepare_job.call_args.args[0]
+    assert prepare_payload["submitted_with"] == "qbraid"
     provider.session.wait_for_preparation.assert_called_once_with("prep_id_456")
     provider.session.create_job.assert_called_once()
 
@@ -245,6 +247,46 @@ def test_device_submit_batch(mock_requests_put, provider):
     assert len(jobs) == 2
     assert all(isinstance(j, OpenQuantumJob) for j in jobs)
     assert provider.session.create_job.call_count == 2
+
+
+def test_raise_for_api_error_terms_of_use():
+    """Terms of Use type becomes a clear QbraidRuntimeError."""
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 403
+    response.json.return_value = {
+        "status_code": 403,
+        "message": [
+            "Please visit https://www.openquantum.com to accept the Terms of Use "
+            "before submitting jobs."
+        ],
+        "type": "TERMS_OF_USE_REQUIRED",
+        "error_code": "req-1",
+    }
+    response.text = ""
+    response.reason = "Forbidden"
+
+    with pytest.raises(QbraidRuntimeError, match="openquantum.com"):
+        OpenQuantumSession._raise_for_api_error(response)
+
+
+def test_raise_for_api_error_org_membership():
+    """ORG_MEMBERSHIP_REQUIRED is not treated as a terms error."""
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 403
+    response.json.return_value = {
+        "status_code": 403,
+        "message": ["User is not a member of the organization"],
+        "type": "ORG_MEMBERSHIP_REQUIRED",
+        "error_code": "req-2",
+    }
+    response.text = ""
+    response.reason = "Forbidden"
+
+    with pytest.raises(QbraidRuntimeError, match="ORG_MEMBERSHIP_REQUIRED") as exc:
+        OpenQuantumSession._raise_for_api_error(response)
+    assert "Terms of Use" not in str(exc.value)
 
 
 def test_job_result_standalone(provider):
