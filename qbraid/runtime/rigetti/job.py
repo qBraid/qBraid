@@ -94,6 +94,7 @@ class RigettiJob(QuantumJob):
         self._ro_sources = ro_sources or {}
         self._execution_options = execution_options
         self._status = JobStatus.INITIALIZING
+        self._status_message: str | None = None
         self._cached_results: ExecutionResults | None = None
 
     @property
@@ -110,6 +111,16 @@ class RigettiJob(QuantumJob):
         raise RigettiJobError(
             f"RigettiJob {self.id} has no QCSClient: pass qcs_client= or device=."
         )
+
+    @property
+    def status_message(self) -> str | None:
+        """Failure detail from the most recent status poll, if any.
+
+        Unlike ``JobStatus.status_message`` — which lives on the shared enum
+        member and can be overwritten by any concurrently polled job — this
+        value is per-instance and safe to read after ``status()`` returns.
+        """
+        return self._status_message
 
     def status(self) -> JobStatus:
         """Return the current status of the Rigetti job.
@@ -139,7 +150,11 @@ class RigettiJob(QuantumJob):
             if "timeout" in str(err).lower():
                 logger.info("Retrieve timed out for job %s; job may still be running.", self.id)
             else:
-                self._status = JobStatus.FAILED
+                logger.error("Result retrieval failed for job %s: %s", self.id, err)
+                self._status_message = str(err)
+                status = JobStatus.FAILED
+                status.set_status_message(str(err))
+                self._status = status
 
         return self._status
 

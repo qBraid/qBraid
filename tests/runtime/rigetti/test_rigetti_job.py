@@ -264,6 +264,33 @@ class TestRigettiJobStatus:
         ):
             assert rigetti_job.status() == JobStatus.INITIALIZING
 
+    def test_status_failed_records_error_message(self, rigetti_job: RigettiJob) -> None:
+        """The QpuApiError text must be preserved as the FAILED status message."""
+        error_text = "job execution ID not found: d111fce6-6a89-47e0-98e2-653baa38a21c"
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            side_effect=QpuApiError(error_text),
+        ):
+            status = rigetti_job.status()
+        assert status == JobStatus.FAILED
+        assert status.status_message == error_text
+        # The per-instance copy is race-free under concurrent polling.
+        assert rigetti_job.status_message == error_text
+
+    def test_status_message_is_none_before_any_failure(self, rigetti_job: RigettiJob) -> None:
+        """status_message must default to None until a failure is observed."""
+        assert rigetti_job.status_message is None
+
+    def test_status_failed_logs_error(self, rigetti_job: RigettiJob, caplog) -> None:
+        """A non-timeout QpuApiError must be logged, not silently swallowed."""
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            side_effect=QpuApiError("access denied"),
+        ):
+            with caplog.at_level("ERROR", logger="qbraid"):
+                rigetti_job.status()
+        assert "access denied" in caplog.text
+
 
 # ===========================================================================
 # Job – cancel
