@@ -26,6 +26,7 @@ Functions
 
     plot_histogram
     plot_distribution
+    lattice_positions
     plot_connectivity_graph
     plot_conversion_graph
     plot_runtime_conversion_scheme
@@ -51,6 +52,7 @@ from .plot_counts import plot_distribution, plot_histogram
 __all__ = [
     "plot_histogram",
     "plot_distribution",
+    "lattice_positions",
     "plot_connectivity_graph",
     "plot_conversion_graph",
     "plot_runtime_conversion_scheme",
