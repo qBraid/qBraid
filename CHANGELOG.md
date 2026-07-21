@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: "No organization found for user." now reads "No organization found -- please accept Open Quantum terms of use to continue.", pointing at the actual remediation
 
 ### Deprecated
 

@@ -94,7 +94,9 @@ class OpenQuantumDevice(QuantumDevice):
         if organization_id is None:
             orgs = self.session.get_user_organizations()
             if not orgs:
-                raise QbraidRuntimeError("No organization found for user.")
+                raise QbraidRuntimeError(
+                    "No organization found -- please accept Open Quantum terms of use to continue."
+                )
             organization_id = orgs[0]["id"]
 
         # Encode QASM
