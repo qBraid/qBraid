@@ -28,7 +28,7 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
-from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
+from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
@@ -995,3 +995,88 @@ def test_validate_qasm_no_measurements_without_measurements():
     device_id = "quera_device"
     # Should not raise
     validate_qasm_no_measurements(qasm_no_measurements, device_id)
+
+
+# ===========================================================================
+# Device calibrations / coupling map
+# ===========================================================================
+
+CEPHEUS_QRN = "rigetti:rigetti:qpu:cepheus-1-108q"
+
+
+def _cepheus_calibration() -> DeviceCalibration:
+    """Calibration payload mirroring the production API response for Cepheus-1-108Q."""
+    return DeviceCalibration.model_validate(
+        {
+            "physicalDeviceId": "rigetti:Cepheus-1-108Q",
+            "deviceQRNs": [CEPHEUS_QRN, "aws:rigetti:qpu:cepheus-1-108q"],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-07-21T18:55:46+00:00",
+            "fetchedAt": "2026-07-21T19:00:18.386133+00:00",
+            "qubits": {
+                "0": {"readoutError": 0.04, "gateError": {"rb": 0.001863846742939046}},
+                "1": {"readoutError": 0.083, "gateError": {"rb": 0.0021}},
+            },
+            "edges": {
+                "gateError": {
+                    "cz": [
+                        {"source": 3, "target": 12, "value": 0.008527328396328415},
+                        {"source": 0, "target": 1, "value": 0.024671627793689366},
+                    ],
+                    # Same physical pair under a second gate: must not duplicate the edge.
+                    "iswap": [{"source": 0, "target": 1, "value": 0.031}],
+                }
+            },
+        }
+    )
+
+
+def test_get_calibrations_delegates_to_client(mock_profile):
+    """get_calibrations returns the client's DeviceCalibration for this device."""
+    client = Mock()
+    calibration = _cepheus_calibration()
+    client.get_device_calibrations.return_value = calibration
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.get_calibrations() is calibration
+    client.get_device_calibrations.assert_called_once_with(device.id)
+
+
+def test_get_calibrations_none_when_unavailable(mock_profile):
+    """Devices without published calibration data return None."""
+    client = Mock()
+    client.get_device_calibrations.return_value = None
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.get_calibrations() is None
+
+
+def test_coupling_map_derived_deduped_and_sorted(mock_profile):
+    """coupling_map is the sorted, deduplicated set of calibrated qubit pairs."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.coupling_map == ((0, 1), (3, 12))
+
+
+def test_coupling_map_none_without_calibration(mock_profile):
+    """coupling_map is None when the device has no calibration data."""
+    client = Mock()
+    client.get_device_calibrations.return_value = None
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.coupling_map is None
+
+
+def test_coupling_map_cached_per_device(mock_profile):
+    """coupling_map fetches calibration once and caches the result."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    first = device.coupling_map
+    second = device.coupling_map
+
+    assert first == second
+    client.get_device_calibrations.assert_called_once()
