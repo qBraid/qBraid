@@ -16,6 +16,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing the qBraid platform's device calibration data (already served by `GET /devices/{qrn}/calibrations` and wrapped by `qbraid_core`'s `QuantumRuntimeClient.get_device_calibrations`) on the runtime device object. `get_calibrations()` returns the live `DeviceCalibration` snapshot — per-edge two-qubit gate errors with physical `source`/`target` qubit pairs, per-qubit metrics, and calibration timestamps — and `coupling_map` derives the device's physical connectivity graph from it (sorted, deduplicated qubit pairs, cached per device instance). Previously a user needing a QPU's coupling graph to hand-place circuits (required on paths that bypass quilc, e.g. Quil-T programs on Rigetti QPUs) had no discoverable way to get it from the SDK. Both return `None`-equivalents for devices without published calibration data
 
 ### Improved / Modified
 - Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: "No organization found for user." now reads "No organization found. Please accept the Open Quantum terms of use to continue.", pointing at the actual remediation ([#1279](https://github.com/qBraid/qBraid/pull/1279))

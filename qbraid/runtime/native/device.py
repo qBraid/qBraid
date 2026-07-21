@@ -21,6 +21,7 @@ Module defining QbraidDevice class
 
 from __future__ import annotations
 
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, overload
 
 from qbraid_core.services.runtime import QuantumRuntimeClient
@@ -35,6 +36,7 @@ from .job import QbraidJob
 
 if TYPE_CHECKING:
     import qbraid_core.services.runtime
+    from qbraid_core.services.runtime.schemas import DeviceCalibration
 
     import qbraid.runtime
 
@@ -70,6 +72,45 @@ class QbraidDevice(QuantumDevice):
         """Return the number of jobs in the queue for the backend"""
         device_data = self.client.get_device(self.id)
         return device_data.queueDepth or 0
+
+    def get_calibrations(self) -> DeviceCalibration | None:
+        """Return the latest calibration snapshot for this device.
+
+        Fetched live on every call, so repeated calls track the platform's
+        refresh cadence. The snapshot includes per-edge two-qubit gate errors
+        (each entry naming the physical ``source``/``target`` qubit pair),
+        per-qubit metrics, and calibration timestamps.
+
+        Returns:
+            The device's ``DeviceCalibration``, or ``None`` when the device
+            has no published calibration data (e.g. simulators).
+        """
+        return self.client.get_device_calibrations(self.id)
+
+    @cached_property
+    def coupling_map(self) -> tuple[tuple[int, int], ...] | None:
+        """Physical two-qubit connectivity, derived from calibration data.
+
+        Every calibrated two-qubit gate edge names a physically coupled qubit
+        pair, so the union of edges across all calibrated gates is the
+        device's coupling graph. Cached per device instance — connectivity is
+        fixed hardware topology; use :meth:`get_calibrations` for fresh error
+        rates.
+
+        Returns:
+            Sorted ``(source, target)`` pairs, or ``None`` when the device has
+            no published calibration data (e.g. simulators).
+        """
+        calibration = self.get_calibrations()
+        if calibration is None:
+            return None
+        pairs = {
+            (entry.source, entry.target)
+            for gate_map in calibration.edges.values()
+            for entries in gate_map.values()
+            for entry in entries
+        }
+        return tuple(sorted(pairs))
 
     def _resolve_noise_model(self, noise_model: NoiseModel | str) -> str:
         """Verify given noise model is supported by device and map to string representation."""
