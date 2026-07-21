@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: "No organization found for user." now reads "No organization found. Please accept the Open Quantum terms of use to continue.", pointing at the actual remediation ([#1279](https://github.com/qBraid/qBraid/pull/1279))
 
 ### Deprecated
 
