@@ -352,9 +352,11 @@ def test_transpile_physical_qubits_to_pyquil():
     c[0] = measure $4;
     c[1] = measure $13;
     """
-    # compared as emitted Quil rather than via circuits_allclose: pyQuil's
-    # program_unitary sizes the operator by qubit *count*, so a sparse program
-    # addressing $13 raises "Permutation SWAP index not valid" instead of comparing.
+    # compared as emitted Quil rather than via circuits_allclose, because a unitary
+    # comparison is blind to the absolute indices this test exists to pin. On sparse
+    # indices it errors outright, and with index_contig=True it compacts both sides
+    # first -- which passes against a renumbered Program(X(0), CZ(0, 1)) and so cannot
+    # catch a regression that silently retargets the circuit.
     assert transpile(qasm, "pyquil").out().splitlines() == [
         "DECLARE ro BIT[2]",
         "X 4",
