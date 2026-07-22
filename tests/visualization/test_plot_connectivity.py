@@ -176,6 +176,7 @@ class TestPlotConnectivityGraph:
 
     def test_show_displays_figure(self, monkeypatch):
         """show=True routes to matplotlib's show."""
+        # pylint: disable-next=import-outside-toplevel
         import matplotlib.pyplot as mpl_plt
 
         shown = []
