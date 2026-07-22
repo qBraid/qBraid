@@ -24,7 +24,7 @@ import pytest
 try:
     from openqasm3 import ast
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, T, U, X
+    from pyquil.gates import CNOT, CPHASE, CZ, RX, RZ, H, I, S, T, U, X
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import (
@@ -292,6 +292,45 @@ def test_openqasm3_to_pyquil_two_qubit_registers():
     """
     result = openqasm3_to_pyquil(qasm)
     assert circuits_allclose(result, Program(X(0), X(1)), strict_gphase=True)
+
+
+def test_openqasm3_to_pyquil_physical_qubits():
+    """Physical qubits (``$n``) map straight onto the matching pyQuil index."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    x $0;
+    cz $0, $1;
+    """
+    result = openqasm3_to_pyquil(qasm)
+    assert circuits_allclose(result, Program(X(0), CZ(0, 1)), strict_gphase=True)
+
+
+def test_openqasm3_to_pyquil_physical_qubits_not_renumbered():
+    """Physical qubit indices are preserved verbatim, not compacted or padded.
+
+    A hardware-mapped program names the qubits it wants; rewriting ``$13`` to a
+    dense index would silently retarget the circuit onto different hardware.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    bit[2] c;
+    x $4;
+    cz $4, $13;
+    delay[8ns] $4;
+    c[0] = measure $4;
+    c[1] = measure $13;
+    """
+    out = openqasm3_to_pyquil(qasm).out()
+    assert "X 4" in out
+    assert "CZ 4 13" in out
+    assert "DELAY 4" in out
+    assert "MEASURE 4 ro[0]" in out
+    assert "MEASURE 13 ro[1]" in out
+    # no identity padding across the unused 0..12 range
+    assert " I " not in out
+    assert not any(line.startswith("I ") for line in out.splitlines())
 
 
 def test_openqasm3_to_pyquil_measure_without_target():
