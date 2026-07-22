@@ -162,3 +162,24 @@ class TestPlotConnectivityGraph:
 
         with pytest.raises(VisualizationError, match="iswapx"):
             plot_connectivity_graph(device, edge_gate="iswapx", show=False)
+
+    def test_dead_qubit_rendered_as_dotted_outline(self, tmp_path):
+        """A qubit in the lattice footprint with no couplings is drawn as a ghost."""
+        out = tmp_path / "graph.png"
+        # Lattice footprint 0..3, but qubit 2 has no working couplings (dead).
+        device = _device(
+            coupling_map=((0, 1), (1, 3)),
+            topology={"type": "square-lattice", "rows": 1, "cols": 4},
+        )
+        plot_connectivity_graph(device, show=False, save_path=out)
+        assert out.exists() and out.stat().st_size > 0
+
+    def test_show_displays_figure(self, monkeypatch):
+        """show=True routes to matplotlib's show."""
+        import matplotlib.pyplot as mpl_plt
+
+        shown = []
+        monkeypatch.setattr(mpl_plt, "show", lambda: shown.append(True))
+        device = _device(topology={"type": "square-lattice", "rows": 1, "cols": 3})
+        plot_connectivity_graph(device, show=True)
+        assert shown == [True]
