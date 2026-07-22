@@ -46,7 +46,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox
+        python3 -m pip install tox tox-uv
     - name: Tests
       # Coverage is only uploaded from the 3.11 job, so only that job pays the
       # instrumentation overhead; the rest run with --no-cov.
