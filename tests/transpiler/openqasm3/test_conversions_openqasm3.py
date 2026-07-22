@@ -27,6 +27,7 @@ try:
     from pyquil.gates import CNOT, CPHASE, CZ, RX, RZ, H, I, S, T, U, X
 
     from qbraid.interface import circuits_allclose
+    from qbraid.transpiler import transpile
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import (
         _branch_target,
         _duration_seconds,
@@ -325,12 +326,43 @@ def test_openqasm3_to_pyquil_physical_qubits_not_renumbered():
     out = openqasm3_to_pyquil(qasm).out()
     assert "X 4" in out
     assert "CZ 4 13" in out
-    assert "DELAY 4" in out
+    assert "DELAY 4 8e-9" in out
     assert "MEASURE 4 ro[0]" in out
     assert "MEASURE 13 ro[1]" in out
     # no identity padding across the unused 0..12 range
     assert " I " not in out
     assert not any(line.startswith("I ") for line in out.splitlines())
+
+
+def test_transpile_physical_qubits_to_pyquil():
+    """The public ``transpile()`` entry point carries physical qubits through intact.
+
+    Guards route selection as much as the conversion itself: neither the
+    ``qasm3 -> cirq`` nor the ``qasm3 -> braket`` route can represent ``$n``, so
+    this fails if the graph stops preferring ``qasm3 -> openqasm3 -> pyquil``, and
+    covers the qasm3 input normalization that the direct-conversion test bypasses.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    bit[2] c;
+    x $4;
+    cz $4, $13;
+    delay[8ns] $4;
+    c[0] = measure $4;
+    c[1] = measure $13;
+    """
+    # compared as emitted Quil rather than via circuits_allclose: pyQuil's
+    # program_unitary sizes the operator by qubit *count*, so a sparse program
+    # addressing $13 raises "Permutation SWAP index not valid" instead of comparing.
+    assert transpile(qasm, "pyquil").out().splitlines() == [
+        "DECLARE ro BIT[2]",
+        "X 4",
+        "CZ 4 13",
+        "DELAY 4 8e-9",
+        "MEASURE 4 ro[0]",
+        "MEASURE 13 ro[1]",
+    ]
 
 
 def test_openqasm3_to_pyquil_measure_without_target():
