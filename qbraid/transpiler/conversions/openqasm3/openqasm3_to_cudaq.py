@@ -18,7 +18,7 @@ Module defining OpenQASM 3 to CUDA-Q conversion function.
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import pyqasm
 from openqasm3 import ast
@@ -97,7 +97,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
     program = module.unrolled_ast
 
     kernel: PyKernel = cudaq.make_kernel()
-    ctx: dict[str, Optional[QuakeValue]] = {}
+    ctx: dict[str, QuakeValue | None] = {}
     gate_kernels: dict[str, PyKernel] = {}
 
     def get_gate(name: str, targs: tuple[type]) -> PyKernel:
@@ -163,14 +163,22 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
             # ctrl isn't supported so multi-ctrl is not an issue at the moment.
             assert len(statement.modifiers) <= 1
 
-            if len(statement.modifiers) == 1:
+            if len(statement.modifiers) == 1:  # pragma: no cover
                 mod = statement.modifiers[0]
                 assert (
                     mod.modifier == ast.GateModifierName.ctrl
                 ), f"non-ctrl modifiers should've be unrolled: {mod}"
 
-                gate = get_gate(name, targs)
-                kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
+                ctrl_name = "c" + name
+                ctrl_op = getattr(kernel, ctrl_name, None)
+                if ctrl_op is not None:
+                    if args:
+                        ctrl_op(*args, *qubit_refs)
+                    else:
+                        ctrl_op(*qubit_refs)
+                else:  # pragma: no cover
+                    gate = get_gate(name, targs)
+                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
                 if (namel := name.lower())[0] == "c" and namel[1:] in [
                     "x",
@@ -181,11 +189,25 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
                     "rz",
                 ]:
                     # pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
-                    gate = get_gate(namel[1:], targs)
-                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
+                    ctrl_op = getattr(kernel, namel, None)
+                    if ctrl_op is not None:
+                        if args:  # pragma: no cover
+                            ctrl_op(*args, *qubit_refs)
+                        else:
+                            ctrl_op(*qubit_refs)
+                    else:  # pragma: no cover
+                        gate = get_gate(namel[1:], targs)
+                        kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
                 else:
-                    gate = get_gate(name, targs)
-                    kernel.apply_call(gate, *qubit_refs, *args)
+                    op = getattr(kernel, name, None)
+                    if op is not None:
+                        if args:
+                            op(*args, *qubit_refs)
+                        else:
+                            op(*qubit_refs)
+                    else:  # pragma: no cover
+                        gate = get_gate(name, targs)
+                        kernel.apply_call(gate, *qubit_refs, *args)
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")

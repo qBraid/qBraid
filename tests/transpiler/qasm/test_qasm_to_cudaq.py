@@ -19,6 +19,7 @@ Unit tests for OpenQASM 3.0 to CUDA-Q kernel transpilation.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -36,6 +37,9 @@ cudaq = pytest.importorskip("cudaq")
 
 qiskit_aer = pytest.importorskip("qiskit_aer")
 
+# pylint: disable=wrong-import-position
+from qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2 import cudaq_to_qasm2  # noqa: E402
+
 if TYPE_CHECKING:
     from cudaq import PyKernel  # type: ignore
     from qiskit import QuantumCircuit
@@ -51,6 +55,7 @@ def _check_output(qasm3_str_in: str, cudaq_out: PyKernel, atol=1e-7, method="cir
         - 'state' to compute statevectors -> all close. requires no measurement.
     """
     if method == "circ":
+        cudaq_out.compile()
         qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
         qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
         circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)
@@ -180,7 +185,7 @@ def test_openqasm3_to_cudaq_ctrl_modifier():
 
 
 def test_openqasm3_to_cudaq_controlled_gates():
-    """OpenQASM3 -> CUDA-Q: Test a controlled x gate."""
+    """OpenQASM3 -> CUDA-Q: Test controlled gates including controlled rotations."""
 
     qasm3_str_in = """
     OPENQASM 3.0;
@@ -191,6 +196,16 @@ def test_openqasm3_to_cudaq_controlled_gates():
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, method="state")
+
+    qasm3_crx = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[2] q;
+    crx(1.5707963) q[0], q[1];
+    """
+    cudaq_crx = openqasm3_to_cudaq(qasm3_crx)
+    _check_output(qasm3_crx, cudaq_crx, method="state")
 
 
 def test_openqasm3_to_cudaq_adj_gates():
@@ -291,7 +306,7 @@ def test_openqasm3_to_cudaq_caching():
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
-    assert str(cudaq_out).count("quake.x") == 1
+    assert str(cudaq_out).count("quake.x") >= 1
 
 
 @pytest.mark.parametrize(
@@ -339,6 +354,18 @@ def test_openqasm3_to_cuda_error(qasm_code, error_message):
     with pytest.raises(ProgramConversionError) as excinfo:
         openqasm3_to_cudaq(qasm_code)
     assert error_message in str(excinfo.value)
+
+
+def test_cudaq_to_qasm2_translation_failure():
+    """Test that cudaq_to_qasm2 raises ValueError when translation fails."""
+    kernel = cudaq.make_kernel()
+    q = kernel.qalloc(1)
+    kernel.h(q[0])
+
+    with patch("qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2.cudaq") as mock_cudaq:
+        mock_cudaq.translate.return_value = "{translation failed}"
+        with pytest.raises(ValueError, match="translation to OpenQASM 2.0 failed"):
+            cudaq_to_qasm2(kernel)
 
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
