@@ -26,6 +26,8 @@ Functions
 
     plot_histogram
     plot_distribution
+    lattice_positions
+    plot_connectivity_graph
     plot_conversion_graph
     plot_runtime_conversion_scheme
     circuit_drawer
@@ -43,12 +45,15 @@ Exceptions
 from .ahs import plot_atomic_register
 from .draw_circuit import circuit_drawer
 from .exceptions import VisualizationError
+from .plot_connectivity import lattice_positions, plot_connectivity_graph
 from .plot_conversions import plot_conversion_graph, plot_runtime_conversion_scheme
 from .plot_counts import plot_distribution, plot_histogram
 
 __all__ = [
     "plot_histogram",
     "plot_distribution",
+    "lattice_positions",
+    "plot_connectivity_graph",
     "plot_conversion_graph",
     "plot_runtime_conversion_scheme",
     "circuit_drawer",
