@@ -111,6 +111,27 @@ def test_cached_method_accepts_unhashable_args(monkeypatch):
     assert obj.total.cache_info().currsize == 0
 
 
+def test_cached_method_accepts_non_json_serializable_args(monkeypatch):
+    """A cached method can be called with an object argument."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+
+    class ObjectArgClass:
+        def __init__(self):
+            self.call_count = 0
+
+        @cached_method
+        def passthrough(self, argument: object) -> object:
+            self.call_count += 1
+            return argument
+
+    obj = ObjectArgClass()
+    value = object()
+
+    assert obj.passthrough(value) is value
+    assert obj.passthrough(value) is value
+    assert obj.call_count == 1
+
+
 class BoundedClass:
     """Class whose cached method has a small ``maxsize`` to exercise eviction."""
 

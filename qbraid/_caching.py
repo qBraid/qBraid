@@ -60,7 +60,7 @@ def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict
         "args": args,
         "kwargs": kwargs,
     }
-    key_str = json.dumps(key_data, sort_keys=True)
+    key_str = json.dumps(key_data, sort_keys=True, default=repr)
     return hashlib.sha256(key_str.encode()).hexdigest()
 
 
@@ -68,10 +68,11 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
     """A decorator to cache the results of methods with optional TTL and maxsize options.
 
     Entries are keyed by ``_generate_cache_key``, a SHA-256 of the JSON-serialized
-    (class, method, args, kwargs). Because the key is derived from a JSON serialization
-    rather than by hashing the raw arguments, decorated methods may be called with
-    unhashable arguments (e.g. ``list`` / ``dict``) and still be cached — unlike a plain
-    ``functools.lru_cache``, which raises ``TypeError: unhashable type`` for such args.
+    (class, method, args, kwargs), falling back to ``repr`` for values JSON cannot encode.
+    Because the key is derived from a serialization rather than by hashing the raw arguments,
+    decorated methods may be called with unhashable arguments (e.g. ``list`` / ``dict``) and
+    still be cached — unlike a plain ``functools.lru_cache``, which raises ``TypeError:
+    unhashable type`` for such args.
 
     ``maxsize`` bounds the cache, evicting the oldest entry *by insertion time* — not
     strict LRU, since reads don't refresh the timestamp (it also drives TTL expiry, and
