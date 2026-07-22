@@ -266,7 +266,7 @@ def test_raise_for_api_error_terms_of_use():
     response.text = ""
     response.reason = "Forbidden"
 
-    with pytest.raises(QbraidRuntimeError, match="openquantum.com"):
+    with pytest.raises(QbraidRuntimeError, match=r"openquantum\.com"):
         OpenQuantumSession._raise_for_api_error(response)
 
 
@@ -287,6 +287,58 @@ def test_raise_for_api_error_org_membership():
     with pytest.raises(QbraidRuntimeError, match="ORG_MEMBERSHIP_REQUIRED") as exc:
         OpenQuantumSession._raise_for_api_error(response)
     assert "Terms of Use" not in str(exc.value)
+
+
+def test_raise_for_api_error_string_message():
+    """A plain string ``message`` field is surfaced in the error detail."""
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 402
+    response.json.return_value = {
+        "status_code": 402,
+        "message": "Insufficient credits to submit job",
+        "type": "INSUFFICIENT_CREDITS",
+        "error_code": "req-3",
+    }
+    response.text = ""
+    response.reason = "Payment Required"
+
+    with pytest.raises(
+        QbraidRuntimeError,
+        match=r"OpenQuantum API error \(402\) \[INSUFFICIENT_CREDITS\]: "
+        r"Insufficient credits to submit job",
+    ):
+        OpenQuantumSession._raise_for_api_error(response)
+
+
+def test_raise_for_api_error_non_json_body():
+    """A non-JSON response body falls back to the raw text with no type tag."""
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 502
+    response.json.side_effect = ValueError("No JSON object could be decoded")
+    response.text = "<html>502 Bad Gateway</html>"
+    response.reason = "Bad Gateway"
+
+    with pytest.raises(QbraidRuntimeError, match=r"OpenQuantum API error \(502\)") as exc:
+        OpenQuantumSession._raise_for_api_error(response)
+    assert "<html>502 Bad Gateway</html>" in str(exc.value)
+    assert "[" not in str(exc.value)
+
+
+def test_raise_for_api_error_empty_body_uses_reason():
+    """An empty non-JSON body falls back to the HTTP reason phrase."""
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 503
+    response.json.side_effect = ValueError("No JSON object could be decoded")
+    response.text = ""
+    response.reason = "Service Unavailable"
+
+    with pytest.raises(
+        QbraidRuntimeError, match=r"OpenQuantum API error \(503\): Service Unavailable"
+    ):
+        OpenQuantumSession._raise_for_api_error(response)
 
 
 def test_job_result_standalone(provider):
