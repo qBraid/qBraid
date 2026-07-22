@@ -19,7 +19,7 @@ Module for plotting device connectivity graphs colored by calibration data.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable
 
 from qbraid_core._import import LazyLoader
 
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 plt: matplotlib.pyplot = LazyLoader("plt", globals(), "matplotlib.pyplot")
 
 
-def lattice_positions(topology: Optional[dict], qubits: Iterable[int]) -> Optional[dict]:
+def lattice_positions(topology: dict | None, qubits: Iterable[int]) -> dict | None:
     """Map qubit ids to (x, y) plot positions using a device topology config.
 
     Supports the ``square-lattice`` (row-major ids, e.g. Rigetti Cepheus) and
@@ -79,15 +79,15 @@ def _fallback_positions(coupling_map) -> dict:
 
 # pylint: disable-next=too-many-locals,too-many-statements,too-many-arguments
 def plot_connectivity_graph(
-    device: Optional[qbraid.runtime.QbraidDevice] = None,
+    device: qbraid.runtime.QbraidDevice | None = None,
     *,
-    coupling_map: Optional[Iterable[tuple[int, int]]] = None,
-    calibration: Optional[DeviceCalibration] = None,
-    topology: Optional[dict] = None,
-    edge_gate: Optional[str] = None,
-    title: Optional[str] = None,
+    coupling_map: Iterable[tuple[int, int]] | None = None,
+    calibration: DeviceCalibration | None = None,
+    topology: dict | None = None,
+    edge_gate: str | None = None,
+    title: str | None = None,
     show: bool = True,
-    save_path: Optional[str | Path] = None,
+    save_path: str | Path | None = None,
 ) -> None:
     """Plot a device's connectivity graph colored by live calibration data.
 
