@@ -74,7 +74,11 @@ def _fallback_positions(coupling_map) -> dict:
     indices = {q: graph.add_node(q) for q in nodes}
     graph.add_edges_from([(indices[a], indices[b], None) for a, b in coupling_map])
     layout = rx.spring_layout(graph, seed=42)
-    return {q: tuple(layout[indices[q]]) for q in nodes}
+    # Spring coordinates land in a unit-scale box regardless of graph size;
+    # rescale by node count so large graphs get canvas room (figsize derives
+    # from the position extent).
+    scale = max(4.0, len(nodes) ** 0.5)
+    return {q: (layout[indices[q]][0] * scale, layout[indices[q]][1] * scale) for q in nodes}
 
 
 # pylint: disable-next=too-many-locals,too-many-statements,too-many-arguments
