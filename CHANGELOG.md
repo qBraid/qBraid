@@ -27,6 +27,7 @@ Writing an entry:
 - Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing device calibration data (per-edge two-qubit gate errors, per-qubit metrics, timestamps) and the physical connectivity graph derived from it. Useful for hand-placing circuits on paths that bypass quilc. Both return `None`-equivalents for devices without published calibration data ([#1281](https://github.com/qBraid/qBraid/pull/1281))
 
 ### Improved / Modified
+- Unit tests now run in parallel (`pytest-xdist -n auto`), test collection is made deterministic so xdist workers agree (set-derived `parametrize` inputs are sorted), and CI collects coverage only on the job that uploads to Codecov — roughly halving PR CI wall time with no checks removed
 - Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: it now points at accepting the Open Quantum terms of use rather than only reporting "No organization found for user." ([#1279](https://github.com/qBraid/qBraid/pull/1279))
 
 ### Deprecated
