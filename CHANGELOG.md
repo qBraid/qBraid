@@ -28,6 +28,7 @@ Writing an entry:
 
 ### Improved / Modified
 - Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: it now points at accepting the Open Quantum terms of use rather than only reporting "No organization found for user." ([#1279](https://github.com/qBraid/qBraid/pull/1279))
+- CI workflows install `tox-uv`, so tox environments are built with the much faster `uv` installer instead of pip; local tox usage is unaffected unless `tox-uv` is installed
 
 ### Deprecated
 
