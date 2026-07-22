@@ -84,7 +84,7 @@ def bound_method_str(source, target):
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
-@pytest.mark.parametrize("func", conversion_functions)
+@pytest.mark.parametrize("func", sorted(conversion_functions))
 def test_conversion_functions_syntax(func):
     """Test that all conversion functions are named correctly."""
     source, target = func.split("_to_")
