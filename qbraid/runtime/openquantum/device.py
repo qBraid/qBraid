@@ -113,6 +113,7 @@ class OpenQuantumDevice(QuantumDevice):
             "upload_endpoint_id": upload_id,
             "shots": shots,
             "configuration_data": kwargs.get("configuration_data", {}),
+            "submitted_with": "qbraid",
         }
         if subcategory is not None:
             prep_payload["job_subcategory_id"] = subcategory

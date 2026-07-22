@@ -25,11 +25,18 @@ from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
-from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import OpenQuantumDevice
+
+TERMS_OF_USE_REQUIRED_MESSAGE = (
+    "Please visit https://www.openquantum.com to accept the Terms of Use before submitting jobs."
+)
+
+# Stable error types from Open Quantum API (api-common ApiErrorType)
+API_ERROR_TYPE_TERMS_OF_USE_REQUIRED = "TERMS_OF_USE_REQUIRED"
 
 
 class OpenQuantumSession(Session):
@@ -67,6 +74,34 @@ class OpenQuantumSession(Session):
         super().__init__(base_url=self.scheduler_url)
         self._token = None
         self._token_expires_at = 0
+
+    @staticmethod
+    def _raise_for_api_error(response: requests.Response) -> None:
+        """Raise a clear error using the API ``type`` field when present."""
+        if response.ok:
+            return
+
+        error_type = None
+        message = None
+        try:
+            payload = response.json()
+            error_type = payload.get("type")
+            raw = payload.get("message", response.text)
+            if isinstance(raw, list):
+                message = "; ".join(str(m) for m in raw)
+            elif raw:
+                message = str(raw)
+        except ValueError:
+            message = response.text or None
+
+        if error_type == API_ERROR_TYPE_TERMS_OF_USE_REQUIRED:
+            raise QbraidRuntimeError(TERMS_OF_USE_REQUIRED_MESSAGE)
+
+        detail = message or response.reason or f"HTTP {response.status_code}"
+        type_part = f" [{error_type}]" if error_type else ""
+        raise QbraidRuntimeError(
+            f"OpenQuantum API error ({response.status_code}){type_part}: {detail}"
+        )
 
     def _fetch_token(self) -> None:
         if self._token_provider is not None:
@@ -134,12 +169,16 @@ class OpenQuantumSession(Session):
     def prepare_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Prepare a job."""
         url = f"{self.scheduler_url}/v1/jobs/prepare"
-        return self.post(url, json=data).json()
+        resp = self.post(url, json=data)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def get_preparation_result(self, prep_id: str) -> dict[str, Any]:
         """Get job preparation result."""
         url = f"{self.scheduler_url}/v1/jobs/prepare/{prep_id}"
-        return self.get(url).json()
+        resp = self.get(url)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def wait_for_preparation(self, prep_id: str, timeout: int = 300) -> list[dict[str, Any]]:
         """Wait for job preparation to complete and return the quote."""
@@ -157,7 +196,9 @@ class OpenQuantumSession(Session):
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job."""
         url = f"{self.scheduler_url}/v1/jobs"
-        return self.post(url, json=data).json()
+        resp = self.post(url, json=data)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Get a specific job."""
