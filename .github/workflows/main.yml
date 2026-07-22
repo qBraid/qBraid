@@ -48,8 +48,10 @@ jobs:
         python3 -m pip install --upgrade pip setuptools
         python3 -m pip install tox tox-uv
     - name: Tests
+      # Coverage is only uploaded from the 3.11 job, so only that job pays the
+      # instrumentation overhead; the rest run with --no-cov.
       run: |
-        tox -e unit-tests
+        tox -e unit-tests ${{ matrix.python-version != '3.11' && '-- --no-cov' || '' }}
       env:
         QBRAID_RUN_REMOTE_TESTS: False
     - name: Upload coverage to Codecov

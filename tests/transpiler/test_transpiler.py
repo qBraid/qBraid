@@ -79,7 +79,7 @@ def test_to_cirq_bad_openqasm_program(item):
 
 
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)
-@pytest.mark.parametrize("to_type", QPROGRAM_ALIASES)
+@pytest.mark.parametrize("to_type", sorted(QPROGRAM_ALIASES))
 def test_cirq_round_trip(bell_circuit, to_type):
     """Test converting Cirq circuits to other supported types."""
     # Use a single graph for both the path check and the transpile calls so the
@@ -274,9 +274,9 @@ braket_gate_set = set(braket_gates_dict.keys())
 qiskit_gate_set = set(qiskit_gates_dict.keys())
 cirq_gate_set = set(cirq_gates_dict.keys())
 
-intersect_braket_qiskit = list(braket_gate_set.intersection(list(qiskit_gate_set)))
-intersect_qiskit_cirq = list(qiskit_gate_set.intersection(list(cirq_gate_set)))
-intersect_cirq_braket = list(cirq_gate_set.intersection(list(braket_gate_set)))
+intersect_braket_qiskit = sorted(braket_gate_set.intersection(list(qiskit_gate_set)))
+intersect_qiskit_cirq = sorted(qiskit_gate_set.intersection(list(cirq_gate_set)))
+intersect_cirq_braket = sorted(cirq_gate_set.intersection(list(braket_gate_set)))
 
 # skipping
 intersect_braket_qiskit.remove("RXX")
@@ -335,12 +335,12 @@ def test_gate_intersect_braket_cirq(gate_str):
     assert_allclose_up_to_global_phase(braket_u, braket_transpile_u, atol=1e-7)
 
 
-yes_braket_no_qiskit = list(set(braket_gates_dict).difference(qiskit_gates_dict))
-yes_qiskit_no_braket = list(set(qiskit_gates_dict).difference(braket_gates_dict))
-yes_braket_no_cirq = list(set(braket_gates_dict).difference(cirq_gates_dict))
-yes_cirq_no_braket = list(set(cirq_gates_dict).difference(braket_gates_dict))
-yes_cirq_no_qiskit = list(set(cirq_gates_dict).difference(qiskit_gates_dict))
-yes_qiskit_no_cirq = list(set(qiskit_gates_dict).difference(cirq_gates_dict))
+yes_braket_no_qiskit = sorted(set(braket_gates_dict).difference(qiskit_gates_dict))
+yes_qiskit_no_braket = sorted(set(qiskit_gates_dict).difference(braket_gates_dict))
+yes_braket_no_cirq = sorted(set(braket_gates_dict).difference(cirq_gates_dict))
+yes_cirq_no_braket = sorted(set(cirq_gates_dict).difference(braket_gates_dict))
+yes_cirq_no_qiskit = sorted(set(cirq_gates_dict).difference(qiskit_gates_dict))
+yes_qiskit_no_cirq = sorted(set(qiskit_gates_dict).difference(cirq_gates_dict))
 
 # Gates that cannot currently be transpiled from Qiskit to Braket/Cirq (e.g. due
 # to missing decompositions). Previously held ["RCCX", "RXX", "RYY", "RZX",
