@@ -36,6 +36,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Sparse-indexed pyQuil programs now raise an actionable unitary error that points to the supported qubit-compaction options instead of leaking a low-level permutation failure.
 - Fixed `openqasm3_to_pyquil` raising `AttributeError` for programs addressing physical qubits (`x $0;`) rather than a declared register. Physical qubit indices now pass through verbatim and are not identity-padded, since such a program is already mapped to specific hardware ([#1286](https://github.com/qBraid/qBraid/pull/1286))
 - Fixed OpenQuantum `prepare_job` / `get_preparation_result` / `create_job` failing without a clear message when the API rejected the request. Responses are now parsed for the error `type`, mapping `TERMS_OF_USE_REQUIRED` to a `QbraidRuntimeError` pointing at https://www.openquantum.com, and other failures to a message including HTTP status, error type, and API detail ([#1282](https://github.com/qBraid/qBraid/pull/1282))
 - Fixed `RigettiJob.status()` discarding the reason a job failed, leaving callers that persist failure reasons with nothing to store. A non-timeout `QpuApiError` from `retrieve_results` is now logged, and its message recorded on the returned status and on a new `RigettiJob.status_message` property that is safe to read under concurrent polling ([#1278](https://github.com/qBraid/qBraid/pull/1278))
