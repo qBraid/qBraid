@@ -82,6 +82,14 @@ def test_remove_idle_qubits_noop_when_contiguous():
     assert sorted(program.program.get_qubits()) == [0, 1]
 
 
+def test_sparse_qubit_unitary_error_is_actionable():
+    """Sparse qubit indices raise an error that explains how to compact them."""
+    program = PyQuilProgram(Program(H(0), CNOT(0, 2)))
+
+    with pytest.raises(ValueError, match=r"got \[0, 2\].*index_contig=True"):
+        program.unitary()
+
+
 def test_reverse_qubit_order():
     """Reversing qubit order swaps the qubit indices of every instruction."""
     program = PyQuilProgram(Program(H(0), CNOT(0, 1)))
