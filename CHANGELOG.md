@@ -23,6 +23,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added `QbraidDevice.best_qubits(num_qubits, gate=None)`, selecting the connected chain of physical qubits that maximizes estimated fidelity from live calibration data (readout, single-qubit, and two-qubit gate errors). Returns qubits in path order for use with e.g. Qiskit's `initial_layout`; returns `None` for devices without calibration data ([#1293](https://github.com/qBraid/qBraid/pull/1293))
 - Added `qbraid.visualization.plot_connectivity_graph`, rendering a device's connectivity graph colored by live calibration data (edges by two-qubit gate error, nodes by readout error). Layout follows the device's `topology` config, with a force-directed fallback for unknown types. The `lattice_positions` helper is exported for custom plots ([#1281](https://github.com/qBraid/qBraid/pull/1281), [#1283](https://github.com/qBraid/qBraid/pull/1283))
 - Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing device calibration data (per-edge two-qubit gate errors, per-qubit metrics, timestamps) and the physical connectivity graph derived from it. Useful for hand-placing circuits on paths that bypass quilc. Both return `None`-equivalents for devices without published calibration data ([#1281](https://github.com/qBraid/qBraid/pull/1281))
 
