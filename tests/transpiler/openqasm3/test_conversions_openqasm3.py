@@ -24,9 +24,10 @@ import pytest
 try:
     from openqasm3 import ast
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, T, U, X
+    from pyquil.gates import CNOT, CPHASE, CZ, RX, RZ, H, I, S, T, U, X
 
     from qbraid.interface import circuits_allclose
+    from qbraid.transpiler import transpile
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import (
         _branch_target,
         _duration_seconds,
@@ -292,6 +293,78 @@ def test_openqasm3_to_pyquil_two_qubit_registers():
     """
     result = openqasm3_to_pyquil(qasm)
     assert circuits_allclose(result, Program(X(0), X(1)), strict_gphase=True)
+
+
+def test_openqasm3_to_pyquil_physical_qubits():
+    """Physical qubits (``$n``) map straight onto the matching pyQuil index."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    x $0;
+    cz $0, $1;
+    """
+    result = openqasm3_to_pyquil(qasm)
+    assert circuits_allclose(result, Program(X(0), CZ(0, 1)), strict_gphase=True)
+
+
+def test_openqasm3_to_pyquil_physical_qubits_not_renumbered():
+    """Physical qubit indices are preserved verbatim, not compacted or padded.
+
+    A hardware-mapped program names the qubits it wants; rewriting ``$13`` to a
+    dense index would silently retarget the circuit onto different hardware.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    bit[2] c;
+    x $4;
+    cz $4, $13;
+    delay[8ns] $4;
+    c[0] = measure $4;
+    c[1] = measure $13;
+    """
+    out = openqasm3_to_pyquil(qasm).out()
+    assert "X 4" in out
+    assert "CZ 4 13" in out
+    assert "DELAY 4 8e-9" in out
+    assert "MEASURE 4 ro[0]" in out
+    assert "MEASURE 13 ro[1]" in out
+    # no identity padding across the unused 0..12 range
+    assert " I " not in out
+    assert not any(line.startswith("I ") for line in out.splitlines())
+
+
+def test_transpile_physical_qubits_to_pyquil():
+    """The public ``transpile()`` entry point carries physical qubits through intact.
+
+    Guards route selection as much as the conversion itself: neither the
+    ``qasm3 -> cirq`` nor the ``qasm3 -> braket`` route can represent ``$n``, so
+    this fails if the graph stops preferring ``qasm3 -> openqasm3 -> pyquil``, and
+    covers the qasm3 input normalization that the direct-conversion test bypasses.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    bit[2] c;
+    x $4;
+    cz $4, $13;
+    delay[8ns] $4;
+    c[0] = measure $4;
+    c[1] = measure $13;
+    """
+    # compared as emitted Quil rather than via circuits_allclose, because a unitary
+    # comparison is blind to the absolute indices this test exists to pin. On sparse
+    # indices it errors outright, and with index_contig=True it compacts both sides
+    # first -- which passes against a renumbered Program(X(0), CZ(0, 1)) and so cannot
+    # catch a regression that silently retargets the circuit.
+    assert transpile(qasm, "pyquil").out().splitlines() == [
+        "DECLARE ro BIT[2]",
+        "X 4",
+        "CZ 4 13",
+        "DELAY 4 8e-9",
+        "MEASURE 4 ro[0]",
+        "MEASURE 13 ro[1]",
+    ]
 
 
 def test_openqasm3_to_pyquil_measure_without_target():

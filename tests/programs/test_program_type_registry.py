@@ -21,6 +21,7 @@ Unit test for quantum program registry
 import random
 import string
 import sys
+import threading
 import unittest.mock
 
 import pytest
@@ -272,3 +273,60 @@ def test_get_native_experiment_type_not_found():
     with pytest.raises(ValueError) as excinfo:
         get_native_experiment_type("not_found")
     assert "Entry point 'not_found' not found in 'qbraid.programs'." in str(excinfo.value)
+
+
+def test_concurrent_registration_thread_safe():
+    """Registering/unregistering concurrently must not corrupt the shared registry.
+
+    Regression test for #787: the (un)register functions iterate over
+    ``QPROGRAM_REGISTRY`` while it may be mutated by another thread, which
+    previously raised ``RuntimeError: dictionary changed size during iteration``.
+    """
+    errors: list[Exception] = []
+    stop = threading.Event()
+    # Dedicated "churn" aliases rapidly change the registry's size, widening the
+    # window for another thread to iterate the dict mid-mutation.
+    churn_aliases = [generate_unique_key(QPROGRAM_REGISTRY) for _ in range(50)]
+    reg_aliases = [generate_unique_key(QPROGRAM_REGISTRY) for _ in range(8)]
+
+    def churner() -> None:
+        i = 0
+        while not stop.is_set():
+            alias = churn_aliases[i % len(churn_aliases)]
+            try:
+                register_program_type(int, alias=alias, overwrite=True)
+                unregister_program_type(alias, raise_error=False)
+            except Exception as err:  # pylint: disable=broad-except
+                errors.append(err)
+            i += 1
+
+    def registrar(alias: str) -> None:
+        # A distinct program type so the "type already registered under another
+        # alias" iteration path over QPROGRAM_REGISTRY is exercised every call.
+        program_type = type(f"Custom_{alias}", (), {})
+        try:
+            for _ in range(2000):
+                register_program_type(program_type, alias=alias, overwrite=True)
+                assert QPROGRAM_REGISTRY.get(alias) is program_type
+                unregister_program_type(alias, raise_error=False)
+        except Exception as err:  # pylint: disable=broad-except
+            errors.append(err)
+
+    churn_threads = [threading.Thread(target=churner) for _ in range(4)]
+    reg_threads = [threading.Thread(target=registrar, args=(alias,)) for alias in reg_aliases]
+    try:
+        for thread in churn_threads:
+            thread.start()
+        for thread in reg_threads:
+            thread.start()
+        for thread in reg_threads:
+            thread.join()
+        stop.set()
+        for thread in churn_threads:
+            thread.join()
+
+        assert not errors, f"Concurrent registration raised: {errors[:3]}"
+    finally:
+        stop.set()
+        for alias in churn_aliases + reg_aliases:
+            unregister_program_type(alias, raise_error=False)

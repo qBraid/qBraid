@@ -166,6 +166,9 @@ When you are ready to submit a PR:
 - **Title**: Choose a title that is short, detailed, and easily understandable.
 - **Description**: Provide a brief description of the changes. Include the context and motivation behind the PR, if relevant.
 - **Link Issues**: If your PR resolves an open issue, link it using the keyword "Closes" followed by the issue number (e.g., `Closes #123`).
+- **Changelog**: Add an entry under the relevant heading in the `[Unreleased]` section of [CHANGELOG.md](CHANGELOG.md), following the style notes at the top of that file. Keep it to one or two sentences describing the user-visible change, and link your PR. Detail about root cause, diagnosis, and implementation belongs in the PR description, not the changelog.
+
+Writing the changelog entry by hand, either in the original commit or as a follow-up, is the normal path. If you are a maintainer and forgot one, commenting `/update-changelog` on the PR will draft the entries from the diff and push them to your branch. It is a convenience, not a required step, and the result is worth a read before merging.
 
 Remember, it's perfectly fine to submit a draft pull request if your code is still a work-in-progress. We're here to help!
 

@@ -17,6 +17,7 @@ Module for registering custom program types and aliases
 
 """
 import sys
+import threading
 from typing import Any, Optional, Type, TypeVar, Union
 
 from qbraid._entrypoints import get_entrypoints
@@ -31,6 +32,14 @@ QPROGRAM_ALIASES = _QPROGRAM_ALIASES
 QPROGRAM_TYPES = _QPROGRAM_TYPES
 
 QPROGRAM = TypeVar("QPROGRAM", bound=Any)
+
+# Serializes concurrent mutations of the shared global registry structures
+# (QPROGRAM_REGISTRY, QPROGRAM_ALIASES, QPROGRAM_TYPES). Reentrant so that a
+# locked function may safely call another locked function. This prevents
+# data-structure corruption (e.g. "dictionary changed size during iteration")
+# under concurrent (un)registration; it does not impose any ordering on which
+# competing writer "wins" a contested alias.
+_REGISTRY_LOCK = threading.RLock()
 
 
 def derive_program_type_alias(program_type: Type[Any], use_submodule: bool = False) -> str:
@@ -100,45 +109,49 @@ def register_program_type(
 
     normalized_alias = alias.lower()
 
-    # Check if the alias is already used and if it maps to a different type
-    if normalized_alias in QPROGRAM_REGISTRY:
-        registered_type = QPROGRAM_REGISTRY[normalized_alias]
-        if registered_type != program_type and overwrite is False:
-            if (
-                isinstance(registered_type, QbraidMetaType)
-                and program_type == registered_type.__bound__
-            ):
-                program_type = registered_type
+    with _REGISTRY_LOCK:
+        # Check if the alias is already used and if it maps to a different type
+        if normalized_alias in QPROGRAM_REGISTRY:
+            registered_type = QPROGRAM_REGISTRY[normalized_alias]
+            if registered_type != program_type and overwrite is False:
+                if (
+                    isinstance(registered_type, QbraidMetaType)
+                    and program_type == registered_type.__bound__
+                ):
+                    program_type = registered_type
+                else:
+                    raise ValueError(
+                        f"Alias '{alias}' is already registered with a different type."
+                    )
+
+        # Check if the type is already registered under any other alias
+        existing_alias = next((k for k, v in QPROGRAM_REGISTRY.items() if v == program_type), None)
+        if existing_alias and existing_alias != normalized_alias and overwrite is False:
+            if program_type is str:
+                str_types = [
+                    k
+                    for k, v in QPROGRAM_REGISTRY.items()
+                    if v is str and k not in ("qasm2", "qasm3", "qasm2_kirin")
+                ]
+                if (
+                    len(str_types) >= 1
+                    and normalized_alias not in str_types
+                    and normalized_alias not in ("qasm2", "qasm3", "qasm2_kirin")
+                ):
+                    raise ValueError(
+                        "Cannot register more than one additional 'str' type beyond "
+                        "'qasm2', 'qasm3', and 'qasm2_kirin'."
+                    )
             else:
-                raise ValueError(f"Alias '{alias}' is already registered with a different type.")
-
-    # Check if the type is already registered under any other alias
-    existing_alias = next((k for k, v in QPROGRAM_REGISTRY.items() if v == program_type), None)
-    if existing_alias and existing_alias != normalized_alias and overwrite is False:
-        if program_type is str:
-            str_types = [
-                k
-                for k, v in QPROGRAM_REGISTRY.items()
-                if v is str and k not in ("qasm2", "qasm3", "qasm2_kirin")
-            ]
-            if (
-                len(str_types) >= 1
-                and normalized_alias not in str_types
-                and normalized_alias not in ("qasm2", "qasm3", "qasm2_kirin")
-            ):
                 raise ValueError(
-                    "Cannot register more than one additional 'str' type beyond "
-                    "'qasm2', 'qasm3', and 'qasm2_kirin'."
+                    f"Program type '{program_type}' already registered under "
+                    f"alias '{existing_alias}'."
                 )
-        else:
-            raise ValueError(
-                f"Program type '{program_type}' already registered under alias '{existing_alias}'."
-            )
 
-    # Register the new type and alias
-    QPROGRAM_REGISTRY[normalized_alias] = program_type
-    QPROGRAM_ALIASES.add(normalized_alias)
-    QPROGRAM_TYPES.add(program_type)
+        # Register the new type and alias
+        QPROGRAM_REGISTRY[normalized_alias] = program_type
+        QPROGRAM_ALIASES.add(normalized_alias)
+        QPROGRAM_TYPES.add(program_type)
 
 
 def unregister_program_type(alias: str, raise_error: bool = True) -> None:
@@ -154,17 +167,18 @@ def unregister_program_type(alias: str, raise_error: bool = True) -> None:
     """
     normalized_alias = alias.lower()
 
-    QPROGRAM_ALIASES.discard(normalized_alias)
+    with _REGISTRY_LOCK:
+        QPROGRAM_ALIASES.discard(normalized_alias)
 
-    if normalized_alias not in QPROGRAM_REGISTRY:
-        if raise_error:
-            raise KeyError(f"No program type registered under the alias '{alias}'.")
-        return
+        if normalized_alias not in QPROGRAM_REGISTRY:
+            if raise_error:
+                raise KeyError(f"No program type registered under the alias '{alias}'.")
+            return
 
-    program_type = QPROGRAM_REGISTRY.pop(normalized_alias)
+        program_type = QPROGRAM_REGISTRY.pop(normalized_alias)
 
-    if not any(pt == program_type for pt in QPROGRAM_REGISTRY.values()):
-        QPROGRAM_TYPES.discard(program_type)
+        if not any(pt == program_type for pt in QPROGRAM_REGISTRY.values()):
+            QPROGRAM_TYPES.discard(program_type)
 
 
 def is_registered_alias_native(alias: str) -> bool:

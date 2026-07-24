@@ -87,12 +87,22 @@ _GATE_MAP = {
 _NATIVE_EXTERNAL_GATES = ["cp", "iswap", "rxx", "ryy", "rzz", "xy", "cswap"]
 
 
-def _flat_qubit(qubit: ast.IndexedIdentifier, offsets: dict[str, int]) -> int:
+def _flat_qubit(qubit: ast.IndexedIdentifier | ast.Identifier, offsets: dict[str, int]) -> int:
     """Map an (unrolled) qubit reference to a flat pyQuil integer index.
 
-    After ``pyqasm.unroll()`` every qubit reference is an ``IndexedIdentifier``
-    (single-qubit registers are normalized to ``name[0]``).
+    After ``pyqasm.unroll()`` a register reference is an ``IndexedIdentifier``
+    (single-qubit registers are normalized to ``name[0]``), so its flat index is
+    the register offset plus the subscript.
+
+    A physical qubit (``$3``) has no declaring register: it stays a plain
+    ``Identifier`` whose ``name`` is the literal string ``"$3"``. Quil is itself
+    integer-indexed, so the number after ``$`` *is* the target index. It is used
+    verbatim, since renumbering it would retarget the circuit onto different hardware.
     """
+    if isinstance(qubit, ast.Identifier):
+        if not qubit.name.startswith("$"):
+            raise ProgramConversionError(f"Unsupported qubit reference: {qubit.name}")
+        return int(qubit.name[1:])
     return offsets[qubit.name.name] + qubit.indices[0][0].value
 
 
@@ -140,6 +150,11 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
     ``FENCE``), ``reset`` (-> ``RESET``), ``delay`` (-> ``DELAY``), and ``if (c == 0|1)``
     classical feedforward (-> conditional ``JUMP-WHEN``). Declared-but-idle qubits are
     padded with identity so the operator dimension matches the source register width.
+
+    Qubits may be addressed either through a declared register (``qubit[2] q; h q[0];``)
+    or as physical qubits (``h $0;``). Physical qubit indices are passed through
+    verbatim and are not padded, since such a program is already mapped to specific
+    hardware qubits.
 
     Args:
         program (str or openqasm3.ast.Program): OpenQASM 3 program to convert.
