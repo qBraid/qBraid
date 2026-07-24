@@ -58,9 +58,7 @@ def _get_device_entry(device_name: str):
     return matching_rows.iloc[0]
 
 
-def _build_profile(
-    device_id: str, backend_info: BackendInfo, nexus_hosted: bool
-) -> TargetProfile:
+def _build_profile(device_id: str, backend_info: BackendInfo, nexus_hosted: bool) -> TargetProfile:
     """Build a TargetProfile from a Quantinuum device name and backend info."""
     # pylint: disable-next=import-outside-toplevel
     from pytket import Circuit
