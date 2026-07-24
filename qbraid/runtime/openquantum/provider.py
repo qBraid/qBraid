@@ -96,9 +96,7 @@ class OpenQuantumSession(Session):
         try:
             payload = response.json()
             error_type = payload.get("type")
-            message = OpenQuantumSession._format_api_message(
-                payload.get("message", response.text)
-            )
+            message = OpenQuantumSession._format_api_message(payload.get("message", response.text))
         except ValueError:
             message = response.text or None
 
