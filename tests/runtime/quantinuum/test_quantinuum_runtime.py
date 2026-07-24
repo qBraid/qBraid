@@ -85,8 +85,7 @@ class TestQuantinuumProvider:
         backend_info = _make_backend_info()
         df_mock = MagicMock()
         df_mock.loc.__getitem__.return_value.empty = False
-        row = MagicMock()
-        row.__getitem__.return_value = backend_info
+        row = {"backend_info": backend_info, "nexus_hosted": True}
         df_mock.loc.__getitem__.return_value.iloc.__getitem__.return_value = row
         mock_get_all.return_value.df.return_value = df_mock
 
@@ -96,6 +95,7 @@ class TestQuantinuumProvider:
         assert isinstance(device, QuantinuumDevice)
         assert device.id == "H1-1E"
         assert device.profile.simulator is True
+        assert device.profile.nexus_hosted is True
 
     @patch("qnexus.devices.get_all")
     def test_get_device_not_found_raises(self, mock_get_all):
@@ -115,8 +115,8 @@ class TestQuantinuumProvider:
         once per row (the earlier N+1 pattern that round-tripped through
         ``get_device``/``_get_backend_info``)."""
         backend_info = _make_backend_info()
-        row_a = {"device_name": "H1-1E", "backend_info": backend_info}
-        row_b = {"device_name": "H2-1", "backend_info": backend_info}
+        row_a = {"device_name": "H1-1E", "backend_info": backend_info, "nexus_hosted": True}
+        row_b = {"device_name": "H2-1", "backend_info": backend_info, "nexus_hosted": False}
 
         df_mock = MagicMock()
         df_mock.iterrows.return_value = iter([(0, row_a), (1, row_b)])
@@ -144,7 +144,7 @@ class TestQuantinuumProvider:
 # --- Device ---
 
 
-def _make_device(device_id: str = "H1-1E", simulator: bool = True):
+def _make_device(device_id: str = "H1-1E", simulator: bool = True, nexus_hosted: bool = False):
     """Helper to create a QuantinuumDevice with a mocked profile.
 
     The base :class:`QuantumDevice.id` property reads ``self.profile.device_id``,
@@ -155,6 +155,7 @@ def _make_device(device_id: str = "H1-1E", simulator: bool = True):
     profile.device_id = device_id
     profile.simulator = simulator
     profile.backend_info = backend_info
+    profile.nexus_hosted = nexus_hosted
     return QuantinuumDevice(profile=profile)
 
 
@@ -167,6 +168,16 @@ class TestQuantinuumDevice:
     def test_backend_info_accessor(self):
         device = _make_device()
         assert device.backend_info is device.profile.backend_info
+
+    @patch("qnexus.devices.status")
+    @patch("qnexus.models.QuantinuumConfig")
+    def test_status_nexus_hosted_always_online(self, _mock_config, mock_status):
+        """Cloud-hosted emulators (e.g. 'H2-Emulator') have no machine status
+        endpoint (it 400s with 'Invalid machine name'), so they must report
+        ONLINE without calling it."""
+        device = _make_device(device_id="H2-Emulator", nexus_hosted=True)
+        assert device.status() == DeviceStatus.ONLINE
+        mock_status.assert_not_called()
 
     @patch("qnexus.devices.status")
     @patch("qnexus.models.QuantinuumConfig")
