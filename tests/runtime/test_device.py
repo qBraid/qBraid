@@ -1080,3 +1080,140 @@ def test_coupling_map_cached_per_device(mock_profile):
 
     assert first == second
     client.get_device_calibrations.assert_called_once()
+
+
+# ===========================================================================
+# Device best qubits selection
+# ===========================================================================
+
+
+def _calibration(qubits: dict, cz_edges: list, **extra_gates) -> DeviceCalibration:
+    """Compact builder: qubits maps id -> (readout_error, rb_error), edges are
+    (source, target, error) triples keyed by gate name."""
+    gate_error = {"cz": [{"source": s, "target": t, "value": v} for s, t, v in cz_edges]}
+    for gate_name, edges in extra_gates.items():
+        gate_error[gate_name] = [{"source": s, "target": t, "value": v} for s, t, v in edges]
+    return DeviceCalibration.model_validate(
+        {
+            "physicalDeviceId": "rigetti:Cepheus-1-108Q",
+            "deviceQRNs": [CEPHEUS_QRN],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-07-21T18:55:46+00:00",
+            "fetchedAt": "2026-07-21T19:00:18.386133+00:00",
+            "qubits": {
+                str(q): {"readoutError": ro, "gateError": {"rb": rb}}
+                for q, (ro, rb) in qubits.items()
+            },
+            "edges": {"gateError": gate_error},
+        }
+    )
+
+
+def _device_with(calibration: DeviceCalibration | None, mock_profile) -> QbraidDevice:
+    client = Mock()
+    client.get_device_calibrations.return_value = calibration
+    return QbraidDevice(profile=mock_profile, client=client)
+
+
+def test_best_qubits_none_without_calibration(mock_profile):
+    """best_qubits is None when the device has no calibration data."""
+    device = _device_with(None, mock_profile)
+    assert device.best_qubits(2) is None
+
+
+def test_best_qubits_rejects_non_positive(mock_profile):
+    """num_qubits must be a positive integer."""
+    device = _device_with(_cepheus_calibration(), mock_profile)
+    with pytest.raises(ValueError, match="positive integer"):
+        device.best_qubits(0)
+
+
+def test_best_qubits_single_by_combined_qubit_metrics(mock_profile):
+    """n=1 picks the qubit with the best combined readout and gate fidelity."""
+    calibration = _calibration(
+        {0: (0.04, 0.002), 1: (0.01, 0.001), 2: (0.02, 0.001)},
+        [(0, 1, 0.01), (1, 2, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(1) == (1,)
+
+
+def test_best_qubits_pair_prefers_lowest_edge_error(mock_profile):
+    """With equal qubit metrics, the pair with the lowest edge error wins."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.03), (2, 3, 0.008)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+def test_best_qubits_folds_readout_into_edge_choice(mock_profile):
+    """With equal edge errors, the pair whose qubits read out better wins."""
+    calibration = _calibration(
+        {0: (0.05, 0.001), 1: (0.05, 0.001), 2: (0.01, 0.001), 3: (0.01, 0.001)},
+        [(0, 1, 0.01), (2, 3, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+def test_best_qubits_chain_avoids_bad_edge(mock_profile):
+    """Chain search routes around a high-error edge."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.005), (1, 2, 0.1), (1, 3, 0.005)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(3) == (0, 1, 3)
+
+
+def test_best_qubits_edge_uses_best_gate_by_default(mock_profile):
+    """Each edge takes its lowest error across calibrated gates unless pinned."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.05), (2, 3, 0.02)],
+        iswap=[(0, 1, 0.005)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (0, 1)
+    assert device.best_qubits(2, gate="cz") == (2, 3)
+
+
+def test_best_qubits_unknown_gate_raises(mock_profile):
+    """Requesting a gate with no calibrated edges raises with the options."""
+    device = _device_with(_cepheus_calibration(), mock_profile)
+    with pytest.raises(ValueError, match="Available gates.*cz.*iswap"):
+        device.best_qubits(2, gate="xy")
+
+
+def test_best_qubits_all_to_all_ranks_qubits(mock_profile):
+    """Devices with qubit metrics but no edges return the n best qubits."""
+    calibration = _calibration(
+        {0: (0.05, 0.002), 1: (0.01, 0.001), 2: (0.02, 0.001)},
+        [],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (1, 2)
+
+
+def test_best_qubits_no_chain_long_enough_raises(mock_profile):
+    """Disconnected coupling graph with no path of the requested length raises."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.01), (2, 3, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="No connected chain of 3 qubits"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_excludes_dead_edges(mock_profile):
+    """Edges at 100% error are unusable and never selected."""
+    calibration = _calibration(
+        {0: (0.02, 0.001), 1: (0.02, 0.001)},
+        [(0, 1, 1.0)],
+    )
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+        device.best_qubits(2)
