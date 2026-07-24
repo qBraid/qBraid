@@ -49,6 +49,7 @@ Writing an entry:
 - Fixed `BraketProvider.get_devices` aborting the entire call with `QbraidError` when any returned device lacks a qBraid-supported program type (e.g. retired D-Wave hardware when `statuses` includes `"RETIRED"`). Such devices are now skipped and the rest returned ([#1244](https://github.com/qBraid/qBraid/pull/1244))
 - Fixed `delay` instructions being silently dropped by `qasm3_to_braket`, so circuits relying on idle time (T1/T2, dynamical decoupling) ran as zero-delay circuits. It now raises `QasmError` rather than returning a circuit that measures the wrong thing ([#1270](https://github.com/qBraid/qBraid/pull/1270))
 - Fixed `ModuleNotFoundError` when building a `ConversionGraph` in an environment where a conversion's extras have an uninstalled parent package. Most visibly, `qbraid.transpiler` could not be imported at all with `pytket` installed but no `pytket` extensions. Such conversions are now marked unsupported and excluded from the graph ([#1264](https://github.com/qBraid/qBraid/pull/1264))
+- Fixed `QuantinuumDevice.status()` raising `ResourceFetchFailed` (400 "Invalid machine name") for cloud-hosted NEXUS emulators such as `H2-Emulator`, which broke `device.run()` since pre-submit validation checks status. Devices now carry a `nexus_hosted` profile flag, and cloud-hosted emulators report `ONLINE` without calling the hardware-only machine status endpoint ([#1295](https://github.com/qBraid/qBraid/pull/1295))
 
 ### Dependencies
 

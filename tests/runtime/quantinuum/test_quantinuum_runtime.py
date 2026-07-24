@@ -31,6 +31,7 @@ pytest.importorskip("pytket", reason="pytket is not installed.")
 # pylint: disable=wrong-import-position
 from qbraid.runtime.enums import DeviceStatus, JobStatus  # noqa: E402
 from qbraid.runtime.exceptions import ResourceNotFoundError  # noqa: E402
+from qbraid.runtime.profile import TargetProfile  # noqa: E402
 from qbraid.runtime.quantinuum import (  # noqa: E402
     QuantinuumDevice,
     QuantinuumJob,
@@ -85,8 +86,7 @@ class TestQuantinuumProvider:
         backend_info = _make_backend_info()
         df_mock = MagicMock()
         df_mock.loc.__getitem__.return_value.empty = False
-        row = MagicMock()
-        row.__getitem__.return_value = backend_info
+        row = {"backend_info": backend_info, "nexus_hosted": True}
         df_mock.loc.__getitem__.return_value.iloc.__getitem__.return_value = row
         mock_get_all.return_value.df.return_value = df_mock
 
@@ -96,6 +96,7 @@ class TestQuantinuumProvider:
         assert isinstance(device, QuantinuumDevice)
         assert device.id == "H1-1E"
         assert device.profile.simulator is True
+        assert device.profile.nexus_hosted is True
 
     @patch("qnexus.devices.get_all")
     def test_get_device_not_found_raises(self, mock_get_all):
@@ -113,10 +114,10 @@ class TestQuantinuumProvider:
     def test_get_devices_makes_single_remote_call(self, mock_get_all):
         """Regression test: ``get_devices`` must not re-fetch the device list
         once per row (the earlier N+1 pattern that round-tripped through
-        ``get_device``/``_get_backend_info``)."""
+        ``get_device``/``_get_device_entry``)."""
         backend_info = _make_backend_info()
-        row_a = {"device_name": "H1-1E", "backend_info": backend_info}
-        row_b = {"device_name": "H2-1", "backend_info": backend_info}
+        row_a = {"device_name": "H1-1E", "backend_info": backend_info, "nexus_hosted": True}
+        row_b = {"device_name": "H2-1", "backend_info": backend_info, "nexus_hosted": False}
 
         df_mock = MagicMock()
         df_mock.iterrows.return_value = iter([(0, row_a), (1, row_b)])
@@ -126,6 +127,8 @@ class TestQuantinuumProvider:
         devices = provider.get_devices()
 
         assert {d.id for d in devices} == {"H1-1E", "H2-1"}
+        # Per-row nexus_hosted flags propagate into each device's profile.
+        assert {d.id: d.profile.nexus_hosted for d in devices} == {"H1-1E": True, "H2-1": False}
         # Single API call for the entire list, not one-per-row.
         mock_get_all.assert_called_once()
 
@@ -144,7 +147,7 @@ class TestQuantinuumProvider:
 # --- Device ---
 
 
-def _make_device(device_id: str = "H1-1E", simulator: bool = True):
+def _make_device(device_id: str = "H1-1E", simulator: bool = True, nexus_hosted: bool = False):
     """Helper to create a QuantinuumDevice with a mocked profile.
 
     The base :class:`QuantumDevice.id` property reads ``self.profile.device_id``,
@@ -155,6 +158,7 @@ def _make_device(device_id: str = "H1-1E", simulator: bool = True):
     profile.device_id = device_id
     profile.simulator = simulator
     profile.backend_info = backend_info
+    profile.nexus_hosted = nexus_hosted
     return QuantinuumDevice(profile=profile)
 
 
@@ -167,6 +171,33 @@ class TestQuantinuumDevice:
     def test_backend_info_accessor(self):
         device = _make_device()
         assert device.backend_info is device.profile.backend_info
+
+    @patch("qnexus.devices.status")
+    @patch("qnexus.models.QuantinuumConfig")
+    def test_status_nexus_hosted_always_online(self, _mock_config, mock_status):
+        """Cloud-hosted emulators (e.g. 'H2-Emulator') have no machine status
+        endpoint (it 400s with 'Invalid machine name'), so they must report
+        ONLINE without calling it."""
+        device = _make_device(device_id="H2-Emulator", nexus_hosted=True)
+        assert device.status() == DeviceStatus.ONLINE
+        mock_status.assert_not_called()
+
+    @patch("qnexus.devices.status")
+    @patch("qnexus.models.QuantinuumConfig")
+    def test_status_missing_nexus_hosted_falls_back_to_endpoint(self, _mock_config, mock_status):
+        """Profiles built before the ``nexus_hosted`` extra existed (e.g. cached
+        or hand-constructed) must keep the pre-fix behavior of querying the
+        machine status endpoint. Uses a real ``TargetProfile`` because a
+        ``MagicMock`` profile would auto-create the attribute."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.client.devices import DeviceStateEnum
+
+        mock_status.return_value = DeviceStateEnum.ONLINE
+        profile = TargetProfile(device_id="H1-1", simulator=False)
+        device = QuantinuumDevice(profile=profile)
+
+        assert device.status() == DeviceStatus.ONLINE
+        mock_status.assert_called_once()
 
     @patch("qnexus.devices.status")
     @patch("qnexus.models.QuantinuumConfig")

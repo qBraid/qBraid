@@ -40,8 +40,11 @@ def _fetch_quantinuum_devices_df():
     return qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
 
 
-def _get_backend_info(device_name: str) -> BackendInfo:
-    """Fetch the pytket BackendInfo for a specific Quantinuum device."""
+def _get_device_entry(device_name: str):
+    """Fetch a device's entry (name, backend info, hosting) from the NEXUS device list.
+
+    Returns the matching row of the qnexus devices dataframe.
+    """
     df = _fetch_quantinuum_devices_df()
     matching_rows = df.loc[df["device_name"] == device_name]
 
@@ -52,10 +55,10 @@ def _get_backend_info(device_name: str) -> BackendInfo:
             f"Available devices: {available_devices}"
         )
 
-    return matching_rows.iloc[0]["backend_info"]
+    return matching_rows.iloc[0]
 
 
-def _build_profile(device_id: str, backend_info: BackendInfo) -> TargetProfile:
+def _build_profile(device_id: str, backend_info: BackendInfo, nexus_hosted: bool) -> TargetProfile:
     """Build a TargetProfile from a Quantinuum device name and backend info."""
     # pylint: disable-next=import-outside-toplevel
     from pytket import Circuit
@@ -68,8 +71,11 @@ def _build_profile(device_id: str, backend_info: BackendInfo) -> TargetProfile:
         num_qubits=len(backend_info.architecture.nodes),
         program_spec=ProgramSpec(Circuit, alias="pytket"),
         provider_name="quantinuum",
-        # Extras: accessible via ``device.profile.backend_info``.
+        # Extras: accessible via ``device.profile.backend_info`` etc.
         backend_info=backend_info,
+        # Cloud-hosted (Nexus-hosted) devices have no machine status endpoint
+        # and are assumed always online.
+        nexus_hosted=nexus_hosted,
     )
 
 
@@ -86,8 +92,10 @@ class QuantinuumProvider(QuantumProvider):
     def get_device(self, device_id: str) -> QuantinuumDevice:
         """Get a specific Quantinuum device."""
         device_id = device_id.strip()
-        backend_info = _get_backend_info(device_id)
-        return QuantinuumDevice(profile=_build_profile(device_id, backend_info))
+        entry = _get_device_entry(device_id)
+        return QuantinuumDevice(
+            profile=_build_profile(device_id, entry["backend_info"], bool(entry["nexus_hosted"]))
+        )
 
     @cached_method
     def get_devices(self) -> list[QuantinuumDevice]:  # pylint: disable=arguments-differ
@@ -101,7 +109,9 @@ class QuantinuumProvider(QuantumProvider):
         df = _fetch_quantinuum_devices_df()
         return [
             QuantinuumDevice(
-                profile=_build_profile(row["device_name"], row["backend_info"]),
+                profile=_build_profile(
+                    row["device_name"], row["backend_info"], bool(row["nexus_hosted"])
+                ),
             )
             for _, row in df.iterrows()
         ]

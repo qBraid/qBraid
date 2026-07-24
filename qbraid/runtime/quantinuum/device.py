@@ -57,6 +57,11 @@ class QuantinuumDevice(QuantumDevice):
 
     def status(self) -> DeviceStatus:
         """Return the current status of the Quantinuum device."""
+        # The NEXUS machine status endpoint only supports hardware-hosted
+        # devices; cloud-hosted (Nexus-hosted) emulators are always online.
+        if getattr(self.profile, "nexus_hosted", False):
+            return DeviceStatus.ONLINE
+
         # pylint: disable=import-outside-toplevel
         import qnexus as qnx
         from qnexus.client.devices import DeviceStateEnum
