@@ -71,6 +71,7 @@ def test_get_providers():
             "pasqal",
             "qbraid",
             "quantinuum",
+            "qudora",
             "rigetti",
         ]
     )
