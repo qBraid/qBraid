@@ -205,6 +205,12 @@ _lazy = {
         "QuantinuumDevice",
         "QuantinuumJob",
     ],
+    "qudora": [
+        "QudoraSession",
+        "QudoraProvider",
+        "QudoraDevice",
+        "QudoraJob",
+    ],
     "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
@@ -262,6 +268,10 @@ if TYPE_CHECKING:
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .qudora import QudoraDevice as QudoraDevice
+    from .qudora import QudoraJob as QudoraJob
+    from .qudora import QudoraProvider as QudoraProvider
+    from .qudora import QudoraSession as QudoraSession
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider
