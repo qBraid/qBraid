@@ -36,6 +36,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed OpenQuantum Terms of Use errors never reaching the intended `QbraidRuntimeError`: `qbraid_core.Session` assumed API `message` was a string and crashed with `'list' object has no attribute 'endswith'` when Open Quantum returned a list.
 - Pinned the format-check `ruff` to `<0.16`: ruff 0.16.0 changed its default lint rules and flags ~742 pre-existing issues repo-wide, breaking CI format checks for every PR
 - Fixed `openqasm3_to_pyquil` raising `AttributeError` for programs addressing physical qubits (`x $0;`) rather than a declared register. Physical qubit indices now pass through verbatim and are not identity-padded, since such a program is already mapped to specific hardware ([#1286](https://github.com/qBraid/qBraid/pull/1286))
 - Fixed OpenQuantum `prepare_job` / `get_preparation_result` / `create_job` failing without a clear message when the API rejected the request. Responses are now parsed for the error `type`, mapping `TERMS_OF_USE_REQUIRED` to a `QbraidRuntimeError` pointing at https://www.openquantum.com, and other failures to a message including HTTP status, error type, and API detail ([#1282](https://github.com/qBraid/qBraid/pull/1282))

@@ -93,7 +93,12 @@ class OpenQuantumJob(QuantumJob):
         self.wait_for_final_state()
         job_data = self.session.get_job(self.id)
         if job_data.get("status", "") != "Completed":
-            raise QbraidRuntimeError(f"Job failed: {job_data.get('message')}")
+            raw_msg = job_data.get("message")
+            if isinstance(raw_msg, list):
+                detail = "; ".join(str(m) for m in raw_msg) if raw_msg else None
+            else:
+                detail = raw_msg
+            raise QbraidRuntimeError(f"Job failed: {detail}")
 
         results = self.session.download_job_output(self.id)
         data = GateModelResultData(measurement_counts=results)
