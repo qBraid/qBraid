@@ -39,6 +39,25 @@ _CACHE_REGISTRY = []
 CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
 
 
+def _encode_unserializable(obj: Any) -> str:
+    """Fallback encoder for values JSON cannot serialize.
+
+    ``repr`` alone is unsafe as a cache-key fallback: two distinct objects can
+    share an identical ``repr`` (e.g. instances of a class without a custom
+    ``__repr__``, or objects deliberately overriding it), which would collide in
+    the cache. To preserve object uniqueness we combine the type-qualified name
+    with a stable per-object identity component — ``hash(obj)`` when the object
+    is hashable, otherwise ``id(obj)`` — alongside the ``repr`` for readability.
+    """
+    cls = type(obj)
+    type_name = f"{cls.__module__}.{cls.__qualname__}"
+    try:
+        identity = f"hash={hash(obj)}"
+    except TypeError:
+        identity = f"id={id(obj)}"
+    return f"<{type_name} {identity} repr={obj!r}>"
+
+
 def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict) -> str:
     """Generate a cache key based on the class name, instance identity, function name,
     args, and kwargs.
@@ -60,7 +79,7 @@ def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict
         "args": args,
         "kwargs": kwargs,
     }
-    key_str = json.dumps(key_data, sort_keys=True, default=repr)
+    key_str = json.dumps(key_data, sort_keys=True, default=_encode_unserializable)
     return hashlib.sha256(key_str.encode()).hexdigest()
 
 

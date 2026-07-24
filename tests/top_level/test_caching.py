@@ -54,6 +54,34 @@ def test_generate_cache_key(test_instance):
     assert len(key) == 64  # SHA-256 hash length
 
 
+def test_cache_key_distinguishes_objects_with_identical_repr(test_instance):
+    """Distinct non-JSON-serializable args with identical ``repr`` must not collide.
+
+    Regression test: the fallback encoder previously used ``repr`` alone, so two
+    different objects sharing the same ``repr`` string produced the same cache
+    key. The identity-preserving fallback keeps their keys distinct.
+    """
+
+    class SameRepr:
+        """Objects whose ``repr`` is identical but which are distinct instances."""
+
+        __hash__ = object.__hash__
+
+        def __repr__(self):
+            return "SameRepr()"
+
+    obj_a = SameRepr()
+    obj_b = SameRepr()
+    assert repr(obj_a) == repr(obj_b)
+
+    key_a = _generate_cache_key(test_instance, "get_data", (obj_a,), {})
+    key_b = _generate_cache_key(test_instance, "get_data", (obj_b,), {})
+    assert key_a != key_b
+
+    # Same object must still produce a stable, matching key.
+    assert key_a == _generate_cache_key(test_instance, "get_data", (obj_a,), {})
+
+
 def test_clear_cache(test_instance, monkeypatch):
     """Test clearing the LRU cache."""
     monkeypatch.setenv("DISABLE_CACHE", "0")
