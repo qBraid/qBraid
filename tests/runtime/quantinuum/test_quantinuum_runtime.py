@@ -113,7 +113,7 @@ class TestQuantinuumProvider:
     def test_get_devices_makes_single_remote_call(self, mock_get_all):
         """Regression test: ``get_devices`` must not re-fetch the device list
         once per row (the earlier N+1 pattern that round-tripped through
-        ``get_device``/``_get_backend_info``)."""
+        ``get_device``/``_get_device_entry``)."""
         backend_info = _make_backend_info()
         row_a = {"device_name": "H1-1E", "backend_info": backend_info, "nexus_hosted": True}
         row_b = {"device_name": "H2-1", "backend_info": backend_info, "nexus_hosted": False}

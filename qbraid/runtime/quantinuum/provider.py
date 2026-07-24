@@ -40,8 +40,11 @@ def _fetch_quantinuum_devices_df():
     return qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
 
 
-def _get_device_row(device_name: str):
-    """Fetch the device-list dataframe row for a specific Quantinuum device."""
+def _get_device_entry(device_name: str):
+    """Fetch a device's entry (name, backend info, hosting) from the NEXUS device list.
+
+    Returns the matching row of the qnexus devices dataframe.
+    """
     df = _fetch_quantinuum_devices_df()
     matching_rows = df.loc[df["device_name"] == device_name]
 
@@ -91,9 +94,9 @@ class QuantinuumProvider(QuantumProvider):
     def get_device(self, device_id: str) -> QuantinuumDevice:
         """Get a specific Quantinuum device."""
         device_id = device_id.strip()
-        row = _get_device_row(device_id)
+        entry = _get_device_entry(device_id)
         return QuantinuumDevice(
-            profile=_build_profile(device_id, row["backend_info"], bool(row["nexus_hosted"]))
+            profile=_build_profile(device_id, entry["backend_info"], bool(entry["nexus_hosted"]))
         )
 
     @cached_method
