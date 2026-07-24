@@ -72,8 +72,18 @@ class OpenQuantumSession(Session):
         self.management_url = "https://management.openquantum.com"
 
         super().__init__(base_url=self.scheduler_url)
+        self._raise_for_status = False
         self._token = None
         self._token_expires_at = 0
+
+    @staticmethod
+    def _format_api_message(raw: Any) -> Optional[str]:
+        """Normalize API ``message`` values (string or list) to a single string."""
+        if isinstance(raw, list):
+            return "; ".join(str(m) for m in raw) if raw else None
+        if raw:
+            return str(raw)
+        return None
 
     @staticmethod
     def _raise_for_api_error(response: requests.Response) -> None:
@@ -86,11 +96,9 @@ class OpenQuantumSession(Session):
         try:
             payload = response.json()
             error_type = payload.get("type")
-            raw = payload.get("message", response.text)
-            if isinstance(raw, list):
-                message = "; ".join(str(m) for m in raw)
-            elif raw:
-                message = str(raw)
+            message = OpenQuantumSession._format_api_message(
+                payload.get("message", response.text)
+            )
         except ValueError:
             message = response.text or None
 
@@ -139,9 +147,11 @@ class OpenQuantumSession(Session):
             params = {"limit": 100}
             if cursor:
                 params["cursor"] = cursor
-            resp = self.get(url, params=params).json()
-            devices.extend(resp.get("backend_classes", []))
-            cursor = resp.get("pagination", {}).get("next_cursor")
+            resp = self.get(url, params=params)
+            self._raise_for_api_error(resp)
+            body = resp.json()
+            devices.extend(body.get("backend_classes", []))
+            cursor = body.get("pagination", {}).get("next_cursor")
             if not cursor:
                 break
         return devices
@@ -149,20 +159,25 @@ class OpenQuantumSession(Session):
     def get_backend_class_details(self, backend_id: str) -> dict[str, Any]:
         """Get detailed information for a specific backend class."""
         url = f"{self.scheduler_url}/v1/backends/classes/{backend_id}"
-        return self.get(url).json()
+        resp = self.get(url)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def get_user_organizations(self) -> list[dict[str, Any]]:
         """Get user organizations."""
         url = f"{self.management_url}/v1/users/organizations"
-        resp = self.get(url, params={"limit": 10}).json()
-        return resp.get("organizations", [])
+        resp = self.get(url, params={"limit": 10})
+        self._raise_for_api_error(resp)
+        return resp.json().get("organizations", [])
 
     def upload_input(self, content: bytes) -> str:
         """Upload input file content."""
         url = f"{self.scheduler_url}/v1/jobs/upload"
-        resp = self.post(url).json()
-        upload_id = resp["id"]
-        upload_url = resp["url"]
+        resp = self.post(url)
+        self._raise_for_api_error(resp)
+        body = resp.json()
+        upload_id = body["id"]
+        upload_url = body["url"]
         requests.put(upload_url, data=content, timeout=60).raise_for_status()
         return upload_id
 
@@ -189,7 +204,8 @@ class OpenQuantumSession(Session):
             if status == "Completed":
                 return res["quote"]
             if status == "Failed":
-                raise ValueError(f"Job preparation failed: {res.get('message')}")
+                detail = self._format_api_message(res.get("message")) or "unknown error"
+                raise ValueError(f"Job preparation failed: {detail}")
             time.sleep(2)
         raise TimeoutError("Job preparation timed out.")
 
@@ -203,12 +219,15 @@ class OpenQuantumSession(Session):
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Get a specific job."""
         url = f"{self.scheduler_url}/v1/jobs/{job_id}"
-        return self.get(url).json()
+        resp = self.get(url)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def cancel_job(self, job_id: str) -> None:
         """Cancel a job."""
         url = f"{self.scheduler_url}/v1/jobs/{job_id}"
-        self.delete(url).raise_for_status()
+        resp = self.delete(url)
+        self._raise_for_api_error(resp)
 
     def download_job_output(self, job_id: str) -> dict[str, Any]:
         """Download job output."""
