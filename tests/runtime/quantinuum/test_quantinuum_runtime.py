@@ -55,8 +55,12 @@ class TestStatusMapping:
             ("ERROR", JobStatus.FAILED),
             ("CANCELLED", JobStatus.CANCELLED),
             ("QUEUED", JobStatus.QUEUED),
+            ("SUBMITTED", JobStatus.INITIALIZING),
             ("RUNNING", JobStatus.RUNNING),
-            ("INITIALIZING", JobStatus.INITIALIZING),
+            ("CANCELLING", JobStatus.CANCELLING),
+            ("RETRYING", JobStatus.RUNNING),
+            ("TERMINATED", JobStatus.CANCELLED),
+            ("DEPLETED", JobStatus.FAILED),
             ("UNEXPECTED_VALUE", JobStatus.UNKNOWN),
             (None, JobStatus.UNKNOWN),
         ],
@@ -64,9 +68,22 @@ class TestStatusMapping:
     def test_map_quantinuum_status(self, raw, expected):
         assert _map_quantinuum_status(raw) == expected
 
-    def test_status_map_covers_expected_states(self):
-        expected = {"COMPLETED", "ERROR", "CANCELLED", "QUEUED", "RUNNING", "INITIALIZING"}
-        assert set(_QUANTINUUM_STATUS_MAP.keys()) == expected
+    def test_status_map_covers_all_qnexus_states(self):
+        """Every qnexus JobStatusEnum member must map to a qBraid JobStatus.
+
+        An unmapped value falls back to UNKNOWN, which is non-terminal — for a
+        terminal NEXUS state (e.g. TERMINATED, DEPLETED) that would make
+        ``wait_for_final_state``/``result()`` poll forever.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.job_status import JobStatusEnum
+
+        assert set(_QUANTINUUM_STATUS_MAP.keys()) == {s.value for s in JobStatusEnum}
+
+    def test_terminal_qnexus_states_map_to_terminal_statuses(self):
+        """NEXUS terminal states must map to terminal qBraid statuses."""
+        for state in ("COMPLETED", "ERROR", "CANCELLED", "TERMINATED", "DEPLETED"):
+            assert _QUANTINUUM_STATUS_MAP[state] in JobStatus.terminal_states(), state
 
 
 # --- Provider ---

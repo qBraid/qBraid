@@ -32,13 +32,23 @@ if TYPE_CHECKING:
 
     from qbraid.runtime.quantinuum.device import QuantinuumDevice
 
+# Covers every member of qnexus.models.job_status.JobStatusEnum. Unmapped
+# values fall back to UNKNOWN, which is non-terminal — so a missing *terminal*
+# state here makes ``wait_for_final_state``/``result()`` poll forever.
 _QUANTINUUM_STATUS_MAP: dict[str, JobStatus] = {
     "COMPLETED": JobStatus.COMPLETED,
     "ERROR": JobStatus.FAILED,
     "CANCELLED": JobStatus.CANCELLED,
     "QUEUED": JobStatus.QUEUED,
+    "SUBMITTED": JobStatus.INITIALIZING,
     "RUNNING": JobStatus.RUNNING,
-    "INITIALIZING": JobStatus.INITIALIZING,
+    "CANCELLING": JobStatus.CANCELLING,
+    # NEXUS re-runs the job after a transient failure; still in flight.
+    "RETRYING": JobStatus.RUNNING,
+    # Killed by the system/operator; terminal without a result.
+    "TERMINATED": JobStatus.CANCELLED,
+    # Quota (e.g. HQC) exhausted; the job will not run.
+    "DEPLETED": JobStatus.FAILED,
 }
 
 
