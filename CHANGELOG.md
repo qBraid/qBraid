@@ -23,6 +23,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added `QudoraProvider`, `QudoraDevice`, and `QudoraJob` classes implementing the qBraid runtime interface for the [QUDORA Cloud](https://api.qudora.com). Authenticates with a `Bearer` API token and submits OpenQASM directly over REST (no vendor SDK); reuses qBraid's existing `qasm2`/`qasm3` program specs so no converter is required ([#1292](https://github.com/qBraid/qBraid/pull/1292))
 - Added `qbraid.visualization.plot_connectivity_graph`, rendering a device's connectivity graph colored by live calibration data (edges by two-qubit gate error, nodes by readout error). Layout follows the device's `topology` config, with a force-directed fallback for unknown types. The `lattice_positions` helper is exported for custom plots ([#1281](https://github.com/qBraid/qBraid/pull/1281), [#1283](https://github.com/qBraid/qBraid/pull/1283))
 - Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing device calibration data (per-edge two-qubit gate errors, per-qubit metrics, timestamps) and the physical connectivity graph derived from it. Useful for hand-placing circuits on paths that bypass quilc. Both return `None`-equivalents for devices without published calibration data ([#1281](https://github.com/qBraid/qBraid/pull/1281))
 
