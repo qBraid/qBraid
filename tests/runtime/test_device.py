@@ -1121,6 +1121,18 @@ def test_best_qubits_none_without_calibration(mock_profile):
     assert device.best_qubits(2) is None
 
 
+def test_best_qubits_rejects_non_gate_model_devices():
+    """Analog devices have no fixed qubit lattice: the question is ill-posed."""
+    profile = TargetProfile(
+        device_id="aws:quera:qpu:aquila",
+        simulator=False,
+        experiment_type=ExperimentType.ANALOG,
+    )
+    device = QbraidDevice(profile=profile, client=Mock())
+    with pytest.raises(ValueError, match="gate-model devices.*ANALOG"):
+        device.best_qubits(2)
+
+
 def test_best_qubits_rejects_non_positive(mock_profile):
     """num_qubits must be a positive integer."""
     device = _device_with(_cepheus_calibration(), mock_profile)

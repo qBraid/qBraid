@@ -28,6 +28,7 @@ from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._logging import logger
+from qbraid.programs import ExperimentType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
@@ -137,10 +138,18 @@ class QbraidDevice(QuantumDevice):
             calibration data (e.g. simulators).
 
         Raises:
-            ValueError: If ``num_qubits < 1``, no connected chain of that
-                length exists, ``gate`` has no calibrated edges, or the device
-                has fewer calibrated qubits than requested.
+            ValueError: If the device is not gate-model (e.g. analog neutral
+                atom, where atom geometry is programmable and there is no fixed
+                qubit lattice to select from), ``num_qubits < 1``, no connected
+                chain of that length exists, ``gate`` has no calibrated edges,
+                or the device has fewer calibrated qubits than requested.
         """
+        experiment_type = self.profile.experiment_type
+        if experiment_type is not None and experiment_type != ExperimentType.GATE_MODEL:
+            raise ValueError(
+                "best_qubits applies to gate-model devices; this device's "
+                f"experiment type is {experiment_type.name}"
+            )
         if num_qubits < 1:
             raise ValueError(f"num_qubits must be a positive integer, got {num_qubits}")
         calibration = self.get_calibrations()
