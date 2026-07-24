@@ -31,6 +31,7 @@ pytest.importorskip("pytket", reason="pytket is not installed.")
 # pylint: disable=wrong-import-position
 from qbraid.runtime.enums import DeviceStatus, JobStatus  # noqa: E402
 from qbraid.runtime.exceptions import ResourceNotFoundError  # noqa: E402
+from qbraid.runtime.profile import TargetProfile  # noqa: E402
 from qbraid.runtime.quantinuum import (  # noqa: E402
     QuantinuumDevice,
     QuantinuumJob,
@@ -126,6 +127,8 @@ class TestQuantinuumProvider:
         devices = provider.get_devices()
 
         assert {d.id for d in devices} == {"H1-1E", "H2-1"}
+        # Per-row nexus_hosted flags propagate into each device's profile.
+        assert {d.id: d.profile.nexus_hosted for d in devices} == {"H1-1E": True, "H2-1": False}
         # Single API call for the entire list, not one-per-row.
         mock_get_all.assert_called_once()
 
@@ -178,6 +181,23 @@ class TestQuantinuumDevice:
         device = _make_device(device_id="H2-Emulator", nexus_hosted=True)
         assert device.status() == DeviceStatus.ONLINE
         mock_status.assert_not_called()
+
+    @patch("qnexus.devices.status")
+    @patch("qnexus.models.QuantinuumConfig")
+    def test_status_missing_nexus_hosted_falls_back_to_endpoint(self, _mock_config, mock_status):
+        """Profiles built before the ``nexus_hosted`` extra existed (e.g. cached
+        or hand-constructed) must keep the pre-fix behavior of querying the
+        machine status endpoint. Uses a real ``TargetProfile`` because a
+        ``MagicMock`` profile would auto-create the attribute."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.client.devices import DeviceStateEnum
+
+        mock_status.return_value = DeviceStateEnum.ONLINE
+        profile = TargetProfile(device_id="H1-1", simulator=False)
+        device = QuantinuumDevice(profile=profile)
+
+        assert device.status() == DeviceStatus.ONLINE
+        mock_status.assert_called_once()
 
     @patch("qnexus.devices.status")
     @patch("qnexus.models.QuantinuumConfig")
