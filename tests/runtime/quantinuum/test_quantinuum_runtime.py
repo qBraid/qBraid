@@ -356,6 +356,53 @@ class TestQuantinuumDevice:
         _, wait_kwargs = mock_wait.call_args
         assert wait_kwargs["timeout"] == DEFAULT_COMPILE_TIMEOUT_SECONDS
 
+    @patch("qbraid.runtime.quantinuum.device.time.sleep")
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_retries_transient_upload_errors(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+        _mock_sleep,
+    ):
+        """Pre-execute stages retry on transient NEXUS connection errors."""
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        # First upload attempt drops the connection; the retry succeeds.
+        mock_upload.side_effect = [
+            httpx.RemoteProtocolError("Server disconnected without sending a response."),
+            MagicMock(name="circuit-ref"),
+        ]
+        mock_execute.return_value = MagicMock(id="job-id")
+
+        device = _make_device()
+        job = device.submit(Circuit(2), shots=100)
+
+        assert mock_upload.call_count == 2
+        assert isinstance(job, QuantinuumJob)
+        # The execute dispatch itself must never be retried (double-submit risk),
+        # so it is called exactly once.
+        mock_execute.assert_called_once()
+
     @patch.dict(os.environ, {"QUANTINUUM_NEXUS_COMPILE_TIMEOUT": "120"})
     @patch("qnexus.jobs.wait_for")
     @patch("qnexus.start_compile_job")

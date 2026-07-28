@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 import uuid
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, TypeVar
 
 from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
@@ -42,6 +43,30 @@ class QuantinuumDeviceError(QbraidRuntimeError):
 
 
 DEFAULT_COMPILE_TIMEOUT_SECONDS = 900
+
+_T = TypeVar("_T")
+
+
+def _retry_transient(fn: Callable[[], _T], attempts: int = 3, base_delay: float = 1.0) -> _T:
+    """Run ``fn``, retrying with exponential backoff on transient NEXUS connection errors.
+
+    Only used for stages that are safe to repeat (uploads, compile dispatch,
+    read-only fetches). Never wrap ``start_execute_job`` in this: a disconnect
+    after the server accepted the request would double-submit the job.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    import httpx
+
+    for attempt in range(attempts):
+        try:
+            return fn()
+        except (httpx.TransportError, ConnectionError) as err:
+            if attempt == attempts - 1:
+                raise
+            delay = base_delay * (2**attempt)
+            logger.warning("Transient NEXUS connection error (%s); retrying in %.1fs", err, delay)
+            time.sleep(delay)
+    raise AssertionError("unreachable")  # pragma: no cover
 
 
 class QuantinuumDevice(QuantumDevice):
@@ -133,24 +158,32 @@ class QuantinuumDevice(QuantumDevice):
             else int(os.getenv("QUANTINUUM_NEXUS_OPT_LEVEL", "1"))
         )
 
-        project = qnx.projects.get_or_create(name=resolved_project_name)
+        project = _retry_transient(lambda: qnx.projects.get_or_create(name=resolved_project_name))
         backend_config = qnx.QuantinuumConfig(device_name=self.id)
 
         def unique(label: str) -> str:
             ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
             return f"qbraid {label} {ts}-{uuid.uuid4().hex[:6]}"
 
+        # Pre-execute stages are retried on transient connection errors; a repeat
+        # at worst orphans an upload or compile job, with no execution cost.
         circuit_refs = [
-            qnx.circuits.upload(name=unique(f"circuit-{i}"), circuit=c, project=project)
+            _retry_transient(
+                lambda i=i, c=c: qnx.circuits.upload(
+                    name=unique(f"circuit-{i}"), circuit=c, project=project
+                )
+            )
             for i, c in enumerate(circuits)
         ]
 
-        compile_job = qnx.start_compile_job(
-            programs=circuit_refs,
-            name=unique("compile"),
-            optimisation_level=resolved_opt_level,
-            backend_config=backend_config,
-            project=project,
+        compile_job = _retry_transient(
+            lambda: qnx.start_compile_job(
+                programs=circuit_refs,
+                name=unique("compile"),
+                optimisation_level=resolved_opt_level,
+                backend_config=backend_config,
+                project=project,
+            )
         )
         # NOTE: blocking wait during dispatch; compilation time depends on queue and program
         # size. The wait is bounded: an unbounded wait_for leaks the calling thread forever
@@ -167,8 +200,12 @@ class QuantinuumDevice(QuantumDevice):
                 "seconds. The compile may still be queued on NEXUS; set "
                 "QUANTINUUM_NEXUS_COMPILE_TIMEOUT (seconds) to wait longer."
             ) from err
-        compiled_refs = [item.get_output() for item in qnx.jobs.results(compile_job)]
+        compiled_refs = [
+            item.get_output() for item in _retry_transient(lambda: qnx.jobs.results(compile_job))
+        ]
 
+        # Deliberately NOT retried: a disconnect after the server accepted this
+        # request would double-submit (and double-bill) the execution.
         execute_job = qnx.start_execute_job(
             programs=compiled_refs,
             name=unique("execute"),
