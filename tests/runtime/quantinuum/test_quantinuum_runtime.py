@@ -19,6 +19,7 @@
 Unit tests for Quantinuum provider, device, and job classes.
 
 """
+import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -37,7 +38,10 @@ from qbraid.runtime.quantinuum import (  # noqa: E402
     QuantinuumJob,
     QuantinuumProvider,
 )
-from qbraid.runtime.quantinuum.device import QuantinuumDeviceError  # noqa: E402
+from qbraid.runtime.quantinuum.device import (  # noqa: E402
+    DEFAULT_COMPILE_TIMEOUT_SECONDS,
+    QuantinuumDeviceError,
+)
 from qbraid.runtime.quantinuum.job import (  # noqa: E402
     _QUANTINUUM_STATUS_MAP,
     QuantinuumJobError,
@@ -315,6 +319,74 @@ class TestQuantinuumDevice:
         mock_get_or_create.assert_called_once_with(name="my-proj")
         _, compile_kwargs = mock_compile.call_args
         assert compile_kwargs["optimisation_level"] == 2
+
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_compile_wait_is_bounded(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        mock_wait,
+    ):
+        """The compile wait passes a timeout and surfaces expiry as a device error.
+
+        An unbounded ``wait_for`` leaks the calling thread forever if the NEXUS
+        compile job hangs, which starves thread pools in server deployments.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import asyncio
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+        mock_wait.side_effect = asyncio.TimeoutError()
+
+        device = _make_device()
+        with pytest.raises(QuantinuumDeviceError, match="did not complete within 900"):
+            device.submit(Circuit(2), shots=100)
+
+        _, wait_kwargs = mock_wait.call_args
+        assert wait_kwargs["timeout"] == DEFAULT_COMPILE_TIMEOUT_SECONDS
+
+    @patch.dict(os.environ, {"QUANTINUUM_NEXUS_COMPILE_TIMEOUT": "120"})
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_compile_timeout_env_override(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        mock_wait,
+    ):
+        """QUANTINUUM_NEXUS_COMPILE_TIMEOUT overrides the default compile bound."""
+        # pylint: disable-next=import-outside-toplevel
+        import asyncio
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+        mock_wait.side_effect = asyncio.TimeoutError()
+
+        device = _make_device()
+        with pytest.raises(QuantinuumDeviceError, match="within 120"):
+            device.submit(Circuit(2), shots=100)
+
+        assert mock_wait.call_args.kwargs["timeout"] == 120.0
 
 
 # --- Job ---

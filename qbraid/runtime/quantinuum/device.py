@@ -18,6 +18,7 @@ Module defining Quantinuum device class.
 """
 from __future__ import annotations
 
+import asyncio
 import os
 import uuid
 from datetime import datetime, timezone
@@ -38,6 +39,9 @@ if TYPE_CHECKING:
 
 class QuantinuumDeviceError(QbraidRuntimeError):
     """Exception raised by QuantinuumDevice."""
+
+
+DEFAULT_COMPILE_TIMEOUT_SECONDS = 900
 
 
 class QuantinuumDevice(QuantumDevice):
@@ -105,6 +109,10 @@ class QuantinuumDevice(QuantumDevice):
                 NEXUS compile stage. Falls back to the
                 ``QUANTINUUM_NEXUS_OPT_LEVEL`` environment variable, and
                 ultimately to ``1``.
+
+        The blocking compilation wait is bounded by the
+        ``QUANTINUUM_NEXUS_COMPILE_TIMEOUT`` environment variable (seconds,
+        default ``900``); exceeding it raises :class:`QuantinuumDeviceError`.
         """
         # pylint: disable=import-outside-toplevel
         import qnexus as qnx
@@ -144,9 +152,21 @@ class QuantinuumDevice(QuantumDevice):
             backend_config=backend_config,
             project=project,
         )
-        # NOTE: blocking wait during dispatch; compilation time depends on queue and program size.
+        # NOTE: blocking wait during dispatch; compilation time depends on queue and program
+        # size. The wait is bounded: an unbounded wait_for leaks the calling thread forever
+        # if the NEXUS compile job hangs, which starves thread pools in server deployments.
+        compile_timeout = float(
+            os.getenv("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", str(DEFAULT_COMPILE_TIMEOUT_SECONDS))
+        )
         logger.info("Waiting for Quantinuum compilation job %s to complete...", compile_job.id)
-        qnx.jobs.wait_for(compile_job)
+        try:
+            qnx.jobs.wait_for(compile_job, timeout=compile_timeout)
+        except asyncio.TimeoutError as err:
+            raise QuantinuumDeviceError(
+                f"Quantinuum compilation job did not complete within {compile_timeout:.0f} "
+                "seconds. The compile may still be queued on NEXUS; set "
+                "QUANTINUUM_NEXUS_COMPILE_TIMEOUT (seconds) to wait longer."
+            ) from err
         compiled_refs = [item.get_output() for item in qnx.jobs.results(compile_job)]
 
         execute_job = qnx.start_execute_job(
