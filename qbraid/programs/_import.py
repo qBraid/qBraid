@@ -155,6 +155,13 @@ dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
         "qat.core.wrappers.circuit",
     ]
 )
+try:
+    # mimiqcircuits' native ``Circuit`` is the "mimiq" transpiler node (target of the
+    # qiskit -> mimiq edge). Its module name would auto-alias to "mimiqcircuits", so register it
+    # explicitly under "mimiq". Guarded: mimiqcircuits is an optional (qperfect) extra.
+    dynamic_non_native["mimiq"] = import_module("mimiqcircuits").Circuit
+except ImportError:  # pragma: no cover - qperfect extra not installed
+    pass
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
 }
