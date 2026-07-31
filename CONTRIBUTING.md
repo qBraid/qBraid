@@ -179,7 +179,7 @@ def process(data: Optional[str], items: List[str], config: Dict[str, Any]) -> Tu
 
 - **Collections**: use `list`, `dict`, `set`, `tuple` — not `List`, `Dict`, `Set`, `Tuple`.
 - **Unions**: use `X | Y` and `X | None` — not `Union[X, Y]` or `Optional[X]`.
-- **Still fine to import from `typing`**: `Any`, `Callable`, `Type`, `TypeVar`, `Protocol`, `Final`, `TYPE_CHECKING`, and other constructs with no built-in equivalent. `Type` is deliberately on this list — `typing.Type` remains the convention in this codebase, so there is no need to reach for `type[...]`.
+- **Still fine to import from `typing`**: `Any`, `Callable`, `Type`, `TypeVar`, `Protocol`, `Final`, `TYPE_CHECKING`, and other constructs with no built-in equivalent. `Type` is deliberately on this list — `typing.Type` remains the convention in this codebase, so there is no need to reach for `type[...]`. The two are also not interchangeable at runtime: `typing.Type[int] != type[int]` (distinct objects with distinct hashes, `typing._GenericAlias` vs `types.GenericAlias`), the inequality propagates through composites such as `Optional[...]`, and `type[...]` resolves the name `type` at evaluation time, so a module- or class-level binding named `type` shadows the builtin and breaks the annotation. Type checkers treat the two the same; runtime introspection does not.
 
 Both features work at runtime on every supported version, so `from __future__ import annotations` is not needed for them. Keep that import only where it is load-bearing — most commonly when annotations reference names imported under `if TYPE_CHECKING:`, which would otherwise raise `NameError` at runtime.
 
