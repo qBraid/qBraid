@@ -177,11 +177,13 @@ def process(data: Optional[str], items: List[str], config: Dict[str, Any]) -> Tu
     ...
 ```
 
-- **Collections**: use `list`, `dict`, `set`, `tuple`, `type` — not `List`, `Dict`, `Set`, `Tuple`, `Type`.
+- **Collections**: use `list`, `dict`, `set`, `tuple` — not `List`, `Dict`, `Set`, `Tuple`.
 - **Unions**: use `X | Y` and `X | None` — not `Union[X, Y]` or `Optional[X]`.
-- **Still fine to import from `typing`**: `Any`, `Callable`, `TypeVar`, `Protocol`, `Final`, `TYPE_CHECKING`, and other constructs with no built-in equivalent.
+- **Still fine to import from `typing`**: `Any`, `Callable`, `Type`, `TypeVar`, `Protocol`, `Final`, `TYPE_CHECKING`, and other constructs with no built-in equivalent. `Type` is deliberately on this list — `typing.Type` remains the convention in this codebase, so there is no need to reach for `type[...]`.
 
 Both features work at runtime on every supported version, so `from __future__ import annotations` is not needed for them. Keep that import only where it is load-bearing — most commonly when annotations reference names imported under `if TYPE_CHECKING:`, which would otherwise raise `NameError` at runtime.
+
+This applies to new code and to code you are already modifying for other reasons. Do **not** retrofit existing modules just to satisfy it: a typing-only sweep through otherwise untouched code adds review burden and churns `git blame` for no functional gain.
 
 ### Fail Loudly on Missing Data
 
