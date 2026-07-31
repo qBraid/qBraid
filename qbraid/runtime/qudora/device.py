@@ -21,6 +21,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from qbraid.programs.typer import get_qasm_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
@@ -38,6 +39,9 @@ _DEVICE_STATUS_MAP = {
     "Calibrating": DeviceStatus.UNAVAILABLE,
     "Unresponsive": DeviceStatus.OFFLINE,
 }
+
+# Maps qBraid QASM type aliases to the QUDORA ``language`` values.
+_QASM_LANGUAGE_MAP = {"qasm2": "OpenQASM2", "qasm3": "OpenQASM3"}
 
 
 class QudoraDevice(QuantumDevice):
@@ -85,16 +89,23 @@ class QudoraDevice(QuantumDevice):
 
     @staticmethod
     def _detect_language(program: str) -> str:
-        """Return the QUDORA ``language`` (``OpenQASM2``/``OpenQASM3``) for a QASM string."""
-        for line in program.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("OPENQASM"):
-                if stripped.startswith("OPENQASM 2"):
-                    return "OpenQASM2"
-                if stripped.startswith("OPENQASM 3"):
-                    return "OpenQASM3"
-                break
-        raise ValueError("Could not determine the OpenQASM version from the program header.")
+        """Return the QUDORA ``language`` (``OpenQASM2``/``OpenQASM3``) for a QASM string.
+
+        Version detection is delegated to qBraid's shared QASM typing rather than scanning
+        for a line starting with ``OPENQASM``: that scan reads a version named inside a
+        block comment as the program's own, and accepts a header missing its semicolon.
+
+        Raises:
+            QasmError: If the OpenQASM version cannot be determined.
+            ValueError: If the program is a QASM dialect QUDORA does not accept.
+        """
+        alias = get_qasm_type_alias(program)
+        try:
+            return _QASM_LANGUAGE_MAP[alias]
+        except KeyError as err:
+            raise ValueError(
+                f"QUDORA accepts {sorted(_QASM_LANGUAGE_MAP)} programs, got '{alias}'."
+            ) from err
 
     # pylint:disable-next=arguments-differ
     def submit(
@@ -109,7 +120,9 @@ class QudoraDevice(QuantumDevice):
         Args:
             run_input: An OpenQASM 2/3 string, or a list of them for a batch job.
             shots: Number of repetitions per program.
-            name: Optional job name (defaults to ``"qbraid"``).
+            name: Optional job name. Defaults to ``"qbraid"`` rather than being omitted:
+                QUDORA's submit schema requires ``name`` to be a string, and rejects both
+                a ``null`` value and a missing key with a 422.
             backend_settings: Optional QUDORA backend settings (e.g. noise parameters).
 
         Returns:
