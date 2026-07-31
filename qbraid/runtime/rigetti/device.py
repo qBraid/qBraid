@@ -23,6 +23,7 @@ Module defining Rigetti device class
 
 from __future__ import annotations
 
+import inspect
 import socket
 from contextvars import ContextVar
 from multiprocessing.pool import ThreadPool
@@ -42,7 +43,11 @@ from qcs_sdk.compiler.quilc import (
 from qcs_sdk.qpu import ListQuantumProcessorsError, list_quantum_processors
 from qcs_sdk.qpu.api import ExecutionOptions, SubmissionError
 from qcs_sdk.qpu.api import submit as qpu_submit
-from qcs_sdk.qpu.isa import GetISAError, get_instruction_set_architecture
+from qcs_sdk.qpu.isa import (
+    GetISAError,
+    InstructionSetArchitecture,
+    get_instruction_set_architecture,
+)
 from qcs_sdk.qpu.translation import TranslationOptions, translate
 
 from qbraid._logging import logger
@@ -109,13 +114,21 @@ class _ResolvedCompilerOptions(NamedTuple):
     timeout: float | None
 
 
-# Per-run quilc options. A ContextVar rather than instance state because a device is
-# routinely shared (and ``submit()`` itself fans out over a ThreadPool): two concurrent
-# run() calls with different compiler_timeout values must not clobber each other.
-# transform() executes in the same context as the run() that set it, so the value is
-# visible without threading it through the QuantumDevice.run/transform signatures.
-_COMPILER_OPTIONS: ContextVar[_ResolvedCompilerOptions] = ContextVar(
-    "rigetti_compiler_options", default=_ResolvedCompilerOptions(None, None)
+# Per-run quilc options. A ContextVar rather than instance state because a single device
+# is routinely shared: two concurrent run() calls with different compiler_timeout values
+# must not clobber each other, and the loser would silently compile under the wrong
+# deadline.
+#
+# This is safe only because transform() runs in the same context as the run() that set
+# the value: QuantumDevice.run calls apply_runtime_profile (and therefore transform)
+# inline, and only then hands the compiled programs to submit(). A ContextVar is *not*
+# visible in threads started by submit()'s ThreadPool, so nothing downstream of submit()
+# may read this.
+#
+# ``None`` means "no enclosing run()", which submit() uses to tell a direct call apart
+# from one made on its behalf.
+_COMPILER_OPTIONS: ContextVar[_ResolvedCompilerOptions | None] = ContextVar(
+    "rigetti_compiler_options", default=None
 )
 
 
@@ -126,6 +139,11 @@ def quil_t_instruction_counts(program: pyquil.Program) -> dict[str, int]:
     predicate behind pyquil's ``Program.remove_quil_t_instructions`` -- so what counts
     as Quil-T stays in sync with pyquil instead of a hand-maintained list. Names are the
     leading Quil token, e.g. ``FENCE``, ``DELAY``, ``PULSE``, ``DEFCAL``, ``DEFFRAME``.
+
+    Reaching through ``Program._program`` is deliberate: ``is_quil_t`` lives on the
+    quil-rs instruction, and pyquil's public wrappers do not expose it. The only public
+    alternative is differencing against ``remove_quil_t_instructions()``, which yields a
+    boolean rather than the per-name counts the error messages need.
 
     Args:
         program: The Quil program to inspect.
@@ -174,11 +192,15 @@ def non_native_gate_counts(program: pyquil.Program, native_gates: set[str]) -> d
 
     The check is by instruction *name* against the device ISA, plus any gate carrying a
     modifier (``CONTROLLED`` / ``DAGGER`` / ``FORKED``), which no Rigetti QPU executes
-    directly. It is deliberately one-sided: a gate is reported only when its name is
-    absent from the ISA, so a name that is present but parameterised outside the native
-    range (``RX(0.3)``, say, where only multiples of pi/2 are native) is not flagged.
-    That keeps the check from ever turning a program that runs today into an error; it
-    only recognises the unambiguous cases (``H``, ``CNOT``, ``T``, ...).
+    directly. A gate the program defines its own ``DEFCAL`` for counts as executable
+    too: QCS translation runs the supplied calibration, so such a gate never needed
+    quilc.
+
+    The check is deliberately one-sided: a gate is reported only when its name is
+    absent from both sets, so a name that is present but parameterised outside the
+    native range (``RX(0.3)``, say, where only multiples of pi/2 are native) is not
+    flagged. That keeps the check from ever turning a program that runs today into an
+    error; it only recognises the unambiguous cases (``H``, ``CNOT``, ``T``, ...).
 
     Args:
         program: The Quil program to inspect.
@@ -186,14 +208,19 @@ def non_native_gate_counts(program: pyquil.Program, native_gates: set[str]) -> d
 
     Returns:
         A mapping of gate label to the number of occurrences, ordered by first
-        appearance. Empty when every gate is (nominally) native.
+        appearance. Empty when every gate is (nominally) executable as written.
     """
+    # DEFCAL is qubit-specific, but matching on name alone keeps the permissive
+    # direction consistent with the rest of the check.
+    calibrated = {calibration.name.upper() for calibration in program.calibrations}
+    executable = native_gates | calibrated
+
     counts: dict[str, int] = {}
     for instruction in program.instructions:
         if not isinstance(instruction, Gate):
             continue
         modifiers = [str(modifier) for modifier in instruction.modifiers]
-        if not modifiers and instruction.name.upper() in native_gates:
+        if not modifiers and instruction.name.upper() in executable:
             continue
         label = " ".join([*modifiers, instruction.name])
         counts[label] = counts.get(label, 0) + 1
@@ -418,6 +445,28 @@ class RigettiDevice(QuantumDevice):
             )
 
     @staticmethod
+    def _warn_compiler_keys_outside_run(runtime_options: dict[str, Any] | None) -> None:
+        """Log a warning when quilc keys are handed to ``submit()`` directly.
+
+        Compilation happens in :meth:`transform`, which :meth:`run` invokes before it
+        reaches ``submit()``. A bare ``submit()`` never compiles, so ``compiler_timeout``
+        and ``protoquil`` have nothing to act on -- and dropping them in silence is the
+        failure this whole path exists to remove. ``run()`` publishes its resolution on
+        :data:`_COMPILER_OPTIONS` first, which is how the two callers are told apart.
+        """
+        if not runtime_options or _COMPILER_OPTIONS.get() is not None:
+            return
+
+        compiler_keys = sorted(_COMPILER_OPTION_KEYS & set(runtime_options))
+        if compiler_keys:
+            logger.warning(
+                "Ignoring quilc runtime_options key(s) %s: they apply during "
+                "compilation, which happens in transform() before submit() is reached. "
+                "Pass them to run() instead.",
+                ", ".join(compiler_keys),
+            )
+
+    @staticmethod
     def _parse_runtime_options(
         runtime_options: dict[str, Any] | None,
     ) -> TranslationOptions | None:
@@ -482,28 +531,27 @@ class RigettiDevice(QuantumDevice):
         the device, then :data:`DEFAULT_COMPILER_TIMEOUT_S`.
         """
         resolved = _COMPILER_OPTIONS.get()
-        if resolved.options is not None:
+        if resolved is not None and resolved.options is not None:
             return resolved
 
-        attr_options = getattr(self, "_compiler_options", None)
-        if attr_options is not None:
-            return _ResolvedCompilerOptions(attr_options, None)
+        if self._compiler_options is not None:
+            return _ResolvedCompilerOptions(self._compiler_options, None)
 
         return _ResolvedCompilerOptions(
             CompilerOpts(timeout=DEFAULT_COMPILER_TIMEOUT_S), DEFAULT_COMPILER_TIMEOUT_S
         )
 
-    def _native_gate_names(self) -> set[str] | None:
-        """Return the uppercase native instruction names from the device ISA.
+    def _fetch_isa(self) -> InstructionSetArchitecture | None:
+        """Return the device ISA, or ``None`` when the lookup fails.
 
-        Returns ``None`` when the ISA cannot be retrieved, so callers can fall back to
-        their previous behaviour rather than failing on a diagnostic lookup.
+        The nativity check this feeds is a diagnostic, so a failed lookup must not
+        decide the outcome; callers fall back to their previous behaviour. The compile
+        path re-fetches and does raise, since quilc genuinely cannot run without it.
         """
         try:
-            isa = get_instruction_set_architecture(
+            return get_instruction_set_architecture(
                 quantum_processor_id=self.id, client=self._qcs_client
             )
-            return {operation.name.upper() for operation in isa.instructions}
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.warning(
                 "Could not retrieve the ISA for quantum processor '%s' to check gate "
@@ -526,9 +574,9 @@ class RigettiDevice(QuantumDevice):
         exchange accepts only native gates. Three cases follow:
 
         1. **No Quil-T.** Compiled by quilc as usual.
-        2. **Quil-T, all gates already native.** Passed through untouched, preserving
-           both the Quil-T instructions and the program's explicit qubit placement
-           (quilc would rewire it).
+        2. **Quil-T, every gate already native or carrying its own ``DEFCAL``.** Passed
+           through untouched, preserving both the Quil-T instructions and the program's
+           explicit qubit placement (quilc would rewire it).
         3. **Quil-T plus non-native gates.** Unrunnable as-is. When the only Quil-T is
            ``FENCE``, the fences are dropped and quilc compiles the program (see
            below); otherwise :class:`RigettiDeviceError` is raised naming both the
@@ -555,9 +603,11 @@ class RigettiDevice(QuantumDevice):
         if not quil_t_counts:
             return self._compile_with_quilc(run_input)
 
-        native_gates = self._native_gate_names()
+        isa = self._fetch_isa()
         non_native = (
-            non_native_gate_counts(run_input, native_gates) if native_gates is not None else {}
+            non_native_gate_counts(run_input, {op.name.upper() for op in isa.instructions})
+            if isa is not None
+            else {}
         )
 
         if not non_native:
@@ -580,7 +630,7 @@ class RigettiDevice(QuantumDevice):
                 sum(non_native.values()),
                 _format_counts(non_native),
             )
-            return self._compile_with_quilc(run_input.remove_quil_t_instructions())
+            return self._compile_with_quilc(run_input.remove_quil_t_instructions(), isa=isa)
 
         raise RigettiDeviceError(self._quil_t_conflict_message(quil_t_counts, non_native))
 
@@ -607,8 +657,39 @@ class RigettiDevice(QuantumDevice):
             )
         return "\n".join(lines)
 
-    def _compile_with_quilc(self, run_input: pyquil.Program) -> pyquil.Program:
+    def _compilation_target(self, isa: InstructionSetArchitecture | None) -> TargetDevice:
+        """Build quilc's compilation target from the device ISA.
+
+        Kept out of the ``compile_program`` try block so that an ISA lookup failure --
+        which is a network call, and can itself report "timed out" -- is never mistaken
+        for a quilc compilation timeout and answered with advice about
+        ``compiler_timeout``.
+
+        Raises:
+            RigettiDeviceError: If the ISA cannot be retrieved or converted.
+        """
+        try:
+            return TargetDevice.from_isa(
+                isa
+                if isa is not None
+                else get_instruction_set_architecture(
+                    quantum_processor_id=self.id, client=self._qcs_client
+                )
+            )
+        except Exception as e:
+            raise RigettiDeviceError(
+                f"quilc failed to compile the program for quantum processor '{self.id}': {e}"
+            ) from e
+
+    def _compile_with_quilc(
+        self, run_input: pyquil.Program, isa: InstructionSetArchitecture | None = None
+    ) -> pyquil.Program:
         """Run quilc over a pure gate-model program and return the native result.
+
+        Args:
+            run_input: A Quil program with no Quil-T instructions.
+            isa: An already-fetched ISA to compile against, saving a second QCS
+                round-trip when the caller has one. ``None`` fetches it here.
 
         Raises:
             RigettiDeviceError: If quilc is unreachable or compilation fails.
@@ -616,16 +697,13 @@ class RigettiDevice(QuantumDevice):
         # Fail fast if quilc isn't running, instead of hanging in compile_program.
         self._probe_quilc_reachable()
 
+        target = self._compilation_target(isa)
         compiler_options, timeout = self._resolve_compiler_options()
 
         try:
             compilation_result = compile_program(
                 quil=run_input.out(),
-                target=TargetDevice.from_isa(
-                    get_instruction_set_architecture(
-                        quantum_processor_id=self.id, client=self._qcs_client
-                    )
-                ),
+                target=target,
                 client=QuilcClient.new_rpcq(self._qcs_client.quilc_url),
                 options=compiler_options,
             )
@@ -743,9 +821,11 @@ class RigettiDevice(QuantumDevice):
         Note:
             The quilc keys (``compiler_timeout``, ``protoquil``) apply during
             compilation, which happens in :meth:`transform` before ``submit()`` is
-            reached. They take effect only when ``runtime_options`` is passed to
-            :meth:`run`.
+            reached. Calling ``submit()`` directly therefore skips compilation
+            altogether, and those keys have nothing to act on; passing them here logs
+            a warning saying so. Pass them to :meth:`run`.
         """
+        self._warn_compiler_keys_outside_run(runtime_options)
         translation_options = self._parse_runtime_options(runtime_options)
 
         if isinstance(run_input, list):
@@ -790,11 +870,12 @@ class RigettiDevice(QuantumDevice):
                 :meth:`transform` is the step that receives a ``pyquil.Program``,
                 because it runs after ``apply_runtime_profile`` has transpiled to the
                 device's ``ProgramSpec`` type.
-            **kwargs: Forwarded to :meth:`submit`. ``runtime_options`` must be passed
-                as a keyword argument for its quilc keys to take effect; see
-                :meth:`_parse_compiler_options` and :meth:`_parse_runtime_options`.
+            *args: Forwarded to :meth:`submit`.
+            **kwargs: Forwarded to :meth:`submit`. See
+                :meth:`_parse_compiler_options` and :meth:`_parse_runtime_options` for
+                the recognised ``runtime_options`` keys.
         """
-        runtime_options = kwargs.get("runtime_options")
+        runtime_options = self._runtime_options_from_call(run_input, args, kwargs)
         resolved = _ResolvedCompilerOptions(
             self._parse_compiler_options(runtime_options),
             self._compiler_timeout(runtime_options),
@@ -804,6 +885,24 @@ class RigettiDevice(QuantumDevice):
             return cast("RigettiJob | list[RigettiJob]", super().run(run_input, *args, **kwargs))
         finally:
             _COMPILER_OPTIONS.reset(token)
+
+    def _runtime_options_from_call(
+        self, run_input: Any, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> dict[str, Any] | None:
+        """Recover ``runtime_options`` from a :meth:`run` call, positional or keyword.
+
+        ``run()`` forwards ``*args`` / ``**kwargs`` verbatim to :meth:`submit`, where
+        ``runtime_options`` is the fourth parameter, so it can legitimately arrive
+        either way. Reading only ``kwargs`` would silently ignore a positional one --
+        exactly the silent drop this class of bug is about. Binding against
+        ``submit``'s own signature keeps the two in step if it ever changes.
+        """
+        try:
+            bound = inspect.signature(self.submit).bind_partial(run_input, *args, **kwargs)
+        except TypeError:
+            # Mismatched arguments; let super().run() -> submit() raise the real error.
+            return kwargs.get("runtime_options")
+        return bound.arguments.get("runtime_options")
 
     def live_qubits(self) -> list[int]:
         """
