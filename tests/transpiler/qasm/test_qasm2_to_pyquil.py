@@ -20,6 +20,11 @@ Unit tests for OpenQASM 2 to pyQuil conversion.
 import pytest
 
 try:
+    # imported for the availability check as much as for use: the conversion module
+    # itself imports pyQuil lazily, so it stays importable without pyQuil installed
+    # and cannot stand in for the dependency here.
+    from pyquil import Program
+
     from qbraid.transpiler import transpile
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_pyquil
 
@@ -44,7 +49,9 @@ def test_qasm2_to_pyquil_single_readout_register():
     measure q[1] -> c[1];
     measure q[2] -> c[2];
     """
-    assert qasm2_to_pyquil(qasm).out().splitlines() == [
+    program = qasm2_to_pyquil(qasm)
+    assert isinstance(program, Program)
+    assert program.out().splitlines() == [
         "DECLARE ro BIT[3]",
         "H 0",
         "CNOT 0 1",
