@@ -36,6 +36,8 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed a single `barrier` disabling gate compilation for a whole Rigetti program. OpenQASM `barrier` becomes Quil-T `FENCE` (and Qiskit's `measure_all()` inserts a barrier), which made `RigettiDevice.transform()` skip quilc and submit un-nativized gates that QCS then rejected. Such fences are now dropped so quilc can compile; programs mixing other Quil-T with non-native gates fail up front with an actionable message ([#1300](https://github.com/qBraid/qBraid/pull/1300))
+- Fixed `compiler_timeout` in `runtime_options` being accepted and then ignored on Rigetti devices. It now reaches quilc when passed to `run()`, alongside a new `protoquil` key, and the default compiler timeout is raised from qcs_sdk's 30s to 180s. Unrecognized `runtime_options` keys are logged instead of dropped in silence ([#1300](https://github.com/qBraid/qBraid/pull/1300))
 - Fixed OpenQuantum Terms of Use errors never reaching the intended `QbraidRuntimeError`: `qbraid_core.Session` assumed API `message` was a string and crashed with `'list' object has no attribute 'endswith'` when Open Quantum returned a list.
 - Pinned the format-check `ruff` to `<0.16`: ruff 0.16.0 changed its default lint rules and flags ~742 pre-existing issues repo-wide, breaking CI format checks for every PR
 - Fixed `openqasm3_to_pyquil` raising `AttributeError` for programs addressing physical qubits (`x $0;`) rather than a declared register. Physical qubit indices now pass through verbatim and are not identity-padded, since such a program is already mapped to specific hardware ([#1286](https://github.com/qBraid/qBraid/pull/1286))
