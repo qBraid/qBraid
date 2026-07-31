@@ -24,14 +24,17 @@ Module defining Rigetti device class
 from __future__ import annotations
 
 import socket
+from contextvars import ContextVar
 from multiprocessing.pool import ThreadPool
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NamedTuple, cast
 from urllib.parse import urlparse
 
 import pyquil
 import requests
+from pyquil.quilbase import Gate
 from qcs_sdk.client import QCSClient
 from qcs_sdk.compiler.quilc import (
+    CompilerOpts,
     QuilcClient,
     TargetDevice,
     compile_program,
@@ -60,6 +63,86 @@ _QUILC_PROBE_TIMEOUT_S = 2.0
 # Timeout (seconds) for the QCS REST call that fetches the maintenance calendar.
 _QCS_CALENDAR_TIMEOUT_S = 10.0
 
+# Default quilc compilation timeout (seconds).
+#
+# qcs_sdk's own default (``qcs_sdk.compiler.quilc.DEFAULT_COMPILER_TIMEOUT``) is 30s,
+# which is a client-side deadline, not a quilc capability limit -- the quilc server's
+# own ``--time-limit`` is unlimited by default. Compiling real user programs against a
+# 100+ qubit ISA routinely takes 20-230s, and programs on that boundary were observed
+# to succeed and fail non-deterministically with byte-identical input. 180s keeps the
+# guard against a genuinely runaway compile while no longer failing ordinary work.
+DEFAULT_COMPILER_TIMEOUT_S = 180.0
+
+# runtime_options keys understood by _parse_runtime_options / _parse_compiler_options.
+_TRANSLATION_OPTION_KEYS = frozenset(
+    {
+        "prepend_default_calibrations",
+        "passive_reset_delay_seconds",
+        "allow_unchecked_pointer_arithmetic",
+        "allow_frame_redefinition",
+    }
+)
+_COMPILER_OPTION_KEYS = frozenset({"compiler_timeout", "protoquil"})
+
+# Quil-T instruction names that a gate-model program can acquire by accident: OpenQASM
+# ``barrier`` lowers to ``FENCE`` (and qiskit's ``measure_all()`` inserts a barrier for
+# you). Unlike DELAY / DEFCAL / pulse instructions, a FENCE carries no pulse-level
+# information that quilc would destroy.
+_FENCE_INSTRUCTION_NAMES = frozenset({"FENCE"})
+
+# Substrings identifying a quilc compilation *timeout* (as opposed to any other
+# compilation failure) in the error text returned by the RPCQ server.
+_QUILC_TIMEOUT_MARKERS = ("time limit", "timed out", "timeout")
+
+
+class _ResolvedCompilerOptions(NamedTuple):
+    """quilc options for one ``run()``, plus the timeout they encode.
+
+    ``CompilerOpts`` is a Rust binding with no attribute getters, so the timeout
+    cannot be read back off the object. It is carried alongside purely so that a
+    compilation timeout can name the deadline it exceeded.
+    """
+
+    options: CompilerOpts | None
+    timeout: float | None
+
+
+# Per-run quilc options. A ContextVar rather than instance state because a device is
+# routinely shared (and ``submit()`` itself fans out over a ThreadPool): two concurrent
+# run() calls with different compiler_timeout values must not clobber each other.
+# transform() executes in the same context as the run() that set it, so the value is
+# visible without threading it through the QuantumDevice.run/transform signatures.
+_COMPILER_OPTIONS: ContextVar[_ResolvedCompilerOptions] = ContextVar(
+    "rigetti_compiler_options", default=_ResolvedCompilerOptions(None, None)
+)
+
+
+def quil_t_instruction_counts(program: pyquil.Program) -> dict[str, int]:
+    """Count the Quil-T (pulse/timing) instructions in a Quil program by name.
+
+    Classification defers to quil-rs's own ``Instruction.is_quil_t`` -- the same
+    predicate behind pyquil's ``Program.remove_quil_t_instructions`` -- so what counts
+    as Quil-T stays in sync with pyquil instead of a hand-maintained list. Names are the
+    leading Quil token, e.g. ``FENCE``, ``DELAY``, ``PULSE``, ``DEFCAL``, ``DEFFRAME``.
+
+    Args:
+        program: The Quil program to inspect.
+
+    Returns:
+        A mapping of Quil-T instruction name to the number of occurrences. Empty when
+        the program is pure gate model.
+    """
+    counts: dict[str, int] = {}
+    for instruction in program._program.to_instructions():  # pylint: disable=protected-access
+        if not instruction.is_quil_t():
+            continue
+        try:
+            name = instruction.to_quil().split("\n", 1)[0].split(maxsplit=1)[0]
+        except Exception:  # pylint: disable=broad-exception-caught
+            name = type(instruction).__name__
+        counts[name] = counts.get(name, 0) + 1
+    return counts
+
 
 def contains_quil_t(program: pyquil.Program) -> bool:
     """Check whether a Quil program uses any Quil-T (pulse/timing) features.
@@ -84,6 +167,42 @@ def contains_quil_t(program: pyquil.Program) -> bool:
     return program != program.remove_quil_t_instructions()
 
 
+def non_native_gate_counts(program: pyquil.Program, native_gates: set[str]) -> dict[str, int]:
+    """Count gates in a program that the device cannot execute without quilc.
+
+    The check is by instruction *name* against the device ISA, plus any gate carrying a
+    modifier (``CONTROLLED`` / ``DAGGER`` / ``FORKED``), which no Rigetti QPU executes
+    directly. It is deliberately one-sided: a gate is reported only when its name is
+    absent from the ISA, so a name that is present but parameterised outside the native
+    range (``RX(0.3)``, say, where only multiples of pi/2 are native) is not flagged.
+    That keeps the check from ever turning a program that runs today into an error; it
+    only recognises the unambiguous cases (``H``, ``CNOT``, ``T``, ...).
+
+    Args:
+        program: The Quil program to inspect.
+        native_gates: Uppercase instruction names from the device ISA.
+
+    Returns:
+        A mapping of gate label to the number of occurrences, ordered by first
+        appearance. Empty when every gate is (nominally) native.
+    """
+    counts: dict[str, int] = {}
+    for instruction in program.instructions:
+        if not isinstance(instruction, Gate):
+            continue
+        modifiers = [str(modifier) for modifier in instruction.modifiers]
+        if not modifiers and instruction.name.upper() in native_gates:
+            continue
+        label = " ".join([*modifiers, instruction.name])
+        counts[label] = counts.get(label, 0) + 1
+    return counts
+
+
+def _format_counts(counts: dict[str, int]) -> str:
+    """Render a name -> count mapping as ``NAME (n), OTHER (m)``."""
+    return ", ".join(f"{name} ({count})" for name, count in counts.items())
+
+
 class RigettiDeviceError(QbraidRuntimeError):
     """Class for errors raised while processing a Rigetti device."""
 
@@ -106,10 +225,15 @@ class RigettiDevice(QuantumDevice):
         pass an ``execution_options=`` kwarg to ``run()`` / ``submit()`` so
         each job can use a different connection strategy without forcing
         re-instantiation of the device.
+
+        ``_compiler_options`` is an escape hatch for a ``CompilerOpts`` that should
+        apply to every compilation on this device. Prefer the ``compiler_timeout`` /
+        ``protoquil`` keys of ``runtime_options`` on :meth:`run`, which scope the
+        options to a single call.
         """
         super().__init__(profile=profile)
         self._qcs_client = qcs_client
-        self._compiler_options = None
+        self._compiler_options: CompilerOpts | None = None
 
     @property
     def client(self) -> QCSClient:
@@ -272,31 +396,120 @@ class RigettiDevice(QuantumDevice):
             ) from exc
 
     @staticmethod
+    def _warn_unknown_runtime_options(runtime_options: dict[str, Any] | None) -> None:
+        """Log a warning naming any ``runtime_options`` key that has no effect.
+
+        Unrecognised keys used to be dropped in silence, which is indistinguishable
+        from the option being applied: a user passing ``compiler_timeout`` before it
+        was supported got no feedback that it did nothing.
+        """
+        if not runtime_options:
+            return
+
+        unknown = sorted(set(runtime_options) - _TRANSLATION_OPTION_KEYS - _COMPILER_OPTION_KEYS)
+        if unknown:
+            logger.warning(
+                "Ignoring unrecognized runtime_options key(s) for Rigetti: %s. "
+                "Recognized keys are: %s.",
+                ", ".join(unknown),
+                ", ".join(sorted(_TRANSLATION_OPTION_KEYS | _COMPILER_OPTION_KEYS)),
+            )
+
+    @staticmethod
     def _parse_runtime_options(
         runtime_options: dict[str, Any] | None,
     ) -> TranslationOptions | None:
         """Extract known translation keys from a runtime_options dict.
 
         Recognized translation keys are mapped to ``TranslationOptions.v2()``.
-        Unrecognized keys are silently ignored.
+        Unrecognized keys are ignored, with a warning naming each one.
 
         Returns:
             A ``TranslationOptions`` instance, or ``None`` when no recognised
             translation keys are present.
         """
+        RigettiDevice._warn_unknown_runtime_options(runtime_options)
+
         if not runtime_options:
             return None
 
-        translation_keys = {
-            "prepend_default_calibrations",
-            "passive_reset_delay_seconds",
-            "allow_unchecked_pointer_arithmetic",
-            "allow_frame_redefinition",
-        }
         translation_kwargs = {
-            k: runtime_options[k] for k in translation_keys if k in runtime_options
+            k: runtime_options[k] for k in _TRANSLATION_OPTION_KEYS if k in runtime_options
         }
         return TranslationOptions.v2(**translation_kwargs) if translation_kwargs else None
+
+    @staticmethod
+    def _parse_compiler_options(
+        runtime_options: dict[str, Any] | None,
+    ) -> CompilerOpts | None:
+        """Extract known quilc compiler keys from a runtime_options dict.
+
+        Recognized keys are ``compiler_timeout`` (seconds, or ``None`` for no limit)
+        and ``protoquil``. Unrecognized keys are ignored, with a warning naming each
+        one (emitted once per submission by :meth:`_parse_runtime_options`).
+
+        Returns:
+            A ``CompilerOpts`` instance, or ``None`` when no recognised compiler keys
+            are present, in which case :meth:`transform` applies
+            :data:`DEFAULT_COMPILER_TIMEOUT_S`.
+        """
+        if not runtime_options or not _COMPILER_OPTION_KEYS & set(runtime_options):
+            return None
+
+        # qcs_sdk's CompilerOpts default is 30s; ours is DEFAULT_COMPILER_TIMEOUT_S, so
+        # the timeout is always set explicitly, even when only `protoquil` was given.
+        kwargs: dict[str, Any] = {
+            "timeout": runtime_options.get("compiler_timeout", DEFAULT_COMPILER_TIMEOUT_S)
+        }
+        if "protoquil" in runtime_options:
+            kwargs["protoquil"] = runtime_options["protoquil"]
+        return CompilerOpts(**kwargs)
+
+    @staticmethod
+    def _compiler_timeout(runtime_options: dict[str, Any] | None) -> float | None:
+        """Return the quilc timeout (seconds) that ``runtime_options`` resolves to."""
+        if not runtime_options:
+            return DEFAULT_COMPILER_TIMEOUT_S
+        return runtime_options.get("compiler_timeout", DEFAULT_COMPILER_TIMEOUT_S)
+
+    def _resolve_compiler_options(self) -> _ResolvedCompilerOptions:
+        """Determine the quilc options in effect for the current compilation.
+
+        Precedence: options set by the enclosing :meth:`run` (from
+        ``runtime_options``), then a ``_compiler_options`` attribute set directly on
+        the device, then :data:`DEFAULT_COMPILER_TIMEOUT_S`.
+        """
+        resolved = _COMPILER_OPTIONS.get()
+        if resolved.options is not None:
+            return resolved
+
+        attr_options = getattr(self, "_compiler_options", None)
+        if attr_options is not None:
+            return _ResolvedCompilerOptions(attr_options, None)
+
+        return _ResolvedCompilerOptions(
+            CompilerOpts(timeout=DEFAULT_COMPILER_TIMEOUT_S), DEFAULT_COMPILER_TIMEOUT_S
+        )
+
+    def _native_gate_names(self) -> set[str] | None:
+        """Return the uppercase native instruction names from the device ISA.
+
+        Returns ``None`` when the ISA cannot be retrieved, so callers can fall back to
+        their previous behaviour rather than failing on a diagnostic lookup.
+        """
+        try:
+            isa = get_instruction_set_architecture(
+                quantum_processor_id=self.id, client=self._qcs_client
+            )
+            return {operation.name.upper() for operation in isa.instructions}
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Could not retrieve the ISA for quantum processor '%s' to check gate "
+                "nativity; proceeding without the check. Reason: %s",
+                self.id,
+                e,
+            )
+            return None
 
     def transform(self, run_input: pyquil.Program) -> pyquil.Program:
         """Compile a Quil program into the QPU's native gate set via quilc.
@@ -306,32 +519,102 @@ class RigettiDevice(QuantumDevice):
         is handled by ``ProgramSpec.serialize`` (configured by the provider
         as ``lambda program: program.out()``).
 
-        Programs using Quil-T (pulse/timing) features bypass quilc entirely and
-        are returned unchanged, since quilc cannot compile them. They are handed
-        to the QCS translation service by :meth:`_submit` as-is, which requires
-        that they already use only native gates (or supply their own
-        calibrations). See :func:`contains_quil_t`.
+        quilc cannot compile Quil-T (pulse/timing) instructions, so a program
+        containing them has to go straight to the QCS translation service, which in
+        exchange accepts only native gates. Three cases follow:
 
-        ``self._compiler_options`` may be set to a
-        ``qcs_sdk.compiler.quilc.CompilerOpts`` instance before calling
-        this method to customise quilc behaviour. When ``None`` (the
-        default), the qcs_sdk defaults are used.
+        1. **No Quil-T.** Compiled by quilc as usual.
+        2. **Quil-T, all gates already native.** Passed through untouched, preserving
+           both the Quil-T instructions and the program's explicit qubit placement
+           (quilc would rewire it).
+        3. **Quil-T plus non-native gates.** Unrunnable as-is. When the only Quil-T is
+           ``FENCE``, the fences are dropped and quilc compiles the program (see
+           below); otherwise :class:`RigettiDeviceError` is raised naming both the
+           Quil-T instructions and the non-native gates.
+
+        The ``FENCE`` carve-out exists because a fence is the one Quil-T instruction a
+        gate-model program acquires by accident: OpenQASM ``barrier`` lowers to
+        ``FENCE``, and qiskit's ``measure_all()`` inserts a barrier of its own. Dropping
+        the fences is not a lossy choice made lightly -- there is simply nowhere to put
+        them back. quilc rewrites the program wholesale (rewiring logical to physical
+        qubits, decomposing, reordering and merging gates across the fence boundary), so
+        a source-position fence has no well-defined image in the compiled output.
+
+        quilc options come from ``runtime_options`` passed to :meth:`run` (see
+        :meth:`_parse_compiler_options`), or from a ``_compiler_options`` attribute set
+        directly on the device. Absent both, the timeout is
+        :data:`DEFAULT_COMPILER_TIMEOUT_S`.
+
+        Raises:
+            RigettiDeviceError: If the program mixes Quil-T with non-native gates, or
+                if quilc is unreachable or compilation fails.
+        """
+        quil_t_counts = quil_t_instruction_counts(run_input)
+        if not quil_t_counts:
+            return self._compile_with_quilc(run_input)
+
+        native_gates = self._native_gate_names()
+        non_native = (
+            non_native_gate_counts(run_input, native_gates) if native_gates is not None else {}
+        )
+
+        if not non_native:
+            logger.info(
+                "Program uses Quil-T (pulse/timing) instructions (%s), which quilc cannot "
+                "compile; skipping quilc and passing the program to the QCS translation "
+                "service unchanged.",
+                _format_counts(quil_t_counts),
+            )
+            return run_input
+
+        if set(quil_t_counts) <= _FENCE_INSTRUCTION_NAMES:
+            logger.warning(
+                "Program contains %s but also %d non-native gate(s) (%s) that only quilc "
+                "can convert. Dropping the fence(s) so the program can be compiled; a "
+                "FENCE has no well-defined position in quilc's rewritten output. Note "
+                "that OpenQASM `barrier` becomes FENCE, and qiskit's measure_all() "
+                "inserts a barrier for you.",
+                _format_counts(quil_t_counts),
+                sum(non_native.values()),
+                _format_counts(non_native),
+            )
+            return self._compile_with_quilc(run_input.remove_quil_t_instructions())
+
+        raise RigettiDeviceError(self._quil_t_conflict_message(quil_t_counts, non_native))
+
+    def _quil_t_conflict_message(
+        self, quil_t_counts: dict[str, int], non_native: dict[str, int]
+    ) -> str:
+        """Build the error explaining why a Quil-T program cannot reach the QPU."""
+        lines = [
+            f"Program cannot be compiled for quantum processor '{self.id}'. It contains "
+            "Quil-T (pulse/timing) instructions, so it must bypass the quilc compiler and "
+            "go directly to QCS translation, which accepts only native gates. But it also "
+            f"contains {sum(non_native.values())} non-native gate(s), which only quilc can "
+            "convert.",
+            f"  - Quil-T instructions found: {_format_counts(quil_t_counts)}",
+            f"  - Non-native gates found: {_format_counts(non_native)}",
+            "To fix, either remove the Quil-T instructions so quilc can compile the "
+            "program, or rewrite the gates in the device's native set yourself.",
+        ]
+        if set(quil_t_counts) & _FENCE_INSTRUCTION_NAMES:
+            lines.append(
+                "Note: `barrier` in OpenQASM becomes Quil-T `FENCE`. If you used "
+                "measure_all() in Qiskit it inserted a barrier for you; use explicit "
+                "measure(...) or remove the barrier to let quilc compile normally."
+            )
+        return "\n".join(lines)
+
+    def _compile_with_quilc(self, run_input: pyquil.Program) -> pyquil.Program:
+        """Run quilc over a pure gate-model program and return the native result.
 
         Raises:
             RigettiDeviceError: If quilc is unreachable or compilation fails.
         """
-        if contains_quil_t(run_input):
-            logger.info(
-                "Program uses Quil-T (pulse/timing) instructions, which quilc cannot "
-                "compile; skipping quilc and passing the program to the QCS translation "
-                "service unchanged. It must already use only native gates."
-            )
-            return run_input
-
         # Fail fast if quilc isn't running, instead of hanging in compile_program.
         self._probe_quilc_reachable()
 
-        compiler_options = getattr(self, "_compiler_options", None)
+        compiler_options, timeout = self._resolve_compiler_options()
 
         try:
             compilation_result = compile_program(
@@ -346,6 +629,17 @@ class RigettiDevice(QuantumDevice):
             )
             compiled_quil = compilation_result.program.to_quil()
         except Exception as e:
+            message = str(e)
+            if any(marker in message.lower() for marker in _QUILC_TIMEOUT_MARKERS):
+                # quilc's raw text here is a lisp-flavoured "time limit: 30.0d0 seconds",
+                # which says nothing about the knob that controls it.
+                limit = f"within {timeout}s" if timeout is not None else "within its time limit"
+                raise RigettiDeviceError(
+                    f"quilc could not compile this program for quantum processor "
+                    f"'{self.id}' {limit}. Retry with a longer limit, e.g. "
+                    "runtime_options={'compiler_timeout': 300}, or reduce the circuit's "
+                    f"depth or qubit count. quilc reported: {e}"
+                ) from e
             # Surface quilc's own reason: it is the only thing that says *why*. quilc's
             # reachability is already established by the probe above, so the failure is
             # about the program itself.
@@ -441,8 +735,14 @@ class RigettiDevice(QuantumDevice):
                 ``prepend_default_calibrations``,
                 ``passive_reset_delay_seconds``,
                 ``allow_unchecked_pointer_arithmetic``, and
-                ``allow_frame_redefinition``. Unrecognised keys are
-                silently ignored.
+                ``allow_frame_redefinition``. Unrecognised keys are ignored,
+                with a warning naming each one.
+
+        Note:
+            The quilc keys (``compiler_timeout``, ``protoquil``) apply during
+            compilation, which happens in :meth:`transform` before ``submit()`` is
+            reached. They take effect only when ``runtime_options`` is passed to
+            :meth:`run`.
         """
         translation_options = self._parse_runtime_options(runtime_options)
 
@@ -465,6 +765,37 @@ class RigettiDevice(QuantumDevice):
             execution_options=execution_options,
             translation_options=translation_options,
         )
+
+    def run(
+        self,
+        run_input: pyquil.Program | list[pyquil.Program],
+        *args: Any,
+        **kwargs: Any,
+    ) -> RigettiJob | list[RigettiJob]:
+        """Run one or more programs on this device.
+
+        Identical to :meth:`QuantumDevice.run`, except that the quilc keys in
+        ``runtime_options`` (``compiler_timeout``, ``protoquil``) are published for
+        :meth:`transform` for the duration of the call. ``run()`` compiles before it
+        submits, so options consumed by quilc cannot be forwarded through
+        :meth:`submit` the way the translation options are.
+
+        Args:
+            run_input: A program, or list of programs, to run on the device.
+            **kwargs: Forwarded to :meth:`submit`. ``runtime_options`` must be passed
+                as a keyword argument for its quilc keys to take effect; see
+                :meth:`_parse_compiler_options` and :meth:`_parse_runtime_options`.
+        """
+        runtime_options = kwargs.get("runtime_options")
+        resolved = _ResolvedCompilerOptions(
+            self._parse_compiler_options(runtime_options),
+            self._compiler_timeout(runtime_options),
+        )
+        token = _COMPILER_OPTIONS.set(resolved)
+        try:
+            return cast("RigettiJob | list[RigettiJob]", super().run(run_input, *args, **kwargs))
+        finally:
+            _COMPILER_OPTIONS.reset(token)
 
     def live_qubits(self) -> list[int]:
         """

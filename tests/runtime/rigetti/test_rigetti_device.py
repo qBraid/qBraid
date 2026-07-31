@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime
 import importlib.util
+import logging
 import re
 from unittest.mock import MagicMock, patch
 
@@ -39,13 +40,18 @@ pytestmark = pytest.mark.skipif(not rigetti_deps_found, reason="Rigetti dependen
 if rigetti_deps_found:
     import pyquil
     import pyquil.gates
-    from qcs_sdk.compiler.quilc import CompilerOpts
+    from qcs_sdk.compiler.quilc import DEFAULT_COMPILER_TIMEOUT, CompilerOpts
     from qcs_sdk.qpu import ListQuantumProcessorsError
     from qcs_sdk.qpu.api import SubmissionError
     from qcs_sdk.qpu.translation import TranslationOptions
 
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
-    from qbraid.runtime.rigetti.device import RigettiDeviceError
+    from qbraid.runtime.rigetti.device import (
+        DEFAULT_COMPILER_TIMEOUT_S,
+        RigettiDeviceError,
+        non_native_gate_counts,
+        quil_t_instruction_counts,
+    )
     from qbraid.runtime.rigetti.job import RigettiJobError
 else:
     RigettiDevice = None
@@ -343,6 +349,23 @@ def _mock_compile_pipeline(compiled_quil: str = "COMPILED_QUIL"):
     return fake_compilation_result
 
 
+# The Rigetti native instruction set, as reported by the QCS ISA endpoint.
+NATIVE_INSTRUCTION_NAMES = ("RX", "RZ", "CZ", "XY", "ISWAP", "MEASURE", "WAIT", "RESET")
+
+
+def _mock_isa(instruction_names: tuple[str, ...] = NATIVE_INSTRUCTION_NAMES):
+    """Return a fake ISA whose .instructions carry the given native gate names."""
+    isa = MagicMock()
+    operations = []
+    for instruction_name in instruction_names:
+        operation = MagicMock()
+        # `name` is a MagicMock constructor kwarg, so it must be assigned after init.
+        operation.name = instruction_name
+        operations.append(operation)
+    isa.instructions = operations
+    return isa
+
+
 class TestRigettiDeviceTransform:
     """Tests for RigettiDevice.transform (compilation only).
 
@@ -460,7 +483,8 @@ class TestRigettiDeviceTransform:
         """quilc cannot compile Quil-T, so such programs must skip it untouched.
 
         Sending them to quilc is what produced the opaque
-        "5.0d-4 is not of type QUBIT" failure from the RPCQ server.
+        "5.0d-4 is not of type QUBIT" failure from the RPCQ server. This holds only
+        while the remaining gates are already native, which they are here (RX).
         """
         # pylint: disable-next=import-outside-toplevel
         import pyquil
@@ -468,6 +492,10 @@ class TestRigettiDeviceTransform:
         program = pyquil.Program(f"DECLARE ro BIT[1]\nRX(pi) 0\n{quil_t_line}\nMEASURE 0 ro[0]")
 
         with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
             patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
             patch.object(rigetti_device, "_probe_quilc_reachable") as mock_probe,
         ):
@@ -475,6 +503,27 @@ class TestRigettiDeviceTransform:
 
         mock_compile.assert_not_called()
         mock_probe.assert_not_called()
+        assert result.out() == program.out()
+
+    def test_transform_bypasses_quilc_when_isa_unavailable(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A failed ISA lookup must not break the bypass; nativity is only diagnostic."""
+        # pylint: disable-next=import-outside-toplevel
+        import pyquil
+
+        program = pyquil.Program("DECLARE ro BIT[1]\nH 0\nDELAY 0 0.0005\nMEASURE 0 ro[0]")
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                side_effect=RuntimeError("ISA unavailable"),
+            ),
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+        ):
+            result = rigetti_device.transform(program)
+
+        mock_compile.assert_not_called()
         assert result.out() == program.out()
 
     def test_transform_still_uses_quilc_without_quil_t(self, rigetti_device: RigettiDevice) -> None:
@@ -891,12 +940,99 @@ class TestParseRuntimeOptions:
         )
         assert isinstance(result, TranslationOptions)
 
-    def test_unknown_keys_are_silently_ignored(self) -> None:
-        """Unrecognized keys do not cause errors."""
-        result = RigettiDevice._parse_runtime_options(
-            {"unknown_key": "some_value", "another_key": 42}
-        )
+    def test_unknown_keys_are_ignored_but_warned_about(self, caplog) -> None:
+        """Unrecognized keys do not cause errors, but must not pass in silence.
+
+        Silently dropping them is indistinguishable from applying them: a user passing
+        `compiler_timeout` before it was supported got no signal that it did nothing.
+        """
+        with caplog.at_level(logging.WARNING, logger="qbraid"):
+            result = RigettiDevice._parse_runtime_options(
+                {"unknown_key": "some_value", "another_key": 42}
+            )
+
         assert result is None
+        assert "unknown_key" in caplog.text
+        assert "another_key" in caplog.text
+
+    def test_known_keys_do_not_warn(self, caplog) -> None:
+        """Recognized translation and compiler keys must not be reported as ignored."""
+        with caplog.at_level(logging.WARNING, logger="qbraid"):
+            RigettiDevice._parse_runtime_options(
+                {"prepend_default_calibrations": False, "compiler_timeout": 300}
+            )
+
+        assert "Ignoring unrecognized" not in caplog.text
+
+
+# ===========================================================================
+# Device – _parse_compiler_options
+# ===========================================================================
+
+
+class TestParseCompilerOptions:
+    """Tests for RigettiDevice._parse_compiler_options and _compiler_timeout."""
+
+    def test_none_and_empty_return_none(self) -> None:
+        """Without compiler keys there is nothing to build; transform applies the default."""
+        assert RigettiDevice._parse_compiler_options(None) is None
+        assert RigettiDevice._parse_compiler_options({}) is None
+
+    def test_translation_only_keys_return_none(self) -> None:
+        """Translation keys are not compiler keys."""
+        assert (
+            RigettiDevice._parse_compiler_options({"prepend_default_calibrations": False}) is None
+        )
+
+    def test_compiler_timeout_builds_opts(self) -> None:
+        """compiler_timeout must reach CompilerOpts.timeout."""
+        with patch("qbraid.runtime.rigetti.device.CompilerOpts") as mock_opts:
+            RigettiDevice._parse_compiler_options({"compiler_timeout": 300})
+
+        assert mock_opts.call_args.kwargs == {"timeout": 300}
+
+    def test_protoquil_alone_keeps_default_timeout(self) -> None:
+        """protoquil on its own must not silently revert the timeout to qcs_sdk's 30s."""
+        with patch("qbraid.runtime.rigetti.device.CompilerOpts") as mock_opts:
+            RigettiDevice._parse_compiler_options({"protoquil": True})
+
+        assert mock_opts.call_args.kwargs == {
+            "timeout": DEFAULT_COMPILER_TIMEOUT_S,
+            "protoquil": True,
+        }
+
+    def test_explicit_none_timeout_is_honored(self) -> None:
+        """compiler_timeout=None means "no limit" and must not be replaced by the default."""
+        with patch("qbraid.runtime.rigetti.device.CompilerOpts") as mock_opts:
+            RigettiDevice._parse_compiler_options({"compiler_timeout": None})
+
+        assert mock_opts.call_args.kwargs == {"timeout": None}
+
+    def test_returns_compiler_opts_instance(self) -> None:
+        """The unpatched path returns a real CompilerOpts."""
+        assert isinstance(
+            RigettiDevice._parse_compiler_options({"compiler_timeout": 300}), CompilerOpts
+        )
+
+    @pytest.mark.parametrize(
+        "runtime_options,expected",
+        [
+            (None, DEFAULT_COMPILER_TIMEOUT_S),
+            ({}, DEFAULT_COMPILER_TIMEOUT_S),
+            ({"protoquil": True}, DEFAULT_COMPILER_TIMEOUT_S),
+            ({"compiler_timeout": 300}, 300),
+            ({"compiler_timeout": None}, None),
+        ],
+        ids=["none", "empty", "protoquil_only", "explicit", "unlimited"],
+    )
+    def test_compiler_timeout_resolution(self, runtime_options, expected) -> None:
+        """The timeout reported in error messages must match what quilc was given."""
+        assert RigettiDevice._compiler_timeout(runtime_options) == expected
+
+    def test_default_timeout_is_longer_than_qcs_sdk_default(self) -> None:
+        """The whole point of the default: qcs_sdk's 30s cuts off ordinary compilations."""
+        assert DEFAULT_COMPILER_TIMEOUT_S == 180.0
+        assert DEFAULT_COMPILER_TIMEOUT_S > DEFAULT_COMPILER_TIMEOUT
 
 
 # ===========================================================================
@@ -937,8 +1073,12 @@ class TestRigettiDeviceTransformWithCompilerOptions:
 
         assert mock_compile.call_args.kwargs["options"] is opts
 
-    def test_transform_defaults_to_none_options(self, rigetti_device: RigettiDevice) -> None:
-        """Without _compiler_options set, compile_program receives options=None."""
+    def test_transform_defaults_to_configured_timeout(self, rigetti_device: RigettiDevice) -> None:
+        """Without _compiler_options set, quilc must get our default timeout, not None.
+
+        Passing options=None leaves qcs_sdk's 30s default in force, which is what cut
+        off compilations that finish in 20-230s against a 100+ qubit ISA.
+        """
         program = pyquil.Program()
         program.inst(pyquil.gates.H(0))
         fake_comp = _mock_compile_pipeline()
@@ -957,10 +1097,71 @@ class TestRigettiDeviceTransformWithCompilerOptions:
                 "qbraid.runtime.rigetti.device.compile_program",
                 return_value=fake_comp,
             ) as mock_compile,
+            patch("qbraid.runtime.rigetti.device.CompilerOpts") as mock_opts,
         ):
             rigetti_device.transform(program)
 
-        assert mock_compile.call_args.kwargs["options"] is None
+        assert mock_opts.call_args.kwargs == {"timeout": DEFAULT_COMPILER_TIMEOUT_S}
+        assert mock_compile.call_args.kwargs["options"] is mock_opts.return_value
+
+    def test_transform_rewrites_quilc_timeout_error(self, rigetti_device: RigettiDevice) -> None:
+        """A quilc timeout must name the knob that controls it, not just quote quilc."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        quilc_error = RuntimeError(
+            "compilation error from RPCQ: exceeded time limit: 30.0d0 seconds"
+        )
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                side_effect=quilc_error,
+            ),
+            pytest.raises(RigettiDeviceError) as exc_info,
+        ):
+            rigetti_device.transform(program)
+
+        message = str(exc_info.value)
+        assert "compiler_timeout" in message
+        assert f"within {DEFAULT_COMPILER_TIMEOUT_S}s" in message
+        # quilc's own text is still carried, so nothing is lost by rewriting.
+        assert "time limit" in message
+
+    def test_transform_non_timeout_error_keeps_generic_wrapper(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Only timeouts are rewritten; other quilc failures keep the existing message."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                side_effect=RuntimeError("unsupported gate"),
+            ),
+            pytest.raises(RigettiDeviceError, match="quilc failed to compile") as exc_info,
+        ):
+            rigetti_device.transform(program)
+
+        assert "compiler_timeout" not in str(exc_info.value)
 
 
 # ===========================================================================
@@ -1159,3 +1360,375 @@ class TestRigettiDeviceRunRuntimeOptions:
 
         assert isinstance(job, RigettiJob)
         assert mock_translate.call_args.kwargs["translation_options"] is None
+
+
+# ===========================================================================
+# Program inspection helpers
+# ===========================================================================
+
+
+class TestQuilTInstructionCounts:
+    """Tests for quil_t_instruction_counts."""
+
+    def test_gate_model_program_has_no_quil_t(self) -> None:
+        """A pure gate-model program reports nothing."""
+        program = pyquil.Program("DECLARE ro BIT[1]\nH 0\nMEASURE 0 ro[0]\n")
+        assert not quil_t_instruction_counts(program)
+
+    def test_fence_is_counted_by_name(self) -> None:
+        """A barrier lowered to FENCE must be identifiable as *only* a fence."""
+        program = pyquil.Program("DECLARE ro BIT[1]\nH 0\nFENCE 0\nFENCE\nMEASURE 0 ro[0]\n")
+        assert quil_t_instruction_counts(program) == {"FENCE": 2}
+
+    def test_mixed_quil_t_instructions_are_counted_separately(self) -> None:
+        """DELAY and FENCE must not be conflated: only FENCE is safe to drop."""
+        program = pyquil.Program("H 0\nFENCE 0\nDELAY 0 1e-6\nDELAY 1 1e-6\n")
+        assert quil_t_instruction_counts(program) == {"FENCE": 1, "DELAY": 2}
+
+    def test_definitions_are_counted(self) -> None:
+        """DEFCAL / DEFFRAME make a program genuinely pulse-level."""
+        program = pyquil.Program(
+            'DEFFRAME 0 "rf":\n    SAMPLE-RATE: 1.0\n\nDEFCAL X 0:\n    NOP\n\nX 0\n'
+        )
+        assert quil_t_instruction_counts(program) == {"DEFFRAME": 1, "DEFCAL": 1}
+
+    def test_agrees_with_contains_quil_t(self) -> None:
+        """The counts helper and the existing boolean must never disagree."""
+        # pylint: disable-next=import-outside-toplevel
+        from qbraid.runtime.rigetti.device import contains_quil_t
+
+        for quil in (
+            "H 0\n",
+            "H 0\nFENCE 0\n",
+            "H 0\nDELAY 0 1e-6\n",
+            'DEFFRAME 0 "rf":\n    SAMPLE-RATE: 1.0\n\nH 0\n',
+        ):
+            program = pyquil.Program(quil)
+            assert bool(quil_t_instruction_counts(program)) == contains_quil_t(program)
+
+
+class TestNonNativeGateCounts:
+    """Tests for non_native_gate_counts."""
+
+    NATIVE = set(NATIVE_INSTRUCTION_NAMES)
+
+    def test_native_program_reports_nothing(self) -> None:
+        """RX/RZ/CZ programs are exactly what the QCS translator accepts."""
+        program = pyquil.Program("DECLARE ro BIT[1]\nRX(pi) 0\nCZ 0 1\nMEASURE 0 ro[0]\n")
+        assert not non_native_gate_counts(program, self.NATIVE)
+
+    def test_non_native_gates_are_counted(self) -> None:
+        """H and CNOT are the gates qiskit-derived programs actually carry."""
+        program = pyquil.Program("H 0\nH 1\nCNOT 0 1\nRZ(0.3) 0\n")
+        assert non_native_gate_counts(program, self.NATIVE) == {"H": 2, "CNOT": 1}
+
+    def test_modified_gates_are_non_native(self) -> None:
+        """No Rigetti QPU executes a modifier directly, even on a native base gate."""
+        program = pyquil.Program("CONTROLLED X 0 1\nDAGGER RX(pi/2) 0\n")
+        assert non_native_gate_counts(program, self.NATIVE) == {
+            "CONTROLLED X": 1,
+            "DAGGER RX": 1,
+        }
+
+    def test_measure_and_declare_are_not_gates(self) -> None:
+        """Non-gate instructions must never be reported as non-native gates."""
+        program = pyquil.Program("DECLARE ro BIT[1]\nMEASURE 0 ro[0]\nRESET\n")
+        assert not non_native_gate_counts(program, self.NATIVE)
+
+    def test_parameterized_native_name_is_not_flagged(self) -> None:
+        """The check is deliberately one-sided: RX(0.3) is not native, but is not flagged.
+
+        Flagging it would need angle-range knowledge the ISA does not carry, and a
+        false positive would turn a program that runs today into an error.
+        """
+        program = pyquil.Program("RX(0.3) 0\n")
+        assert not non_native_gate_counts(program, self.NATIVE)
+
+
+# ===========================================================================
+# Device – transform: Quil-T and quilc interaction
+# ===========================================================================
+
+
+class TestTransformQuilTHandling:
+    """Tests for how transform() reconciles Quil-T with quilc's native-gate requirement.
+
+    A single FENCE used to disable gate compilation for the whole program: OpenQASM
+    `barrier` lowers to FENCE, qiskit's measure_all() inserts a barrier, and the
+    resulting program bypassed quilc and was rejected by QCS translation at the first
+    non-native gate.
+    """
+
+    FENCED_NON_NATIVE = "DECLARE ro BIT[2]\nH 0\nCNOT 0 1\nFENCE 0 1\nMEASURE 0 ro[0]\n"
+
+    def test_fence_only_program_with_non_native_gates_is_compiled(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """The bug: one FENCE must not disable gate compilation for the whole program."""
+        program = pyquil.Program(self.FENCED_NON_NATIVE)
+        fake_comp = _mock_compile_pipeline(compiled_quil="RX(pi/2) 0\n")
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+        ):
+            rigetti_device.transform(program)
+
+        mock_compile.assert_called_once()
+        # The fence is dropped before compiling: quilc rejects Quil-T outright, and a
+        # source-position fence has no well-defined image in its rewritten output.
+        assert "FENCE" not in mock_compile.call_args.kwargs["quil"]
+        assert "CNOT" in mock_compile.call_args.kwargs["quil"]
+
+    def test_fence_only_program_with_native_gates_still_bypasses(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Programs that run today must keep running today, byte for byte.
+
+        An already-native program bypassing quilc keeps both its fences and its
+        explicit qubit placement; sending it to quilc would rewire it.
+        """
+        program = pyquil.Program("DECLARE ro BIT[1]\nRX(pi) 0\nFENCE 0\nMEASURE 0 ro[0]\n")
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+        ):
+            result = rigetti_device.transform(program)
+
+        mock_compile.assert_not_called()
+        assert result.out() == program.out()
+
+    def test_other_quil_t_with_non_native_gates_raises(self, rigetti_device: RigettiDevice) -> None:
+        """The residual case must fail fast here, not as opaque QCS translation text."""
+        program = pyquil.Program("DECLARE ro BIT[2]\nH 0\nCNOT 0 1\nDELAY 0 1e-6\n")
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+            pytest.raises(RigettiDeviceError) as exc_info,
+        ):
+            rigetti_device.transform(program)
+
+        mock_compile.assert_not_called()
+        message = str(exc_info.value)
+        assert DEVICE_ID in message
+        assert "DELAY (1)" in message
+        assert "H (1)" in message and "CNOT (1)" in message
+        assert "2 non-native gate(s)" in message
+
+    def test_error_mentions_barrier_when_a_fence_is_involved(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Without this note a user cannot connect "Quil-T" to anything they wrote."""
+        program = pyquil.Program("DECLARE ro BIT[2]\nH 0\nFENCE 0 1\nDELAY 0 1e-6\n")
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            pytest.raises(RigettiDeviceError) as exc_info,
+        ):
+            rigetti_device.transform(program)
+
+        message = str(exc_info.value)
+        assert "barrier" in message
+        assert "measure_all()" in message
+
+    def test_error_omits_barrier_note_without_a_fence(self, rigetti_device: RigettiDevice) -> None:
+        """A pure DELAY program has no barrier to blame; the note would be noise."""
+        program = pyquil.Program("DECLARE ro BIT[1]\nH 0\nDELAY 0 1e-6\n")
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            pytest.raises(RigettiDeviceError) as exc_info,
+        ):
+            rigetti_device.transform(program)
+
+        assert "measure_all()" not in str(exc_info.value)
+
+    def test_fence_only_program_without_isa_falls_back_to_bypass(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A diagnostic ISA lookup failure must not change which path is taken."""
+        program = pyquil.Program(self.FENCED_NON_NATIVE)
+
+        with (
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                side_effect=RuntimeError("ISA unavailable"),
+            ),
+            patch("qbraid.runtime.rigetti.device.compile_program") as mock_compile,
+        ):
+            result = rigetti_device.transform(program)
+
+        mock_compile.assert_not_called()
+        assert result.out() == program.out()
+
+
+# ===========================================================================
+# Device – run: compiler options wiring
+# ===========================================================================
+
+
+class TestRigettiDeviceRunCompilerOptions:
+    """Tests for runtime_options quilc keys reaching transform() via run().
+
+    run() compiles before it submits, so these cannot ride along with the translation
+    options through submit(); they are published on a ContextVar for the call.
+    """
+
+    @staticmethod
+    def _patched_run(rigetti_device: RigettiDevice, **run_kwargs):
+        """Run a trivial program with the whole submit pipeline mocked out."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+        fake_comp = _mock_compile_pipeline()
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ) as mock_translate,
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+            patch("qbraid.runtime.rigetti.device.CompilerOpts") as mock_opts,
+        ):
+            job = rigetti_device.run(program, shots=1, **run_kwargs)
+
+        return job, mock_compile, mock_translate, mock_opts
+
+    def test_compiler_timeout_reaches_quilc(self, rigetti_device: RigettiDevice) -> None:
+        """The reported bug: compiler_timeout was accepted and then dropped entirely."""
+        _, mock_compile, _, mock_opts = self._patched_run(
+            rigetti_device, runtime_options={"compiler_timeout": 300}
+        )
+
+        assert mock_opts.call_args.kwargs == {"timeout": 300}
+        assert mock_compile.call_args.kwargs["options"] is mock_opts.return_value
+
+    def test_compiler_and_translation_keys_coexist(self, rigetti_device: RigettiDevice) -> None:
+        """One dict feeds two different stages; neither may swallow the other's keys."""
+        _, mock_compile, mock_translate, mock_opts = self._patched_run(
+            rigetti_device,
+            runtime_options={"compiler_timeout": 300, "prepend_default_calibrations": False},
+        )
+
+        assert mock_compile.call_args.kwargs["options"] is mock_opts.return_value
+        assert isinstance(
+            mock_translate.call_args.kwargs["translation_options"], TranslationOptions
+        )
+
+    def test_run_without_options_uses_default_timeout(self, rigetti_device: RigettiDevice) -> None:
+        """No runtime_options still means our default, not qcs_sdk's 30s."""
+        _, mock_compile, _, mock_opts = self._patched_run(rigetti_device)
+
+        assert mock_opts.call_args.kwargs == {"timeout": DEFAULT_COMPILER_TIMEOUT_S}
+        assert mock_compile.call_args.kwargs["options"] is mock_opts.return_value
+
+    def test_context_is_cleared_after_run(self, rigetti_device: RigettiDevice) -> None:
+        """Per-run options must not leak into a later transform() on the same device."""
+        # pylint: disable-next=import-outside-toplevel
+        from qbraid.runtime.rigetti.device import _COMPILER_OPTIONS
+
+        self._patched_run(rigetti_device, runtime_options={"compiler_timeout": 300})
+
+        assert _COMPILER_OPTIONS.get().options is None
+
+    def test_context_is_cleared_when_run_raises(self, rigetti_device: RigettiDevice) -> None:
+        """A failed run must not strand its options in the context either."""
+        # pylint: disable-next=import-outside-toplevel
+        from qbraid.runtime.rigetti.device import _COMPILER_OPTIONS
+
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                side_effect=RuntimeError("boom"),
+            ),
+            pytest.raises(RigettiDeviceError),
+        ):
+            rigetti_device.run(program, shots=1, runtime_options={"compiler_timeout": 300})
+
+        assert _COMPILER_OPTIONS.get().options is None
+
+    def test_run_options_take_precedence_over_device_attribute(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A per-run timeout must win over one parked on the device."""
+        rigetti_device._compiler_options = CompilerOpts(timeout=60.0)
+
+        _, mock_compile, _, mock_opts = self._patched_run(
+            rigetti_device, runtime_options={"compiler_timeout": 300}
+        )
+
+        assert mock_compile.call_args.kwargs["options"] is mock_opts.return_value
+
+    def test_timeout_error_reports_the_requested_limit(self, rigetti_device: RigettiDevice) -> None:
+        """The rewritten timeout error must name the limit actually in force."""
+        program = pyquil.Program()
+        program.inst(pyquil.gates.H(0))
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                side_effect=RuntimeError("exceeded time limit: 300.0d0 seconds"),
+            ),
+            pytest.raises(RigettiDeviceError, match="within 300s"),
+        ):
+            rigetti_device.run(program, shots=1, runtime_options={"compiler_timeout": 300})
