@@ -36,6 +36,9 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed OpenQASM 2 programs converting to pyQuil with their measurements shuffled in among the gates and split across one single-bit register each (`m0`, `m1`, ...), which Rigetti's quilc rejects as "Misplaced or illegal instruction in ProtoQuil program". `qasm2 -> pyquil` is now a direct conversion that keeps the source's instruction order and puts every measurement in one `ro` register, at the bit index the source's `creg` names ([#1296](https://github.com/qBraid/qBraid/pull/1296))
+- Fixed `openqasm3_to_pyquil` padding declared-but-idle qubits past the last one in use with identity, so a program using 2 of a declared 20 qubits asked the QPU for all 20. Only gaps between qubits in use are padded now ([#1296](https://github.com/qBraid/qBraid/pull/1296))
+- Fixed `pyquil_to_cirq` rejecting `RXX`/`RYY`/`RZZ` as "noise gates". They now convert to Cirq's `XXPowGate`/`YYPowGate`/`ZZPowGate` ([#1296](https://github.com/qBraid/qBraid/pull/1296))
 - Fixed OpenQuantum Terms of Use errors never reaching the intended `QbraidRuntimeError`: `qbraid_core.Session` assumed API `message` was a string and crashed with `'list' object has no attribute 'endswith'` when Open Quantum returned a list.
 - Pinned the format-check `ruff` to `<0.16`: ruff 0.16.0 changed its default lint rules and flags ~742 pre-existing issues repo-wide, breaking CI format checks for every PR
 - Fixed `openqasm3_to_pyquil` raising `AttributeError` for programs addressing physical qubits (`x $0;`) rather than a declared register. Physical qubit indices now pass through verbatim and are not identity-padded, since such a program is already mapped to specific hardware ([#1286](https://github.com/qBraid/qBraid/pull/1286))

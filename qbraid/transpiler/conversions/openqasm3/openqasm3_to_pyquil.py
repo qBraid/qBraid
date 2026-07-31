@@ -148,8 +148,8 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
     Supports the standard gate set (including gate modifiers and controlled gates,
     which ``pyqasm`` decomposes during unrolling), measurement, ``barrier`` (-> pyQuil
     ``FENCE``), ``reset`` (-> ``RESET``), ``delay`` (-> ``DELAY``), and ``if (c == 0|1)``
-    classical feedforward (-> conditional ``JUMP-WHEN``). Declared-but-idle qubits are
-    padded with identity so the operator dimension matches the source register width.
+    classical feedforward (-> conditional ``JUMP-WHEN``). Idle qubits between two
+    qubits that are in use are padded with identity so the operator spans them.
 
     Qubits may be addressed either through a declared register (``qubit[2] q; h q[0];``)
     or as physical qubits (``h $0;``). Physical qubit indices are passed through
@@ -275,8 +275,14 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
     for statement in unrolled.statements:
         emit(statement, quil)
 
-    # pad idle declared qubits with identity so the operator spans the full register
-    for index in range(num_qubits):
+    # A Quil program's width is whatever its instructions touch, so an idle qubit
+    # *between* two qubits in use (``qubit[3] q; x q[0]; x q[2];``) would leave a hole
+    # the operator has to span; pad those with identity. Idle qubits past the last one
+    # in use need no padding: the program simply does not use them, which is how every
+    # other conversion target represents a declared-but-unused qubit. Padding them
+    # would also make the program claim hardware it has no work for.
+    last_used = max((index for index in used_qubits if index < num_qubits), default=-1)
+    for index in range(last_used):
         if index not in used_qubits:
             quil += pyquil_gates.I(index)
 

@@ -472,3 +472,20 @@ def test_openqasm3_to_pyquil_unsupported_condition_raises():
     """
     with pytest.raises(ProgramConversionError):
         openqasm3_to_pyquil(qasm)
+
+
+def test_openqasm3_to_pyquil_trailing_idle_qubits_not_padded():
+    """Idle qubits past the last one in use are left out rather than padded with I.
+
+    Only a *gap* needs padding. Padding the tail would make the program claim
+    hardware it has no work for, which on a QPU means a wider rewiring problem
+    for no benefit.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[5] q;
+    x q[0];
+    x q[2];
+    """
+    assert openqasm3_to_pyquil(qasm).out().splitlines() == ["X 0", "X 2", "I 1"]
