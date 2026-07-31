@@ -29,6 +29,9 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
+from aqt_connector.models.arnica.resources import ResourceStatus
+from aqt_connector.models.arnica.response_bodies.resources import ResourceDetails
+from aqt_connector.models.arnica.response_bodies.workspaces import Workspace
 from qbraid_core.exceptions import RequestsApiError
 
 from qbraid.programs import ProgramSpec
@@ -41,50 +44,61 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 # ---------------------------------------------------------------------------
 
 
-def test_build_profile_targets_aqt_alias():
-    """The profile's ``ProgramSpec`` targets the ``aqt`` alias, with arnica routing extras."""
-    profile = AQTProvider._build_profile(
-        {"id": "ibex", "type": "device", "available_qubits": 12}, "aqt"
-    )
-    assert profile.device_id == "aqt/ibex"
+def test_build_profile_targets_aqt_alias(device_resource):
+    """The profile's ``ProgramSpec`` targets ``aqt_connector``, with arnica routing extras.
+
+    Built from the real ``qbraid/ibex`` resource body, so the qubit count and the
+    simulator/device split reflect what arnica actually reports for the QPU.
+    """
+    profile = AQTProvider._build_profile(ResourceDetails.model_validate(device_resource), "qbraid")
+    assert profile.device_id == "qbraid/ibex"
     assert profile.simulator is False
     assert profile.num_qubits == 12
     assert profile.provider_name == "AQT"
-    assert profile.get("aqt_workspace_id") == "aqt"
+    assert profile.get("aqt_workspace_id") == "qbraid"
     assert profile.get("aqt_resource_id") == "ibex"
     assert profile.get("aqt_resource_type") == "device"
 
     spec = profile.program_spec
     assert isinstance(spec, ProgramSpec)
-    assert spec.alias == "aqt"
+    assert spec.alias == "aqt_connector"
+    assert spec.native is True
 
 
-def test_get_devices():
+def test_get_devices(workspaces, resources):
     """``get_devices`` builds one ``AQTDevice`` per resource across visible workspaces."""
     provider = AQTProvider(access_token="tok")
     provider.session.get_workspaces = MagicMock(
-        return_value=[{"id": "default", "resources": [{"id": "sim1", "type": "simulator"}]}]
+        return_value=[Workspace.model_validate(w) for w in workspaces]
     )
     provider.session.get_resource = MagicMock(
-        return_value={"id": "sim1", "type": "simulator", "available_qubits": 20, "status": "online"}
+        side_effect=lambda rid: ResourceDetails.model_validate(resources[rid])
     )
     devices = provider.get_devices()
-    assert len(devices) == 1
-    assert isinstance(devices[0], AQTDevice)
-    assert devices[0].id == "default/sim1"
+
+    # The real account sees the Ibex QPU plus AQT's two public simulators.
+    assert [d.id for d in devices] == [
+        "qbraid/ibex",
+        "aqt_simulators/simulator_no_noise",
+        "aqt_simulators/simulator_noise",
+    ]
+    assert all(isinstance(d, AQTDevice) for d in devices)
+    assert devices[0].profile.simulator is False
+    assert devices[0].profile.num_qubits == 12
+    assert devices[1].profile.simulator is True
 
 
-def test_get_device():
+def test_get_device(simulator_resource):
     """``get_device`` resolves a ``"<workspace>/<resource>"`` id to an ``AQTDevice``."""
     provider = AQTProvider(access_token="tok")
     provider.session.get_resource = MagicMock(
-        return_value={"id": "sim1", "type": "simulator", "available_qubits": 20}
+        return_value=ResourceDetails.model_validate(simulator_resource)
     )
-    device = provider.get_device("default/sim1")
+    device = provider.get_device("aqt_simulators/simulator_no_noise")
     assert isinstance(device, AQTDevice)
-    assert device.id == "default/sim1"
-    assert device.workspace_id == "default"
-    assert device.resource_id == "sim1"
+    assert device.id == "aqt_simulators/simulator_no_noise"
+    assert device.workspace_id == "aqt_simulators"
+    assert device.resource_id == "simulator_no_noise"
 
 
 def test_get_device_invalid_id():
@@ -127,6 +141,27 @@ def test_session_base_url_strips_duplicate_v1():
     assert session.base_url == "https://example.test/api/v1"
 
 
+def test_session_access_token_env_var(monkeypatch):
+    """``AQT_ACCESS_TOKEN`` is honoured without falling back to OIDC resolution.
+
+    Regression guard: the env var was documented but never read, so a user who set it per the
+    changelog hit "No AQT access token available" instead of an authenticated session.
+    """
+
+    def _fail(*_args, **_kwargs):
+        raise AssertionError("_resolve_access_token should not be called when the env var is set")
+
+    monkeypatch.setattr("qbraid.runtime.aqt.provider._resolve_access_token", _fail)
+    monkeypatch.setenv("AQT_ACCESS_TOKEN", "env-token")
+    assert AQTSession().access_token == "env-token"
+
+
+def test_session_explicit_token_beats_env_var(monkeypatch):
+    """An explicit ``access_token`` argument takes precedence over ``AQT_ACCESS_TOKEN``."""
+    monkeypatch.setenv("AQT_ACCESS_TOKEN", "env-token")
+    assert AQTSession(access_token="explicit-token").access_token == "explicit-token"
+
+
 def test_session_explicit_token_skips_resolution(monkeypatch):
     """An explicit ``access_token`` short-circuits ``_resolve_access_token`` entirely."""
 
@@ -138,22 +173,46 @@ def test_session_explicit_token_skips_resolution(monkeypatch):
     assert session.access_token == "explicit-token"
 
 
-def test_session_http_methods():
+def test_session_http_methods(workspaces, simulator_resource):
     """Each session helper hits the right route and returns the decoded JSON body."""
     session = _mock_http_session()
 
-    session.get.return_value.json.return_value = [{"id": "w"}]
-    assert session.get_workspaces() == [{"id": "w"}]
+    session.get.return_value.json.return_value = workspaces
+    parsed = session.get_workspaces()
     session.get.assert_called_with("/workspaces")
+    assert [w.id for w in parsed] == ["qbraid", "aqt_simulators"]
+    assert parsed[0].resources[0].id == "ibex"
 
-    session.get.return_value.json.return_value = {"id": "sim1", "status": "online"}
-    assert session.get_resource("sim1")["status"] == "online"
+    session.get.return_value.json.return_value = simulator_resource
+    resource = session.get_resource("simulator_no_noise")
+    assert resource.status is ResourceStatus.ONLINE
+    assert resource.available_qubits == 12
 
-    session.post.return_value.json.return_value = {"job": {"job_id": "j1"}}
-    assert session.submit_job("ws", "res", {"payload": {}}) == {"job": {"job_id": "j1"}}
+    job_id = "6f1b6a1e-2f1e-4c3a-9d5b-1f0a2b3c4d5e"
+    session.post.return_value.json.return_value = {
+        "job": {
+            "job_id": job_id,
+            "job_type": "quantum_circuit",
+            "label": "qbraid",
+            "workspace_id": "default",
+            "resource_id": "simulator_no_noise",
+        },
+        "response": {"status": "queued"},
+    }
+    assert (
+        str(session.submit_job("aqt_simulators", "simulator_no_noise", {"payload": {}}).job.job_id)
+        == job_id
+    )
 
-    session.get.return_value.json.return_value = {"response": {"status": "finished"}}
-    assert session.get_result("j1")["response"]["status"] == "finished"
+    session.get.return_value.json.return_value = {
+        "job": {
+            "job_id": job_id,
+            "workspace_id": "aqt_simulators",
+            "resource_id": "simulator_no_noise",
+        },
+        "response": {"status": "finished", "result": {"0": [[1, 0]]}},
+    }
+    assert session.get_result(job_id).response.result == {0: [[1, 0]]}
 
     session.cancel_job("j1")
     session.delete.assert_called_once_with("/jobs/j1")

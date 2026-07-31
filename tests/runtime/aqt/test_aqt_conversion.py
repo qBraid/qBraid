@@ -13,11 +13,12 @@
 # limitations under the License.
 
 """
-Unit tests for the ``qiskit -> aqt`` transpiler edge, the ported qiskit angle-wrapping passes and
-serializer, the ``aqt`` program-type registration, and the ``AQTProgram`` wrapper.
+Unit tests for the ``qiskit -> aqt_connector`` transpiler edge, the ported qiskit angle-wrapping
+passes and serializer, the ``aqt_connector`` program-type registration, and the ``AQTProgram``
+wrapper.
 
-The AQT native circuit is produced entirely by the ``qiskit -> aqt`` transpiler edge (no device
-serialize hook, no ``qiskit-aqt-provider`` dependency). ``aqt-connector`` is a real installed
+The AQT native circuit is produced entirely by the ``qiskit -> aqt_connector`` transpiler edge (no
+device serialize hook, no ``qiskit-aqt-provider`` dependency). ``aqt-connector`` is a real installed
 dependency here; no network access occurs.
 """
 
@@ -30,11 +31,16 @@ from aqt_connector.models.circuits import QuantumCircuit
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 
-from qbraid.programs import QPROGRAM_ALIASES, QPROGRAM_REGISTRY, get_program_type_alias
+from qbraid.programs import (
+    NATIVE_REGISTRY,
+    QPROGRAM_ALIASES,
+    QPROGRAM_REGISTRY,
+    get_program_type_alias,
+)
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.gate_model.aqt import AQTProgram
+from qbraid.programs.gate_model.aqt_connector import AQTProgram
 from qbraid.transpiler import ConversionGraph, transpile
-from qbraid.transpiler.conversions.qiskit.qiskit_to_aqt import (
+from qbraid.transpiler.conversions.qiskit.qiskit_to_aqt_connector import (
     WrapRxxAngles,
     _qiskit_to_aqt_circuit,
     rewrite_rx_as_r,
@@ -46,24 +52,24 @@ from qbraid.transpiler.conversions.qiskit.qiskit_to_aqt import (
 # ---------------------------------------------------------------------------
 
 
-def test_conversion_graph_has_qiskit_to_aqt_edge():
-    """The ``qiskit -> aqt`` edge is registered in the conversion graph."""
-    assert ConversionGraph().has_edge("qiskit", "aqt") is True
+def test_conversion_graph_has_qiskit_to_aqt_connector_edge():
+    """The ``qiskit -> aqt_connector`` edge is registered in the conversion graph."""
+    assert ConversionGraph().has_edge("qiskit", "aqt_connector") is True
 
 
 def test_transpile_qiskit_to_aqt_returns_native_circuit():
-    """``transpile(qiskit_circuit, "aqt")`` returns a native ``aqt_connector`` circuit."""
+    """``transpile(qiskit_circuit, "aqt_connector")`` returns a native ``aqt_connector`` circuit."""
     qc = QiskitCircuit(2)
     qc.h(0)
     qc.cx(0, 1)
     qc.measure_all()
 
-    out = transpile(qc, "aqt")
+    out = transpile(qc, "aqt_connector")
     assert type(out).__module__ == "aqt_connector.models.circuits"
     assert type(out).__name__ == "QuantumCircuit"
     assert out.number_of_qubits == 2
     assert out.repetitions == 1
-    assert get_program_type_alias(out) == "aqt"
+    assert get_program_type_alias(out) == "aqt_connector"
 
 
 def test_transpile_ghz_produces_valid_circuit_with_measurement_last():
@@ -74,7 +80,7 @@ def test_transpile_ghz_produces_valid_circuit_with_measurement_last():
     ghz.cx(1, 2)
     ghz.measure_all()
 
-    out = transpile(ghz, "aqt")
+    out = transpile(ghz, "aqt_connector")
     assert out.number_of_qubits == 3
 
     ops = out.quantum_circuit.root
@@ -97,7 +103,7 @@ def test_transpile_non_adjacent_cx_wraps_angles_into_api_ranges():
     qc.rx(-1.7, 1)  # negative angle -> exercises RewriteRxAsR
     qc.measure_all()
 
-    out = transpile(qc, "aqt")
+    out = transpile(qc, "aqt_connector")
     assert out.number_of_qubits == 3
 
     ops = out.quantum_circuit.root
@@ -203,24 +209,25 @@ def test_qiskit_to_aqt_circuit_rejects_mid_circuit_measurement():
 
 
 def test_aqt_alias_registered_to_native_type():
-    """The aqt_connector native circuit is registered under the ``aqt`` transpiler alias."""
-    assert "aqt" in QPROGRAM_ALIASES
-    assert QPROGRAM_REGISTRY["aqt"] is QuantumCircuit
+    """The aqt_connector native circuit is registered under the ``aqt_connector`` alias."""
+    assert "aqt_connector" in QPROGRAM_ALIASES
+    assert QPROGRAM_REGISTRY["aqt_connector"] is QuantumCircuit
+    assert NATIVE_REGISTRY["aqt_connector"] is QuantumCircuit
 
 
 def test_get_program_type_alias_for_native_circuit(aqt_circuit):
-    """A native ``aqt_connector`` circuit resolves to the ``aqt`` alias."""
-    assert get_program_type_alias(aqt_circuit()) == "aqt"
+    """A native ``aqt_connector`` circuit resolves to the ``aqt_connector`` alias."""
+    assert get_program_type_alias(aqt_circuit()) == "aqt_connector"
 
 
 @pytest.mark.parametrize("value", [{}, "not-a-circuit", 42, [1, 2, 3]])
 def test_non_aqt_values_do_not_resolve_to_aqt(value):
-    """Dicts, strings, ints, and lists do not resolve to the ``aqt`` alias."""
-    assert get_program_type_alias(value, safe=True) != "aqt"
+    """Dicts, strings, ints, and lists do not resolve to the ``aqt_connector`` alias."""
+    assert get_program_type_alias(value, safe=True) != "aqt_connector"
 
 
 def test_qiskit_circuit_does_not_resolve_to_aqt():
-    """A qiskit circuit resolves to ``qiskit``, not ``aqt``."""
+    """A qiskit circuit resolves to ``qiskit``, not ``aqt_connector``."""
     assert get_program_type_alias(QiskitCircuit(1)) == "qiskit"
 
 
