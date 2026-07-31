@@ -169,6 +169,19 @@ class TestRigettiJobProperties:
         job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device)
         assert job._ro_sources == {}
 
+    def test_compiled_program_stored_correctly(self, rigetti_device: RigettiDevice) -> None:
+        """A compiled_program kwarg must be exposed via the compiled_program property."""
+        native_quil = "DECLARE ro BIT[1]\nRX(pi) 0\nMEASURE 0 ro[0]\n"
+        job = RigettiJob(
+            job_id="x", num_shots=1, device=rigetti_device, compiled_program=native_quil
+        )
+        assert job.compiled_program == native_quil
+
+    def test_compiled_program_defaults_to_none(self, rigetti_device: RigettiDevice) -> None:
+        """A rehydrated job (no compiled_program kwarg) must report None."""
+        job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device)
+        assert job.compiled_program is None
+
     def test_execution_options_stored_at_submission_time(
         self, rigetti_device: RigettiDevice
     ) -> None:
@@ -720,6 +733,42 @@ class TestRigettiJobResult:
             res = job.result()
 
         assert isinstance(res, Result)
+
+    def test_result_includes_compiled_program_in_details(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """result() must surface the compiled program in Result.details when known."""
+        exec_results, ro_sources = _make_simple_execution_results([[0, 1], [1, 0]])
+        native_quil = "DECLARE ro BIT[2]\nRX(pi) 0\nMEASURE 0 ro[0]\nMEASURE 1 ro[1]\n"
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=2,
+            ro_sources=ro_sources,
+            compiled_program=native_quil,
+        )
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ):
+            res = job.result()
+
+        assert res.details["compiled_program"] == native_quil
+
+    def test_result_omits_compiled_program_when_unknown(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A rehydrated job (compiled_program=None) must not add a None detail."""
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1], [1, 0]])
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ):
+            res = job.result()
+
+        assert "compiled_program" not in res.details
 
     def test_result_success_true_on_happy_path(self, rigetti_device: RigettiDevice) -> None:
         """result() must report success=True when get_result() does not raise."""

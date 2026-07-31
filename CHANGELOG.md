@@ -23,6 +23,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added `RigettiJob.compiled_program`, exposing the native Quil program produced by quilc for the job. It reveals the physical qubits selected and the compiler's final rewiring — information not recoverable from measurement counts. Populated on jobs returned by `RigettiDevice.run`/`submit`; `None` for jobs rehydrated by ID, since QCS does not expose compilation output after submission. When known, it is also included in `Result.details["compiled_program"]`
 - Added `qbraid.visualization.plot_connectivity_graph`, rendering a device's connectivity graph colored by live calibration data (edges by two-qubit gate error, nodes by readout error). Layout follows the device's `topology` config, with a force-directed fallback for unknown types. The `lattice_positions` helper is exported for custom plots ([#1281](https://github.com/qBraid/qBraid/pull/1281), [#1283](https://github.com/qBraid/qBraid/pull/1283))
 - Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing device calibration data (per-edge two-qubit gate errors, per-qubit metrics, timestamps) and the physical connectivity graph derived from it. Useful for hand-placing circuits on paths that bypass quilc. Both return `None`-equivalents for devices without published calibration data ([#1281](https://github.com/qBraid/qBraid/pull/1281))
 
