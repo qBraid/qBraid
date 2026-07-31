@@ -26,6 +26,7 @@ than as a suite that passes against a payload QUDORA no longer returns.
 import os
 
 import pytest
+from qbraid_core.exceptions import RequestsApiError
 
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.qudora import QudoraDevice, QudoraProvider
@@ -104,6 +105,25 @@ def test_available_settings_match_published_schema(device):
     settings = device.available_settings()
     assert "measurement_error_probability" in settings
     assert settings["measurement_error_probability"]["default"] == pytest.approx(0.0035)
+
+
+def test_submit_requires_a_string_job_name(provider, device):
+    """QUDORA rejects a null job name, so ``submit()`` cannot simply omit it.
+
+    Guards the ``name or "qbraid"`` default in ``QudoraDevice.submit``: the schema
+    requires a string, and both ``null`` and a missing key fail validation.
+    """
+    body = {
+        "target": device.id,
+        "language": "OpenQASM3",
+        "shots": [10],
+        "input_data": [QASM3_X0],
+        "backend_settings": {},
+    }
+    with pytest.raises(RequestsApiError, match="422"):
+        provider.session.create_job({**body, "name": None})
+    with pytest.raises(RequestsApiError, match="422"):
+        provider.session.create_job(body)
 
 
 def test_run_single_circuit_end_to_end(device):

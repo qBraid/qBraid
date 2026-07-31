@@ -25,6 +25,7 @@ import pytest
 import qiskit
 from pyqasm.exceptions import PyQasmError
 
+from qbraid.programs.exceptions import QasmError
 from qbraid.runtime import ResourceNotFoundError, Result
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.exceptions import ProgramValidationError
@@ -371,11 +372,30 @@ class TestQudoraDevice:
             device.status()
 
     def test_detect_language(self, device):
-        """_detect_language() reads the OpenQASM version from the header, else raises."""
+        """_detect_language() maps the program's QASM version to the QUDORA language."""
         assert device._detect_language(QASM2) == "OpenQASM2"
         assert device._detect_language(QASM3) == "OpenQASM3"
-        with pytest.raises(ValueError, match="Could not determine"):
+        with pytest.raises(QasmError):
             device._detect_language("h q[0];")
+
+    def test_detect_language_ignores_version_inside_comments(self, device):
+        """A version named in a block comment is not mistaken for the program's own.
+
+        Scanning line-by-line for a prefix of "OPENQASM" reported OpenQASM2 here and sent
+        the wrong ``language`` to QUDORA; the shared QASM typing strips comments first.
+        """
+        commented = "/*\nOPENQASM 2.0;\n*/\n" + QASM3
+        assert device._detect_language(commented) == "OpenQASM3"
+
+    def test_detect_language_rejects_malformed_header(self, device):
+        """A header missing its semicolon is not accepted as a version declaration."""
+        with pytest.raises(QasmError):
+            device._detect_language("OPENQASM 3\nqubit[2] q;")
+
+    def test_detect_language_rejects_unsupported_dialect(self, device):
+        """A QASM dialect QUDORA does not accept is named explicitly."""
+        with pytest.raises(ValueError, match="qasm2_kirin"):
+            device._detect_language("KIRIN {qasm2};\nqreg q[1];")
 
     def test_available_settings(self, device):
         """available_settings() exposes the backend's user_settings_schema properties."""
@@ -410,9 +430,16 @@ class TestQudoraDevice:
         assert job.id == "42"
 
     def test_submit_default_name(self, device):
-        """submit() defaults the job name to 'qbraid' when none is given."""
+        """submit() always sends a string job name, defaulting to 'qbraid'.
+
+        QUDORA's submit schema requires ``name`` to be a string: both ``None`` and a
+        missing key are rejected with 422 ``{"type": "string_type", "loc": ["body",
+        "name"]}``, so the default cannot be dropped in favor of omitting the field.
+        """
         device.submit(QASM3)
-        assert device.session.create_job.call_args.args[0]["name"] == "qbraid"
+        body = device.session.create_job.call_args.args[0]
+        assert body["name"] == "qbraid"
+        assert isinstance(body["name"], str)
 
     def test_submit_batch(self, device):
         """submit() with a program list sends per-program shots and one input_data entry each."""
