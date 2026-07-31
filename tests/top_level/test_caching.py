@@ -54,32 +54,19 @@ def test_generate_cache_key(test_instance):
     assert len(key) == 64  # SHA-256 hash length
 
 
-def test_cache_key_distinguishes_objects_with_identical_repr(test_instance):
-    """Distinct non-JSON-serializable args with identical ``repr`` must not collide.
+def test_generate_cache_key_rejects_unserializable_args(test_instance):
+    """Key generation is strict: unserializable arguments raise instead of guessing.
 
-    Regression test: the fallback encoder previously used ``repr`` alone, so two
-    different objects sharing the same ``repr`` string produced the same cache
-    key. The identity-preserving fallback keeps their keys distinct.
+    Any fallback encoding (``repr``, identity, ...) risks two distinct arguments
+    mapping to one key and a call receiving another call's cached result, so the
+    key must simply not exist for these values.
     """
+    with pytest.raises(TypeError):
+        _generate_cache_key(test_instance, "get_data", (object(),), {})
 
-    class SameRepr:
-        """Objects whose ``repr`` is identical but which are distinct instances."""
-
-        __hash__ = object.__hash__
-
-        def __repr__(self):
-            return "SameRepr()"
-
-    obj_a = SameRepr()
-    obj_b = SameRepr()
-    assert repr(obj_a) == repr(obj_b)
-
-    key_a = _generate_cache_key(test_instance, "get_data", (obj_a,), {})
-    key_b = _generate_cache_key(test_instance, "get_data", (obj_b,), {})
-    assert key_a != key_b
-
-    # Same object must still produce a stable, matching key.
-    assert key_a == _generate_cache_key(test_instance, "get_data", (obj_a,), {})
+    # ``default=`` only ever applied to values, so dict keys crashed regardless.
+    with pytest.raises(TypeError):
+        _generate_cache_key(test_instance, "get_data", ({(1, 2): "a"},), {})
 
 
 def test_clear_cache(test_instance, monkeypatch):
@@ -139,8 +126,12 @@ def test_cached_method_accepts_unhashable_args(monkeypatch):
     assert obj.total.cache_info().currsize == 0
 
 
-def test_cached_method_accepts_non_json_serializable_args(monkeypatch):
-    """A cached method can be called with an object argument."""
+def test_cached_method_bypasses_cache_for_non_json_serializable_args(monkeypatch):
+    """Unkeyable arguments bypass the cache instead of being stored under a guessed key.
+
+    The reported crash (#1266) is gone -- the call succeeds -- but nothing is cached,
+    so a later object can never be served the earlier object's result.
+    """
     monkeypatch.setenv("DISABLE_CACHE", "0")
 
     class ObjectArgClass:
@@ -157,7 +148,13 @@ def test_cached_method_accepts_non_json_serializable_args(monkeypatch):
 
     assert obj.passthrough(value) is value
     assert obj.passthrough(value) is value
-    assert obj.call_count == 1
+    assert obj.call_count == 2
+    assert obj.passthrough.cache_info().currsize == 0
+
+    # A dict with non-string keys is unserializable too, and must not raise.
+    assert obj.passthrough({(1, 2): "a"}) == {(1, 2): "a"}
+    assert obj.call_count == 3
+    assert obj.passthrough.cache_info().currsize == 0
 
 
 class BoundedClass:
