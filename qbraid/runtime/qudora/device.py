@@ -19,7 +19,7 @@ Module defining QUDORA device class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -61,15 +61,15 @@ class QudoraDevice(QuantumDevice):
         return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self) -> DeviceStatus:
-        """Return the current status of the QUDORA device."""
-        backend_id = self.profile.get("qudora_backend_id")
-        if backend_id is None:
-            # The QUDORA ``/backends/`` listing carries no per-backend status field, and the
-            # status endpoint is keyed by an integer id. When that id is unavailable, a device
-            # that appears in the listing is treated as online.
-            return DeviceStatus.ONLINE
-        status_name = self.session.get_backend_status(backend_id)
-        return _DEVICE_STATUS_MAP.get(status_name, DeviceStatus.UNAVAILABLE)
+        """Return the current status of the QUDORA device.
+
+        Raises:
+            KeyError: If QUDORA reports a ``BackendStatusName`` that is not mapped. Failing
+                here is deliberate: defaulting an unrecognized value would let the device
+                advertise a status it never reported.
+        """
+        status_name = self.session.get_backend_status(self.profile["qudora_backend_id"])
+        return _DEVICE_STATUS_MAP[status_name]
 
     def available_settings(self) -> dict[str, Any]:
         """Return the configurable QUDORA backend settings and their schema.
@@ -80,7 +80,7 @@ class QudoraDevice(QuantumDevice):
         ``dephasing_T2_time`` — each entry carrying its ``default`` (and any bounds). Derived
         from the backend's ``user_settings_schema``; empty when the backend exposes none.
         """
-        schema = self.profile.get("user_settings_schema") or {}
+        schema = self.profile["user_settings_schema"] or {}
         return schema.get("properties", {})
 
     @staticmethod
@@ -99,10 +99,10 @@ class QudoraDevice(QuantumDevice):
     # pylint:disable-next=arguments-differ
     def submit(
         self,
-        run_input: Union[str, list[str]],
+        run_input: str | list[str],
         shots: int = 100,
-        name: Optional[str] = None,
-        backend_settings: Optional[dict[str, Any]] = None,
+        name: str | None = None,
+        backend_settings: dict[str, Any] | None = None,
     ) -> QudoraJob:
         """Submit one or more OpenQASM programs to the QUDORA device.
 
@@ -117,8 +117,8 @@ class QudoraDevice(QuantumDevice):
         """
         programs = run_input if isinstance(run_input, list) else [run_input]
 
-        max_programs = self.profile.get("max_programs_per_job")
-        if max_programs is not None and len(programs) > max_programs:
+        max_programs = self.profile["max_programs_per_job"]
+        if len(programs) > max_programs:
             raise ValueError(
                 f"Number of programs ({len(programs)}) exceeds the device's maximum of "
                 f"{max_programs} programs per job."

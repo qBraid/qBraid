@@ -20,7 +20,7 @@ Module defining QUDORA job class
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
@@ -38,6 +38,20 @@ qbraid_rt_qudora = LazyLoader("qbraid_rt_qudora", globals(), "qbraid.runtime.qud
 # Fields excluded when forwarding the raw QUDORA job record into ``Result`` details.
 _RESULT_RESERVED = {"result", "device_id", "job_id", "success", "data"}
 
+# Maps QUDORA ``JobStatusName`` values to qBraid ``JobStatus``.
+_JOB_STATUS_MAP = {
+    "Submitted": JobStatus.QUEUED,
+    "Queuing": JobStatus.QUEUED,
+    "Uncompiled": JobStatus.QUEUED,
+    "Reserved": JobStatus.QUEUED,
+    "Running": JobStatus.RUNNING,
+    "Cancelling": JobStatus.CANCELLING,
+    "Completed": JobStatus.COMPLETED,
+    "Canceled": JobStatus.CANCELLED,
+    "Deleted": JobStatus.CANCELLED,
+    "Failed": JobStatus.FAILED,
+}
+
 
 class QudoraJobError(QbraidRuntimeError):
     """Class for errors raised while processing a QUDORA job."""
@@ -47,7 +61,7 @@ class QudoraJob(QuantumJob):
     """QUDORA job class."""
 
     def __init__(
-        self, job_id: str, session: Optional[qbraid.runtime.qudora.QudoraSession] = None, **kwargs
+        self, job_id: str, session: qbraid.runtime.qudora.QudoraSession | None = None, **kwargs
     ):
         super().__init__(job_id=job_id, **kwargs)
         self._session = session or qbraid_rt_qudora.QudoraSession()
@@ -58,33 +72,28 @@ class QudoraJob(QuantumJob):
         return self._session
 
     @staticmethod
-    def _map_status(status: Optional[str]) -> JobStatus:
-        """Convert a QUDORA ``JobStatusName`` to a qBraid ``JobStatus``."""
-        status_map = {
-            "Submitted": JobStatus.QUEUED,
-            "Queuing": JobStatus.QUEUED,
-            "Uncompiled": JobStatus.QUEUED,
-            "Reserved": JobStatus.QUEUED,
-            "Running": JobStatus.RUNNING,
-            "Cancelling": JobStatus.CANCELLING,
-            "Completed": JobStatus.COMPLETED,
-            "Canceled": JobStatus.CANCELLED,
-            "Deleted": JobStatus.CANCELLED,
-            "Failed": JobStatus.FAILED,
-        }
-        return status_map.get(status, JobStatus.UNKNOWN)
+    def _map_status(status: str) -> JobStatus:
+        """Convert a QUDORA ``JobStatusName`` to a qBraid ``JobStatus``.
+
+        Raises:
+            KeyError: If QUDORA reports a status name that is not mapped. Defaulting to
+                ``JobStatus.UNKNOWN`` would be worse than raising: ``UNKNOWN`` is not a
+                terminal state, so ``result()`` would poll a finished job until
+                ``wait_for_final_state`` timed out instead of failing at the source.
+        """
+        return _JOB_STATUS_MAP[status]
 
     def status(self) -> JobStatus:
         """Return the current status of the QUDORA job."""
         job_data = self.session.get_job(self.id)
-        return self._map_status(job_data.get("status"))
+        return self._map_status(job_data["status"])
 
     def cancel(self) -> None:
         """Cancel the QUDORA job."""
         self.session.cancel_job(self.id)
 
     @staticmethod
-    def _parse_counts(result: list[str]) -> Union[MeasCount, list[MeasCount]]:
+    def _parse_counts(result: list[str]) -> MeasCount | list[MeasCount]:
         """Parse the QUDORA ``result`` field (a list of JSON count-dict strings).
 
         Each element is the measurement histogram of one program. The bitstring key
@@ -98,20 +107,21 @@ class QudoraJob(QuantumJob):
         """Return the result of the QUDORA job."""
         self.wait_for_final_state()
         job_data = self.session.get_job(self.id, include_results=True)
-        status = self._map_status(job_data.get("status"))
+        status = self._map_status(job_data["status"])
         success = status == JobStatus.COMPLETED
 
         if not success:
-            message = job_data.get("user_error") or f"job ended with status {status.name}"
+            message = job_data["user_error"] or f"job ended with status {status.name}"
             raise QudoraJobError(f"QUDORA job {self.id} did not complete: {message}.")
 
-        result_payload = job_data.get("result")
+        result_payload = job_data["result"]
         if not result_payload:
             raise QudoraJobError(f"QUDORA job {self.id} completed but returned no result data.")
 
         data = GateModelResultData(measurement_counts=self._parse_counts(result_payload))
-        device_id = job_data.get("target") or (
-            self._device.id if self._device is not None else None
-        )
+        # The job record's ``target`` is the backend's display name ("QVLS-Q1 Emulator"), not
+        # the id jobs are submitted against, so prefer the device's own id and fall back to
+        # ``target`` only when the job was constructed without one.
+        device_id = self._device.id if self._device is not None else job_data["target"]
         details = {key: value for key, value in job_data.items() if key not in _RESULT_RESERVED}
         return Result(device_id=device_id, job_id=self.id, success=success, data=data, **details)
