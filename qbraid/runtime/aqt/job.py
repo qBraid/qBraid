@@ -21,7 +21,7 @@ Module defining AQT job class.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from aqt_connector.models.arnica.response_bodies.jobs import ResultResponse, RRFinished
 
@@ -36,7 +36,8 @@ if TYPE_CHECKING:
 
     import qbraid.runtime.aqt.provider
 
-# Maps the arnica ``JobStatus`` enum values to qBraid ``JobStatus``.
+# Maps the arnica ``JobStatus`` enum values to qBraid ``JobStatus``. Covers every member of
+# arnica's ``JobStatus``; a value outside it is rejected by ``ResultResponse.model_validate``.
 _STATUS_MAP = {
     "queued": JobStatus.QUEUED,
     "ongoing": JobStatus.RUNNING,
@@ -52,7 +53,7 @@ class AQTJobError(QbraidRuntimeError):
 
 def _samples_to_counts(
     result: dict[int, list[list[int]]],
-) -> Union[MeasCount, list[MeasCount]]:
+) -> MeasCount | list[MeasCount]:
     """Convert AQT per-shot measurement samples to bitstring counts.
 
     The arnica finished result maps each circuit index to a list of shots, where each shot is a
@@ -80,7 +81,7 @@ class AQTJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        session: Optional[qbraid.runtime.aqt.provider.AQTSession] = None,
+        session: qbraid.runtime.aqt.provider.AQTSession | None = None,
         **kwargs,
     ):
         super().__init__(job_id=job_id, **kwargs)
@@ -97,23 +98,28 @@ class AQTJob(QuantumJob):
         return self._session
 
     def _fetch_result(self, include_timing_data: bool = False) -> ResultResponse:
-        """Fetch and validate ``GET /result/{job_id}`` against the arnica response model.
+        """Fetch the validated ``GET /result/{job_id}`` response.
 
-        The AQT arnica API exposes no dedicated job-status endpoint: ``GET /result/{job_id}`` is
-        the canonical job-state endpoint and returns the full result only once the job finished.
         ``include_timing_data`` requests the per-status-change timestamps used by
         :meth:`execution_time_s`.
         """
-        return ResultResponse.model_validate(
-            self.session.get_result(self.id, include_timing_data=include_timing_data)
-        )
+        return self.session.get_result(self.id, include_timing_data=include_timing_data)
 
     def status(self) -> JobStatus:
-        """Return the current status of the AQT job."""
-        response = self._fetch_result().response
-        return _STATUS_MAP.get(response.status.value, JobStatus.UNKNOWN)
+        """Return the current status of the AQT job.
 
-    def execution_time_s(self) -> Optional[float]:
+        Raises:
+            AQTJobError: If arnica reports a job status qBraid does not map yet. Reporting
+                ``UNKNOWN`` instead would stall :meth:`wait_for_final_state` on a job that has
+                actually reached a terminal state.
+        """
+        status = self._fetch_result().response.status
+        try:
+            return _STATUS_MAP[status.value]
+        except KeyError as err:  # pragma: no cover - unreachable while _STATUS_MAP is exhaustive
+            raise AQTJobError(f"Unrecognized AQT job status '{status.value}'.") from err
+
+    def execution_time_s(self) -> float | None:
         """Return the job's execution time in seconds, or ``None`` if the job hasn't completed.
 
         Derived from the arnica ``timing_data`` status-change log as the ``ongoing`` -> ``finished``

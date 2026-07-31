@@ -31,7 +31,7 @@ class AQTProgram(GateModelProgram):
     AQT native circuits are submitted directly to the arnica API, so — like ``QiskitCircuit`` and
     ``CirqCircuit`` — this class does not implement ``serialize`` (it inherits the base
     ``NotImplementedError``); it exists so the transpiler and ``QuantumDevice.validate`` can
-    introspect an ``aqt`` program (e.g. its qubit count).
+    introspect an ``aqt_connector`` program (e.g. its qubit count).
     """
 
     def __init__(self, program: AQTQuantumCircuit):

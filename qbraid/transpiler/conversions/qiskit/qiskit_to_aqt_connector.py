@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Module defining the ``qiskit -> aqt`` conversion.
+Module defining the ``qiskit -> aqt_connector`` conversion.
 
 Reduces a qiskit circuit to the AQT native basis ``{RZ, R, RXX}`` — with angles wrapped into the
 ranges the arnica API accepts (``R.theta in [0, pi]``, ``R.phi in [0, 2*pi]``,
@@ -256,7 +256,7 @@ def _qiskit_to_aqt_circuit(circuit: qiskit.circuit.QuantumCircuit) -> Circuit:
 
 
 @requires_extras("aqt_connector")
-def qiskit_to_aqt(circuit: qiskit.circuit.QuantumCircuit) -> AQTQuantumCircuit:
+def qiskit_to_aqt_connector(circuit: qiskit.circuit.QuantumCircuit) -> AQTQuantumCircuit:
     """Return a native AQT ``QuantumCircuit`` from a qiskit ``QuantumCircuit``.
 
     Args:
