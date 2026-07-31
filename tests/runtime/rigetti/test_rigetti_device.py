@@ -56,6 +56,9 @@ if rigetti_deps_found:
 else:
     RigettiDevice = None
     RigettiJob = None
+    # Referenced at module import time by a parametrize list below, which is evaluated
+    # even though pytestmark skips every test in the file.
+    DEFAULT_COMPILER_TIMEOUT_S = None
 
 
 # ===========================================================================
