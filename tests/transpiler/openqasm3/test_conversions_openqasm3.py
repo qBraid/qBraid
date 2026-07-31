@@ -474,18 +474,40 @@ def test_openqasm3_to_pyquil_unsupported_condition_raises():
         openqasm3_to_pyquil(qasm)
 
 
-def test_openqasm3_to_pyquil_trailing_idle_qubits_not_padded():
-    """Idle qubits past the last one in use are left out rather than padded with I.
+@pytest.mark.parametrize(
+    "declared,used,expected_span",
+    [
+        # interior gap is padded, so the program still spans 0..max(used)
+        (5, [0, 2], {0, 1, 2}),
+        # idle qubits above the last one in use are dropped, not padded
+        (5, [0, 1], {0, 1}),
+        (20, [0], {0}),
+        # ...but a gap between the endpoints is still padded: declaring 20 qubits and
+        # using only the two ends spans all 20. Trimming is a tail trim, nothing more.
+        (20, [0, 19], set(range(20))),
+        # leading idle qubits are padded too, since the span starts at 0
+        (5, [4], {0, 1, 2, 3, 4}),
+    ],
+)
+def test_openqasm3_to_pyquil_pads_only_up_to_the_highest_qubit_in_use(
+    declared, used, expected_span
+):
+    """The converted program spans 0..max(used), padding idle qubits below that with I.
 
-    Only a *gap* needs padding. Padding the tail would make the program claim
-    hardware it has no work for, which on a QPU means a wider rewiring problem
-    for no benefit.
+    Asserts the set of qubits the program touches rather than the exact instruction
+    list: the padding order is an implementation detail, but the span is what decides
+    how much of the QPU quilc is asked to rewire.
     """
-    qasm = """
+    gates = "\n".join(f"x q[{index}];" for index in used)
+    qasm = f"""
     OPENQASM 3.0;
     include "stdgates.inc";
-    qubit[5] q;
-    x q[0];
-    x q[2];
+    qubit[{declared}] q;
+    {gates}
     """
-    assert openqasm3_to_pyquil(qasm).out().splitlines() == ["X 0", "X 2", "I 1"]
+    program = openqasm3_to_pyquil(qasm)
+    assert program.get_qubit_indices() == expected_span
+    # padding must never disturb the gates the source asked for
+    assert [line for line in program.out().splitlines() if not line.startswith("I ")] == [
+        f"X {index}" for index in used
+    ]

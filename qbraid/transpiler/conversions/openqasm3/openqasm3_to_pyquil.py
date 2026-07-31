@@ -148,8 +148,9 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
     Supports the standard gate set (including gate modifiers and controlled gates,
     which ``pyqasm`` decomposes during unrolling), measurement, ``barrier`` (-> pyQuil
     ``FENCE``), ``reset`` (-> ``RESET``), ``delay`` (-> ``DELAY``), and ``if (c == 0|1)``
-    classical feedforward (-> conditional ``JUMP-WHEN``). Idle qubits between two
-    qubits that are in use are padded with identity so the operator spans them.
+    classical feedforward (-> conditional ``JUMP-WHEN``). Declared-but-idle qubits
+    below the highest qubit in use are padded with identity, so the program spans a
+    contiguous block; idle qubits above it are omitted rather than padded.
 
     Qubits may be addressed either through a declared register (``qubit[2] q; h q[0];``)
     or as physical qubits (``h $0;``). Physical qubit indices are passed through
@@ -275,12 +276,16 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
     for statement in unrolled.statements:
         emit(statement, quil)
 
-    # A Quil program's width is whatever its instructions touch, so an idle qubit
-    # *between* two qubits in use (``qubit[3] q; x q[0]; x q[2];``) would leave a hole
-    # the operator has to span; pad those with identity. Idle qubits past the last one
-    # in use need no padding: the program simply does not use them, which is how every
-    # other conversion target represents a declared-but-unused qubit. Padding them
-    # would also make the program claim hardware it has no work for.
+    # A Quil program's width is whatever its instructions touch, so pad every idle
+    # index below the highest one in use: the program then spans a contiguous
+    # ``0..max(used)`` block, and a hole (``qubit[3] q; x q[0]; x q[2];``) does not
+    # shrink the operator relative to the qubits the program addresses.
+    #
+    # Idle qubits *above* the last one in use are deliberately left unpadded. Quil
+    # qubit indices are absolute, so trailing identities widen the program without
+    # adding any work, which on hardware only enlarges quilc's rewiring problem.
+    # Note this trims the tail only: ``qubit[20] q; x q[0]; x q[19];`` still pads the
+    # 18 idle qubits in between, because both endpoints are in use.
     last_used = max((index for index in used_qubits if index < num_qubits), default=-1)
     for index in range(last_used):
         if index not in used_qubits:
