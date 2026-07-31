@@ -21,6 +21,7 @@ Submodules
    oqc
    origin
    quantinuum
+   qudora
    native
    rigetti
    pasqal

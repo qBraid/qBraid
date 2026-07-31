@@ -41,31 +41,93 @@ INVALID_QASM = "OPENQASM 3.0;\nqubit[2] q;\nnotagate q[0];"
 
 TOKEN = "test-token"
 
+
+def _settings_schema():
+    """The ``user_settings_schema`` QUDORA publishes for both simulator backends."""
+    return {
+        "type": "object",
+        "required": [
+            "measurement_error_probability",
+            "two_qubit_gate_noise_strength",
+            "single_qubit_gate_noise_strength",
+            "dephasing_T2_time",
+        ],
+        "additionalProperties": False,
+        "properties": {
+            "measurement_error_probability": {
+                "type": "number",
+                "default": 0.0035,
+                "description": "Probability for a measurement to be wrong",
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "title": "Measurement error probability",
+            },
+            "two_qubit_gate_noise_strength": {
+                "type": "number",
+                "default": 1.0,
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "title": "Two qubit gate noise strength",
+            },
+            "single_qubit_gate_noise_strength": {
+                "type": "number",
+                "default": 1.0,
+                "minimum": 0.0,
+                "maximum": 1.0,
+                "title": "Single qubit gate noise strength",
+            },
+            "dephasing_T2_time": {
+                "type": ["number", "null"],
+                "default": 60,
+                "minimum": 1e-09,
+                "title": "Dephasing time T2 [s]",
+            },
+        },
+    }
+
+
+# Captured verbatim from ``GET https://api.qudora.com/backends/`` on 2026-07-31 (only the
+# per-setting ``description`` prose is trimmed). Note ``username`` is an email address, the
+# numeric identifier is ``user_id`` (there is no ``id`` key), and both ``simulator`` and
+# ``status_name`` are published in the listing.
 BACKENDS = [
     {
-        "username": "qamelion",
-        "full_name": "Qamelion",
+        "description": "Noisy or ideal statevector simulator",
+        "simulator": True,
+        "local": True,
+        "basis_gates": ["rxx", "r"],
+        "supports_hybrid_jobs": True,
         "max_n_qubits": 32,
         "max_shots": 10000,
-        "max_programs_per_job": 10,
-        "user_settings_schema": {
-            "properties": {
-                "measurement_error_probability": {"default": 0.0035},
-                "two_qubit_gate_noise_strength": {"default": 1},
-                "single_qubit_gate_noise_strength": {"default": 1},
-                "dephasing_T2_time": {"default": 60},
-            }
-        },
-        "id": 1,
+        "max_programs_per_job": 500,
+        "max_total_computation_time_seconds": 3600,
+        "max_intermediate_quantum_computation_time_seconds": 500,
+        "max_intermediate_classical_computation_time_seconds": 500,
+        "user_settings_schema": _settings_schema(),
+        "user_id": 108,
+        "username": "xg1-emulator-gwdg@qudora.com",
+        "full_name": "Qamelion",
+        "is_online": True,
+        "status_name": "Idle",
     },
     {
-        "username": "qvls_q1_emulator",
-        "full_name": "QVLS-Q1 Emulator",
+        "description": "Noisy or ideal statevector simulator",
+        "simulator": True,
+        "local": True,
+        "basis_gates": ["rxx", "r"],
+        "supports_hybrid_jobs": True,
         "max_n_qubits": 20,
         "max_shots": 10000,
-        "max_programs_per_job": 5,
-        "user_settings_schema": None,
-        "id": 2,
+        "max_programs_per_job": 500,
+        "max_total_computation_time_seconds": 3600,
+        "max_intermediate_quantum_computation_time_seconds": 500,
+        "max_intermediate_classical_computation_time_seconds": 500,
+        "user_settings_schema": _settings_schema(),
+        "user_id": 2,
+        "username": "simulator-prod@qudora.com",
+        "full_name": "QVLS-Q1 Emulator",
+        "is_online": True,
+        "status_name": "Idle",
     },
 ]
 
@@ -81,13 +143,33 @@ def _response(payload):
 
 
 def _job_record(status="Completed", result=None, user_error=None):
-    """Return a minimal QUDORA ``GET /jobs/`` record for the given status/result."""
+    """Return a QUDORA ``GET /jobs/`` record, modeled on a real completed job (id 85974).
+
+    ``target`` carries the backend's *display name*, not the ``username`` the job was
+    submitted against — the divergence that makes ``Result.device_id`` worth asserting.
+    """
     return {
+        "row_count": 1,
+        "job_id": 85974,
+        "name": "qbraid",
+        "target": "QVLS-Q1 Emulator",
+        "target_id": 2,
+        "language": "OpenQASM3",
+        "created_on": "2026-07-31T20:58:37.454485",
+        "edited_on": "2026-07-31T20:58:48.822796",
+        "computation_start": "2026-07-31T20:58:47.131595",
+        "runtime_seconds": 2.498,
+        "max_number_of_qubits": 2,
         "status": status,
-        "shots": [100],
         "result": result,
+        "qir_result": None,
+        "input_data": [],
+        "username": None,
         "user_error": user_error,
-        "target": "qamelion",
+        "backend_settings": None,
+        "settings_schema": None,
+        "print": None,
+        "shots": [200],
     }
 
 
@@ -142,7 +224,7 @@ class TestQudoraSession:
         assert session.auth_headers["Authorization"] == "Bearer envtok"
 
     def test_base_url_default_and_override(self):
-        """base_url defaults to api.qudora.com and honors an explicit override (trailing / stripped)."""
+        """base_url defaults to api.qudora.com, honoring an override (trailing / stripped)."""
         assert QudoraSession(TOKEN).base_url == "https://api.qudora.com"
         assert QudoraSession(TOKEN, base_url="https://staging.qudora.com/").base_url == (
             "https://staging.qudora.com"
@@ -206,31 +288,51 @@ class TestQudoraProvider:
 
     def test_build_profile(self, profile):
         """_build_profile() maps a backend record onto the expected TargetProfile fields."""
-        assert profile.device_id == "qamelion"
+        assert profile.device_id == "xg1-emulator-gwdg@qudora.com"
         assert profile.num_qubits == 32
         assert profile.simulator is True
         assert profile.provider_name == "QUDORA"
-        assert profile.get("qudora_backend_id") == 1
-        assert profile.get("max_programs_per_job") == 10
+        assert profile.basis_gates == {"rxx", "r"}
+        assert profile.get("qudora_full_name") == "Qamelion"
+        assert profile.get("max_programs_per_job") == 500
         assert [spec.alias for spec in profile.program_spec] == ["qasm2", "qasm3"]
+
+    def test_build_profile_backend_id_is_user_id(self, profile):
+        """The status endpoint is keyed by ``user_id``; the record has no ``id`` field.
+
+        Reading a non-existent ``id`` silently yielded ``None`` for every real backend,
+        which made ``QudoraDevice.status()`` skip the status call and report ONLINE
+        unconditionally.
+        """
+        assert "id" not in BACKENDS[0]
+        assert profile["qudora_backend_id"] == 108
+
+    def test_build_profile_missing_field_raises(self, provider):
+        """A backend record missing a required field fails at the source, not later."""
+        incomplete = {key: value for key, value in BACKENDS[0].items() if key != "simulator"}
+        with pytest.raises(KeyError, match="simulator"):
+            provider._build_profile(incomplete)
 
     def test_get_devices(self, provider):
         """get_devices() builds one device per backend returned by the session."""
         with patch.object(provider.session, "get_backends", return_value=BACKENDS):
             devices = provider.get_devices()
         assert len(devices) == 2
-        assert {device.id for device in devices} == {"qamelion", "qvls_q1_emulator"}
+        assert {device.id for device in devices} == {
+            "xg1-emulator-gwdg@qudora.com",
+            "simulator-prod@qudora.com",
+        }
 
     def test_get_device(self, provider):
         """get_device() finds a backend by its username device id."""
         with patch.object(provider.session, "get_backends", return_value=BACKENDS):
-            device = provider.get_device("qvls_q1_emulator")
+            device = provider.get_device("simulator-prod@qudora.com")
         assert isinstance(device, QudoraDevice)
-        assert device.id == "qvls_q1_emulator"
+        assert device.id == "simulator-prod@qudora.com"
         assert device.num_qubits == 20
 
     def test_get_device_not_found(self, provider):
-        """get_device() raises ResourceNotFoundError when the username is absent from the listing."""
+        """get_device() raises ResourceNotFoundError when username is absent from the listing."""
         with patch.object(provider.session, "get_backends", return_value=BACKENDS):
             with pytest.raises(ResourceNotFoundError, match="Device 'nope' not found"):
                 provider.get_device("nope")
@@ -250,7 +352,6 @@ class TestQudoraDevice:
             ("Executing", DeviceStatus.ONLINE),
             ("Calibrating", DeviceStatus.UNAVAILABLE),
             ("Unresponsive", DeviceStatus.OFFLINE),
-            ("Something", DeviceStatus.UNAVAILABLE),
         ],
     )
     def test_status_mapping(self, device, status_name, expected):
@@ -258,12 +359,16 @@ class TestQudoraDevice:
         device.session.get_backend_status.return_value = status_name
         assert device.status() == expected
 
-    def test_status_without_backend_id(self, provider, mock_session):
-        """Without a backend id, a listed device is reported ONLINE without calling the status endpoint."""
-        backend = {key: value for key, value in BACKENDS[1].items() if key != "id"}
-        device = QudoraDevice(provider._build_profile(backend), mock_session)
-        assert device.status() == DeviceStatus.ONLINE
-        mock_session.get_backend_status.assert_not_called()
+    def test_status_queries_by_user_id(self, device):
+        """status() calls the status endpoint with the backend's numeric ``user_id``."""
+        device.status()
+        device.session.get_backend_status.assert_called_once_with(108)
+
+    def test_status_unmapped_raises(self, device):
+        """An unrecognized BackendStatusName raises rather than defaulting to UNAVAILABLE."""
+        device.session.get_backend_status.return_value = "Decommissioned"
+        with pytest.raises(KeyError, match="Decommissioned"):
+            device.status()
 
     def test_detect_language(self, device):
         """_detect_language() reads the OpenQASM version from the header, else raises."""
@@ -285,7 +390,8 @@ class TestQudoraDevice:
 
     def test_available_settings_empty_when_absent(self, provider, mock_session):
         """available_settings() returns an empty dict when the backend exposes no schema."""
-        device = QudoraDevice(provider._build_profile(BACKENDS[1]), mock_session)
+        backend = {**BACKENDS[1], "user_settings_schema": None}
+        device = QudoraDevice(provider._build_profile(backend), mock_session)
         assert device.available_settings() == {}
 
     def test_submit_body(self, device):
@@ -294,7 +400,7 @@ class TestQudoraDevice:
         body = device.session.create_job.call_args.args[0]
         assert body == {
             "name": "my-job",
-            "target": "qamelion",
+            "target": "xg1-emulator-gwdg@qudora.com",
             "language": "OpenQASM2",
             "shots": [256],
             "input_data": [QASM2],
@@ -309,7 +415,7 @@ class TestQudoraDevice:
         assert device.session.create_job.call_args.args[0]["name"] == "qbraid"
 
     def test_submit_batch(self, device):
-        """submit() with a list of programs sends per-program shots and one input_data entry each."""
+        """submit() with a program list sends per-program shots and one input_data entry each."""
         device.submit([QASM3, QASM3], shots=10)
         body = device.session.create_job.call_args.args[0]
         assert body["shots"] == [10, 10]
@@ -335,7 +441,8 @@ class TestQudoraDevice:
 
     def test_submit_exceeds_max_programs(self, provider, mock_session):
         """Submitting more programs than max_programs_per_job is rejected."""
-        device = QudoraDevice(provider._build_profile(BACKENDS[1]), mock_session)
+        backend = {**BACKENDS[1], "max_programs_per_job": 5}
+        device = QudoraDevice(provider._build_profile(backend), mock_session)
         with pytest.raises(ValueError, match="exceeds the device's maximum"):
             device.submit([QASM2] * 6)
 
@@ -391,12 +498,22 @@ class TestQudoraJob:
             ("Canceled", JobStatus.CANCELLED),
             ("Deleted", JobStatus.CANCELLED),
             ("Failed", JobStatus.FAILED),
-            ("Bogus", JobStatus.UNKNOWN),
         ],
     )
     def test_map_status(self, status_name, expected):
         """QUDORA JobStatusName values map to the expected qBraid JobStatus."""
         assert QudoraJob._map_status(status_name) == expected
+
+    def test_map_status_unmapped_raises(self):
+        """An unmapped JobStatusName raises instead of degrading to UNKNOWN.
+
+        UNKNOWN is not a terminal state, so returning it for a status QUDORA actually
+        reported would make result() poll a finished job until wait_for_final_state
+        timed out, instead of failing where the unmapped value entered the system.
+        """
+        assert JobStatus.UNKNOWN not in JobStatus.terminal_states()
+        with pytest.raises(KeyError, match="PartiallyCompleted"):
+            QudoraJob._map_status("PartiallyCompleted")
 
     def test_status(self, mock_session):
         """status() fetches the job record and maps its status."""
@@ -417,8 +534,21 @@ class TestQudoraJob:
         result = job.result()
         assert isinstance(result, Result)
         assert result.success is True
-        assert result.device_id == "qamelion"
         assert result.data.measurement_counts == {"01": 100}
+
+    def test_result_device_id_is_the_submitted_id(self, mock_session, device):
+        """device_id is the id jobs are submitted against, not the record's display name.
+
+        QUDORA echoes the backend's ``full_name`` back in the job record's ``target``
+        field ("QVLS-Q1 Emulator"), so reading ``target`` produced a Result whose
+        device_id matched no device the provider can return.
+        """
+        mock_session.get_job.return_value = _job_record("Completed", result=['{"01": 100}'])
+        job = QudoraJob("42", session=mock_session, device=device, shots=100)
+        result = job.result()
+        assert result.details["target"] == "QVLS-Q1 Emulator"
+        assert result.device_id == "xg1-emulator-gwdg@qudora.com"
+        assert result.device_id == device.id
 
     def test_result_multi_circuit(self, mock_session, device):
         """result() parses a multi-circuit job into a list of histograms."""
