@@ -156,10 +156,9 @@ def quil_t_instruction_counts(program: pyquil.Program) -> dict[str, int]:
     for instruction in program._program.to_instructions():  # pylint: disable=protected-access
         if not instruction.is_quil_t():
             continue
-        try:
-            name = instruction.to_quil().split("\n", 1)[0].split(maxsplit=1)[0]
-        except Exception:  # pylint: disable=broad-exception-caught
-            name = type(instruction).__name__
+        # Every Quil instruction begins with its keyword, so this cannot come up empty;
+        # if it ever does, the IndexError is a real bug and should surface as one.
+        name = instruction.to_quil().split("\n", 1)[0].split(maxsplit=1)[0]
         counts[name] = counts.get(name, 0) + 1
     return counts
 

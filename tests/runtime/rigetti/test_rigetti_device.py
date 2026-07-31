@@ -1906,6 +1906,31 @@ class TestRigettiDeviceRunCompilerOptions:
         assert mock_opts.call_args.kwargs == {"timeout": 300}
         assert mock_compile.call_args.kwargs["options"] is mock_opts.return_value
 
+    def test_unbindable_call_leaves_the_error_to_submit(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Recovering runtime_options is a diagnostic and must never be what fails.
+
+        When the call cannot be bound to submit()'s signature, submit() itself should
+        report the mismatch; the lookup falls back to whatever `kwargs` holds.
+        """
+        options = {"compiler_timeout": 300}
+
+        # Too many positionals for submit(): nothing to recover, and no exception.
+        assert (
+            rigetti_device._runtime_options_from_call(
+                "PROGRAM", (1, None, options, "unexpected"), {}
+            )
+            is None
+        )
+        # Given both positionally and by keyword: still unbindable, keyword wins.
+        assert (
+            rigetti_device._runtime_options_from_call(
+                "PROGRAM", (1, None, None), {"runtime_options": options}
+            )
+            is options
+        )
+
     def test_compiler_and_translation_keys_coexist(self, rigetti_device: RigettiDevice) -> None:
         """One dict feeds two different stages; neither may swallow the other's keys."""
         _, mock_compile, mock_translate, mock_opts = self._patched_run(
