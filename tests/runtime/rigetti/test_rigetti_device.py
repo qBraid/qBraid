@@ -1735,3 +1735,68 @@ class TestRigettiDeviceRunCompilerOptions:
             pytest.raises(RigettiDeviceError, match="within 300s"),
         ):
             rigetti_device.run(program, shots=1, runtime_options={"compiler_timeout": 300})
+
+
+# ===========================================================================
+# Device – run: accepted input types
+# ===========================================================================
+
+
+class TestRigettiDeviceRunInputTypes:
+    """run() sits before transpilation, so it accepts more than pyquil.Program.
+
+    Only :meth:`transform` receives a `pyquil.Program`, because it runs after
+    `apply_runtime_profile` has transpiled to the device's ProgramSpec type. The
+    dominant real input is a raw OpenQASM string: qbraid-runtime-api hands
+    `program.data` straight to `run()` for qasm2/qasm3 jobs.
+    """
+
+    QASM2 = """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c[2];
+h q[0];
+cx q[0],q[1];
+measure q -> c;
+"""
+
+    def test_run_accepts_a_raw_qasm_string(self, rigetti_device: RigettiDevice) -> None:
+        """A str must be transpiled to pyquil and compiled, not rejected."""
+        fake_comp = _mock_compile_pipeline()
+        fake_translation_result = MagicMock()
+        fake_translation_result.program = "TRANSLATED"
+        fake_translation_result.ro_sources = {"ro[0]": "q0"}
+
+        with (
+            patch.object(rigetti_device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.list_quantum_processors",
+                return_value=[DEVICE_ID],
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=_mock_isa(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=fake_comp,
+            ) as mock_compile,
+            patch(
+                "qbraid.runtime.rigetti.device.translate",
+                return_value=fake_translation_result,
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.qpu_submit",
+                return_value=DUMMY_JOB_ID,
+            ),
+        ):
+            job = rigetti_device.run(self.QASM2, shots=1)
+
+        assert isinstance(job, RigettiJob)
+        # transform() still saw a Program: transpilation happened in between.
+        mock_compile.assert_called_once()
+        assert isinstance(mock_compile.call_args.kwargs["quil"], str)

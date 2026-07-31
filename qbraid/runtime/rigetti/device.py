@@ -56,6 +56,8 @@ from .job import RigettiJob, RigettiJobError
 if TYPE_CHECKING:
     import datetime
 
+    import qbraid.programs
+
 # Short timeout (seconds) for the quilc TCP reachability probe so that
 # transform() fails fast instead of hanging when the quilc server is down.
 _QUILC_PROBE_TIMEOUT_S = 2.0
@@ -768,7 +770,7 @@ class RigettiDevice(QuantumDevice):
 
     def run(
         self,
-        run_input: pyquil.Program | list[pyquil.Program],
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
         *args: Any,
         **kwargs: Any,
     ) -> RigettiJob | list[RigettiJob]:
@@ -781,7 +783,13 @@ class RigettiDevice(QuantumDevice):
         :meth:`submit` the way the translation options are.
 
         Args:
-            run_input: A program, or list of programs, to run on the device.
+            run_input: A program, or list of programs, to run on the device. This is
+                any program type the conversion graph can reach ``pyquil`` from, not
+                only a ``pyquil.Program``: ``run()`` sits *before* transpilation, and
+                raw OpenQASM 2/3 strings are the common case in practice.
+                :meth:`transform` is the step that receives a ``pyquil.Program``,
+                because it runs after ``apply_runtime_profile`` has transpiled to the
+                device's ``ProgramSpec`` type.
             **kwargs: Forwarded to :meth:`submit`. ``runtime_options`` must be passed
                 as a keyword argument for its quilc keys to take effect; see
                 :meth:`_parse_compiler_options` and :meth:`_parse_runtime_options`.
