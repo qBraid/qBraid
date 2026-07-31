@@ -105,7 +105,7 @@ class PyQuilProgram(GateModelProgram):
         """Return the unitary of a pyQuil program."""
         program_copy = self.remove_measurements(self.program)
         qubits = sorted(program_copy.get_qubits())
-        if qubits and qubits != list(range(len(qubits))):
+        if qubits and max(qubits) >= self.num_qubits:
             raise ValueError(
                 "PyQuilProgram.unitary() requires contiguous qubit indices starting at 0; "
                 f"got {qubits}. Call remove_idle_qubits() first or use "
