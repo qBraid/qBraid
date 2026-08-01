@@ -341,6 +341,60 @@ def test_raise_for_api_error_empty_body_uses_reason():
         OpenQuantumSession._raise_for_api_error(response)
 
 
+def test_session_disables_core_raise_for_status():
+    """OpenQuantum must not use Session's string-only error path.
+
+    qbraid_core.Session.request assumes API ``message`` is a str and calls
+    ``message.endswith(".")``. Open Quantum returns ``message`` as a list, which
+    previously surfaced as ``'list' object has no attribute 'endswith'`` instead
+    of the Terms of Use error.
+    """
+    session = OpenQuantumSession(client_id="id", client_secret="secret")
+    assert session._raise_for_status is False
+
+
+def test_prepare_job_terms_of_use_list_message():
+    """prepare_job surfaces TERMS_OF_USE_REQUIRED when message is a list."""
+    session = OpenQuantumSession(client_id="id", client_secret="secret")
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 403
+    response.json.return_value = {
+        "status_code": 403,
+        "message": [
+            "Please visit https://www.openquantum.com to accept the Terms of Use "
+            "before submitting jobs."
+        ],
+        "type": "TERMS_OF_USE_REQUIRED",
+        "error_code": "req-1",
+    }
+    response.text = ""
+    response.reason = "Forbidden"
+
+    with patch.object(session, "post", return_value=response):
+        with pytest.raises(QbraidRuntimeError, match="openquantum.com"):
+            session.prepare_job({"organization_id": "org"})
+
+
+def test_create_job_terms_of_use_list_message():
+    """create_job surfaces TERMS_OF_USE_REQUIRED when message is a list."""
+    session = OpenQuantumSession(client_id="id", client_secret="secret")
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 403
+    response.json.return_value = {
+        "status_code": 403,
+        "message": ["Terms of Use not accepted"],
+        "type": "TERMS_OF_USE_REQUIRED",
+    }
+    response.text = ""
+    response.reason = "Forbidden"
+
+    with patch.object(session, "post", return_value=response):
+        with pytest.raises(QbraidRuntimeError, match="openquantum.com"):
+            session.create_job({"job_preparation_id": "prep"})
+
+
 def test_job_result_standalone(provider):
     """Test getting a result from a standalone job with no device attached."""
     provider.session.get_job.return_value = GET_JOB_RESPONSE_COMPLETED
@@ -359,6 +413,21 @@ def test_job_failed(provider):
 
     assert job.status() == JobStatus.FAILED
     with pytest.raises(QbraidRuntimeError, match="Job failed: Job failed due to an error"):
+        job.result()
+
+
+def test_job_failed_list_message(provider):
+    """Failed jobs with list-valued API messages raise a readable error."""
+    provider.session.get_job.return_value = {
+        **GET_JOB_RESPONSE_FAILED,
+        "message": ["Terms of Use not accepted", "see openquantum.com"],
+    }
+    job = OpenQuantumJob("job_xyz789", session=provider.session)
+
+    with pytest.raises(
+        QbraidRuntimeError,
+        match="Job failed: Terms of Use not accepted; see openquantum.com",
+    ):
         job.result()
 
 
@@ -756,7 +825,7 @@ def test_session_api_methods(mock_put):
         assert session.create_job({}) == {"id": "job_123"}
 
     with patch.object(session, "delete") as mock_delete:
-        mock_delete.return_value.raise_for_status.return_value = None
+        mock_delete.return_value.ok = True
         session.cancel_job("job_123")
         mock_delete.assert_called_once()
 

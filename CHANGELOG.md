@@ -36,6 +36,8 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed OpenQuantum Terms of Use errors never reaching the intended `QbraidRuntimeError`: `qbraid_core.Session` assumed API `message` was a string and crashed with `'list' object has no attribute 'endswith'` when Open Quantum returned a list.
+- Pinned the format-check `ruff` to `<0.16`: ruff 0.16.0 changed its default lint rules and flags ~742 pre-existing issues repo-wide, breaking CI format checks for every PR
 - Sparse-indexed pyQuil programs now raise an actionable unitary error that points to the supported qubit-compaction options instead of leaking a low-level permutation failure ([#1291](https://github.com/qBraid/qBraid/pull/1291))
 - Fixed `openqasm3_to_pyquil` raising `AttributeError` for programs addressing physical qubits (`x $0;`) rather than a declared register. Physical qubit indices now pass through verbatim and are not identity-padded, since such a program is already mapped to specific hardware ([#1286](https://github.com/qBraid/qBraid/pull/1286))
 - Fixed OpenQuantum `prepare_job` / `get_preparation_result` / `create_job` failing without a clear message when the API rejected the request. Responses are now parsed for the error `type`, mapping `TERMS_OF_USE_REQUIRED` to a `QbraidRuntimeError` pointing at https://www.openquantum.com, and other failures to a message including HTTP status, error type, and API detail ([#1282](https://github.com/qBraid/qBraid/pull/1282))
@@ -49,6 +51,7 @@ Writing an entry:
 - Fixed `BraketProvider.get_devices` aborting the entire call with `QbraidError` when any returned device lacks a qBraid-supported program type (e.g. retired D-Wave hardware when `statuses` includes `"RETIRED"`). Such devices are now skipped and the rest returned ([#1244](https://github.com/qBraid/qBraid/pull/1244))
 - Fixed `delay` instructions being silently dropped by `qasm3_to_braket`, so circuits relying on idle time (T1/T2, dynamical decoupling) ran as zero-delay circuits. It now raises `QasmError` rather than returning a circuit that measures the wrong thing ([#1270](https://github.com/qBraid/qBraid/pull/1270))
 - Fixed `ModuleNotFoundError` when building a `ConversionGraph` in an environment where a conversion's extras have an uninstalled parent package. Most visibly, `qbraid.transpiler` could not be imported at all with `pytket` installed but no `pytket` extensions. Such conversions are now marked unsupported and excluded from the graph ([#1264](https://github.com/qBraid/qBraid/pull/1264))
+- Fixed `QuantinuumDevice.status()` raising `ResourceFetchFailed` (400 "Invalid machine name") for cloud-hosted NEXUS emulators such as `H2-Emulator`, which broke `device.run()` since pre-submit validation checks status. Devices now carry a `nexus_hosted` profile flag, and cloud-hosted emulators report `ONLINE` without calling the hardware-only machine status endpoint ([#1295](https://github.com/qBraid/qBraid/pull/1295))
 
 ### Dependencies
 
