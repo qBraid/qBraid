@@ -46,6 +46,7 @@ from qbraid.transpiler.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler.graph import ConversionGraph, _get_path_from_bound_methods
 
 qiskit_qir_installed = importlib.util.find_spec("qiskit_qir") is not None
+pyquil_installed = importlib.util.find_spec("pyquil") is not None
 
 
 @pytest.fixture
@@ -582,6 +583,7 @@ def test_routing_is_independent_of_conversion_order():
     assert forward.shortest_path("a", "d") == reversed_.shortest_path("a", "d")
 
 
+@pytest.mark.skipif(not pyquil_installed, reason="pyquil not installed")
 def test_cirq_to_pyquil_routes_around_the_low_weight_edge():
     """cirq -> pyquil avoids the direct 0.74-weight conversion.
 
