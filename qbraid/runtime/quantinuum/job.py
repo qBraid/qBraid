@@ -27,6 +27,8 @@ from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
+from ._transport import ensure_bounded_client
+
 if TYPE_CHECKING:
     from qnexus.models.references import ExecuteJobRef
 
@@ -74,6 +76,7 @@ class QuantinuumJob(QuantumJob):
             # pylint: disable-next=import-outside-toplevel
             import qnexus as qnx
 
+            ensure_bounded_client()
             self._job = qnx.jobs.get(id=self.id)
             return self._job
         except Exception as exc:
@@ -122,6 +125,7 @@ class QuantinuumJob(QuantumJob):
         import qnexus as qnx
 
         try:
+            ensure_bounded_client()
             qnx.jobs.cancel(self._get_ref())
         except Exception as exc:
             raise QuantinuumJobError(f"Failed to cancel Quantinuum job {self.id}") from exc
@@ -179,6 +183,7 @@ class QuantinuumJob(QuantumJob):
 
         ref = self._get_ref()
         try:
+            ensure_bounded_client()
             results = qnx.jobs.results(ref)
         except Exception as exc:
             raise QuantinuumJobError(

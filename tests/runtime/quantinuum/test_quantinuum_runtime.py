@@ -38,6 +38,11 @@ from qbraid.runtime.quantinuum import (  # noqa: E402
     QuantinuumJob,
     QuantinuumProvider,
 )
+from qbraid.runtime.quantinuum._transport import (  # noqa: E402
+    DEFAULT_HTTP_TIMEOUT_SECONDS,
+    ensure_bounded_client,
+    retry_transient,
+)
 from qbraid.runtime.quantinuum.device import (  # noqa: E402
     DEFAULT_COMPILE_TIMEOUT_SECONDS,
     QuantinuumDeviceError,
@@ -356,7 +361,7 @@ class TestQuantinuumDevice:
         _, wait_kwargs = mock_wait.call_args
         assert wait_kwargs["timeout"] == DEFAULT_COMPILE_TIMEOUT_SECONDS
 
-    @patch("qbraid.runtime.quantinuum.device.time.sleep")
+    @patch("qbraid.runtime.quantinuum._transport.time.sleep")
     @patch("qnexus.start_execute_job")
     @patch("qnexus.jobs.results")
     @patch("qnexus.jobs.wait_for")
@@ -434,6 +439,296 @@ class TestQuantinuumDevice:
             device.submit(Circuit(2), shots=100)
 
         assert mock_wait.call_args.kwargs["timeout"] == 120.0
+
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_maps_real_wait_for_expiry(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+    ):
+        """A genuine ``qnx.jobs.wait_for`` expiry maps to ``QuantinuumDeviceError``.
+
+        The other timeout tests fabricate the exception and then assert the
+        mapping of their own fabrication, so they would stay green if upstream
+        switched to a custom timeout type. This one drives the real
+        ``wait_for`` with a strategy that never returns, pinning the assumption
+        that expiry surfaces as ``asyncio.TimeoutError``.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import asyncio
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        class _HangingStrategy:
+            """Wait strategy that never reaches a terminal status."""
+
+            async def get_status(self, _job):
+                """Block until the caller's timeout expires."""
+                await asyncio.sleep(60)
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+
+        device = _make_device()
+        with (
+            patch.dict(os.environ, {"QUANTINUUM_NEXUS_COMPILE_TIMEOUT": "0.05"}),
+            patch("qnexus.client.jobs.HybridStrategy", _HangingStrategy),
+            pytest.raises(QuantinuumDeviceError, match="did not complete within"),
+        ):
+            device.submit(Circuit(2), shots=100)
+
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_wraps_compile_job_error(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        mock_wait,
+    ):
+        """A compile that errors or is cancelled surfaces as a qBraid error.
+
+        ``wait_for`` raises ``qnx_exc.JobError`` in that case; left unwrapped it
+        escapes ``submit`` as a bare qnexus exception.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus.exceptions as qnx_exc
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+        mock_wait.side_effect = qnx_exc.JobError("Job errored: unsupported gate")
+
+        device = _make_device()
+        with pytest.raises(QuantinuumDeviceError, match="did not succeed"):
+            device.submit(Circuit(2), shots=100)
+
+    @patch("qbraid.runtime.quantinuum._transport.time.sleep")
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_retries_lazy_compiled_output_fetch(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+        _mock_sleep,
+    ):
+        """``get_output`` is lazy, so the whole fetch stage must sit in the retry.
+
+        ``CompilationResultRef.get_output`` issues its own NEXUS request; if only
+        ``jobs.results`` were wrapped, a blip there would propagate unretried.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+        compiled_item = MagicMock()
+        compiled_item.get_output.side_effect = [
+            httpx.RemoteProtocolError("Server disconnected without sending a response."),
+            MagicMock(name="compiled-ref"),
+        ]
+        mock_results.return_value = [compiled_item]
+        mock_execute.return_value = MagicMock(id="job-id")
+
+        device = _make_device()
+        job = device.submit(Circuit(2), shots=100)
+
+        assert compiled_item.get_output.call_count == 2
+        assert isinstance(job, QuantinuumJob)
+
+    @patch("qbraid.runtime.quantinuum._transport.time.sleep")
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_retries_nexus_gateway_errors(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+        _mock_sleep,
+    ):
+        """A NEXUS 503 is retried.
+
+        qnexus checks status codes by hand and raises its own exception types
+        rather than letting httpx raise ``HTTPStatusError``, so a gateway blip
+        never appears as a ``TransportError``.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus.exceptions as qnx_exc
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [
+            qnx_exc.ResourceCreateFailed(message="upstream unavailable", status_code=503),
+            MagicMock(name="circuit-ref"),
+        ]
+        mock_execute.return_value = MagicMock(id="job-id")
+
+        device = _make_device()
+        job = device.submit(Circuit(2), shots=100)
+
+        assert mock_upload.call_count == 2
+        assert isinstance(job, QuantinuumJob)
+
+    @patch("qbraid.runtime.quantinuum._transport.time.sleep")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_does_not_retry_client_errors(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        _mock_sleep,
+    ):
+        """A rejected program (4xx) is a real failure and must surface at once."""
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus.exceptions as qnx_exc
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_upload.side_effect = qnx_exc.ResourceCreateFailed(
+            message="circuit too wide for device", status_code=400
+        )
+
+        device = _make_device()
+        with pytest.raises(qnx_exc.ResourceCreateFailed):
+            device.submit(Circuit(2), shots=100)
+
+        assert mock_upload.call_count == 1
+
+    @pytest.mark.parametrize(
+        ("env", "value", "match"),
+        [
+            ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "15m", "must be a number of seconds"),
+            ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "0", "must be positive"),
+            ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "-5", "must be positive"),
+            ("QUANTINUUM_NEXUS_HTTP_TIMEOUT", "abc", "must be a number of seconds"),
+            ("QUANTINUUM_NEXUS_OPT_LEVEL", "high", "must be an integer"),
+            ("QUANTINUUM_NEXUS_OPT_LEVEL", "7", "must be between 0 and 2"),
+        ],
+    )
+    def test_submit_rejects_malformed_env_config(self, env, value, match):
+        """Misconfiguration fails loudly and names the variable.
+
+        Left unvalidated, ``COMPILE_TIMEOUT=0`` makes every submit report "did
+        not complete within 0 seconds", which reads like a NEXUS outage rather
+        than a config error.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        device = _make_device()
+        with (
+            patch.dict(os.environ, {env: value}),
+            pytest.raises(QuantinuumDeviceError, match=match),
+        ):
+            device.submit(Circuit(2), shots=100)
+
+
+# --- Transport hardening ---
+
+
+class TestTransportHardening:
+    def test_retry_transient_rejects_zero_attempts(self):
+        """``attempts=0`` would skip the loop and raise a bare ``AssertionError``."""
+        with pytest.raises(ValueError, match="at least 1"):
+            retry_transient(lambda: None, attempts=0)
+
+    @patch("qbraid.runtime.quantinuum._transport.time.sleep")
+    def test_retry_transient_gives_up_after_attempts(self, _mock_sleep):
+        """Retries are bounded; the last failure propagates."""
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        calls = []
+
+        def _always_fails():
+            calls.append(1)
+            raise httpx.ConnectError("connection refused")
+
+        with pytest.raises(httpx.ConnectError):
+            retry_transient(_always_fails, attempts=3)
+        assert len(calls) == 3
+
+    def test_ensure_bounded_client_bounds_an_unbounded_client(self):
+        """qnexus builds its shared client with ``timeout=None``."""
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        client = httpx.Client(timeout=None)
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            ensure_bounded_client()
+
+        assert client.timeout.read == DEFAULT_HTTP_TIMEOUT_SECONDS
+        assert client.timeout.connect == DEFAULT_HTTP_TIMEOUT_SECONDS
+
+    def test_ensure_bounded_client_preserves_caller_configuration(self):
+        """A client that already has a timeout keeps it."""
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        client = httpx.Client(timeout=5.0)
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            ensure_bounded_client()
+
+        assert client.timeout.read == 5.0
+
+    @patch.dict(os.environ, {"QUANTINUUM_NEXUS_HTTP_TIMEOUT": "12.5"})
+    def test_ensure_bounded_client_env_override_wins(self):
+        """An explicit env override applies even to an already-bounded client."""
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        client = httpx.Client(timeout=5.0)
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            ensure_bounded_client()
+
+        assert client.timeout.read == 12.5
 
 
 # --- Job ---
