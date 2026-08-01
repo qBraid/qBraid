@@ -417,6 +417,7 @@ class RigettiDevice(QuantumDevice):
             qcs_client=self._qcs_client,
             ro_sources=translation_result.ro_sources,
             execution_options=execution_options,
+            compiled_program=run_input,
         )
 
     # pylint: disable-next=arguments-differ

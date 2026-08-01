@@ -67,6 +67,7 @@ class RigettiJob(QuantumJob):
         qcs_client: QCSClient | None = None,
         ro_sources: dict[str, str] | None = None,
         execution_options: ExecutionOptions | None = None,
+        compiled_program: str | None = None,
         **kwargs: Any,
     ):
         """Initialize a RigettiJob.
@@ -87,12 +88,17 @@ class RigettiJob(QuantumJob):
             execution_options: The ``ExecutionOptions`` used at submission
                 time. Reused for ``cancel`` and ``retrieve_results`` so the
                 job hits the same gRPC endpoint that accepted it.
+            compiled_program: The native Quil program produced by quilc that
+                was submitted for translation and execution. ``None`` when
+                rehydrating a job by ID, since compilation output is not
+                retrievable from QCS after submission.
         """
         super().__init__(job_id=job_id, device=device, **kwargs)
         self._qcs_client = qcs_client
         self._num_shots = num_shots
         self._ro_sources = ro_sources or {}
         self._execution_options = execution_options
+        self._compiled_program = compiled_program
         self._status = JobStatus.INITIALIZING
         self._status_message: str | None = None
         self._cached_results: ExecutionResults | None = None
@@ -111,6 +117,17 @@ class RigettiJob(QuantumJob):
         raise RigettiJobError(
             f"RigettiJob {self.id} has no QCSClient: pass qcs_client= or device=."
         )
+
+    @property
+    def compiled_program(self) -> str | None:
+        """The native Quil program produced by quilc for this job, if known.
+
+        Reveals the physical qubits selected and the final rewiring chosen by
+        the compiler — information not recoverable from measurement counts.
+        ``None`` for jobs rehydrated by ID (e.g. on a later status poll),
+        since QCS does not expose compilation output after submission.
+        """
+        return self._compiled_program
 
     @property
     def status_message(self) -> str | None:
@@ -284,6 +301,9 @@ class RigettiJob(QuantumJob):
             raise RigettiJobError(f"Failed to parse execution results for job {self.id}.") from exc
 
         self._status = JobStatus.COMPLETED
+        extra_details: dict[str, Any] = {}
+        if self._compiled_program is not None:
+            extra_details["compiled_program"] = self._compiled_program
         return Result[GateModelResultData](
             device_id=self.device.id,
             job_id=self.id,
@@ -291,4 +311,5 @@ class RigettiJob(QuantumJob):
             data=result_data,
             execution_duration_microseconds=(self._cached_results.execution_duration_microseconds),
             ro_sources=dict(self._ro_sources),
+            **extra_details,
         )

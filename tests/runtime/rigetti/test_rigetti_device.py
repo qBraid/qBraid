@@ -797,6 +797,13 @@ class TestRigettiDeviceSubmit:
 
         assert job._ro_sources == ro_sources
 
+    def test_submit_stores_compiled_program_on_job(self, rigetti_device: RigettiDevice) -> None:
+        """The RigettiJob returned by _submit must carry the native Quil it submitted."""
+        quil_str, shots = self._make_quil(shots=2)
+        job, _, _ = _mock_submit_pipeline(rigetti_device, quil_str, shots)
+
+        assert job.compiled_program == quil_str
+
     def test_submit_list_returns_list_of_jobs(self, rigetti_device: RigettiDevice) -> None:
         """Submitting a list of Quil strings must return a list of RigettiJobs."""
         quil_strings = [self._make_quil(shots=3)[0], self._make_quil(shots=3)[0]]
