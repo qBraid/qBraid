@@ -27,6 +27,7 @@ Writing an entry:
 - Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing device calibration data (per-edge two-qubit gate errors, per-qubit metrics, timestamps) and the physical connectivity graph derived from it. Useful for hand-placing circuits on paths that bypass quilc. Both return `None`-equivalents for devices without published calibration data ([#1281](https://github.com/qBraid/qBraid/pull/1281))
 
 ### Improved / Modified
+- Raised the `pyqasm` floor from 1.0.1 to 1.0.2. On 1.0.1 a multi-qubit OpenQASM `barrier` lowers to one single-qubit `FENCE` per qubit rather than a single `FENCE q0 q1 q2`, so the instruction a barrier produces differed across versions the range allowed ([#1300](https://github.com/qBraid/qBraid/pull/1300))
 - Unit tests now run in parallel (`pytest-xdist -n auto`), test collection is made deterministic so xdist workers agree (set-derived `parametrize` inputs are sorted), and CI collects coverage only on the job that uploads to Codecov — roughly halving PR CI wall time with no checks removed
 - Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: it now points at accepting the Open Quantum terms of use rather than only reporting "No organization found for user." ([#1279](https://github.com/qBraid/qBraid/pull/1279))
 - CI workflows install `tox-uv`, so tox environments are built with the much faster `uv` installer instead of pip; local tox usage is unaffected unless `tox-uv` is installed
