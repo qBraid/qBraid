@@ -84,6 +84,13 @@ def bound_method_str(source, target):
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
+def _path_cost(graph: ConversionGraph, path: list) -> float:
+    """Total conversion cost of a path given as a list of bound Conversion.convert methods."""
+    aliases = _get_path_from_bound_methods(path).split(" -> ")
+    costs = {(conv.source, conv.target): conv.weight for conv in graph.conversions()}
+    return sum(costs[pair] for pair in zip(aliases, aliases[1:]))
+
+
 @pytest.mark.parametrize("func", sorted(conversion_functions))
 def test_conversion_functions_syntax(func):
     """Test that all conversion functions are named correctly."""
@@ -109,7 +116,9 @@ def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
             break
     assert intermediate is not None, f"Unexpected shortest path: {path_strs}"
     assert shortest_path == top_paths[0]
-    assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])
+    assert len(top_paths) == 3
+    costs = [_path_cost(native_conversion_graph, path) for path in top_paths]
+    assert costs == sorted(costs), f"top paths not ordered by conversion cost: {costs}"
 
 
 def test_add_conversion():
@@ -503,3 +512,83 @@ def test_custom_conversion_endpoints_allowed_as_nodes():
         conversions=[conversion], nodes=["custom_a", "custom_b"], include_isolated=True
     )
     assert set(graph.nodes()) == {"custom_a", "custom_b"}
+
+
+def _weighted_triangle(direct_weight: float) -> ConversionGraph:
+    """Two unit-weight hops a->b->c alongside a direct a->c of the given weight."""
+    conversions = [
+        Conversion(src, dst, lambda x: x, weight, bias=0.25)
+        for src, dst, weight in [("a", "b", 1.00), ("b", "c", 1.00), ("a", "c", direct_weight)]
+    ]
+    return ConversionGraph(conversions=conversions)
+
+
+@pytest.mark.parametrize(
+    "direct_weight, expected",
+    [(0.77, "a -> b -> c"), (0.78, "a -> c")],
+)
+def test_top_paths_respect_weights_not_just_hop_count(direct_weight, expected):
+    """The path ranking honors weights, so a cheap detour can beat a direct conversion.
+
+    Ranking by hop count alone returned 'a -> c' for both weights, which is how five
+    deliberately reduced weights in the codebase never influenced routing. The boundary is
+    where the bias prices them equal: at bias 0.25, one hop is preferred above e**-0.25.
+    """
+    graph = _weighted_triangle(direct_weight)
+    top = graph.find_top_shortest_conversion_paths("a", "c", top_n=3)
+    assert _get_path_from_bound_methods(top[0]) == expected
+
+
+@pytest.mark.parametrize("direct_weight", [0.5, 0.77, 0.78, 1.0])
+def test_shortest_path_agrees_with_top_paths(direct_weight):
+    """find_shortest_conversion_path and find_top_shortest_conversion_paths cannot diverge.
+
+    They were separate implementations -- Dijkstra vs hop count -- so shortest_path() could
+    report a route transpile() would never take.
+    """
+    graph = _weighted_triangle(direct_weight)
+    assert graph.find_shortest_conversion_path("a", "c") == (
+        graph.find_top_shortest_conversion_paths("a", "c", top_n=1)[0]
+    )
+
+
+def test_native_graph_shortest_path_agrees_with_top_paths():
+    """The two path finders agree for every reachable pair of the real conversion graph."""
+    graph = ConversionGraph()
+    disagreements = []
+    for source in graph.nodes():
+        for target in graph.nodes():
+            if source == target or not graph.has_path(source, target):
+                continue
+            top = graph.find_top_shortest_conversion_paths(source, target, top_n=1)[0]
+            if graph.shortest_path(source, target) != _get_path_from_bound_methods(top):
+                disagreements.append((source, target))
+    assert not disagreements, f"path finders disagree for: {disagreements}"
+
+
+def test_routing_is_independent_of_conversion_order():
+    """Equal-cost paths tie-break deterministically rather than on registration order.
+
+    Ranking previously fell back to the order rustworkx enumerated paths in, so adding an
+    unrelated conversion could silently reroute an existing pair.
+    """
+    specs = [("a", "b", 1.0), ("b", "d", 1.0), ("a", "c", 1.0), ("c", "d", 1.0)]
+    forward = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs]
+    )
+    reversed_ = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in reversed(specs)]
+    )
+    assert forward.shortest_path("a", "d") == reversed_.shortest_path("a", "d")
+
+
+def test_cirq_to_pyquil_routes_around_the_low_weight_edge():
+    """cirq -> pyquil avoids the direct 0.74-weight conversion.
+
+    That edge reorders instructions across measurement boundaries and splits the readout
+    register into one BIT[1] per measurement key, which failed 23 production Rigetti jobs
+    with "Misplaced or illegal instruction in ProtoQuil program". Its low weight recorded
+    that, but hop-count ranking picked it anyway because it is a single hop.
+    """
+    graph = ConversionGraph()
+    assert graph.shortest_path("cirq", "pyquil") != "cirq -> pyquil"

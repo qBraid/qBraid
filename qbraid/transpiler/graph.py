@@ -303,9 +303,21 @@ class ConversionGraph(rx.PyDiGraph):
             if not (conv.source == source and conv.target == target)
         ]
 
+    def _path_cost(self, path: list[int]) -> float:
+        """Return the total conversion cost of a path given as node ids.
+
+        Edge cost is ``log(1/weight) + bias``, so this is the quantity Dijkstra minimizes.
+        """
+        return sum(self.get_edge_data(path[i], path[i + 1])["weight"] for i in range(len(path) - 1))
+
     def find_shortest_conversion_path(self, source: str, target: str) -> list[Callable]:
         """
         Find the shortest conversion path between two nodes in a graph.
+
+        Delegates to :meth:`find_top_shortest_conversion_paths` so that the path reported here
+        is the one ``transpile()`` will actually take. These were previously separate
+        implementations -- Dijkstra here, hop count there -- which disagreed for any pair whose
+        best-weighted route was not also its shortest.
 
         Args:
             source (str): The starting node for the path.
@@ -316,39 +328,27 @@ class ConversionGraph(rx.PyDiGraph):
                               as a list of bound methods of Conversion instances.
 
         Raises:
-            ValueError: If no path is found between source and target.
+            ConversionPathNotFoundError: If no path is found between source and target.
         """
-        path = rx.dijkstra_shortest_paths(
-            self,
-            self._node_alias_id_map[source],
-            target=self._node_alias_id_map[target],
-            weight_fn=lambda edge: edge["weight"],
-        )
-
-        if len(path) == 0:
-            raise ConversionPathNotFoundError(source, target)
-
-        return [
-            self.get_edge_data(
-                path[self._node_alias_id_map[target]][i],
-                path[self._node_alias_id_map[target]][i + 1],
-            )["func"]
-            for i in range(len(path[self._node_alias_id_map[target]]) - 1)
-        ]
+        return self.find_top_shortest_conversion_paths(source, target, top_n=1)[0]
 
     def find_top_shortest_conversion_paths(
         self, source: str, target: str, top_n: int = 3
     ) -> list[list[Callable]]:
         """
-        Find the top shortest conversion paths between two nodes in a graph.
+        Find the top conversion paths between two nodes, cheapest first.
+
+        Paths are ranked by total conversion cost, so a conversion's declared ``weight``
+        determines routing rather than only the number of hops. Ties fall back to hop count,
+        then to node aliases so that routing does not depend on conversion registration order.
 
         Args:
             source (str): The starting node for the path.
             target (str): The target node for the path.
-            top_n (int): Number of top shortest paths to find.
+            top_n (int): Number of top paths to find.
 
         Returns:
-            list of list of Callable: The top shortest conversion paths.
+            list of list of Callable: The top conversion paths, best first.
 
         Raises:
             ConversionPathNotFoundError: If no path is found between source and target.
@@ -361,7 +361,11 @@ class ConversionGraph(rx.PyDiGraph):
         if len(all_paths) == 0:
             raise ConversionPathNotFoundError(source, target)
 
-        sorted_paths = sorted(all_paths, key=len)[:top_n]
+        alias_of = {node_id: alias for alias, node_id in self._node_alias_id_map.items()}
+        sorted_paths = sorted(
+            all_paths,
+            key=lambda path: (self._path_cost(path), len(path), tuple(alias_of[n] for n in path)),
+        )[:top_n]
         return [
             [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
             for path in sorted_paths
