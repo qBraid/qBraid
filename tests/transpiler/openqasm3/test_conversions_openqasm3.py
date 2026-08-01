@@ -155,6 +155,28 @@ def test_openqasm3_to_pyquil_idle_qubits_padded():
     assert circuits_allclose(result, expected, strict_gphase=True)
 
 
+def test_openqasm3_to_pyquil_padding_precedes_measurement():
+    """Identity padding is emitted ahead of the body, not appended after it.
+
+    ProtoQuil rejects a gate that follows a MEASURE, so padding appended at the end
+    produced a program Rigetti refuses to run. ``circuits_allclose`` cannot catch
+    this, since the unitary is unchanged by where the identity sits.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[3] q;
+    bit[2] c;
+    x q[0];
+    x q[2];
+    c[0] = measure q[0];
+    c[1] = measure q[2];
+    """
+    instructions = [str(instruction) for instruction in openqasm3_to_pyquil(qasm).instructions]
+    first_measure = next(i for i, text in enumerate(instructions) if text.startswith("MEASURE"))
+    assert instructions.index("I 1") < first_measure
+
+
 def test_openqasm3_to_pyquil_reset():
     """reset maps to pyQuil RESET on the target qubit."""
     qasm = """
@@ -472,3 +494,42 @@ def test_openqasm3_to_pyquil_unsupported_condition_raises():
     """
     with pytest.raises(ProgramConversionError):
         openqasm3_to_pyquil(qasm)
+
+
+@pytest.mark.parametrize(
+    "declared,used,expected_span",
+    [
+        # interior gap is padded, so the program still spans 0..max(used)
+        (5, [0, 2], {0, 1, 2}),
+        # idle qubits above the last one in use are dropped, not padded
+        (5, [0, 1], {0, 1}),
+        (20, [0], {0}),
+        # ...but a gap between the endpoints is still padded: declaring 20 qubits and
+        # using only the two ends spans all 20. Trimming is a tail trim, nothing more.
+        (20, [0, 19], set(range(20))),
+        # leading idle qubits are padded too, since the span starts at 0
+        (5, [4], {0, 1, 2, 3, 4}),
+    ],
+)
+def test_openqasm3_to_pyquil_pads_only_up_to_the_highest_qubit_in_use(
+    declared, used, expected_span
+):
+    """The converted program spans 0..max(used), padding idle qubits below that with I.
+
+    Asserts the set of qubits the program touches rather than the exact instruction
+    list: the padding order is an implementation detail, but the span is what decides
+    how much of the QPU quilc is asked to rewire.
+    """
+    gates = "\n".join(f"x q[{index}];" for index in used)
+    qasm = f"""
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[{declared}] q;
+    {gates}
+    """
+    program = openqasm3_to_pyquil(qasm)
+    assert program.get_qubit_indices() == expected_span
+    # padding must never disturb the gates the source asked for
+    assert [line for line in program.out().splitlines() if not line.startswith("I ")] == [
+        f"X {index}" for index in used
+    ]
