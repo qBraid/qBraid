@@ -155,6 +155,28 @@ def test_openqasm3_to_pyquil_idle_qubits_padded():
     assert circuits_allclose(result, expected, strict_gphase=True)
 
 
+def test_openqasm3_to_pyquil_padding_precedes_measurement():
+    """Identity padding is emitted ahead of the body, not appended after it.
+
+    ProtoQuil rejects a gate that follows a MEASURE, so padding appended at the end
+    produced a program Rigetti refuses to run. ``circuits_allclose`` cannot catch
+    this, since the unitary is unchanged by where the identity sits.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[3] q;
+    bit[2] c;
+    x q[0];
+    x q[2];
+    c[0] = measure q[0];
+    c[1] = measure q[2];
+    """
+    instructions = [str(instruction) for instruction in openqasm3_to_pyquil(qasm).instructions]
+    first_measure = next(i for i, text in enumerate(instructions) if text.startswith("MEASURE"))
+    assert instructions.index("I 1") < first_measure
+
+
 def test_openqasm3_to_pyquil_reset():
     """reset maps to pyQuil RESET on the target qubit."""
     qasm = """

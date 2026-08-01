@@ -273,8 +273,13 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
 
+    # Emitted separately so the identity padding below can be placed ahead of it:
+    # ``used_qubits`` is only known once every statement has been visited, and
+    # appending the padding afterwards would put gates after the measurements,
+    # which ProtoQuil rejects.
+    body = pyquil.Program()
     for statement in unrolled.statements:
-        emit(statement, quil)
+        emit(statement, body)
 
     # A Quil program's width is whatever its instructions touch, so pad every idle
     # index below the highest one in use: the program then spans a contiguous
@@ -291,4 +296,5 @@ def openqasm3_to_pyquil(program: QasmStringType | ast.Program) -> Program:
         if index not in used_qubits:
             quil += pyquil_gates.I(index)
 
+    quil += body
     return quil
