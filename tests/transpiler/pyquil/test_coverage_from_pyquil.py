@@ -88,7 +88,10 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("braket", 0.77), ("cirq", 0.77), ("pytket", 0.77), ("qiskit", 0.77)]
+# Floors sit a couple points below accuracy measured 2026-08 (see #1226 for the pattern):
+# braket 0.852, the rest 0.889. The 0.77s dated from the 2024 coverage.md and would have
+# let a ten-point regression pass silently.
+ALL_TARGETS = [("braket", 0.83), ("cirq", 0.86), ("pytket", 0.86), ("qiskit", 0.86)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 

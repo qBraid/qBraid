@@ -73,6 +73,12 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
     return bk_circuit.to_unitary()
 
 
+# Gate-only fidelity measures 1.0, but this stays below 1.0: braket measurements come
+# through as cirq M('') with empty keys, which downstream QASM export collapses into a
+# single BIT[1] register (verified 2026-08: at weight 1.0, measured braket -> pyquil
+# programs lose their readout). The 0.01 keeps multi-hop routes off this edge; the
+# direct braket -> cirq pair still wins as the only single-hop conversion. See
+# tests/transpiler/test_measurement_coverage.py.
 @weight(0.99)
 def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.

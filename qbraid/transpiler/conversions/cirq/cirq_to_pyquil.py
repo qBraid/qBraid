@@ -39,6 +39,12 @@ if TYPE_CHECKING:
     from pyquil import Program
 
 
+# Deliberately below e**-0.25 ~= 0.7788, the break-even at which a single conversion loses
+# to two weight-1.0 hops: this edge fragments the readout register into one BIT[1] per
+# measurement key and reorders across measurement boundaries, which QCS rejects ("Misplaced
+# or illegal instruction in ProtoQuil program", 23 production jobs). Gate-only fidelity
+# measures ~0.88, but raising the weight past 0.7788 would re-route cirq -> pyquil back
+# through this edge. See tests/transpiler/test_measurement_coverage.py.
 @weight(0.74)
 def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.

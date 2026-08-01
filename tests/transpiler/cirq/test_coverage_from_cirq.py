@@ -106,7 +106,10 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("braket", 0.85), ("pyquil", 0.74), ("pytket", 0.87), ("qiskit", 0.87)]
+# Floors sit a couple points below accuracy measured 2026-08 (see #1226 for the pattern).
+# pyquil's 0.74 dated from the 2024 coverage.md, measured through the direct cirq -> pyquil
+# edge; routing now goes via qasm2 and measures 0.875.
+ALL_TARGETS = [("braket", 0.85), ("pyquil", 0.85), ("pytket", 0.87), ("qiskit", 0.87)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 cirq_gates = get_cirq_gates()

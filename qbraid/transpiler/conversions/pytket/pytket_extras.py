@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
@@ -39,9 +39,16 @@ if TYPE_CHECKING:
     from pyqir import Module
 
 
+@weight(0.95)
 @requires_extras("pytket.extensions.braket")
 def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit:
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
+
+    Weighted below 1.0 because ``tk_to_braket`` drops measurement instructions
+    (see ``tests/transpiler/test_measurement_coverage.py``), so multi-hop routes
+    (e.g. ``qasm2 -> braket``, ``pytket -> qasm3``) prefer a measurement-preserving
+    alternative. As the only single-hop ``pytket -> braket`` conversion it still
+    wins that pair directly.
 
     Args:
         circuit (pytket.circuit.Circuit): PyTKET circuit to convert to Braket circuit.
