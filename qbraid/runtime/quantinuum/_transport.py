@@ -27,13 +27,11 @@ server process:
   common cloud blip.
 
 """
-from __future__ import annotations
-
 import math
 import os
 import random
 import time
-from typing import Callable, TypeVar
+from typing import Callable, Type, TypeVar
 
 from qbraid._logging import logger
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -160,7 +158,7 @@ def ensure_bounded_client() -> None:
     client.timeout = httpx.Timeout(seconds)
 
 
-def _retryable_exception_types() -> tuple[type[Exception], ...]:
+def _retryable_exception_types() -> tuple[Type[Exception], ...]:
     """Return the exception types worth inspecting for a retry."""
     # pylint: disable-next=import-outside-toplevel
     import httpx
