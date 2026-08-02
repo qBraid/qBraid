@@ -636,21 +636,44 @@ class TestRigettiJobParseResults:
         assert result.measurement_counts is not None
         assert result.get_probabilities() is not None
 
-    def test_parse_results_multiple_registers_concatenated_in_sorted_order(
+    def test_parse_results_multiple_registers_concatenated_in_declaration_order(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """When multiple registers exist, they are concatenated in sorted order."""
-        # "aux" comes before "ro" alphabetically, so aux bits come first
+        """Registers concatenate in the program's DECLARE order, not sorted order.
+
+        Reproduces the production shape from #1308: declaration order is
+        ``ro``, ``r1``, which lexicographic sorting would reverse. The
+        ``q<N>_unclassified`` entries mirror what ``translate()`` actually
+        returns alongside the memory references; they must be ignored.
+        """
+        compiled_program = (
+            "DECLARE ro BIT[2]\n"
+            "DECLARE r1 BIT[2]\n"
+            "H 0\n"
+            "CNOT 0 1\n"
+            "CNOT 0 2\n"
+            "CNOT 0 3\n"
+            "MEASURE 0 ro[0]\n"
+            "MEASURE 1 ro[1]\n"
+            "MEASURE 2 r1[0]\n"
+            "MEASURE 3 r1[1]\n"
+        )
         ro_sources = {
-            "ro[0]": "r0",
-            "aux[0]": "a0",
-            "aux[1]": "a1",
+            "q0_unclassified": "q0_unclassified",
+            "q1_unclassified": "q1_unclassified",
+            "r1[1]": "q3_classified",
+            "r1[0]": "q2_classified",
+            "ro[1]": "q1_classified",
+            "ro[0]": "q0_classified",
         }
-        # 2 shots
+        # Asymmetric data: ro = [1, 1], r1 = [0, 0] on shot 1; reversed on shot 2.
         readout_data = {
-            "r0": [0, 1],
-            "a0": [1, 0],
-            "a1": [1, 1],
+            "q0_classified": [1, 0],
+            "q1_classified": [1, 0],
+            "q2_classified": [0, 1],
+            "q3_classified": [0, 1],
+            "q0_unclassified": [0, 0],
+            "q1_unclassified": [0, 0],
         }
         exec_results = _make_execution_results(readout_data)
 
@@ -659,12 +682,63 @@ class TestRigettiJobParseResults:
             device=rigetti_device,
             num_shots=2,
             ro_sources=ro_sources,
+            compiled_program=compiled_program,
         )
         result = job._parse_results(exec_results)
 
-        # Shot 1: aux=[1,1], ro=[0] -> "110"
-        # Shot 2: aux=[0,1], ro=[1] -> "011"
-        assert result.measurement_counts == {"110": 1, "011": 1}
+        # ro bits first, then r1 -- sorted order would return {"0011": 1, "1100": 1}
+        # with the halves swapped on every shot.
+        assert result.measurement_counts == {"1100": 1, "0011": 1}
+
+    def test_parse_results_multiple_registers_without_program_raises(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Without the submitted program, multi-register order is unrecoverable.
+
+        A rehydrated job has no compiled_program; guessing an order silently
+        corrupts bitstrings, so _parse_results must refuse.
+        """
+        ro_sources = {"ro[0]": "r0", "aux[0]": "a0"}
+        exec_results = _make_execution_results({"r0": [0], "a0": [1]})
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1, ro_sources=ro_sources
+        )
+
+        with pytest.raises(RigettiJobError, match="declaration order"):
+            job._parse_results(exec_results)
+
+    def test_parse_results_register_missing_declare_raises(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A register in ro_sources with no DECLARE in the program is an error."""
+        ro_sources = {"ro[0]": "r0", "aux[0]": "a0"}
+        exec_results = _make_execution_results({"r0": [0], "a0": [1]})
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=1,
+            ro_sources=ro_sources,
+            compiled_program="DECLARE ro BIT[1]\nMEASURE 0 ro[0]\n",
+        )
+
+        with pytest.raises(RigettiJobError, match="no DECLARE"):
+            job._parse_results(exec_results)
+
+    def test_parse_results_single_register_needs_no_program(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Single-register jobs (the overwhelming majority) parse without
+        compiled_program; there is only one possible order."""
+        exec_results, ro_sources = _make_simple_execution_results([[1, 0], [1, 0]])
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=2, ro_sources=ro_sources
+        )
+        result = job._parse_results(exec_results)
+
+        assert result.measurement_counts == {"10": 2}
 
     def test_parse_results_all_zeros(self, rigetti_device: RigettiDevice) -> None:
         """All-zero measurements must produce a single '000...' count."""
