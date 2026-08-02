@@ -29,6 +29,7 @@ server process:
 """
 from __future__ import annotations
 
+import math
 import os
 import random
 import time
@@ -61,6 +62,11 @@ def positive_float_env(name: str, default: float) -> float:
     error: ``FOO=abc`` would otherwise raise a bare ``ValueError`` that never
     names the variable, and ``FOO=0`` would silently make every call expire.
 
+    ``nan`` and ``inf`` are rejected explicitly. ``float()`` accepts both, and
+    every ordering comparison against NaN is false, so a bare ``value <= 0``
+    check waves it through into httpx and qnexus to fail later somewhere with
+    no connection to the variable that caused it.
+
     Args:
         name: Environment variable to read.
         default: Value to use when the variable is unset.
@@ -69,8 +75,8 @@ def positive_float_env(name: str, default: float) -> float:
         The resolved number of seconds.
 
     Raises:
-        QuantinuumDeviceError: If the variable is set but is not a positive
-            number.
+        QuantinuumDeviceError: If the variable is set but is not a finite
+            positive number.
     """
     raw = os.getenv(name)
     if raw is None:
@@ -79,6 +85,8 @@ def positive_float_env(name: str, default: float) -> float:
         value = float(raw)
     except ValueError as err:
         raise QuantinuumDeviceError(f"{name} must be a number of seconds, got {raw!r}.") from err
+    if not math.isfinite(value):
+        raise QuantinuumDeviceError(f"{name} must be a finite number of seconds, got {raw!r}.")
     if value <= 0:
         raise QuantinuumDeviceError(f"{name} must be positive, got {value}.")
     return value

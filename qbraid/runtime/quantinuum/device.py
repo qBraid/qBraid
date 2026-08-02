@@ -189,7 +189,7 @@ class QuantinuumDevice(QuantumDevice):
             qnx.jobs.wait_for(compile_job, timeout=compile_timeout)
         except asyncio.TimeoutError as err:
             raise QuantinuumDeviceError(
-                f"Quantinuum compilation job did not complete within {compile_timeout:.0f} "
+                f"Quantinuum compilation job did not complete within {compile_timeout:g} "
                 "seconds. The compile may still be queued on NEXUS; set "
                 "QUANTINUUM_NEXUS_COMPILE_TIMEOUT (seconds) to wait longer."
             ) from err

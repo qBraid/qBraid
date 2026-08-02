@@ -685,6 +685,10 @@ class TestQuantinuumDevice:
             ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "15m", "must be a number of seconds"),
             ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "0", "must be positive"),
             ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "-5", "must be positive"),
+            # float() accepts these and every comparison against NaN is false,
+            # so a bare `value <= 0` guard lets them through.
+            ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "nan", "must be a finite number"),
+            ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "inf", "must be a finite number"),
             ("QUANTINUUM_NEXUS_HTTP_TIMEOUT", "abc", "must be a number of seconds"),
             ("QUANTINUUM_NEXUS_OPT_LEVEL", "high", "must be an integer"),
             ("QUANTINUUM_NEXUS_OPT_LEVEL", "7", "must be between 0 and 2"),
