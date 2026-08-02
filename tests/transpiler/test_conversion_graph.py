@@ -20,6 +20,7 @@ used to dictate transpiler conversions.
 
 """
 import importlib.util
+from itertools import pairwise
 from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
@@ -89,7 +90,7 @@ def _path_cost(graph: ConversionGraph, path: list) -> float:
     """Total conversion cost of a path given as a list of bound Conversion.convert methods."""
     aliases = _get_path_from_bound_methods(path).split(" -> ")
     costs = {(conv.source, conv.target): conv.weight for conv in graph.conversions()}
-    return sum(costs[pair] for pair in zip(aliases, aliases[1:]))
+    return sum(costs[pair] for pair in pairwise(aliases))
 
 
 @pytest.mark.parametrize("func", sorted(conversion_functions))
