@@ -68,6 +68,25 @@ def batch_circuit():
     return circuit
 
 
+def test_mid_circuit_measurement_raises():
+    """Test that a gate acting on a measured qubit is rejected, not silently reordered"""
+    q0 = LineQubit(0)
+    circuit = Circuit(cirq.measure(q0, key="m"), ops.X(q0))
+    with pytest.raises(ProgramConversionError, match="mid-circuit measurement"):
+        cirq_to_braket(circuit)
+
+
+def test_measurement_invert_mask_emits_x():
+    """Test that invert_mask bits are realized as an X before the measure"""
+    q0, q1 = LineQubit.range(2)
+    circuit = Circuit(
+        ops.H(q0), ops.H(q1), cirq.measure(q0, q1, key="m", invert_mask=(False, True))
+    )
+    braket_circuit = cirq_to_braket(circuit)
+    tail = [(str(i.operator), [int(q) for q in i.target]) for i in braket_circuit.instructions[-3:]]
+    assert tail == [("Measure", [0]), ("X('qubit_count': 1)", [1]), ("Measure", [1])]
+
+
 def test_measurement_confusion_map_raises():
     """Test that a measurement with a confusion map is rejected, not silently dropped"""
     q0 = cirq.LineQubit(0)

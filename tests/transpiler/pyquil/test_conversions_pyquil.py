@@ -203,3 +203,21 @@ def test_cirq_to_pyquil_two_qubit_diagonal_roundtrip(instr):
     p = Program(instr)
     p_test = cirq_to_pyquil(pyquil_to_cirq(p))
     assert circuits_allclose(p, p_test)
+
+
+def test_multi_key_terminal_measurements_merge_to_single_register():
+    """Per-bit measurement keys (as produced by QASM import) coalesce into one
+    readout register instead of one BIT[1] register per key."""
+    qubits = LineQubit.range(3)
+    circuit = Circuit(
+        cirq_ops.H(qubits[0]),
+        cirq_ops.CNOT(qubits[0], qubits[1]),
+        cirq_ops.CNOT(qubits[1], qubits[2]),
+        [cirq_ops.measure(qb, key=f"c_{i}") for i, qb in enumerate(qubits)],
+    )
+    program = cirq_to_pyquil(circuit)
+    lines = program.out().splitlines()
+    assert [line for line in lines if line.startswith("DECLARE")] == ["DECLARE m0 BIT[3]"]
+    assert [line for line in lines if line.startswith("MEASURE")] == [
+        f"MEASURE {i} m0[{i}]" for i in range(3)
+    ]
