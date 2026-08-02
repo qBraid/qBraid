@@ -312,7 +312,7 @@ def test_braket_measure_converts_to_single_keyed_gate():
         op for op in cirq_circuit.all_operations() if isinstance(op.gate, cirq.MeasurementGate)
     ]
     assert len(measure_ops) == 1
-    assert len(measure_ops[0].qubits) == 2
+    assert measure_ops[0].qubits == (LineQubit(0), LineQubit(1))
     assert measure_ops[0].gate.key != ""
 
 

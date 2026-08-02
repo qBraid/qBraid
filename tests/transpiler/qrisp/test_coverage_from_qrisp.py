@@ -189,7 +189,7 @@ def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
-    total_tests = len(qrisp_circuits) - len(skips)
+    total_tests = len([gate for gate in qrisp_circuits if gate not in skips])
     nb_fails = len(failures)
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
