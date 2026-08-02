@@ -25,7 +25,7 @@ import cirq
 import numpy as np
 import pytest
 import sympy
-from braket.circuits import Gate, Instruction, QubitSet
+from braket.circuits import Gate, Instruction, Measure, QubitSet
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
@@ -69,9 +69,13 @@ def batch_circuit():
 
 
 # pylint: disable-next=redefined-outer-name
-def test_ommit_measurement_gate(batch_circuit):
-    """Test that cirq.Measurementgate is skipped during Braket conversion"""
+def test_measurement_gate_preserved(batch_circuit):
+    """Test that cirq.MeasurementGate converts to Braket Measure instructions"""
     braket_circuit = cirq_to_braket(batch_circuit)
+    n_measures = sum(
+        1 for instr in braket_circuit.instructions if isinstance(instr.operator, Measure)
+    )
+    assert n_measures == len(batch_circuit.all_qubits())
     assert circuits_allclose(batch_circuit, braket_circuit)
 
 

@@ -23,7 +23,8 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras, weight
+from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
@@ -39,16 +40,12 @@ if TYPE_CHECKING:
     from pyqir import Module
 
 
-@weight(0.95)
 @requires_extras("pytket.extensions.braket")
 def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit:
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
-    Weighted below 1.0 because ``tk_to_braket`` drops measurement instructions
-    (see ``tests/transpiler/test_measurement_coverage.py``), so multi-hop routes
-    (e.g. ``qasm2 -> braket``, ``pytket -> qasm3``) prefer a measurement-preserving
-    alternative. As the only single-hop ``pytket -> braket`` conversion it still
-    wins that pair directly.
+    ``tk_to_braket`` drops measurement instructions, so they are re-appended here
+    from the source circuit in classical-bit order.
 
     Args:
         circuit (pytket.circuit.Circuit): PyTKET circuit to convert to Braket circuit.
@@ -56,7 +53,23 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
     Returns:
         braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
     """
-    braket_circuit, _, _ = pytket_braket.braket_convert.tk_to_braket(circuit)
+    from pytket.circuit import OpType  # pylint: disable=import-outside-toplevel
+
+    braket_circuit, _, qubit_map = pytket_braket.braket_convert.tk_to_braket(circuit)
+
+    measures = []
+    measured_qubits = set()
+    for command in circuit.get_commands():
+        if command.op.type == OpType.Measure:
+            measures.append(command)
+            measured_qubits.update(command.qubits)
+        elif command.op.type != OpType.Barrier and measured_qubits.intersection(command.qubits):
+            raise ProgramConversionError(
+                "Braket circuits do not support mid-circuit measurement: a gate acts "
+                "on a qubit after it has been measured."
+            )
+    for command in sorted(measures, key=lambda cmd: cmd.bits[0].index[0]):
+        braket_circuit.measure(qubit_map[command.qubits[0].index[0]])
     return braket_circuit
 
 

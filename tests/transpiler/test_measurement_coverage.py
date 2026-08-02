@@ -119,14 +119,7 @@ def graph() -> ConversionGraph:
 # Pairs that do not currently preserve measurements, kept exact so drift in either
 # direction fails loudly. A pair leaving this set is a fix: remove it here. A pair
 # joining it is a regression: do not add it without understanding why.
-#
-# Both entries are direct single-hop conversions with no routing alternative, so a
-# weight cannot fix them; the converters themselves drop or mangle measurements
-# (cirq_to_braket discards Measure ops; pytket's tk_to_braket drops them).
-KNOWN_MEASUREMENT_FAILURES: set[tuple[str, str]] = {
-    ("cirq", "braket"),
-    ("pytket", "braket"),
-}
+KNOWN_MEASUREMENT_FAILURES: set[tuple[str, str]] = set()
 
 
 @pytest.mark.parametrize("source", MEASUREMENT_ALIASES)

@@ -73,13 +73,7 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
     return bk_circuit.to_unitary()
 
 
-# Gate-only fidelity measures 1.0, but this stays below 1.0: braket measurements come
-# through as cirq M('') with empty keys, which downstream QASM export collapses into a
-# single BIT[1] register (verified 2026-08: at weight 1.0, measured braket -> pyquil
-# programs lose their readout). The 0.01 keeps multi-hop routes off this edge; the
-# direct braket -> cirq pair still wins as the only single-hop conversion. See
-# tests/transpiler/test_measurement_coverage.py.
-@weight(0.99)
+@weight(1)
 def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 
@@ -98,10 +92,22 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     bk_qubits = [int(q) for q in circuit.qubits]
     cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]
     qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
-    circuit = cirq.Circuit(
-        _from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions
+    # Braket measurements are always terminal and carry no key, so collect them into a
+    # single keyed measurement; per-instruction M('') gates fragment or collapse the
+    # readout register in downstream QASM/Quil exports.
+    measured_qubits = []
+    gate_instructions = []
+    for instr in circuit.instructions:
+        if str(instr.operator) == "Measure":
+            measured_qubits.extend(qubit_mapping[int(q)] for q in instr.target)
+        else:
+            gate_instructions.append(instr)
+    converted = cirq.Circuit(
+        _from_braket_instruction(instr, qubit_mapping) for instr in gate_instructions
     )
-    return QbraidCircuit.align_final_measurements(circuit)
+    if measured_qubits:
+        converted.append(cirq.measure(*measured_qubits, key="m"))
+    return QbraidCircuit.align_final_measurements(converted)
 
 
 def _from_braket_instruction(

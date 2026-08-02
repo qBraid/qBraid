@@ -29,11 +29,13 @@ import numpy as np
 try:
     from braket.circuits import Circuit as BKCircuit
     from braket.circuits import Instruction as BKInstruction
+    from braket.circuits import Measure as BKMeasure
     from braket.circuits import gates as braket_gates
     from braket.circuits import noises as braket_noise_gate
 except ImportError:  # pragma: no cover
     BKCircuit = None
     BKInstruction = None
+    BKMeasure = None
     braket_gates = None
     braket_noise_gate = None
 
@@ -76,9 +78,18 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
     ]
     braket_int_qubits = deepcopy(cirq_int_qubits)
     qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
-    return BKCircuit(
-        _to_braket_instruction(operation, qubit_mapping) for operation in circuit.all_operations()
-    )
+    try:
+        return BKCircuit(
+            _to_braket_instruction(operation, qubit_mapping)
+            for operation in circuit.all_operations()
+        )
+    except ValueError as err:
+        if "measured qubits" not in str(err):
+            raise
+        raise ProgramConversionError(
+            "Braket circuits do not support mid-circuit measurement: a gate acts on a "
+            "qubit after it has been measured."
+        ) from err
 
 
 def _to_braket_instruction(
@@ -97,7 +108,7 @@ def _to_braket_instruction(
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
     ) and qbraid.programs.gate_model.cirq.CirqCircuit.is_measurement_gate(operation):
-        return []
+        return _to_braket_measure_instructions(operation, qubit_mapping)
 
     if isinstance(operation, cirq_ops.ClassicallyControlledOperation):
         raise ProgramConversionError(
@@ -145,6 +156,26 @@ def _to_braket_instruction(
 
     # Unsupported gates.
     raise ProgramConversionError(f"Unable to convert {operation} to Braket")
+
+
+def _to_braket_measure_instructions(
+    operation: cirq_ops.Operation,
+    qubit_mapping: dict[int, int],
+) -> list[braket.circuits.Instruction]:
+    """Converts a Cirq measurement operation to Braket Measure instruction(s).
+
+    Cirq measurement keys have no Braket equivalent; readout order follows qubit
+    order. Inverted bits (``invert_mask``) are realized as an X before the measure.
+    """
+    gate = operation.gate
+    instructions = []
+    invert_mask = gate.invert_mask + (False,) * (len(operation.qubits) - len(gate.invert_mask))
+    for qubit, inverted in zip(operation.qubits, invert_mask):
+        target = qubit_mapping[qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(qubit)]
+        if inverted:
+            instructions.append(BKInstruction(braket_gates.X(), target))
+        instructions.append(BKInstruction(BKMeasure(), target))
+    return instructions
 
 
 def _to_one_qubit_braket_instruction(
