@@ -46,6 +46,10 @@ def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuit
     QASM-derived circuits measure into per-bit keys (``c_0``, ``c_1``, ...), which the
     Quil output would otherwise declare as one ``BIT[1]`` register each -- a fragmented
     form QCS rejects for hardware execution. Mid-circuit measurements are left untouched.
+
+    Moving a terminal measurement past later operations on other qubits is safe: disjoint
+    operations commute, and classically controlled operations (the only construct that
+    could observe the order) are rejected by ``QuilOutput``.
     """
     operations = list(circuit.all_operations())
     last_op_on_qubit = {}

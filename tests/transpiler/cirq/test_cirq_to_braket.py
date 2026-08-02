@@ -68,6 +68,17 @@ def batch_circuit():
     return circuit
 
 
+def test_measurement_confusion_map_raises():
+    """Test that a measurement with a confusion map is rejected, not silently dropped"""
+    q0 = cirq.LineQubit(0)
+    circuit = Circuit(
+        cirq.H(q0),
+        cirq.measure(q0, key="m", confusion_map={(0,): np.array([[0.9, 0.1], [0.1, 0.9]])}),
+    )
+    with pytest.raises(ProgramConversionError, match="confusion map"):
+        cirq_to_braket(circuit)
+
+
 # pylint: disable-next=redefined-outer-name
 def test_measurement_gate_preserved(batch_circuit):
     """Test that cirq.MeasurementGate converts to Braket Measure instructions"""

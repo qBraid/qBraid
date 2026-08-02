@@ -168,6 +168,11 @@ def _to_braket_measure_instructions(
     order. Inverted bits (``invert_mask``) are realized as an X before the measure.
     """
     gate = operation.gate
+    if getattr(gate, "confusion_map", None):
+        raise ProgramConversionError(
+            "Cirq measurement confusion maps (readout error matrices) cannot be "
+            "represented in Amazon Braket circuits."
+        )
     instructions = []
     invert_mask = gate.invert_mask + (False,) * (len(operation.qubits) - len(gate.invert_mask))
     for qubit, inverted in zip(operation.qubits, invert_mask):

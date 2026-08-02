@@ -105,9 +105,20 @@ def assert_pyquil_readout_intact(program) -> None:
     lines = program.out().splitlines()
     declares = [line for line in lines if line.startswith("DECLARE")]
     assert len(declares) == 1, f"readout register fragmented: {declares}"
-    assert re.fullmatch(
-        rf"DECLARE \S+ BIT\[{NUM_QUBITS}\]", declares[0]
-    ), f"unexpected readout declaration: {declares[0]!r}"
+    declared = re.fullmatch(rf"DECLARE (\S+) BIT\[{NUM_QUBITS}\]", declares[0])
+    assert declared, f"unexpected readout declaration: {declares[0]!r}"
+    register = declared.group(1)
+
+    measures = [
+        re.fullmatch(r"MEASURE \d+ (\S+)\[(\d+)\]", line)
+        for line in lines
+        if line.startswith("MEASURE")
+    ]
+    assert all(measures), "unparsable MEASURE instruction"
+    targets = {m.group(1) for m in measures}
+    assert targets == {register}, f"MEASURE targets {targets} != declared {register!r}"
+    indices = sorted(int(m.group(2)) for m in measures)
+    assert indices == list(range(NUM_QUBITS)), f"readout bits not distinct/complete: {indices}"
 
 
 @pytest.fixture(scope="module")

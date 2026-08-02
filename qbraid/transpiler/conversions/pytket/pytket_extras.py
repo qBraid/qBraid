@@ -55,21 +55,20 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
     """
     from pytket.circuit import OpType  # pylint: disable=import-outside-toplevel
 
-    braket_circuit, _, qubit_map = pytket_braket.braket_convert.tk_to_braket(circuit)
+    braket_circuit, _, measure_map = pytket_braket.braket_convert.tk_to_braket(circuit)
 
-    measures = []
     measured_qubits = set()
     for command in circuit.get_commands():
         if command.op.type == OpType.Measure:
-            measures.append(command)
             measured_qubits.update(command.qubits)
         elif command.op.type != OpType.Barrier and measured_qubits.intersection(command.qubits):
             raise ProgramConversionError(
                 "Braket circuits do not support mid-circuit measurement: a gate acts "
                 "on a qubit after it has been measured."
             )
-    for command in sorted(measures, key=lambda cmd: cmd.bits[0].index[0]):
-        braket_circuit.measure(qubit_map[command.qubits[0].index[0]])
+    # measure_map maps braket qubit id -> pytket bit index; re-add in classical-bit order.
+    for braket_qubit, _ in sorted(measure_map.items(), key=lambda item: item[1]):
+        braket_circuit.measure(braket_qubit)
     return braket_circuit
 
 
