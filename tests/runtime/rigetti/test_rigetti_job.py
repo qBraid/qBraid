@@ -726,6 +726,23 @@ class TestRigettiJobParseResults:
         with pytest.raises(RigettiJobError, match="no DECLARE"):
             job._parse_results(exec_results)
 
+    def test_parse_results_register_absent_from_register_map_raises(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A declared register the register map cannot supply is an error,
+        not a silent skip that shortens every bitstring."""
+        exec_results, ro_sources = _make_simple_execution_results([[1, 0]])
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1, ro_sources=ro_sources
+        )
+        register_map = MagicMock()
+        register_map.get_register_matrix.return_value = None
+        register_map.keys.return_value = []
+
+        with patch.object(job, "_build_register_map", return_value=register_map):
+            with pytest.raises(RigettiJobError, match="No data returned for declared register"):
+                job._parse_results(exec_results)
+
     def test_parse_results_single_register_needs_no_program(
         self, rigetti_device: RigettiDevice
     ) -> None:
