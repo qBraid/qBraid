@@ -24,6 +24,7 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
@@ -43,13 +44,31 @@ if TYPE_CHECKING:
 def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit:
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
+    ``tk_to_braket`` drops measurement instructions, so they are re-appended here
+    from the source circuit in classical-bit order.
+
     Args:
         circuit (pytket.circuit.Circuit): PyTKET circuit to convert to Braket circuit.
 
     Returns:
         braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
     """
-    braket_circuit, _, _ = pytket_braket.braket_convert.tk_to_braket(circuit)
+    from pytket.circuit import OpType  # pylint: disable=import-outside-toplevel
+
+    braket_circuit, _, measure_map = pytket_braket.braket_convert.tk_to_braket(circuit)
+
+    measured_qubits = set()
+    for command in circuit.get_commands():
+        if command.op.type == OpType.Measure:
+            measured_qubits.update(command.qubits)
+        elif command.op.type != OpType.Barrier and measured_qubits.intersection(command.qubits):
+            raise ProgramConversionError(
+                "Braket circuits do not support mid-circuit measurement: a gate acts "
+                "on a qubit after it has been measured."
+            )
+    # measure_map maps braket qubit id -> pytket bit index; re-add in classical-bit order.
+    for braket_qubit, _ in sorted(measure_map.items(), key=lambda item: item[1]):
+        braket_circuit.measure(braket_qubit)
     return braket_circuit
 
 
