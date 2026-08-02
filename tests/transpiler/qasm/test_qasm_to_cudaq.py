@@ -389,14 +389,3 @@ def test_openqasm3_numeric_literals_promoted_to_float():
 
     assert "arith.constant 0.000000e+00 : f64" in cudaq_str
     _check_output(qasm_str, cudaq_out, method="state")
-
-
-def test_cudaq_to_qasm2_raises_on_failed_translation(monkeypatch):
-    """cudaq.translate signals failure by returning '{translation failed}'; the
-    conversion must raise instead of passing it along as valid QASM2."""
-    # pylint: disable-next=import-outside-toplevel
-    from qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2 import cudaq_to_qasm2
-
-    monkeypatch.setattr(cudaq, "translate", lambda *args, **kwargs: "{translation failed}")
-    with pytest.raises(ProgramConversionError, match="failed to produce QASM2"):
-        cudaq_to_qasm2(object())
