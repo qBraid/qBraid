@@ -304,15 +304,16 @@ def test_cirq_circuit_diagram_info():
     assert id_gate._circuit_diagram_info_(None) == ("I",)
 
 
-def test_from_braket_instruction_measure():
-    """Test from_braket_instruction with Measure gate"""
-    circuit = BKCircuit().measure(0)
-    instr = circuit.instructions[0]
-    bk_qubits = [int(q) for q in circuit.qubits]
-    cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]
-    qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
-    cirq_instr = _from_braket_instruction(instr, qubit_mapping)
-    assert isinstance(cirq_instr[0]._gate, cirq.MeasurementGate)
+def test_braket_measure_converts_to_single_keyed_gate():
+    """Braket measures merge into one keyed cirq MeasurementGate"""
+    circuit = BKCircuit().h(0).cnot(0, 1).measure([0, 1])
+    cirq_circuit = braket_to_cirq(circuit)
+    measure_ops = [
+        op for op in cirq_circuit.all_operations() if isinstance(op.gate, cirq.MeasurementGate)
+    ]
+    assert len(measure_ops) == 1
+    assert len(measure_ops[0].qubits) == 2
+    assert measure_ops[0].gate.key != ""
 
 
 def test_from_braket_instruction_one_qubit():

@@ -86,9 +86,6 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     Returns:
         Cirq circuit equivalent to the input Braket circuit.
     """
-    # pylint: disable-next=import-outside-toplevel
-    from qbraid.programs.gate_model.cirq import CirqCircuit as QbraidCircuit
-
     bk_qubits = [int(q) for q in circuit.qubits]
     cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]
     qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
@@ -107,7 +104,7 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     )
     if measured_qubits:
         converted.append(cirq.measure(*measured_qubits, key="m"))
-    return QbraidCircuit.align_final_measurements(converted)
+    return converted
 
 
 def _from_braket_instruction(
@@ -127,9 +124,6 @@ def _from_braket_instruction(
     nqubits = len(instr.target)
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
-
-    if str(instr.operator) == "Measure":
-        return [cirq.ops.MeasurementGate(num_qubits=nqubits).on(*qubits)]
 
     try:
         if nqubits == 1:

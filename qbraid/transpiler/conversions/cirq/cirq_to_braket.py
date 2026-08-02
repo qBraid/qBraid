@@ -175,7 +175,7 @@ def _to_braket_measure_instructions(
         )
     instructions = []
     invert_mask = gate.invert_mask + (False,) * (len(operation.qubits) - len(gate.invert_mask))
-    for qubit, inverted in zip(operation.qubits, invert_mask):
+    for qubit, inverted in zip(operation.qubits, invert_mask, strict=True):
         target = qubit_mapping[qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(qubit)]
         if inverted:
             instructions.append(BKInstruction(braket_gates.X(), target))
