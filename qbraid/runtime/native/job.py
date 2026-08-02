@@ -20,7 +20,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from qbraid_core.services.runtime import QuantumRuntimeClient
+from qbraid_core.services.runtime import (
+    QuantumRuntimeClient,
+    QuantumRuntimeServiceRequestError,
+)
 from qbraid_core.services.runtime.schemas.result import BatchResult as CoreBatchResult
 from qbraid_core.services.runtime.schemas.result import Result as CoreResult
 
@@ -33,8 +36,27 @@ from qbraid.runtime.result_data import ResultData
 
 if TYPE_CHECKING:
     import qbraid_core.services.runtime
+    from qbraid_core.services.runtime.schemas.job import Program
 
     import qbraid.runtime
+
+
+def _response_status(err: BaseException) -> int | None:
+    """Return the HTTP status behind an exception, following the ``__cause__`` chain.
+
+    ``QuantumRuntimeServiceRequestError`` carries only a message, so the status
+    has to come from the ``requests`` error it wraps.
+    """
+    seen: set[int] = set()
+    exc: BaseException | None = err
+    while exc is not None and id(exc) not in seen:
+        seen.add(id(exc))
+        response = getattr(exc, "response", None)
+        status = getattr(response, "status_code", None)
+        if isinstance(status, int):
+            return status
+        exc = exc.__cause__
+    return None
 
 
 class QbraidJob(QuantumJob):
@@ -50,6 +72,7 @@ class QbraidJob(QuantumJob):
         super().__init__(job_id, device, **kwargs)
         self._device = device
         self._client = client
+        self._compiled_program: Program | None = None
 
     @property
     def client(self) -> qbraid_core.services.runtime.QuantumRuntimeClient:
@@ -87,6 +110,31 @@ class QbraidJob(QuantumJob):
         if self._cache_metadata.get("program") is None:
             self._cache_metadata["program"] = self.client.get_job_program(self.id)
         return super().metadata()
+
+    def compiled_program(self) -> Program | None:
+        """Return the vendor-compiled program that executed on the QPU.
+
+        Reveals the physical qubits selected and the logical-to-physical mapping
+        chosen by the vendor's compiler — information not recoverable from
+        measurement counts. ``format`` is ``"qasm3"`` for IQM and ``"quil"`` for
+        Rigetti.
+
+        Returns ``None`` when the job has no compiled program: the device does
+        not report one (simulators), the job has not completed, or it predates
+        compiled-program capture. Other request failures propagate.
+
+        The result is cached once found, since a compiled program never changes.
+        Absence is not cached — a job polled before it completed will pick one up
+        on a later call.
+        """
+        if self._compiled_program is None:
+            try:
+                self._compiled_program = self.client.get_job_compiled_program(self.id)
+            except QuantumRuntimeServiceRequestError as err:
+                if _response_status(err) == 404:
+                    return None
+                raise
+        return self._compiled_program
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""

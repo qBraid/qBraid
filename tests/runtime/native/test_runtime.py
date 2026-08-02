@@ -22,7 +22,12 @@ testing without making actual API calls.
 """
 # pylint: disable=too-many-lines,line-too-long
 
+from unittest.mock import Mock
+
 import pytest
+import requests
+from qbraid_core.exceptions import RequestsApiError
+from qbraid_core.services.runtime import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.client import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import (
     JobRequest,
@@ -35,6 +40,7 @@ from qbraid_core.services.runtime.schemas import (
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.exceptions import JobStateError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
+from qbraid.runtime.native.job import _response_status
 from qbraid.runtime.result import Result as RuntimeResult
 from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
@@ -17817,3 +17823,131 @@ def test_job_result_failed():
     assert result.data.measurement_counts is None
     assert result.data.measurements is None
     assert result.details.get("status") == JobStatus.FAILED
+
+
+# ============================================================================
+# QbraidJob.compiled_program Tests
+# ============================================================================
+
+COMPILED_QUIL = (
+    'PRAGMA INITIAL_REWIRING "NAIVE"\n'
+    "DECLARE ro BIT[2]\n"
+    "CZ 81 90\n"
+    "MEASURE 81 ro[0]\n"
+    "MEASURE 90 ro[1]"
+)
+
+
+def _service_error(status: int | None) -> QuantumRuntimeServiceRequestError:
+    """Build the exception chain the client raises: service error -> api error -> HTTP."""
+    if status is None:
+        return QuantumRuntimeServiceRequestError("no response attached")
+    response = Mock()
+    response.status_code = status
+    http_err = requests.HTTPError("boom")
+    http_err.response = response
+    api_err = RequestsApiError("boom.")
+    api_err.__cause__ = http_err
+    service_err = QuantumRuntimeServiceRequestError("Failed to retrieve compiled program")
+    service_err.__cause__ = api_err
+    return service_err
+
+
+class MockClientCompiledProgram(MockQuantumRuntimeClient):
+    """Client whose compiled-program call is scripted per test."""
+
+    def __init__(self, *, result=None, error=None):
+        super().__init__()
+        self._result = result
+        self._error = error
+        self.calls = 0
+
+    def get_job_compiled_program(self, job_qrn: str) -> Program:
+        self.calls += 1
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+
+def test_compiled_program_returns_program():
+    """A device that reports a compiled program returns it as a Program."""
+    program = Program(format="quil", data=COMPILED_QUIL)
+    client = MockClientCompiledProgram(result=program)
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    compiled = job.compiled_program()
+
+    assert compiled is program
+    assert compiled.format == "quil"
+    assert "MEASURE 81 ro[0]" in compiled.data
+
+
+def test_compiled_program_none_when_absent():
+    """A 404 means no compiled program exists, which is not an error."""
+    client = MockClientCompiledProgram(error=_service_error(404))
+    job = QbraidJob(job_id=SV1_GET_JOB.jobQrn, client=client)
+
+    assert job.compiled_program() is None
+
+
+@pytest.mark.parametrize("status", [500, 401, None])
+def test_compiled_program_reraises_non_404(status):
+    """Anything other than a 404 is a real failure and must propagate."""
+    client = MockClientCompiledProgram(error=_service_error(status))
+    job = QbraidJob(job_id=SV1_GET_JOB.jobQrn, client=client)
+
+    with pytest.raises(QuantumRuntimeServiceRequestError):
+        job.compiled_program()
+
+
+def test_compiled_program_is_cached():
+    """The compiled program is immutable once stored, so fetch it at most once."""
+    client = MockClientCompiledProgram(result=Program(format="quil", data=COMPILED_QUIL))
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    first = job.compiled_program()
+    second = job.compiled_program()
+
+    assert first is second
+    assert client.calls == 1
+
+
+def test_compiled_program_absence_is_not_cached():
+    """A job polled before completion must not be pinned to None forever."""
+    program = Program(format="quil", data=COMPILED_QUIL)
+    client = MockClientCompiledProgram(error=_service_error(404))
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    assert job.compiled_program() is None
+
+    client._error = None
+    client._result = program
+    assert job.compiled_program() is program
+
+
+def test_response_status_walks_cause_chain():
+    """The status lives on the requests error two links down the chain."""
+    assert _response_status(_service_error(404)) == 404
+    assert _response_status(_service_error(500)) == 500
+    assert _response_status(_service_error(None)) is None
+
+
+def test_response_status_survives_cause_cycle():
+    """A self-referential __cause__ must not hang the walk."""
+    err = QuantumRuntimeServiceRequestError("loop")
+    err.__cause__ = err
+    assert _response_status(err) is None
+
+
+def test_compiled_program_does_not_leak_into_metadata():
+    """metadata() returns _cache_metadata directly, so the fetch must stay out of it.
+
+    Caching there would make metadata()'s keys depend on whether the caller
+    happened to ask for the compiled program first.
+    """
+    client = MockClientCompiledProgram(result=Program(format="quil", data=COMPILED_QUIL))
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    job.compiled_program()
+
+    assert "compiledProgram" not in job.metadata()
