@@ -696,7 +696,8 @@ class TestRigettiJobParseResults:
         """Without the submitted program, multi-register order is unrecoverable.
 
         A rehydrated job has no compiled_program; guessing an order silently
-        corrupts bitstrings, so _parse_results must refuse.
+        corrupts bitstrings, so _parse_results must refuse. The caller built
+        this job by hand, so the error must name the way out.
         """
         ro_sources = {"ro[0]": "r0", "aux[0]": "a0"}
         exec_results = _make_execution_results({"r0": [0], "a0": [1]})
@@ -705,8 +706,9 @@ class TestRigettiJobParseResults:
             job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1, ro_sources=ro_sources
         )
 
-        with pytest.raises(RigettiJobError, match="declaration order"):
+        with pytest.raises(RigettiJobError, match="declaration order") as exc_info:
             job._parse_results(exec_results)
+        assert "compiled_program=" in str(exc_info.value)
 
     def test_parse_results_register_missing_declare_raises(
         self, rigetti_device: RigettiDevice

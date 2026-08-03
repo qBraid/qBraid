@@ -244,7 +244,8 @@ class RigettiJob(QuantumJob):
                 f"({sorted(declared_registers)}), but the submitted program is not "
                 "available to establish their declaration order (jobs rehydrated by "
                 "ID do not retain it). Refusing to guess an order, since a wrong "
-                "one corrupts every returned bitstring."
+                "one corrupts every returned bitstring. Pass the submitted program "
+                "as compiled_program= to recover the order."
             )
         order: list[str] = []
         for name in self._DECLARE_PATTERN.findall(self._compiled_program):
