@@ -33,7 +33,7 @@ jobs:
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox
+        python3 -m pip install tox tox-uv
     - name: Check isort, pylint, black, headers
       run: |
         tox -e format-check

@@ -52,4 +52,5 @@ sympy
 packaging>=20.0
 pytest
 pytest-cov
+pytest-xdist
 pytest-asyncio>=0.21
