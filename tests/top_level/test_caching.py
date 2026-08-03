@@ -18,6 +18,7 @@ Unit tests for caching module.
 """
 
 import math
+import sys
 import time
 
 import pytest
@@ -67,6 +68,21 @@ def test_generate_cache_key_rejects_unserializable_args(test_instance):
     # ``default=`` only ever applied to values, so dict keys crashed regardless.
     with pytest.raises(TypeError):
         _generate_cache_key(test_instance, "get_data", ({(1, 2): "a"},), {})
+
+    # ``json.dumps`` also has two non-``TypeError`` failure modes.
+    circular: list = []
+    circular.append(circular)
+    with pytest.raises(ValueError):
+        _generate_cache_key(test_instance, "get_data", (circular,), {})
+
+    deeply_nested: list = []
+    node = deeply_nested
+    for _ in range(sys.getrecursionlimit() + 100):
+        child: list = []
+        node.append(child)
+        node = child
+    with pytest.raises(RecursionError):
+        _generate_cache_key(test_instance, "get_data", (deeply_nested,), {})
 
 
 def test_clear_cache(test_instance, monkeypatch):
@@ -154,6 +170,22 @@ def test_cached_method_bypasses_cache_for_non_json_serializable_args(monkeypatch
     # A dict with non-string keys is unserializable too, and must not raise.
     assert obj.passthrough({(1, 2): "a"}) == {(1, 2): "a"}
     assert obj.call_count == 3
+
+    # Circular and over-nested arguments fail json.dumps with ValueError /
+    # RecursionError rather than TypeError; they must bypass the cache too.
+    circular: list = []
+    circular.append(circular)
+    assert obj.passthrough(circular) is circular
+    assert obj.call_count == 4
+
+    deeply_nested: list = []
+    node = deeply_nested
+    for _ in range(sys.getrecursionlimit() + 100):
+        child: list = []
+        node.append(child)
+        node = child
+    assert obj.passthrough(deeply_nested) is deeply_nested
+    assert obj.call_count == 5
     assert obj.passthrough.cache_info().currsize == 0
 
 

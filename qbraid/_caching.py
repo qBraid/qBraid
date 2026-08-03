@@ -50,8 +50,10 @@ def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict
     ``id(instance)``, degrading to per-instance caching rather than raising.
 
     Serialization is strict: any argument JSON cannot encode (including dicts with
-    non-string keys) raises ``TypeError``. Callers are expected to treat that as
-    "unkeyable" and bypass the cache rather than substitute a guessed key.
+    non-string keys) raises ``TypeError``; circular references raise ``ValueError``
+    and structures nested past the interpreter limit raise ``RecursionError``.
+    Callers are expected to treat all three as "unkeyable" and bypass the cache
+    rather than substitute a guessed key.
     """
     try:
         instance_key = hash(instance)
@@ -113,7 +115,7 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
                 return func(self, *args, **kwargs)
             try:
                 key = _generate_cache_key(self, func.__name__, args, kwargs)
-            except TypeError:
+            except (TypeError, ValueError, RecursionError):
                 # Arguments that can't be serialized have no safe key: any guessed
                 # encoding risks two distinct arguments colliding and one call
                 # receiving the other's cached result. Call through, uncached.
