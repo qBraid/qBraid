@@ -48,6 +48,12 @@ def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict
     so same credentials → shared cache; different credentials → separate entries). Classes
     that are unhashable (e.g. define ``__eq__`` without ``__hash__``) fall back to
     ``id(instance)``, degrading to per-instance caching rather than raising.
+
+    Serialization is strict: any argument JSON cannot encode (including dicts with
+    non-string keys) raises ``TypeError``; circular references raise ``ValueError``
+    and structures nested past the interpreter limit raise ``RecursionError``.
+    Callers are expected to treat all three as "unkeyable" and bypass the cache
+    rather than substitute a guessed key.
     """
     try:
         instance_key = hash(instance)
@@ -68,10 +74,13 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
     """A decorator to cache the results of methods with optional TTL and maxsize options.
 
     Entries are keyed by ``_generate_cache_key``, a SHA-256 of the JSON-serialized
-    (class, method, args, kwargs). Because the key is derived from a JSON serialization
-    rather than by hashing the raw arguments, decorated methods may be called with
-    unhashable arguments (e.g. ``list`` / ``dict``) and still be cached — unlike a plain
+    (class, method, args, kwargs). Because the key is derived from a serialization rather
+    than by hashing the raw arguments, decorated methods may be called with unhashable
+    arguments (e.g. ``list`` / ``dict``) and still be cached — unlike a plain
     ``functools.lru_cache``, which raises ``TypeError: unhashable type`` for such args.
+    Arguments JSON cannot encode at all (arbitrary objects, dicts with non-string keys)
+    make the call bypass the cache entirely: the method runs and its result is not stored.
+    A miss is always correct, whereas a guessed key can serve another argument's result.
 
     ``maxsize`` bounds the cache, evicting the oldest entry *by insertion time* — not
     strict LRU, since reads don't refresh the timestamp (it also drives TTL expiry, and
@@ -104,7 +113,13 @@ def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Call
                 or maxsize == 0
             ):
                 return func(self, *args, **kwargs)
-            key = _generate_cache_key(self, func.__name__, args, kwargs)
+            try:
+                key = _generate_cache_key(self, func.__name__, args, kwargs)
+            except (TypeError, ValueError, RecursionError):
+                # Arguments that can't be serialized have no safe key: any guessed
+                # encoding risks two distinct arguments colliding and one call
+                # receiving the other's cached result. Call through, uncached.
+                return func(self, *args, **kwargs)
 
             with lock:
                 if key in cache:

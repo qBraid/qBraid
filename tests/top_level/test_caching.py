@@ -18,6 +18,7 @@ Unit tests for caching module.
 """
 
 import math
+import sys
 import time
 
 import pytest
@@ -52,6 +53,36 @@ def test_generate_cache_key(test_instance):
     key = _generate_cache_key(test_instance, "get_data", (1,), {})
     assert isinstance(key, str)
     assert len(key) == 64  # SHA-256 hash length
+
+
+def test_generate_cache_key_rejects_unserializable_args(test_instance):
+    """Key generation is strict: unserializable arguments raise instead of guessing.
+
+    Any fallback encoding (``repr``, identity, ...) risks two distinct arguments
+    mapping to one key and a call receiving another call's cached result, so the
+    key must simply not exist for these values.
+    """
+    with pytest.raises(TypeError):
+        _generate_cache_key(test_instance, "get_data", (object(),), {})
+
+    # ``default=`` only ever applied to values, so dict keys crashed regardless.
+    with pytest.raises(TypeError):
+        _generate_cache_key(test_instance, "get_data", ({(1, 2): "a"},), {})
+
+    # ``json.dumps`` also has two non-``TypeError`` failure modes.
+    circular: list = []
+    circular.append(circular)
+    with pytest.raises(ValueError):
+        _generate_cache_key(test_instance, "get_data", (circular,), {})
+
+    deeply_nested: list = []
+    node = deeply_nested
+    for _ in range(sys.getrecursionlimit() + 100):
+        child: list = []
+        node.append(child)
+        node = child
+    with pytest.raises(RecursionError):
+        _generate_cache_key(test_instance, "get_data", (deeply_nested,), {})
 
 
 def test_clear_cache(test_instance, monkeypatch):
@@ -109,6 +140,53 @@ def test_cached_method_accepts_unhashable_args(monkeypatch):
 
     obj.total.cache_clear()
     assert obj.total.cache_info().currsize == 0
+
+
+def test_cached_method_bypasses_cache_for_non_json_serializable_args(monkeypatch):
+    """Unkeyable arguments bypass the cache instead of being stored under a guessed key.
+
+    The reported crash (#1266) is gone -- the call succeeds -- but nothing is cached,
+    so a later object can never be served the earlier object's result.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+
+    class ObjectArgClass:
+        def __init__(self):
+            self.call_count = 0
+
+        @cached_method
+        def passthrough(self, argument: object) -> object:
+            self.call_count += 1
+            return argument
+
+    obj = ObjectArgClass()
+    value = object()
+
+    assert obj.passthrough(value) is value
+    assert obj.passthrough(value) is value
+    assert obj.call_count == 2
+    assert obj.passthrough.cache_info().currsize == 0
+
+    # A dict with non-string keys is unserializable too, and must not raise.
+    assert obj.passthrough({(1, 2): "a"}) == {(1, 2): "a"}
+    assert obj.call_count == 3
+
+    # Circular and over-nested arguments fail json.dumps with ValueError /
+    # RecursionError rather than TypeError; they must bypass the cache too.
+    circular: list = []
+    circular.append(circular)
+    assert obj.passthrough(circular) is circular
+    assert obj.call_count == 4
+
+    deeply_nested: list = []
+    node = deeply_nested
+    for _ in range(sys.getrecursionlimit() + 100):
+        child: list = []
+        node.append(child)
+        node = child
+    assert obj.passthrough(deeply_nested) is deeply_nested
+    assert obj.call_count == 5
+    assert obj.passthrough.cache_info().currsize == 0
 
 
 class BoundedClass:
