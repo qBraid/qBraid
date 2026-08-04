@@ -19,6 +19,7 @@ representation to pyQuil's circuit representation (Quil programs).
 """
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 from cirq import Circuit, LineQubit, Moment, QubitOrder
@@ -40,6 +41,37 @@ if TYPE_CHECKING:
     from pyquil import Program
 
 
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
+
+
+def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Operation]:
+    """Order terminal measurements by the classical bit their key names.
+
+    QASM-derived circuits key single-qubit measurements ``c_0``, ``c_1``, ..., and that
+    suffix -- not the moment the operation happens to sit in -- is the bit position the
+    result belongs at: ``measure q[2] -> c[0]`` must land q_2 in bit 0 even though a
+    measurement on q_0 may appear earlier. Keys without an index fall back to qubit order,
+    matching the readout convention the Braket converters document.
+    """
+    indexed = []
+    for op in terminal:
+        match = _BIT_INDEX.match(op.gate.key)
+        if match is None or len(op.qubits) != 1:
+            return sorted(terminal, key=lambda op: min(op.qubits))
+        indexed.append(((match["register"], int(match["index"])), op))
+    return [op for _, op in sorted(indexed, key=lambda pair: pair[0])]
+
+
+def _unused_key(existing: set[str], preferred: str = "m") -> str:
+    """Return ``preferred``, or a suffixed variant when the circuit already uses it."""
+    if preferred not in existing:
+        return preferred
+    index = 0
+    while f"{preferred}_{index}" in existing:
+        index += 1
+    return f"{preferred}_{index}"
+
+
 def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuits.Circuit:
     """Merge terminal measurements into one keyed measurement operation.
 
@@ -50,6 +82,9 @@ def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuit
     Moving a terminal measurement past later operations on other qubits is safe: disjoint
     operations commute, and classically controlled operations (the only construct that
     could observe the order) are rejected by ``QuilOutput``.
+
+    Raises:
+        ProgramConversionError: If a terminal measurement carries a confusion map.
     """
     operations = list(circuit.all_operations())
     last_op_on_qubit = {}
@@ -64,15 +99,29 @@ def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuit
     ]
     if len(terminal) <= 1:
         return circuit
-    qubits, invert_mask = [], []
+
     for op in terminal:
+        if op.gate.confusion_map:
+            raise ProgramConversionError(
+                "Cirq measurement confusion maps (readout error matrices) have no Quil "
+                "equivalent and cannot be merged into a single readout register."
+            )
+
+    qubits, invert_mask = [], []
+    for op in _classical_bit_order(terminal):
         mask = op.gate.invert_mask + (False,) * (len(op.qubits) - len(op.gate.invert_mask))
         qubits.extend(op.qubits)
         invert_mask.extend(mask)
-    merged = cirq_ops.MeasurementGate(
-        num_qubits=len(qubits), key="m", invert_mask=tuple(invert_mask)
-    ).on(*qubits)
+
     remaining = [op for op in operations if not any(op is t for t in terminal)]
+    # A mid-circuit measurement may already hold the preferred key; reusing it would emit a
+    # circuit with duplicate measurement keys, which cirq rejects on simulation.
+    key = _unused_key(
+        {op.gate.key for op in remaining if isinstance(op.gate, cirq_ops.MeasurementGate)}
+    )
+    merged = cirq_ops.MeasurementGate(
+        num_qubits=len(qubits), key=key, invert_mask=tuple(invert_mask)
+    ).on(*qubits)
     return Circuit([*remaining, Moment(merged)])
 
 
