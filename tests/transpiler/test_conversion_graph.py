@@ -20,6 +20,8 @@ used to dictate transpiler conversions.
 
 """
 import importlib.util
+import itertools
+import time
 from itertools import pairwise
 from unittest.mock import Mock, PropertyMock, patch
 
@@ -595,3 +597,36 @@ def test_cirq_to_pyquil_routes_around_the_low_weight_edge():
     """
     graph = ConversionGraph()
     assert graph.shortest_path("cirq", "pyquil") != "cirq -> pyquil"
+
+
+def test_shortest_path_to_self_raises():
+    """A node is not reachable from itself.
+
+    ``rx.all_simple_paths`` happily returns round trips (``qasm2 -> cirq -> qasm2``), so
+    ranking them would hand back a two-hop conversion where the answer is "no path".
+    """
+    graph = ConversionGraph()
+    with pytest.raises(ConversionPathNotFoundError):
+        graph.find_shortest_conversion_path("qasm2", "qasm2")
+
+
+def test_shortest_path_does_not_enumerate_all_simple_paths():
+    """Path finding stays polynomial as the graph gets denser.
+
+    Enumerating every simple path is factorial in density: a fully connected 11-node graph
+    has ~10^6 of them, which took seconds per call. Dijkstra over the same ranking key
+    settles it in well under the 2s allowed here, with margin for slow CI.
+    """
+    nodes = 14
+    conversions = [
+        Conversion(f"n{a}", f"n{b}", lambda x: x, 0.9, bias=0.25)
+        for a, b in itertools.permutations(range(nodes), 2)
+    ]
+    graph = ConversionGraph(conversions=conversions, require_native=False)
+
+    start = time.perf_counter()
+    path = graph.find_shortest_conversion_path("n0", f"n{nodes - 1}")
+    elapsed = time.perf_counter() - start
+
+    assert len(path) == 1
+    assert elapsed < 2.0, f"took {elapsed:.2f}s -- path enumeration has crept back in"

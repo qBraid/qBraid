@@ -17,6 +17,7 @@ Module providing tools to map, analyze, and visualize conversion paths between d
 quantum programs available through the qbraid.transpiler using directed graphs.
 
 """
+import heapq
 from collections import deque
 from importlib import import_module
 from typing import Any, Callable, Optional, Union
@@ -310,14 +311,61 @@ class ConversionGraph(rx.PyDiGraph):
         """
         return sum(self.get_edge_data(path[i], path[i + 1])["weight"] for i in range(len(path) - 1))
 
+    def _alias_of(self) -> dict[int, str]:
+        """Return the reverse of ``_node_alias_id_map``, node id to alias."""
+        return {node_id: alias for alias, node_id in self._node_alias_id_map.items()}
+
+    def _rank_key(self, path: list[int], alias_of: dict[int, str]) -> tuple:
+        """Ranking key for a path of node ids: total cost, then hops, then node aliases.
+
+        The alias component keeps routing independent of conversion registration order.
+        :meth:`_cheapest_path` builds this same key incrementally; the two must agree, which
+        ``test_native_graph_shortest_path_agrees_with_top_paths`` checks on the real graph.
+        """
+        return (self._path_cost(path), len(path), tuple(alias_of[n] for n in path))
+
+    def _cheapest_path(self, source_id: int, target_id: int) -> Optional[list[int]]:
+        """Return the best-ranked path between two node ids, or None if unreachable.
+
+        Explores in ranking order, so the first time the target is reached its path is the
+        one :meth:`find_top_shortest_conversion_paths` ranks first. Appending an edge can
+        only increase the key -- cost is non-negative and the hop count strictly grows -- so
+        the greedy order is exact. Unlike enumerating every simple path, this stays
+        polynomial as conversions are added to the graph.
+        """
+        if source_id == target_id:
+            # Matches rx.all_simple_paths, which reports no simple path from a node to itself.
+            return None
+
+        alias_of = self._alias_of()
+        heap: list[tuple[tuple, list[int]]] = [((0.0, 1, (alias_of[source_id],)), [source_id])]
+        settled: set[int] = set()
+
+        while heap:
+            (cost, _, aliases), path = heapq.heappop(heap)
+            node = path[-1]
+            if node == target_id:
+                return path
+            if node in settled:
+                continue
+            settled.add(node)
+            for _, successor, data in self.out_edges(node):
+                if successor in settled:
+                    continue
+                extended = [*path, successor]
+                key = (cost + data["weight"], len(extended), (*aliases, alias_of[successor]))
+                heapq.heappush(heap, (key, extended))
+
+        return None
+
     def find_shortest_conversion_path(self, source: str, target: str) -> list[Callable]:
         """
         Find the shortest conversion path between two nodes in a graph.
 
-        Delegates to :meth:`find_top_shortest_conversion_paths` so that the path reported here
-        is the one ``transpile()`` will actually take. These were previously separate
-        implementations -- Dijkstra here, hop count there -- which disagreed for any pair whose
-        best-weighted route was not also its shortest.
+        Ranks by the same key as :meth:`find_top_shortest_conversion_paths`, so the path
+        reported here is the one ``transpile()`` will actually take. These were previously
+        separate implementations -- Dijkstra here, hop count there -- which disagreed for any
+        pair whose best-weighted route was not also its shortest.
 
         Args:
             source (str): The starting node for the path.
@@ -330,7 +378,11 @@ class ConversionGraph(rx.PyDiGraph):
         Raises:
             ConversionPathNotFoundError: If no path is found between source and target.
         """
-        return self.find_top_shortest_conversion_paths(source, target, top_n=1)[0]
+        path = self._cheapest_path(self._node_alias_id_map[source], self._node_alias_id_map[target])
+        if path is None:
+            raise ConversionPathNotFoundError(source, target)
+
+        return [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
 
     def find_top_shortest_conversion_paths(
         self, source: str, target: str, top_n: int = 3
@@ -361,11 +413,8 @@ class ConversionGraph(rx.PyDiGraph):
         if len(all_paths) == 0:
             raise ConversionPathNotFoundError(source, target)
 
-        alias_of = {node_id: alias for alias, node_id in self._node_alias_id_map.items()}
-        sorted_paths = sorted(
-            all_paths,
-            key=lambda path: (self._path_cost(path), len(path), tuple(alias_of[n] for n in path)),
-        )[:top_n]
+        alias_of = self._alias_of()
+        sorted_paths = sorted(all_paths, key=lambda path: self._rank_key(path, alias_of))[:top_n]
         return [
             [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
             for path in sorted_paths
