@@ -19,8 +19,9 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 """
 import heapq
 from collections import deque
+from collections.abc import Iterator
 from importlib import import_module
-from typing import Any, Callable, Iterator, Optional, Union
+from typing import Any, Callable, Optional, Union
 
 import rustworkx as rx
 
@@ -330,7 +331,7 @@ class ConversionGraph(rx.PyDiGraph):
         target_id: int,
         banned_nodes: frozenset[int] = frozenset(),
         banned_edges: frozenset[tuple[int, int]] = frozenset(),
-    ) -> Optional[list[int]]:
+    ) -> list[int] | None:
         """Return the best-ranked path between two node ids, or None if unreachable.
 
         Explores in ranking order, so the first time the target is reached its path is the
@@ -370,7 +371,7 @@ class ConversionGraph(rx.PyDiGraph):
         return None
 
     def _k_cheapest_paths(
-        self, source_id: int, target_id: int, k: int, max_depth: Optional[int] = None
+        self, source_id: int, target_id: int, k: int, max_depth: int | None = None
     ) -> Iterator[list[int]]:
         """Yield up to ``k`` paths as node ids, cheapest first, by Yen's algorithm.
 
@@ -453,7 +454,7 @@ class ConversionGraph(rx.PyDiGraph):
         return [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
 
     def find_top_shortest_conversion_paths(
-        self, source: str, target: str, top_n: int = 3, max_depth: Optional[int] = None
+        self, source: str, target: str, top_n: int = 3, max_depth: int | None = None
     ) -> list[list[Callable]]:
         """
         Find the top conversion paths between two nodes, cheapest first.

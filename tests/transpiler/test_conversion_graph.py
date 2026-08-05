@@ -21,6 +21,7 @@ used to dictate transpiler conversions.
 """
 import importlib.util
 import itertools
+import random
 import time
 from itertools import pairwise
 from unittest.mock import Mock, PropertyMock, patch
@@ -736,3 +737,98 @@ def test_max_depth_with_no_qualifying_path_raises():
     )
     with pytest.raises(ConversionPathNotFoundError, match="depth <= 1"):
         graph.find_top_shortest_conversion_paths("a", "c", top_n=3, max_depth=1)
+
+
+def _assert_matches_enumeration(graph, top_n=3, max_depth=None):
+    """Every reachable pair ranks identically under Yen's and under full enumeration."""
+    aliases = sorted(graph._node_alias_id_map)
+    for source, target in itertools.permutations(aliases, 2):
+        if not graph.has_path(source, target):
+            continue
+        found = list(
+            graph._k_cheapest_paths(
+                graph._node_alias_id_map[source],
+                graph._node_alias_id_map[target],
+                top_n,
+                max_depth,
+            )
+        )
+        assert found == _brute_force_ranking(
+            graph, source, target, top_n, max_depth
+        ), f"{source} -> {target}"
+
+
+def test_ranking_holds_when_every_edge_costs_zero():
+    """With bias 0 and weight 1.0 every edge costs exactly 0, collapsing the cost term.
+
+    Dijkstra is exact only because appending an edge strictly increases the ranking key.
+    When cost contributes nothing that relies entirely on the hop count, so this is the
+    shape most likely to break the argument.
+    """
+    specs = [("a", "b"), ("b", "c"), ("a", "c"), ("c", "d"), ("b", "d"), ("a", "d")]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, 1.0, bias=0) for s, t in specs],
+        require_native=False,
+    )
+
+    assert graph._path_cost([graph._node_alias_id_map[n] for n in ("a", "b")]) == 0
+    _assert_matches_enumeration(graph, top_n=5)
+
+
+def test_ranking_holds_with_infinite_cost_edges():
+    """A weight of 0 becomes an infinite edge cost, which must not break comparisons.
+
+    ``Conversion`` maps weight 0 to ``float("inf")``, so paths through such an edge are
+    ordered against each other by hop count and alias rather than by a finite cost.
+    """
+    specs = [("a", "b", 0.0), ("b", "c", 1.0), ("a", "x", 1.0), ("x", "c", 1.0)]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs],
+        require_native=False,
+    )
+
+    # the finite route wins outright, even though both are two hops
+    assert graph.shortest_path("a", "c") == "a -> x -> c"
+    _assert_matches_enumeration(graph, top_n=5)
+
+
+def test_ranking_holds_when_only_route_is_infinite():
+    """An infinite-cost edge is still a path when it is the only one."""
+    graph = ConversionGraph(
+        conversions=[Conversion("a", "b", lambda x: x, 0.0, bias=0.25)],
+        require_native=False,
+    )
+
+    assert graph.shortest_path("a", "b") == "a -> b"
+    _assert_matches_enumeration(graph, top_n=3)
+
+
+@pytest.mark.parametrize("seed", range(12))
+def test_ranking_matches_enumeration_on_generated_graphs(seed):
+    """Fuzz the ranking against full enumeration over generated graphs.
+
+    The hand-written cases only cover shapes that were thought of. Seeded generation varies
+    node count, density, weights (including duplicates, which force the tie-breakers to
+    decide) and the bias, and checks every reachable pair against the definition.
+    """
+    rng = random.Random(seed)
+    node_count = rng.randint(3, 7)
+    # duplicate-heavy weight pool, so exact cost ties are common rather than incidental
+    weights = [1.0, 1.0, 0.9, 0.9, 0.5, 0.25]
+    specs = [
+        (f"n{a}", f"n{b}", rng.choice(weights))
+        for a, b in itertools.permutations(range(node_count), 2)
+        if rng.random() < 0.55
+    ]
+    if not specs:
+        pytest.skip("generated graph has no edges")
+
+    bias = rng.choice([0, 0.1, 0.25])
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=bias) for s, t, w in specs],
+        require_native=False,
+    )
+
+    for top_n in (1, 3):
+        for max_depth in (None, 2):
+            _assert_matches_enumeration(graph, top_n=top_n, max_depth=max_depth)
