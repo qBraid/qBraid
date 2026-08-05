@@ -20,7 +20,7 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 import heapq
 from collections import deque
 from importlib import import_module
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Iterator, Optional, Union
 
 import rustworkx as rx
 
@@ -324,7 +324,13 @@ class ConversionGraph(rx.PyDiGraph):
         """
         return (self._path_cost(path), len(path), tuple(alias_of[n] for n in path))
 
-    def _cheapest_path(self, source_id: int, target_id: int) -> Optional[list[int]]:
+    def _cheapest_path(
+        self,
+        source_id: int,
+        target_id: int,
+        banned_nodes: frozenset[int] = frozenset(),
+        banned_edges: frozenset[tuple[int, int]] = frozenset(),
+    ) -> Optional[list[int]]:
         """Return the best-ranked path between two node ids, or None if unreachable.
 
         Explores in ranking order, so the first time the target is reached its path is the
@@ -332,6 +338,9 @@ class ConversionGraph(rx.PyDiGraph):
         only increase the key -- cost is non-negative and the hop count strictly grows -- so
         the greedy order is exact. Unlike enumerating every simple path, this stays
         polynomial as conversions are added to the graph.
+
+        ``banned_nodes`` and ``banned_edges`` exclude parts of the graph from the search;
+        :meth:`_k_cheapest_paths` uses them to force deviations from paths it already has.
         """
         if source_id == target_id:
             # Matches rx.all_simple_paths, which reports no simple path from a node to itself.
@@ -350,13 +359,72 @@ class ConversionGraph(rx.PyDiGraph):
                 continue
             settled.add(node)
             for _, successor, data in self.out_edges(node):
-                if successor in settled:
+                if successor in settled or successor in banned_nodes:
+                    continue
+                if (node, successor) in banned_edges:
                     continue
                 extended = [*path, successor]
                 key = (cost + data["weight"], len(extended), (*aliases, alias_of[successor]))
                 heapq.heappush(heap, (key, extended))
 
         return None
+
+    def _k_cheapest_paths(
+        self, source_id: int, target_id: int, k: int, max_depth: Optional[int] = None
+    ) -> Iterator[list[int]]:
+        """Yield up to ``k`` paths as node ids, cheapest first, by Yen's algorithm.
+
+        Each successive path is the best one that deviates from an already-accepted path at
+        some node, found by re-running :meth:`_cheapest_path` with the root banned. That costs
+        ``O(k * V * (E + V log V))``, where enumerating every simple path and sorting is
+        factorial in graph density.
+
+        Yen's usual proof assumes additive scalar costs; it carries over to the composite
+        ranking key because that key is strictly monotone under extending a path, which is the
+        same property that makes :meth:`_cheapest_path` exact.
+
+        Paths deeper than ``max_depth`` hops are skipped rather than counted against ``k``, so
+        a depth limit cannot hide a qualifying path that merely ranks below the k-th.
+        """
+        best = self._cheapest_path(source_id, target_id)
+        if best is None:
+            return
+
+        alias_of = self._alias_of()
+        accepted, candidates = [best], []
+        yielded = 0
+
+        def qualifies(path: list[int]) -> bool:
+            return max_depth is None or len(path) - 1 <= max_depth
+
+        if qualifies(best):
+            yield best
+            yielded += 1
+
+        while yielded < k:
+            previous = accepted[-1]
+            for index in range(len(previous) - 1):
+                root = previous[: index + 1]
+                banned_edges = frozenset(
+                    (path[index], path[index + 1])
+                    for path in accepted
+                    if len(path) > index + 1 and path[: index + 1] == root
+                )
+                spur = self._cheapest_path(root[-1], target_id, frozenset(root[:-1]), banned_edges)
+                if spur is None:
+                    continue
+                candidate = root[:-1] + spur
+                if candidate not in candidates and candidate not in accepted:
+                    candidates.append(candidate)
+
+            if not candidates:
+                return
+
+            candidates.sort(key=lambda path: self._rank_key(path, alias_of))
+            accepted.append(candidates.pop(0))
+            if qualifies(accepted[-1]):
+                yield accepted[-1]
+                yielded += 1
 
     def find_shortest_conversion_path(self, source: str, target: str) -> list[Callable]:
         """
@@ -385,7 +453,7 @@ class ConversionGraph(rx.PyDiGraph):
         return [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
 
     def find_top_shortest_conversion_paths(
-        self, source: str, target: str, top_n: int = 3
+        self, source: str, target: str, top_n: int = 3, max_depth: Optional[int] = None
     ) -> list[list[Callable]]:
         """
         Find the top conversion paths between two nodes, cheapest first.
@@ -398,6 +466,9 @@ class ConversionGraph(rx.PyDiGraph):
             source (str): The starting node for the path.
             target (str): The target node for the path.
             top_n (int): Number of top paths to find.
+            max_depth (int, optional): Skip paths longer than this many conversions. Applied
+                while selecting, so a path within the limit is still found when ``top_n``
+                cheaper paths exceed it.
 
         Returns:
             list of list of Callable: The top conversion paths, best first.
@@ -405,19 +476,21 @@ class ConversionGraph(rx.PyDiGraph):
         Raises:
             ConversionPathNotFoundError: If no path is found between source and target.
         """
-        all_paths = rx.all_simple_paths(
-            self, self._node_alias_id_map[source], self._node_alias_id_map[target]
+        paths = list(
+            self._k_cheapest_paths(
+                self._node_alias_id_map[source],
+                self._node_alias_id_map[target],
+                top_n,
+                max_depth,
+            )
         )
 
-        # rx.all_simple_paths returns an empty list if no path is found
-        if len(all_paths) == 0:
-            raise ConversionPathNotFoundError(source, target)
+        if not paths:
+            raise ConversionPathNotFoundError(source, target, max_depth)
 
-        alias_of = self._alias_of()
-        sorted_paths = sorted(all_paths, key=lambda path: self._rank_key(path, alias_of))[:top_n]
         return [
             [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
-            for path in sorted_paths
+            for path in paths
         ]
 
     def has_path(self, source: str, target: str) -> bool:

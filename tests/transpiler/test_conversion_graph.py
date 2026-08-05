@@ -630,3 +630,103 @@ def test_shortest_path_does_not_enumerate_all_simple_paths():
 
     assert len(path) == 1
     assert elapsed < 2.0, f"took {elapsed:.2f}s -- path enumeration has crept back in"
+
+
+def _brute_force_ranking(graph, source, target, top_n, max_depth=None):
+    """Rank by enumerating every simple path -- the definition the fast search must match."""
+    paths = rx.all_simple_paths(
+        graph, graph._node_alias_id_map[source], graph._node_alias_id_map[target]
+    )
+    alias_of = graph._alias_of()
+    ranked = sorted(paths, key=lambda path: graph._rank_key(path, alias_of))
+    if max_depth is not None:
+        ranked = [path for path in ranked if len(path) - 1 <= max_depth]
+    return ranked[:top_n]
+
+
+@pytest.mark.parametrize("top_n", [1, 2, 3, 5])
+@pytest.mark.parametrize("max_depth", [None, 1, 2, 3])
+def test_top_paths_match_full_enumeration(top_n, max_depth):
+    """Yen's search returns exactly what ranking every simple path would.
+
+    The fast path is only worth having if it is indistinguishable from the definition, so
+    this compares them for every reachable pair of the real graph.
+    """
+    graph = ConversionGraph()
+    aliases = sorted(graph._node_alias_id_map)
+
+    for source, target in itertools.permutations(aliases, 2):
+        if not graph.has_path(source, target):
+            continue
+        found = list(
+            graph._k_cheapest_paths(
+                graph._node_alias_id_map[source],
+                graph._node_alias_id_map[target],
+                top_n,
+                max_depth,
+            )
+        )
+        expected = _brute_force_ranking(graph, source, target, top_n, max_depth)
+        assert found == expected, f"{source} -> {target}"
+
+
+def test_top_paths_do_not_enumerate_all_simple_paths():
+    """top_n selection stays polynomial too, not just the single-path search.
+
+    This is the call `transpile()` makes. A fully connected 18-node graph has more simple
+    paths than can be enumerated in any reasonable time; Yen's needs a handful of Dijkstra
+    runs regardless of density.
+    """
+    nodes = 18
+    conversions = [
+        Conversion(f"n{a}", f"n{b}", lambda x: x, 0.9, bias=0.25)
+        for a, b in itertools.permutations(range(nodes), 2)
+    ]
+    graph = ConversionGraph(conversions=conversions, require_native=False)
+
+    start = time.perf_counter()
+    paths = graph.find_top_shortest_conversion_paths("n0", f"n{nodes - 1}", top_n=3)
+    elapsed = time.perf_counter() - start
+
+    assert len(paths) == 3
+    assert elapsed < 2.0, f"took {elapsed:.2f}s -- path enumeration has crept back in"
+
+
+def test_max_depth_finds_path_ranked_below_top_n():
+    """A depth cap must not hide a qualifying path that ranks below the k-th.
+
+    Filtering after truncating to top_n reported "no path" whenever the top few all exceeded
+    the limit. Here three 3-hop routes outrank the only 2-hop one.
+    """
+    specs = [
+        ("a", "x1", 1.0),
+        ("x1", "x2", 1.0),
+        ("x2", "d", 1.0),
+        ("a", "y1", 1.0),
+        ("y1", "y2", 1.0),
+        ("y2", "d", 1.0),
+        ("a", "z1", 1.0),
+        ("z1", "z2", 1.0),
+        ("z2", "d", 1.0),
+        ("a", "w", 0.3),
+        ("w", "d", 0.3),
+    ]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs],
+        require_native=False,
+    )
+
+    # the 2-hop route ranks 4th, below the top_n=3 cutoff
+    unrestricted = graph.find_top_shortest_conversion_paths("a", "d", top_n=3)
+    assert all(len(path) == 3 for path in unrestricted)
+
+    restricted = graph.find_top_shortest_conversion_paths("a", "d", top_n=3, max_depth=2)
+    assert len(restricted) == 1
+    assert len(restricted[0]) == 2
+
+
+def test_max_depth_with_no_qualifying_path_raises():
+    """An unsatisfiable depth cap still reports the limit it could not meet."""
+    graph = ConversionGraph()
+    with pytest.raises(ConversionPathNotFoundError, match="depth <= 1"):
+        graph.find_top_shortest_conversion_paths("qiskit", "stim", top_n=3, max_depth=1)
