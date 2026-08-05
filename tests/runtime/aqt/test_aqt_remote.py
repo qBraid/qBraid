@@ -31,8 +31,9 @@ export AQT_TEST_DEVICE_ID=...         # optional; "<workspace>/<resource>", defa
 pytest tests/runtime/aqt/test_aqt_remote.py --remote true
 ```
 
-``test_submit_and_fetch_result_on_simulator`` submits a real (tiny, 100-shot) job to an AQT
-simulator and is the only test here that consumes quota.
+``test_submit_and_fetch_result_on_simulator`` and ``test_measurement_bit_order_on_simulator``
+each submit a real (tiny, 100-shot) job to an AQT simulator; they are the only tests here that
+consume quota.
 """
 
 from __future__ import annotations
@@ -110,8 +111,9 @@ def test_submit_and_fetch_result_on_simulator(simulator: AQTDevice):
     """End-to-end: transpile a Bell circuit, submit it, and read back real counts.
 
     Exercises the full production path — ``qiskit -> aqt_connector`` conversion, submission,
-    polling, and the sample-to-counts reversal — against arnica's real result payload, which is
-    the only way to confirm the bitstring ordering matches what the hardware reports.
+    polling, and the sample-to-counts reversal — against arnica's real result payload. Note this
+    confirms the counts round-trip, *not* their bit ordering: see
+    ``test_measurement_bit_order_on_simulator`` for that.
     """
     circuit = QiskitCircuit(2)
     circuit.h(0)
@@ -133,3 +135,30 @@ def test_submit_and_fetch_result_on_simulator(simulator: AQTDevice):
 
     execution_time = job.execution_time_s()
     assert execution_time is not None and execution_time > 0
+
+
+@skip_without_credentials
+def test_measurement_bit_order_on_simulator(simulator: AQTDevice):
+    """``x q[0]`` pins the endianness of the per-shot reversal in ``_samples_to_counts``.
+
+    A Bell state cannot do this: ``00`` and ``11`` are palindromes, so they are invariant under
+    the reversal and pass whichever way it runs. Exciting only qubit 0 is asymmetric — with
+    qubit 0 as the least-significant (rightmost) bit the result is ``01``; were the reversal
+    inverted it would be ``10`` and every multi-qubit AQT result would be silently mirrored.
+
+    Verified against the live noisy simulator at 300 shots: ``{'01': 300}``, no leakage.
+    """
+    circuit = QiskitCircuit(2)
+    circuit.x(0)
+    circuit.measure_all()
+
+    shots = 100
+    job = simulator.run(circuit, shots=shots)
+    job.wait_for_final_state(timeout=600, poll_interval=5)
+    assert job.status() == JobStatus.COMPLETED
+
+    counts = job.result().data.get_counts()
+    assert sum(counts.values()) == shots
+    assert (
+        max(counts, key=counts.get) == "01"
+    ), f"expected '01' (qubit 0 as the rightmost bit), got {counts}"

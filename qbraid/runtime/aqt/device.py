@@ -26,6 +26,7 @@ from aqt_connector.models.arnica.resources import ResourceStatus
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import AQTJob
 
@@ -43,6 +44,10 @@ _STATUS_MAP = {
     ResourceStatus.MAINTENANCE: DeviceStatus.UNAVAILABLE,
     ResourceStatus.UNAVAILABLE: DeviceStatus.UNAVAILABLE,
 }
+
+
+class AQTDeviceError(QbraidRuntimeError):
+    """Class for errors raised while processing an AQT device."""
 
 
 class AQTDevice(QuantumDevice):
@@ -78,13 +83,13 @@ class AQTDevice(QuantumDevice):
         """Return the current status of the AQT device.
 
         Raises:
-            ValueError: If arnica reports a resource status qBraid does not map yet.
+            AQTDeviceError: If arnica reports a resource status qBraid does not map yet.
         """
         details = self.session.get_resource(self.resource_id)
         try:
             return _STATUS_MAP[details.status]
         except KeyError as err:  # pragma: no cover - unreachable while _STATUS_MAP is exhaustive
-            raise ValueError(f"Unrecognized device status: {details.status}") from err
+            raise AQTDeviceError(f"Unrecognized AQT device status '{details.status}'.") from err
 
     # pylint: disable-next=arguments-differ
     def submit(

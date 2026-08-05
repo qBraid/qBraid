@@ -23,6 +23,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from aqt_connector.models.arnica.jobs import JobStatus as ArnicaJobStatus
 from aqt_connector.models.arnica.response_bodies.jobs import ResultResponse, RRFinished
 
 from qbraid.runtime.enums import JobStatus
@@ -36,14 +37,15 @@ if TYPE_CHECKING:
 
     import qbraid.runtime.aqt.provider
 
-# Maps the arnica ``JobStatus`` enum values to qBraid ``JobStatus``. Covers every member of
-# arnica's ``JobStatus``; a value outside it is rejected by ``ResultResponse.model_validate``.
+# Covers every member of arnica's ``JobStatus`` enum; a value outside it is rejected by
+# ``ResultResponse.model_validate`` before it reaches this map. Keyed on the enum members
+# rather than their string values, matching ``AQTDevice._STATUS_MAP``.
 _STATUS_MAP = {
-    "queued": JobStatus.QUEUED,
-    "ongoing": JobStatus.RUNNING,
-    "finished": JobStatus.COMPLETED,
-    "error": JobStatus.FAILED,
-    "cancelled": JobStatus.CANCELLED,
+    ArnicaJobStatus.QUEUED: JobStatus.QUEUED,
+    ArnicaJobStatus.ONGOING: JobStatus.RUNNING,
+    ArnicaJobStatus.FINISHED: JobStatus.COMPLETED,
+    ArnicaJobStatus.ERROR: JobStatus.FAILED,
+    ArnicaJobStatus.CANCELLED: JobStatus.CANCELLED,
 }
 
 
@@ -115,7 +117,7 @@ class AQTJob(QuantumJob):
         """
         status = self._fetch_result().response.status
         try:
-            return _STATUS_MAP[status.value]
+            return _STATUS_MAP[status]
         except KeyError as err:  # pragma: no cover - unreachable while _STATUS_MAP is exhaustive
             raise AQTJobError(f"Unrecognized AQT job status '{status.value}'.") from err
 

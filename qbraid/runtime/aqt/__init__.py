@@ -34,11 +34,12 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
+    AQTDeviceError
     AQTJobError
 
 """
 
-from .device import AQTDevice
+from .device import AQTDevice, AQTDeviceError
 from .job import AQTJob, AQTJobError
 from .provider import AQTProvider, AQTSession
 
@@ -47,5 +48,6 @@ __all__ = [
     "AQTProvider",
     "AQTSession",
     "AQTJob",
+    "AQTDeviceError",
     "AQTJobError",
 ]
