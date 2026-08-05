@@ -99,6 +99,37 @@ To run linters and doc generators and unit tests:
 tox
 ```
 
+### Testing Philosophy
+
+Every PR should include unit tests covering the code it changes. Coverage is a floor, not the
+goal — tests exist to expose bugs and prevent regressions, not to turn a number green.
+
+**Avoid self-reinforcing tests.** A test that feeds a helper fabricated input and asserts the
+helper's current output passes just as happily when the helper is wrong. Test what the function
+is actually trying to achieve, end-to-end, rather than restating its implementation.
+
+**Mock data must mirror production.** QRNs, job documents, device documents, result payloads,
+user records, and timestamps should be copied from — or modeled directly on — real records.
+Invented fixtures tend to omit required fields, use the wrong types, or miss enum values, which
+produces tests that pass against a shape the API never returns.
+
+Where a vendor SDK ships response models (pydantic or otherwise), build fixtures by passing a raw
+payload through the vendor's own validator rather than hand-constructing model objects. The
+fixture is then checked against the real schema on every run, and upstream drift surfaces as a
+validation error naming the field instead of a silently divergent test.
+
+**Write the test that would have caught the bug.** When you fix a bug, add a test reproducing the
+exact scenario, and say so in the test's docstring. For a new feature, work through what goes
+wrong with real inputs — malformed or partial vendor responses, missing optional fields, single
+vs. batch paths, unmapped enum members — and cover those.
+
+**Verify against the real service at least once.** Mocked tests can only confirm the code matches
+the shape you assumed. Before a vendor integration merges, exercise it against the live API with
+real credentials and capture what comes back; use those payloads as the basis for the mocked
+fixtures. Keep the credentialed tests in the suite behind the `remote` marker
+(see [Running Tests Requiring Remote Access](#running-tests-requiring-remote-access)) so they are
+skipped by default but can be re-run whenever the vendor's API changes.
+
 ### Running Tests Requiring Remote Access
 
 Some of our tests interact with remote APIs and require specific credentials, such as those from qBraid or other third-party services. By default, these tests do not run to avoid unintended network operations and the need for all developers to have access to necessary credentials.
@@ -129,6 +160,63 @@ When coding:
 - Use annotations like `pylint: disable`, `fmt: off`, `type: ignore`, or `pragma: no cover` only as a last resort.
 - Ensure all functions and classes include Python type hints to support `py.typed` and improve type-checking accuracy.
 - Public APIs should follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
+
+### Type Annotations
+
+The project targets Python 3.10+, so use modern built-in generics ([PEP 585](https://peps.python.org/pep-0585/)) and union syntax ([PEP 604](https://peps.python.org/pep-0604/)). Do **not** import basic collection or union types from `typing`.
+
+```python
+# Correct
+def process(data: str | None, items: list[str], config: dict[str, Any]) -> tuple[int, bool]:
+    ...
+
+# Incorrect
+from typing import Dict, List, Optional, Tuple
+
+def process(data: Optional[str], items: List[str], config: Dict[str, Any]) -> Tuple[int, bool]:
+    ...
+```
+
+- **Collections**: use `list`, `dict`, `set`, `tuple` — not `List`, `Dict`, `Set`, `Tuple`.
+- **Unions**: use `X | Y` and `X | None` — not `Union[X, Y]` or `Optional[X]`.
+- **Still fine to import from `typing`**: `Any`, `Callable`, `Type`, `TypeVar`, `Protocol`, `Final`, `TYPE_CHECKING`, and other constructs with no built-in equivalent. `Type` is deliberately on this list — `typing.Type` remains the convention in this codebase, so there is no need to reach for `type[...]`. The two are also not interchangeable at runtime: `typing.Type[int] != type[int]` (distinct objects with distinct hashes, `typing._GenericAlias` vs `types.GenericAlias`), the inequality propagates through composites such as `Optional[...]`, and `type[...]` resolves the name `type` at evaluation time, so a module- or class-level binding named `type` shadows the builtin and breaks the annotation. Type checkers treat the two the same; runtime introspection does not.
+
+Both features work at runtime on every supported version, so `from __future__ import annotations` is not needed for them. Keep that import only where it is load-bearing — most commonly when annotations reference names imported under `if TYPE_CHECKING:`, which would otherwise raise `NameError` at runtime.
+
+This applies to new code and to code you are already modifying for other reasons. Do **not** retrofit existing modules just to satisfy it: a typing-only sweep through otherwise untouched code adds review burden and churns `git blame` for no functional gain.
+
+### Fail Loudly on Missing Data
+
+When a field is expected to exist, access it directly. Do not paper over its absence with a default value.
+
+```python
+# Correct — a malformed payload raises immediately, at the source
+def process_result(status: str, cost: float, time_stamps: dict[str, Any]) -> Result:
+    """Accept explicit, typed parameters."""
+    return Result(status=status, cost=cost, timeStamps=time_stamps, resultData={})
+
+# Incorrect — unpacks a raw dict with silent fallbacks
+def process_result(data: dict[str, Any]) -> Result:
+    return Result(
+        status=data.get("status", "UNKNOWN"),
+        cost=float(data.get("cost", 0)),
+        timeStamps=data.get("timeStamps"),
+        resultData=data.get("resultData", {}),
+    )
+```
+
+A default that stands in for missing data does not prevent the failure — it delays it, and moves
+it somewhere that no longer points at the cause. A `KeyError` on the response you just received is
+far cheaper to diagnose than a device that silently advertises `num_qubits=None`, or a job whose
+status quietly reads `UNKNOWN` because the vendor added an enum member.
+
+- Use `.get()` only when a key is **genuinely optional**, and handle the `None` explicitly.
+- Prefer passing explicit, typed parameters over threading raw dicts through call chains.
+- When a vendor SDK ships response models, validate the payload once at the boundary (e.g. in the
+  session/client) and let the rest of the code read typed attributes. Validation gives you
+  fail-loud behavior for every required field at no cost, and the error names the offending field.
+- The same applies to lookup tables keyed on vendor data: index directly (`_STATUS_MAP[status]`)
+  so an unmapped value raises, rather than `.get(status, SOME_DEFAULT)`, which hides it.
 
 ## Pull Requests
 

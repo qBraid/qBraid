@@ -67,6 +67,7 @@ class RigettiJob(QuantumJob):
         qcs_client: QCSClient | None = None,
         ro_sources: dict[str, str] | None = None,
         execution_options: ExecutionOptions | None = None,
+        compiled_program: str | None = None,
         **kwargs: Any,
     ):
         """Initialize a RigettiJob.
@@ -87,12 +88,17 @@ class RigettiJob(QuantumJob):
             execution_options: The ``ExecutionOptions`` used at submission
                 time. Reused for ``cancel`` and ``retrieve_results`` so the
                 job hits the same gRPC endpoint that accepted it.
+            compiled_program: The native Quil program produced by quilc that
+                was submitted for translation and execution. ``None`` when
+                rehydrating a job by ID, since compilation output is not
+                retrievable from QCS after submission.
         """
         super().__init__(job_id=job_id, device=device, **kwargs)
         self._qcs_client = qcs_client
         self._num_shots = num_shots
         self._ro_sources = ro_sources or {}
         self._execution_options = execution_options
+        self._compiled_program = compiled_program
         self._status = JobStatus.INITIALIZING
         self._status_message: str | None = None
         self._cached_results: ExecutionResults | None = None
@@ -111,6 +117,17 @@ class RigettiJob(QuantumJob):
         raise RigettiJobError(
             f"RigettiJob {self.id} has no QCSClient: pass qcs_client= or device=."
         )
+
+    @property
+    def compiled_program(self) -> str | None:
+        """The native Quil program produced by quilc for this job, if known.
+
+        Reveals the physical qubits selected and the final rewiring chosen by
+        the compiler — information not recoverable from measurement counts.
+        ``None`` for jobs rehydrated by ID (e.g. on a later status poll),
+        since QCS does not expose compilation output after submission.
+        """
+        return self._compiled_program
 
     @property
     def status_message(self) -> str | None:
@@ -209,12 +226,46 @@ class RigettiJob(QuantumJob):
         )
         return qpu_result_data.to_register_map()
 
+    _DECLARE_PATTERN = re.compile(r"^\s*DECLARE\s+(\S+)\s", re.MULTILINE)
+
+    def _register_order(self, declared_registers: set[str]) -> list[str]:
+        """Return the declared registers in the program's DECLARE order.
+
+        ``ro_sources`` cannot supply this order: it arrives in Rust HashMap
+        iteration order, and concatenating registers in any order other than
+        the program's silently corrupts every bitstring (#1308). Refuse to
+        guess when the submitted program is unavailable.
+        """
+        if len(declared_registers) == 1:
+            return list(declared_registers)
+        if self._compiled_program is None:
+            raise RigettiJobError(
+                f"Job {self.id} declares multiple readout registers "
+                f"({sorted(declared_registers)}), but the submitted program is not "
+                "available to establish their declaration order (jobs rehydrated by "
+                "ID do not retain it). Refusing to guess an order, since a wrong "
+                "one corrupts every returned bitstring. Pass the submitted program "
+                "as compiled_program= to recover the order."
+            )
+        order: list[str] = []
+        for name in self._DECLARE_PATTERN.findall(self._compiled_program):
+            if name in declared_registers and name not in order:
+                order.append(name)
+        missing = declared_registers.difference(order)
+        if missing:
+            raise RigettiJobError(
+                f"Registers {sorted(missing)} from ro_sources have no DECLARE "
+                "statement in the submitted program; cannot establish readout order."
+            )
+        return order
+
     def _parse_results(self, execution_results: ExecutionResults) -> GateModelResultData:
         """Parse raw execution results into GateModelResultData.
 
         Uses ``QPUResultData.to_register_map()`` to convert raw buffers
         into per-register numpy arrays, then extracts the user-declared
-        registers and builds measurement count strings.
+        registers and builds measurement count strings. Registers are
+        concatenated in the program's DECLARE order.
         """
         register_map = self._build_register_map(execution_results)
 
@@ -232,20 +283,16 @@ class RigettiJob(QuantumJob):
                 f"ro_sources keys: {list(self._ro_sources.keys())}"
             )
 
-        # Concatenate declared registers in sorted order into measurement bitstrings
         # Each register matrix has shape (num_shots, num_bits_in_register)
         register_arrays = []
-        for reg_name in sorted(declared_registers):
+        for reg_name in self._register_order(declared_registers):
             matrix = register_map.get_register_matrix(reg_name)
             if matrix is None:
-                continue
+                raise RigettiJobError(
+                    f"No data returned for declared register '{reg_name}' "
+                    f"(register map keys: {list(register_map.keys())})."
+                )
             register_arrays.append(matrix.to_ndarray().astype(int))
-
-        if not register_arrays:
-            raise RigettiJobError(
-                f"No data found for declared registers {declared_registers} "
-                f"in register map keys: {list(register_map.keys())}"
-            )
 
         # Horizontally stack all register arrays: (num_shots, total_bits)
         all_bits = np.hstack(register_arrays)
@@ -284,6 +331,9 @@ class RigettiJob(QuantumJob):
             raise RigettiJobError(f"Failed to parse execution results for job {self.id}.") from exc
 
         self._status = JobStatus.COMPLETED
+        extra_details: dict[str, Any] = {}
+        if self._compiled_program is not None:
+            extra_details["compiled_program"] = self._compiled_program
         return Result[GateModelResultData](
             device_id=self.device.id,
             job_id=self.id,
@@ -291,4 +341,5 @@ class RigettiJob(QuantumJob):
             data=result_data,
             execution_duration_microseconds=(self._cached_results.execution_duration_microseconds),
             ro_sources=dict(self._ro_sources),
+            **extra_details,
         )

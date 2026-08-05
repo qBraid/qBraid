@@ -213,3 +213,18 @@ def test_measurement_without_classical_reg():
     """Measure operations must declare a classical register."""
     with pytest.raises(UnsupportedQuilInstruction):
         circuit_from_quil("MEASURE 0")
+
+
+@pytest.mark.parametrize("gate_name", ["RXX", "RYY", "RZZ"])
+def test_ising_gates_match_pyquil_unitary(gate_name):
+    """RXX/RYY/RZZ parse to the Cirq gate with the same unitary, phase included.
+
+    ``openqasm3_to_pyquil`` keeps these native rather than decomposing them, so
+    without this the pyQuil programs it produces could not be read back into Cirq.
+    """
+    quil = f"{gate_name}(0.9424777960769379) 0 1"
+    circuit = circuit_from_quil(quil)
+    assert np.allclose(
+        circuit.unitary(qubit_order=LineQubit.range(2)),
+        program_unitary(Program(quil), n_qubits=2),
+    )
