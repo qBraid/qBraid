@@ -127,7 +127,9 @@ jobs:
             "Added", "Improved / Modified", "Deprecated", "Removed", "Fixed", "Dependencies"
 
           RULES:
-          - Each array element is a plain-text description (one to two sentences).
+          - Each array element is a plain-text description (one to two sentences, roughly
+            40 words). Describe the user-visible change; leave root cause, diagnosis, and
+            implementation detail to the PR description.
           - Do NOT include a leading "- ", and do NOT include the PR number or link — those
             are appended automatically. Never write "(#NUMBER)" yourself.
           - Reference specific class names, methods, modules, and parameters from the diff.
