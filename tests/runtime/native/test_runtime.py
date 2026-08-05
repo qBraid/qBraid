@@ -40,7 +40,6 @@ from qbraid_core.services.runtime.schemas import (
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.exceptions import JobStateError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.job import _response_status
 from qbraid.runtime.result import Result as RuntimeResult
 from qbraid.runtime.result_data import AnalogResultData, GateModelResultData
 
@@ -17925,18 +17924,15 @@ def test_compiled_program_absence_is_not_cached():
     assert job.compiled_program() is program
 
 
-def test_response_status_walks_cause_chain():
-    """The status lives on the requests error two links down the chain."""
-    assert _response_status(_service_error(404)) == 404
-    assert _response_status(_service_error(500)) == 500
-    assert _response_status(_service_error(None)) is None
+def test_compiled_program_reads_status_off_cause_chain():
+    """`err.status_code` resolves through the wrapped RequestsApiError / HTTP error.
 
-
-def test_response_status_survives_cause_cycle():
-    """A self-referential __cause__ must not hang the walk."""
-    err = QuantumRuntimeServiceRequestError("loop")
-    err.__cause__ = err
-    assert _response_status(err) is None
+    The status-walking itself lives in qbraid-core's ``HttpStatusMixin``; this
+    pins the integration this method depends on for its 404-vs-real-failure split.
+    """
+    assert _service_error(404).status_code == 404
+    assert _service_error(500).status_code == 500
+    assert _service_error(None).status_code is None
 
 
 def test_compiled_program_does_not_leak_into_metadata():

@@ -41,24 +41,6 @@ if TYPE_CHECKING:
     import qbraid.runtime
 
 
-def _response_status(err: BaseException) -> int | None:
-    """Return the HTTP status behind an exception, following the ``__cause__`` chain.
-
-    ``QuantumRuntimeServiceRequestError`` carries only a message, so the status
-    has to come from the ``requests`` error it wraps.
-    """
-    seen: set[int] = set()
-    exc: BaseException | None = err
-    while exc is not None and id(exc) not in seen:
-        seen.add(id(exc))
-        response = getattr(exc, "response", None)
-        status = getattr(response, "status_code", None)
-        if isinstance(status, int):
-            return status
-        exc = exc.__cause__
-    return None
-
-
 class QbraidJob(QuantumJob):
     """Class representing a qBraid job."""
 
@@ -131,7 +113,7 @@ class QbraidJob(QuantumJob):
             try:
                 self._compiled_program = self.client.get_job_compiled_program(self.id)
             except QuantumRuntimeServiceRequestError as err:
-                if _response_status(err) == 404:
+                if err.status_code == 404:
                     return None
                 raise
         return self._compiled_program
