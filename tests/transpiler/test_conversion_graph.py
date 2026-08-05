@@ -727,6 +727,12 @@ def test_max_depth_finds_path_ranked_below_top_n():
 
 def test_max_depth_with_no_qualifying_path_raises():
     """An unsatisfiable depth cap still reports the limit it could not meet."""
-    graph = ConversionGraph()
+    graph = ConversionGraph(
+        conversions=[
+            Conversion("a", "b", lambda x: x, 1.0, bias=0.25),
+            Conversion("b", "c", lambda x: x, 1.0, bias=0.25),
+        ],
+        require_native=False,
+    )
     with pytest.raises(ConversionPathNotFoundError, match="depth <= 1"):
-        graph.find_top_shortest_conversion_paths("qiskit", "stim", top_n=3, max_depth=1)
+        graph.find_top_shortest_conversion_paths("a", "c", top_n=3, max_depth=1)
