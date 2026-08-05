@@ -84,6 +84,8 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable
 def _get_class(module: str):
+    if module == "aqt_connector.models.circuits":
+        return aqt_connector.models.circuits.QuantumCircuit  # type: ignore # noqa: F821
     if module == "bloqade.analog.builder.assign":
         return bloqade.analog.builder.assign.BatchAssign  # type: ignore # noqa: F821
     if module == "cirq":
@@ -141,6 +143,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "cpp_pyqubo",
         "cudaq",
         "qrisp",
+        "aqt_connector.models.circuits",
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
@@ -155,13 +158,6 @@ dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
         "qat.core.wrappers.circuit",
     ]
 )
-try:
-    # aqt_connector's native circuit is the "aqt" transpiler node (target of the qiskit -> aqt
-    # edge). Its module name would auto-alias to "aqt_connector", so register it explicitly under
-    # "aqt". Guarded: aqt-connector is an optional extra.
-    dynamic_non_native["aqt"] = import_module("aqt_connector.models.circuits").QuantumCircuit
-except ImportError:  # pragma: no cover - aqt extra not installed
-    pass
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
 }

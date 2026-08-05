@@ -19,12 +19,14 @@ Module defining AQT device class.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 from aqt_connector.models.arnica.request_bodies.jobs import QuantumCircuits, SubmitJobRequest
+from aqt_connector.models.arnica.resources import ResourceStatus
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import AQTJob
 
@@ -34,12 +36,18 @@ if TYPE_CHECKING:
     import qbraid.runtime
     import qbraid.runtime.aqt.provider
 
+# Covers every member of arnica's ``ResourceStatus`` enum; a value outside it is rejected by
+# ``ResourceDetails.model_validate`` before it reaches this map.
 _STATUS_MAP = {
-    "online": DeviceStatus.ONLINE,
-    "offline": DeviceStatus.OFFLINE,
-    "maintenance": DeviceStatus.UNAVAILABLE,
-    "unavailable": DeviceStatus.UNAVAILABLE,
+    ResourceStatus.ONLINE: DeviceStatus.ONLINE,
+    ResourceStatus.OFFLINE: DeviceStatus.OFFLINE,
+    ResourceStatus.MAINTENANCE: DeviceStatus.UNAVAILABLE,
+    ResourceStatus.UNAVAILABLE: DeviceStatus.UNAVAILABLE,
 }
+
+
+class AQTDeviceError(QbraidRuntimeError):
+    """Class for errors raised while processing an AQT device."""
 
 
 class AQTDevice(QuantumDevice):
@@ -72,27 +80,30 @@ class AQTDevice(QuantumDevice):
         return self.profile["aqt_resource_id"]
 
     def status(self) -> DeviceStatus:
-        """Return the current status of the AQT device."""
+        """Return the current status of the AQT device.
+
+        Raises:
+            AQTDeviceError: If arnica reports a resource status qBraid does not map yet.
+        """
         details = self.session.get_resource(self.resource_id)
-        status = details.get("status")
         try:
-            return _STATUS_MAP[status]
-        except KeyError as err:
-            raise ValueError(f"Unrecognized device status: {status}") from err
+            return _STATUS_MAP[details.status]
+        except KeyError as err:  # pragma: no cover - unreachable while _STATUS_MAP is exhaustive
+            raise AQTDeviceError(f"Unrecognized AQT device status '{details.status}'.") from err
 
     # pylint: disable-next=arguments-differ
     def submit(
         self,
-        run_input: Union[AQTQuantumCircuit, list[AQTQuantumCircuit]],
+        run_input: AQTQuantumCircuit | list[AQTQuantumCircuit],
         shots: int = 100,
-        name: Optional[str] = None,
+        name: str | None = None,
     ) -> AQTJob:
         """Submit one or more AQT circuits to the device.
 
         Args:
             run_input: A native AQT ``QuantumCircuit`` (or a list of them for a batch), as produced
-                by the ``qiskit -> aqt`` transpiler conversion during ``run``. Each carries a
-                placeholder ``repetitions`` that is overwritten with ``shots`` here.
+                by the ``qiskit -> aqt_connector`` transpiler conversion during ``run``. Each
+                carries a placeholder ``repetitions`` that is overwritten with ``shots`` here.
             shots: Number of repetitions per circuit. Defaults to 100.
             name: Optional human-readable label for the job.
 
@@ -117,7 +128,8 @@ class AQTDevice(QuantumDevice):
         response = self.session.submit_job(
             self.workspace_id, self.resource_id, request.model_dump(mode="json")
         )
-        job_id = response.get("job", {}).get("job_id")
-        if not job_id:
-            raise ValueError("Job ID not found in the AQT submission response.")
-        return AQTJob(job_id=str(job_id), session=self.session, device=self, shots=shots)
+        # ``SubmitJobResponse`` requires ``job.job_id``, so a response missing it fails validation
+        # in the session rather than producing an ``AQTJob`` with a bogus id.
+        return AQTJob(
+            job_id=str(response.job.job_id), session=self.session, device=self, shots=shots
+        )

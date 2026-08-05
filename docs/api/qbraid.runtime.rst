@@ -12,6 +12,7 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
+   aqt
    aws
    ibm
    azure

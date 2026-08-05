@@ -27,6 +27,7 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
+from aqt_connector.models.arnica.response_bodies.jobs import ResultResponse
 
 from qbraid.runtime.aqt import AQTJob, AQTJobError
 from qbraid.runtime.aqt.job import _samples_to_counts
@@ -38,10 +39,14 @@ def _result_payload(
     *,
     result: Any = None,
     message: str = "",
-    workspace_id: str = "ws",
-    resource_id: str = "res",
-) -> dict[str, Any]:
-    """Build a raw ``get_result`` dict that validates as an arnica ``ResultResponse``."""
+    workspace_id: str = "aqt_simulators",
+    resource_id: str = "simulator_no_noise",
+) -> ResultResponse:
+    """Build the validated ``ResultResponse`` the real session returns.
+
+    Built from a raw dict and passed through ``model_validate`` so every payload in this module
+    is checked against the arnica schema rather than hand-assembled as model objects.
+    """
     response: dict[str, Any] = {"status": status}
     if result is not None:
         response["result"] = result
@@ -49,14 +54,18 @@ def _result_payload(
         response["message"] = message
     if status == "ongoing":
         response["finished_count"] = 0
-    return {
-        "job": {
-            "job_id": str(uuid.uuid4()),
-            "workspace_id": workspace_id,
-            "resource_id": resource_id,
-        },
-        "response": response,
-    }
+    return ResultResponse.model_validate(
+        {
+            "job": {
+                "job_id": str(uuid.uuid4()),
+                "job_type": "quantum_circuit",
+                "label": "qbraid",
+                "workspace_id": workspace_id,
+                "resource_id": resource_id,
+            },
+            "response": response,
+        }
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -123,25 +132,35 @@ def test_job_cancel(mock_session):
 
 
 def test_execution_time_s_from_timing_data(mock_session):
-    """execution_time_s is the ongoing -> finished span of the arnica timing_data, in seconds."""
-    mock_session.get_result.return_value = {
-        "job": {
-            "job_id": "00000000-0000-0000-0000-0000000000ab",
-            "workspace_id": "ws",
-            "resource_id": "res",
-        },
-        "response": {
-            "status": "finished",
-            "timing_data": [
-                {"new_status": "queued", "timestamp": "2026-07-16T10:21:41.435142Z"},
-                {"new_status": "ongoing", "timestamp": "2026-07-16T10:21:41.939164Z"},
-                {"new_status": "finished", "timestamp": "2026-07-16T10:21:42.032645Z"},
-            ],
-            "result": {"0": [[1, 1, 1]]},
-        },
-    }
-    job = AQTJob("00000000-0000-0000-0000-0000000000ab", session=mock_session)
-    assert job.execution_time_s() == pytest.approx(0.093481)
+    """execution_time_s is the ongoing -> finished span of the arnica timing_data, in seconds.
+
+    Payload captured verbatim from a real 100-shot Bell job on
+    ``aqt_simulators/simulator_no_noise`` (2026-07-31), so the timestamp format and the
+    status-change ordering are arnica's own, not assumed.
+    """
+    mock_session.get_result.return_value = ResultResponse.model_validate(
+        {
+            "job": {
+                "job_id": "5b1dc8bd-11f8-4efa-83cd-43e938e2b898",
+                "job_type": "quantum_circuit",
+                "label": "qbraid",
+                "resource_id": "simulator_no_noise",
+                "workspace_id": "aqt_simulators",
+            },
+            "response": {
+                "status": "finished",
+                "timing_data": [
+                    {"new_status": "queued", "timestamp": "2026-07-31T17:58:52.102936Z"},
+                    {"new_status": "ongoing", "timestamp": "2026-07-31T17:58:52.148132Z"},
+                    {"new_status": "finished", "timestamp": "2026-07-31T17:58:52.196536Z"},
+                ],
+                "result": {"0": [[1, 1], [0, 0]]},
+            },
+        }
+    )
+    job = AQTJob("5b1dc8bd-11f8-4efa-83cd-43e938e2b898", session=mock_session)
+    # ongoing 17:58:52.148132 -> finished 17:58:52.196536; queue wait is excluded.
+    assert job.execution_time_s() == pytest.approx(0.048404)
     assert mock_session.get_result.call_args.kwargs == {"include_timing_data": True}
 
 
@@ -170,8 +189,8 @@ def test_job_result_success_reversed_counts(device, mock_session):
     mock_session.get_result.return_value = _result_payload(
         "finished",
         result={"0": [[1, 0], [1, 0], [0, 1]]},
-        workspace_id="default",
-        resource_id="sim1",
+        workspace_id="aqt_simulators",
+        resource_id="simulator_no_noise",
     )
     job = AQTJob("job-1", session=mock_session, device=device)
     result = job.result()
@@ -191,10 +210,10 @@ def test_job_result_error_raises_aqt_job_error(mock_session):
 def test_job_result_device_id_from_metadata(mock_session):
     """With no attached device, the result device id is derived from arnica job metadata."""
     mock_session.get_result.return_value = _result_payload(
-        "finished", result={"0": [[0], [1]]}, workspace_id="ws", resource_id="res"
+        "finished", result={"0": [[0], [1]]}, workspace_id="qbraid", resource_id="ibex"
     )
     result = AQTJob("job-1", session=mock_session).result()
-    assert result.device_id == "ws/res"
+    assert result.device_id == "qbraid/ibex"
 
 
 def test_job_session_none_fallback(monkeypatch):

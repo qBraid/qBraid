@@ -22,6 +22,9 @@ HTTP session is mocked, so no network access occurs.
 from __future__ import annotations
 
 import pytest
+from aqt_connector.models.arnica.response_bodies.jobs import SubmitJobResponse
+from aqt_connector.models.arnica.response_bodies.resources import ResourceDetails
+from pydantic import ValidationError
 from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.runtime.aqt import AQTJob
@@ -41,22 +44,39 @@ from qbraid.runtime.enums import DeviceStatus
         ("unavailable", DeviceStatus.UNAVAILABLE),
     ],
 )
-def test_device_status_mapping(device, mock_session, status, expected):
-    """The arnica resource status is mapped to the qBraid ``DeviceStatus``."""
-    mock_session.get_resource.return_value = {"status": status}
+def test_device_status_mapping(device, mock_session, simulator_resource, status, expected):
+    """Every arnica ``ResourceStatus`` maps to the corresponding qBraid ``DeviceStatus``."""
+    mock_session.get_resource.return_value = ResourceDetails.model_validate(
+        {**simulator_resource, "status": status}
+    )
     assert device.status() == expected
 
 
-def test_device_status_unknown_raises(device, mock_session):
-    """An unrecognized status raises ``ValueError``."""
-    mock_session.get_resource.return_value = {"status": "banana"}
-    with pytest.raises(ValueError):
-        device.status()
+def test_device_status_unknown_rejected_at_the_source(simulator_resource):
+    """A status outside arnica's enum fails validation instead of reaching the status map.
+
+    The device never sees a bogus status: ``AQTSession.get_resource`` validates the payload, so
+    an unmapped value surfaces as a ``ValidationError`` naming the offending field rather than
+    a ``DeviceStatus`` guess made downstream.
+    """
+    with pytest.raises(ValidationError, match="status"):
+        ResourceDetails.model_validate({**simulator_resource, "status": "banana"})
+
+
+def test_device_status_missing_field_rejected(simulator_resource):
+    """A resource payload missing ``available_qubits`` fails loudly rather than defaulting.
+
+    Regression guard: the profile builder previously used ``resource.get("available_qubits")``,
+    which would quietly produce a device advertising ``num_qubits=None``.
+    """
+    del simulator_resource["available_qubits"]
+    with pytest.raises(ValidationError, match="available_qubits"):
+        ResourceDetails.model_validate(simulator_resource)
 
 
 def test_device_str(device):
     """``str(device)`` renders the device id."""
-    assert str(device) == "AQTDevice('default/sim1')"
+    assert str(device) == "AQTDevice('aqt_simulators/simulator_no_noise')"
 
 
 # ---------------------------------------------------------------------------
@@ -70,11 +90,11 @@ def test_device_submit_single_body_shape(device, mock_session, aqt_circuit):
     job = device.submit(circuit, shots=250, name="demo")
 
     assert isinstance(job, AQTJob)
-    assert job.id == "job-1"
+    assert job.id == "6f1b6a1e-2f1e-4c3a-9d5b-1f0a2b3c4d5e"
 
     mock_session.submit_job.assert_called_once()
     ws, res, body = mock_session.submit_job.call_args.args
-    assert (ws, res) == ("default", "sim1")
+    assert (ws, res) == ("aqt_simulators", "simulator_no_noise")
     assert body["job_type"] == "quantum_circuit"
     assert body["label"] == "demo"
 
@@ -102,17 +122,20 @@ def test_device_submit_batch(device, mock_session, aqt_circuit):
     assert all(c["repetitions"] == 64 for c in payload_circuits)
 
 
-def test_device_submit_missing_job_id_raises(device, mock_session, aqt_circuit):
-    """A submission response without a ``job_id`` raises ``ValueError``."""
-    mock_session.submit_job.return_value = {"job": {}}
-    with pytest.raises(ValueError):
-        device.submit(aqt_circuit())
+def test_submit_response_missing_job_id_rejected():
+    """A submission response without a ``job_id`` fails validation in the session.
+
+    Regression guard: ``response.get("job", {}).get("job_id")`` returned ``None`` here, so the
+    error surfaced (if at all) as an ``AQTJob`` holding the string ``"None"``.
+    """
+    with pytest.raises(ValidationError, match="job_id"):
+        SubmitJobResponse.model_validate(
+            {"job": {"workspace_id": "aqt_simulators", "resource_id": "simulator_no_noise"}}
+        )
 
 
 def test_device_run_end_to_end(device, mock_session):
-    """``run`` transpiles a qiskit circuit through the ``qiskit -> aqt`` edge, then submits it."""
-    # ``run`` -> validate -> status() -> get_resource must report online.
-    mock_session.get_resource.return_value = {"status": "online"}
+    """``run`` transpiles a qiskit circuit through ``qiskit -> aqt_connector``, then submits it."""
 
     qc = QiskitCircuit(2)
     qc.h(0)
