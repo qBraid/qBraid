@@ -30,9 +30,11 @@ Functions
    qiskit_to_ionq
    qiskit_to_qrisp
    qiskit_to_pennylane
+   qiskit_to_mimiq
 
 """
 from .qiskit_extras import qiskit_to_braket, qiskit_to_ionq, qiskit_to_pennylane, qiskit_to_pyqir
+from .qiskit_to_mimiq import qiskit_to_mimiq
 from .qiskit_to_qasm2 import qiskit_to_qasm2
 from .qiskit_to_qasm3 import qiskit_to_qasm3
 from .qiskit_to_qrisp import qiskit_to_qrisp
@@ -45,4 +47,5 @@ __all__ = [
     "qiskit_to_ionq",
     "qiskit_to_qrisp",
     "qiskit_to_pennylane",
+    "qiskit_to_mimiq",
 ]
