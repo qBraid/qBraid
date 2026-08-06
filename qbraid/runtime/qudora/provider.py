@@ -125,6 +125,16 @@ class QudoraProvider(QuantumProvider):
         value the QUDORA submit endpoint expects in the job ``target`` field. ``user_id`` is
         the backend's numeric id, and the only identifier the status endpoint accepts.
         """
+        # TargetProfile permits extra keys (``model_config`` sets ``extra="allow"``), but the
+        # ``__init__`` mypy synthesizes from the model only names the declared fields. Passing
+        # the vendor-specific ones as a mapping keeps the declared arguments type-checked.
+        extras: dict[str, Any] = {
+            "qudora_full_name": backend["full_name"],
+            "max_shots": backend["max_shots"],
+            "max_programs_per_job": backend["max_programs_per_job"],
+            "user_settings_schema": backend["user_settings_schema"],
+            "qudora_backend_id": backend["user_id"],
+        }
         return TargetProfile(
             device_id=backend["username"],
             simulator=backend["simulator"],
@@ -136,11 +146,7 @@ class QudoraProvider(QuantumProvider):
                 ProgramSpec(str, alias="qasm3", validate=_validate_qasm),
             ],
             provider_name="QUDORA",
-            qudora_full_name=backend["full_name"],
-            max_shots=backend["max_shots"],
-            max_programs_per_job=backend["max_programs_per_job"],
-            user_settings_schema=backend["user_settings_schema"],
-            qudora_backend_id=backend["user_id"],
+            **extras,
         )
 
     @cached_method
@@ -152,7 +158,7 @@ class QudoraProvider(QuantumProvider):
         raise ResourceNotFoundError(f"Device '{device_id}' not found.")
 
     @cached_method
-    def get_devices(self) -> list[QudoraDevice]:
+    def get_devices(self) -> list[QudoraDevice]:  # type: ignore[override]
         """Return all QUDORA devices."""
         return [
             QudoraDevice(self._build_profile(backend), self.session)
