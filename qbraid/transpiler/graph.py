@@ -19,9 +19,8 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 """
 import heapq
 from collections import deque
-from collections.abc import Iterator
 from importlib import import_module
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Iterator, Optional, Union
 
 import rustworkx as rx
 

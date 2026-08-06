@@ -22,9 +22,8 @@ Module for converting Braket circuits to Cirq circuits
 from __future__ import annotations
 
 import itertools
-from collections.abc import Iterator
 from copy import deepcopy
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Iterator, Optional, Union
 
 import numpy as np
 
