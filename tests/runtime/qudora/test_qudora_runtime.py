@@ -31,6 +31,7 @@ from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.runtime.qudora import (
     QudoraDevice,
+    QudoraDeviceError,
     QudoraJob,
     QudoraJobError,
     QudoraProvider,
@@ -368,7 +369,7 @@ class TestQudoraDevice:
     def test_status_unmapped_raises(self, device):
         """An unrecognized BackendStatusName raises rather than defaulting to UNAVAILABLE."""
         device.session.get_backend_status.return_value = "Decommissioned"
-        with pytest.raises(KeyError, match="Decommissioned"):
+        with pytest.raises(QudoraDeviceError, match="Decommissioned"):
             device.status()
 
     def test_detect_language(self, device):
@@ -408,9 +409,14 @@ class TestQudoraDevice:
             "dephasing_T2_time",
         }
 
-    def test_available_settings_empty_when_absent(self, provider, mock_session):
-        """available_settings() returns an empty dict when the backend exposes no schema."""
-        backend = {**BACKENDS[1], "user_settings_schema": None}
+    def test_available_settings_empty_when_schema_declares_none(self, provider, mock_session):
+        """available_settings() is empty when the published schema declares no properties.
+
+        The schema itself is always published (asserted live by
+        test_backend_records_carry_every_field_the_profile_reads), so a missing
+        ``properties`` key is the only legitimate empty case.
+        """
+        backend = {**BACKENDS[1], "user_settings_schema": {"type": "object"}}
         device = QudoraDevice(provider._build_profile(backend), mock_session)
         assert device.available_settings() == {}
 
@@ -539,7 +545,7 @@ class TestQudoraJob:
         timed out, instead of failing where the unmapped value entered the system.
         """
         assert JobStatus.UNKNOWN not in JobStatus.terminal_states()
-        with pytest.raises(KeyError, match="PartiallyCompleted"):
+        with pytest.raises(QudoraJobError, match="PartiallyCompleted"):
             QudoraJob._map_status("PartiallyCompleted")
 
     def test_status(self, mock_session):
@@ -576,6 +582,27 @@ class TestQudoraJob:
         assert result.details["target"] == "QVLS-Q1 Emulator"
         assert result.device_id == "xg1-emulator-gwdg@qudora.com"
         assert result.device_id == device.id
+
+    def test_result_device_id_resolved_without_a_device(self, mock_session):
+        """Without a device, ``target`` is resolved back to the submittable device id.
+
+        A job built by ``load_job`` has no device, so the display name in ``target`` is
+        mapped through the backend listing rather than surfacing as a device_id that
+        ``get_device`` would reject.
+        """
+        mock_session.get_job.return_value = _job_record("Completed", result=['{"01": 100}'])
+        mock_session.get_backends.return_value = BACKENDS
+        job = QudoraJob("42", session=mock_session, shots=100)
+        result = job.result()
+        assert result.details["target"] == "QVLS-Q1 Emulator"
+        assert result.device_id == "simulator-prod@qudora.com"
+
+    def test_result_device_id_falls_back_to_target_when_unpublished(self, mock_session):
+        """A backend no longer in the listing leaves ``target`` as-is rather than failing."""
+        mock_session.get_job.return_value = _job_record("Completed", result=['{"01": 100}'])
+        mock_session.get_backends.return_value = []
+        job = QudoraJob("42", session=mock_session, shots=100)
+        assert job.result().device_id == "QVLS-Q1 Emulator"
 
     def test_result_multi_circuit(self, mock_session, device):
         """result() parses a multi-circuit job into a list of histograms."""

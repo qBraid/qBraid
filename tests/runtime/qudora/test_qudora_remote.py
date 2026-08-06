@@ -161,8 +161,18 @@ def test_run_batch_returns_one_histogram_per_program(device):
 
 
 def test_cancel_job(device):
-    """A submitted job can be cancelled and reports CANCELLED afterwards."""
+    """A submitted job can be cancelled and reports CANCELLED afterwards.
+
+    Also asserts the field contract on a *non-completed* record: ``result()`` reads
+    ``user_error`` by strict index on exactly this path, and the completed-job contract
+    test above cannot cover it.
+    """
     job = device.run(QASM3_X0, shots=100)
     job.cancel()
     job.wait_for_final_state(timeout=180)
     assert job.status() == JobStatus.CANCELLED
+
+    record = job.session.get_job(job.id, include_results=True)
+    assert REQUIRED_JOB_FIELDS <= set(
+        record
+    ), f"cancelled job record is missing {REQUIRED_JOB_FIELDS - set(record)}"

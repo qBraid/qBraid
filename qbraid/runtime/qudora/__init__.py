@@ -34,16 +34,18 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
+    QudoraDeviceError
     QudoraJobError
 
 """
 
-from .device import QudoraDevice
+from .device import QudoraDevice, QudoraDeviceError
 from .job import QudoraJob, QudoraJobError
 from .provider import QudoraProvider, QudoraSession
 
 __all__ = [
     "QudoraDevice",
+    "QudoraDeviceError",
     "QudoraProvider",
     "QudoraSession",
     "QudoraJob",

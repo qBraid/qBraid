@@ -76,12 +76,31 @@ class QudoraJob(QuantumJob):
         """Convert a QUDORA ``JobStatusName`` to a qBraid ``JobStatus``.
 
         Raises:
-            KeyError: If QUDORA reports a status name that is not mapped. Defaulting to
+            QudoraJobError: If QUDORA reports a status name that is not mapped. Defaulting to
                 ``JobStatus.UNKNOWN`` would be worse than raising: ``UNKNOWN`` is not a
                 terminal state, so ``result()`` would poll a finished job until
                 ``wait_for_final_state`` timed out instead of failing at the source.
         """
-        return _JOB_STATUS_MAP[status]
+        try:
+            return _JOB_STATUS_MAP[status]
+        except KeyError as err:
+            raise QudoraJobError(
+                f"Unrecognized QUDORA job status '{status}'. "
+                f"Known values: {sorted(_JOB_STATUS_MAP)}."
+            ) from err
+
+    def _resolve_target(self, target: str) -> str:
+        """Map a job record's ``target`` (a backend display name) back to its device id.
+
+        Job records name the backend by its ``full_name`` ("QVLS-Q1 Emulator"), while jobs are
+        submitted against its ``username``. Resolving keeps ``Result.device_id`` usable as an
+        input to ``get_device`` even for a job loaded without a device. Falls back to the
+        display name if the backend is no longer published.
+        """
+        for backend in self.session.get_backends():
+            if backend["full_name"] == target:
+                return backend["username"]
+        return target
 
     def status(self) -> JobStatus:
         """Return the current status of the QUDORA job."""
@@ -120,8 +139,12 @@ class QudoraJob(QuantumJob):
 
         data = GateModelResultData(measurement_counts=self._parse_counts(result_payload))
         # The job record's ``target`` is the backend's display name ("QVLS-Q1 Emulator"), not
-        # the id jobs are submitted against, so prefer the device's own id and fall back to
-        # ``target`` only when the job was constructed without one.
-        device_id = self._device.id if self._device is not None else job_data["target"]
+        # the id jobs are submitted against, so prefer the device's own id and resolve
+        # ``target`` back to a device id only when the job was constructed without one.
+        device_id = (
+            self._device.id
+            if self._device is not None
+            else self._resolve_target(job_data["target"])
+        )
         details = {key: value for key, value in job_data.items() if key not in _RESULT_RESERVED}
         return Result(device_id=device_id, job_id=self.id, success=success, data=data, **details)

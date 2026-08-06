@@ -24,12 +24,17 @@ from typing import TYPE_CHECKING, Any
 from qbraid.programs.typer import get_qasm_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import QudoraJob
 
 if TYPE_CHECKING:
     import qbraid.runtime
     import qbraid.runtime.qudora.provider
+
+
+class QudoraDeviceError(QbraidRuntimeError):
+    """Class for errors raised while processing a QUDORA device."""
 
 
 # Maps QUDORA ``BackendStatusName`` values to qBraid ``DeviceStatus``.
@@ -68,12 +73,18 @@ class QudoraDevice(QuantumDevice):
         """Return the current status of the QUDORA device.
 
         Raises:
-            KeyError: If QUDORA reports a ``BackendStatusName`` that is not mapped. Failing
-                here is deliberate: defaulting an unrecognized value would let the device
-                advertise a status it never reported.
+            QudoraDeviceError: If QUDORA reports a ``BackendStatusName`` that is not mapped.
+                Failing here is deliberate: defaulting an unrecognized value would let the
+                device advertise a status it never reported.
         """
         status_name = self.session.get_backend_status(self.profile["qudora_backend_id"])
-        return _DEVICE_STATUS_MAP[status_name]
+        try:
+            return _DEVICE_STATUS_MAP[status_name]
+        except KeyError as err:
+            raise QudoraDeviceError(
+                f"Unrecognized QUDORA backend status '{status_name}'. "
+                f"Known values: {sorted(_DEVICE_STATUS_MAP)}."
+            ) from err
 
     def available_settings(self) -> dict[str, Any]:
         """Return the configurable QUDORA backend settings and their schema.
@@ -82,9 +93,10 @@ class QudoraDevice(QuantumDevice):
         simulators, the noise parameters ``measurement_error_probability``,
         ``two_qubit_gate_noise_strength``, ``single_qubit_gate_noise_strength``, and
         ``dephasing_T2_time`` — each entry carrying its ``default`` (and any bounds). Derived
-        from the backend's ``user_settings_schema``; empty when the backend exposes none.
+        from the backend's ``user_settings_schema``, which every backend publishes; empty
+        only when that schema declares no properties.
         """
-        schema = self.profile["user_settings_schema"] or {}
+        schema = self.profile["user_settings_schema"]
         return schema.get("properties", {})
 
     @staticmethod
@@ -107,8 +119,10 @@ class QudoraDevice(QuantumDevice):
                 f"QUDORA accepts {sorted(_QASM_LANGUAGE_MAP)} programs, got '{alias}'."
             ) from err
 
+    # The base signature is deliberately narrowed: QUDORA accepts only OpenQASM strings, and
+    # the extra arguments are the vendor's documented submit options.
     # pylint:disable-next=arguments-differ
-    def submit(
+    def submit(  # type: ignore[override]
         self,
         run_input: str | list[str],
         shots: int = 100,
