@@ -21,6 +21,7 @@
 Module defining qBraid Cirq QuilOutput.
 
 """
+
 from __future__ import annotations
 
 import string
@@ -39,6 +40,17 @@ def exponent_to_pi_string(exp: float) -> str:
 
     exp_div_pi = exp / np.pi
     exponent_fraction = Fraction(exp_div_pi).limit_denominator(12)
+
+    # Only use the pi-fraction form when it reproduces the angle exactly (up to
+    # float noise); otherwise emit the raw float so the value is not silently
+    # changed (limit_denominator always returns a nearest fraction, e.g. pi/17
+    # would become pi/12 and anything below pi/24 would become 0). The tolerance
+    # scales down with the magnitude so a tiny nonzero angle is never accepted
+    # as the zero fraction, and is capped at 1e-9 so a huge angle is never
+    # snapped to a wrong fraction.
+    tolerance = 1e-9 * min(abs(exp_div_pi), 1.0)
+    if abs(float(exponent_fraction) - exp_div_pi) > tolerance:
+        return repr(float(exp))
 
     if abs(exponent_fraction.numerator) == 1 and exponent_fraction.denominator == 1:
         exponent = "pi" if exponent_fraction > 0 else "-pi"
