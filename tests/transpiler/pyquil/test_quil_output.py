@@ -617,7 +617,7 @@ def test_custom_u_gate_to_quil(gate_class, params, expected_quil, quil_converter
 
 @pytest.mark.parametrize(
     "rads",
-    [np.pi / 17, -np.pi / 17, np.pi / 25, 3 * np.pi / 13, 0.1234, 2.5],
+    [np.pi / 17, -np.pi / 17, np.pi / 25, 3 * np.pi / 13, 0.1234, 2.5, 1e-13, -1e-13],
 )
 def test_exponent_to_pi_string_inexact_angle_full_precision(rads):
     """Angles that are not exact fractions of pi must not be rounded."""
