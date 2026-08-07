@@ -91,19 +91,25 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
     # Braket measurements are always terminal and carry no key, so collect them into a
     # single keyed measurement; per-instruction M('') gates fragment or collapse the
-    # readout register in downstream QASM/Quil exports.
-    measured_qubits = []
+    # readout register in downstream QASM/Quil exports. Readout order is the Measure's
+    # classical bit index, which Circuit.from_ir preserves from permuted mappings such as
+    # ``b[2] = measure q[0]`` -- instruction order would transpose those. Braket exposes
+    # no public accessor for it as of amazon-braket-sdk 1.120; it defaults to 0, so the
+    # sort's stability falls back to instruction order for directly built Measures.
+    measured = []
     gate_instructions = []
     for instr in circuit.instructions:
         if str(instr.operator) == "Measure":
-            measured_qubits.extend(qubit_mapping[int(q)] for q in instr.target)
+            index = getattr(instr.operator, "_target_index", 0) or 0
+            measured.extend((index, qubit_mapping[int(q)]) for q in instr.target)
         else:
             gate_instructions.append(instr)
     converted = cirq.Circuit(
         _from_braket_instruction(instr, qubit_mapping) for instr in gate_instructions
     )
-    if measured_qubits:
-        converted.append(cirq.measure(*measured_qubits, key="m"))
+    if measured:
+        qubits = [qubit for _, qubit in sorted(measured, key=lambda pair: pair[0])]
+        converted.append(cirq.measure(*qubits, key="m"))
     return converted
 
 

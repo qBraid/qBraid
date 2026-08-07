@@ -52,6 +52,11 @@ def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Op
     result belongs at: ``measure q[2] -> c[0]`` must land q_2 in bit 0 even though a
     measurement on q_0 may appear earlier. Keys without an index fall back to qubit order,
     matching the readout convention the Braket converters document.
+
+    A circuit measuring into multiple registers merges them in register-name order, since
+    cirq keys do not record declaration order. ``qasm2 -> pyquil`` concatenates registers
+    in DECLARE order instead (#1314), so the two routes can disagree on multi-register
+    circuits; ``transpile()`` normally routes around this edge.
     """
     indexed = []
     for op in terminal:

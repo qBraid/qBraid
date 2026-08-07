@@ -149,6 +149,39 @@ def test_braket_to_cirq_preserves_readout_order():
     assert list(next(iter(run.values()))[0]) == list(PATTERN)
 
 
+def test_braket_to_cirq_orders_readout_by_classical_index():
+    """Braket readout order is the Measure's classical bit index, not instruction order.
+
+    ``Circuit.from_ir`` preserves permuted mappings such as ``b[2] = measure q[0]``, and
+    Braket's own simulator honors them. The permutation is a rotation, not a reversal, so
+    an endianness flip cannot masquerade as the correct answer.
+    """
+    pytest.importorskip("braket", reason="amazon-braket-sdk not installed")
+    # pylint: disable-next=import-outside-toplevel
+    from braket.circuits import Circuit as BKCircuit
+    from braket.circuits import Instruction, Measure  # pylint: disable=import-outside-toplevel
+
+    from qbraid.transpiler.conversions.braket import (  # pylint: disable=import-outside-toplevel
+        braket_to_cirq,
+    )
+
+    braket_circuit = BKCircuit()
+    for index, bit in enumerate(PATTERN):
+        if bit:
+            braket_circuit.x(index)  # pylint: disable=no-member
+    qubit_to_bit = {0: 1, 1: 2, 2: 0}
+    for qubit, classical_bit in qubit_to_bit.items():
+        braket_circuit.add_instruction(Instruction(Measure(index=classical_bit), qubit))
+
+    converted = braket_to_cirq(braket_circuit)
+
+    run = cirq.Simulator().run(converted, repetitions=1).measurements
+    assert len(run) == 1, f"expected one merged register, got {sorted(run)}"
+    bit_to_qubit = {bit: qubit for qubit, bit in qubit_to_bit.items()}
+    expected = [PATTERN[bit_to_qubit[i]] for i in range(NUM_QUBITS)]
+    assert list(next(iter(run.values()))[0]) == expected
+
+
 def test_cirq_to_braket_preserves_readout_order():
     """Each Cirq measurement must land on its own Braket classical bit, in qubit order.
 
@@ -215,3 +248,30 @@ def test_pytket_to_braket_preserves_classical_bit_order():
     bit_to_qubit = {bit: qubit for qubit, bit in qubit_to_bit.items()}
     expected = "".join(str(PATTERN[bit_to_qubit[i]]) for i in range(NUM_QUBITS))
     assert _braket_counts(converted) == expected
+
+
+def test_pytket_to_braket_remeasured_qubit_raises():
+    """Measuring a qubit into a second classical bit is rejected, not silently dropped.
+
+    Braket cannot represent it (measurement ends a qubit's life), and because the
+    re-added measures are keyed by qubit, converting silently would emit one measure
+    where the source declared two classical bits.
+    """
+    pytest.importorskip("pytket", reason="pytket not installed")
+    pytest.importorskip("braket", reason="amazon-braket-sdk not installed")
+    from pytket.circuit import Circuit as TKCircuit  # pylint: disable=import-outside-toplevel
+
+    from qbraid.transpiler.conversions.pytket import (  # pylint: disable=import-outside-toplevel
+        pytket_to_braket,
+    )
+    from qbraid.transpiler.exceptions import (  # pylint: disable=import-outside-toplevel
+        ProgramConversionError,
+    )
+
+    tk_circuit = TKCircuit(1, 2)
+    tk_circuit.X(0)
+    tk_circuit.Measure(0, 0)
+    tk_circuit.Measure(0, 1)
+
+    with pytest.raises(ProgramConversionError, match="mid-circuit measurement"):
+        pytket_to_braket(tk_circuit)

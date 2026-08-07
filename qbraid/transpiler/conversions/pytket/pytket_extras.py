@@ -59,13 +59,17 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
 
     measured_qubits = set()
     for command in circuit.get_commands():
+        if command.op.type == OpType.Barrier:
+            continue
+        if measured_qubits.intersection(command.qubits):
+            # Covers a gate on a measured qubit and a qubit measured into a second bit;
+            # silently converting the latter would drop one of its classical bits.
+            raise ProgramConversionError(
+                "Braket circuits do not support mid-circuit measurement: a qubit is "
+                "acted on after it has been measured."
+            )
         if command.op.type == OpType.Measure:
             measured_qubits.update(command.qubits)
-        elif command.op.type != OpType.Barrier and measured_qubits.intersection(command.qubits):
-            raise ProgramConversionError(
-                "Braket circuits do not support mid-circuit measurement: a gate acts "
-                "on a qubit after it has been measured."
-            )
     # measure_map maps braket qubit id -> pytket bit index; re-add in classical-bit order.
     for braket_qubit, _ in sorted(measure_map.items(), key=lambda item: item[1]):
         braket_circuit.measure(braket_qubit)
