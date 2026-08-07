@@ -156,6 +156,12 @@ __all__ = [
 ]
 
 _lazy = {
+    "aqt": [
+        "AQTSession",
+        "AQTProvider",
+        "AQTDevice",
+        "AQTJob",
+    ],
     "aws": [
         "BraketProvider",
         "BraketDevice",
@@ -217,6 +223,10 @@ _lazy = {
 }
 
 if TYPE_CHECKING:
+    from .aqt import AQTDevice as AQTDevice
+    from .aqt import AQTJob as AQTJob
+    from .aqt import AQTProvider as AQTProvider
+    from .aqt import AQTSession as AQTSession
     from .aws import BraketDevice as BraketDevice
     from .aws import BraketProvider as BraketProvider
     from .aws import BraketQuantumTask as BraketQuantumTask

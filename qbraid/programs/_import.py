@@ -84,6 +84,8 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable
 def _get_class(module: str):
+    if module == "aqt_connector.models.circuits":
+        return aqt_connector.models.circuits.QuantumCircuit  # type: ignore # noqa: F821
     if module == "bloqade.analog.builder.assign":
         return bloqade.analog.builder.assign.BatchAssign  # type: ignore # noqa: F821
     if module == "cirq":
@@ -141,6 +143,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "cpp_pyqubo",
         "cudaq",
         "qrisp",
+        "aqt_connector.models.circuits",
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
