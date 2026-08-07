@@ -18,7 +18,7 @@ Module defining QUDORA session and provider classes
 """
 
 import os
-from typing import Any, Optional
+from typing import Any
 
 import pyqasm
 from pyqasm.exceptions import PyQasmError, QasmParsingError
@@ -53,7 +53,7 @@ def _validate_qasm(program: str) -> None:
 class QudoraSession(Session):
     """Session for the QUDORA Cloud REST API."""
 
-    def __init__(self, token: Optional[str] = None, *, base_url: Optional[str] = None):
+    def __init__(self, token: str | None = None, *, base_url: str | None = None):
         token = token or os.getenv("QUDORA_API_TOKEN")
         if not token:
             raise ValueError(
@@ -79,7 +79,11 @@ class QudoraSession(Session):
         return self.get("/backends/").json()
 
     def get_backend_status(self, backend_id: int) -> str:
-        """Return the ``BackendStatusName`` for a single backend."""
+        """Return the ``BackendStatusName`` for a single backend.
+
+        ``backend_id`` is the backend record's ``user_id``; the endpoint rejects the
+        ``username`` with a 422.
+        """
         return self.get(f"/backends/status/{backend_id}").json()
 
     def create_job(self, data: dict[str, Any]) -> int:
@@ -111,33 +115,38 @@ class QudoraSession(Session):
 class QudoraProvider(QuantumProvider):
     """QUDORA provider class."""
 
-    def __init__(self, token: Optional[str] = None, *, base_url: Optional[str] = None):
+    def __init__(self, token: str | None = None, *, base_url: str | None = None):
         self.session = QudoraSession(token, base_url=base_url)
 
     def _build_profile(self, backend: dict[str, Any]) -> TargetProfile:
         """Build a profile for a QUDORA backend.
 
-        The ``device_id`` is the backend ``username`` because that is the value the QUDORA
-        submit endpoint expects in the job ``target`` field.
+        The ``device_id`` is the backend ``username`` (an email address) because that is the
+        value the QUDORA submit endpoint expects in the job ``target`` field. ``user_id`` is
+        the backend's numeric id, and the only identifier the status endpoint accepts.
         """
+        # TargetProfile permits extra keys (``model_config`` sets ``extra="allow"``), but the
+        # ``__init__`` mypy synthesizes from the model only names the declared fields. Passing
+        # the vendor-specific ones as a mapping keeps the declared arguments type-checked.
+        extras: dict[str, Any] = {
+            "qudora_full_name": backend["full_name"],
+            "max_shots": backend["max_shots"],
+            "max_programs_per_job": backend["max_programs_per_job"],
+            "user_settings_schema": backend["user_settings_schema"],
+            "qudora_backend_id": backend["user_id"],
+        }
         return TargetProfile(
             device_id=backend["username"],
-            # Both currently published QUDORA backends are simulators. The backend record does
-            # not expose a confirmed hardware/simulator flag (see plans/qudora/qudora-sdk.md).
-            simulator=True,
+            simulator=backend["simulator"],
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=backend["max_n_qubits"],
+            basis_gates=backend["basis_gates"],
             program_spec=[
                 ProgramSpec(str, alias="qasm2", validate=_validate_qasm),
                 ProgramSpec(str, alias="qasm3", validate=_validate_qasm),
             ],
             provider_name="QUDORA",
-            qudora_full_name=backend["full_name"],
-            max_shots=backend["max_shots"],
-            max_programs_per_job=backend["max_programs_per_job"],
-            user_settings_schema=backend["user_settings_schema"],
-            # Optional: only used by the (id-based) backend status endpoint.
-            qudora_backend_id=backend.get("id"),
+            **extras,
         )
 
     @cached_method
@@ -149,7 +158,7 @@ class QudoraProvider(QuantumProvider):
         raise ResourceNotFoundError(f"Device '{device_id}' not found.")
 
     @cached_method
-    def get_devices(self) -> list[QudoraDevice]:
+    def get_devices(self) -> list[QudoraDevice]:  # type: ignore[override]
         """Return all QUDORA devices."""
         return [
             QudoraDevice(self._build_profile(backend), self.session)
