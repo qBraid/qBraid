@@ -775,11 +775,13 @@ def test_ranking_holds_when_every_edge_costs_zero():
     _assert_matches_enumeration(graph, top_n=5)
 
 
-def test_ranking_holds_with_infinite_cost_edges():
-    """A weight of 0 becomes an infinite edge cost, which must not break comparisons.
+def test_ranking_holds_with_zero_weight_edges():
+    """A weight of 0 becomes a huge finite edge cost, which must not break comparisons.
 
-    ``Conversion`` maps weight 0 to ``float("inf")``, so paths through such an edge are
-    ordered against each other by hop count and alias rather than by a finite cost.
+    ``Conversion`` maps weight 0 to a large finite cost rather than ``float("inf")``:
+    ``inf + x == inf`` breaks the order-preservation Dijkstra and Yen's rely on, so with
+    infinity even ``shortest_path`` returned provably wrong routes (see
+    ``test_zero_weight_ties_rank_by_fewest_zero_weight_edges`` for the shape).
     """
     specs = [("a", "b", 0.0), ("b", "c", 1.0), ("a", "x", 1.0), ("x", "c", 1.0)]
     graph = ConversionGraph(
@@ -787,13 +789,13 @@ def test_ranking_holds_with_infinite_cost_edges():
         require_native=False,
     )
 
-    # the finite route wins outright, even though both are two hops
+    # the zero-weight-free route wins outright, even though both are two hops
     assert graph.shortest_path("a", "c") == "a -> x -> c"
     _assert_matches_enumeration(graph, top_n=5)
 
 
-def test_ranking_holds_when_only_route_is_infinite():
-    """An infinite-cost edge is still a path when it is the only one."""
+def test_ranking_holds_when_only_route_has_zero_weight():
+    """A zero-weight edge is still a path when it is the only one."""
     graph = ConversionGraph(
         conversions=[Conversion("a", "b", lambda x: x, 0.0, bias=0.25)],
         require_native=False,
@@ -801,6 +803,58 @@ def test_ranking_holds_when_only_route_is_infinite():
 
     assert graph.shortest_path("a", "b") == "a -> b"
     _assert_matches_enumeration(graph, top_n=3)
+
+
+def test_zero_weight_ties_rank_by_fewest_zero_weight_edges():
+    """Routes sharing a zero-weight edge stay exactly ranked.
+
+    Under ``float("inf")`` costs this shape broke Dijkstra outright: ``m`` settled via
+    the finite ``a -> x -> m`` before the zero-weight ``a -> m`` was considered, and once
+    the shared ``m -> t`` edge pushed both to infinity the discarded label was the one
+    the ranking preferred. With a finite zero-weight cost the search matches enumeration,
+    and a route through one zero-weight edge beats a route through two.
+    """
+    specs = [("a", "x", 1.0), ("x", "m", 1.0), ("a", "m", 0.0), ("m", "t", 0.0)]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs],
+        require_native=False,
+    )
+
+    assert graph.shortest_path("a", "t") == "a -> x -> m -> t"
+    _assert_matches_enumeration(graph, top_n=3)
+
+
+def test_ranking_matches_enumeration_near_float_cost_ties():
+    """Two deviations with the same multiset of edge costs must rank consistently.
+
+    Distilled from a failing fuzz case: their exact costs are equal, but left-to-right
+    float summation from different start nodes rounds differently in the last ulp, so a
+    spur search accumulating from its spur node could disagree with the full-path ranking
+    about which deviation is cheaper -- emitting top-N paths out of order. Seeding the
+    spur search with its root's key makes every cost the same left fold.
+    """
+    specs = [
+        ("n0", "n1", 1.0), ("n0", "n3", 0.9), ("n0", "n6", 0.9), ("n1", "n0", 0.9),
+        ("n1", "n7", 0.9), ("n2", "n1", 1.0), ("n2", "n5", 1.0), ("n3", "n0", 0.25),
+        ("n3", "n2", 0.9), ("n3", "n6", 1.0), ("n4", "n0", 0.74), ("n4", "n2", 0.5),
+        ("n4", "n3", 1.0), ("n5", "n1", 0.9), ("n5", "n2", 0.74), ("n5", "n7", 1.0),
+        ("n6", "n0", 0.9), ("n6", "n1", 0.25), ("n6", "n2", 0.5), ("n6", "n4", 0.9),
+        ("n6", "n7", 1.0), ("n7", "n0", 1.0), ("n7", "n1", 1.0), ("n7", "n3", 0.9),
+        ("n7", "n5", 0.9), ("n7", "n6", 0.74),
+    ]  # fmt: skip
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.1) for s, t, w in specs],
+        require_native=False,
+    )
+
+    _assert_matches_enumeration(graph, top_n=8)
+
+
+def test_top_n_zero_finds_no_path():
+    """``top_n=0`` selects no paths, so the public API reports no path found."""
+    graph = ConversionGraph()
+    with pytest.raises(ConversionPathNotFoundError):
+        graph.find_top_shortest_conversion_paths("qasm2", "qiskit", top_n=0)
 
 
 @pytest.mark.parametrize("seed", range(12))
@@ -813,8 +867,9 @@ def test_ranking_matches_enumeration_on_generated_graphs(seed):
     """
     rng = random.Random(seed)
     node_count = rng.randint(3, 7)
-    # duplicate-heavy weight pool, so exact cost ties are common rather than incidental
-    weights = [1.0, 1.0, 0.9, 0.9, 0.5, 0.25]
+    # duplicate-heavy weight pool, so exact cost ties are common rather than incidental;
+    # 0.0 included so zero-weight (huge-cost) edges mix with finite ones
+    weights = [1.0, 1.0, 0.9, 0.9, 0.5, 0.25, 0.0]
     specs = [
         (f"n{a}", f"n{b}", rng.choice(weights))
         for a, b in itertools.permutations(range(node_count), 2)
@@ -829,6 +884,6 @@ def test_ranking_matches_enumeration_on_generated_graphs(seed):
         require_native=False,
     )
 
-    for top_n in (1, 3):
+    for top_n in (1, 3, 8):
         for max_depth in (None, 2):
             _assert_matches_enumeration(graph, top_n=top_n, max_depth=max_depth)

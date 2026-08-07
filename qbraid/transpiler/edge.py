@@ -30,6 +30,14 @@ from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 if TYPE_CHECKING:
     import qbraid.programs
 
+# Edge cost of a weight-0 conversion. Large enough that one such edge outweighs any
+# realistic finite path (a path would need ~1400 edges of weight 1e-300 to compare), yet
+# finite so that cost addition stays translation-invariant -- with float("inf") here,
+# Dijkstra and Yen's algorithm in ConversionGraph return provably wrong path orderings,
+# since inf + x == inf collapses distinctions the tie-breakers rely on. The effect is
+# that paths rank by number of weight-0 conversions first, then by the rest of the key.
+_ZERO_WEIGHT_COST = 1e6
+
 
 def _is_module_installed(module: str) -> bool:
     """
@@ -79,8 +87,9 @@ class Conversion:
             conversion_func (Callable): The function that performs the actual conversion.
             weight (Optional[float]): Optional weighting factor for the conversion, ranging [0,1].
                 If not specified, defaults to 1 or a custom value derived from the conversion_func.
-            bias (Optional[float]): Optional factor used to fine-tune the weight calculation and
-                modify the decision thresholds for pathfinding. Defaults to 0. Higher values
+            bias (Optional[float]): Optional non-negative factor used to fine-tune the weight
+                calculation and modify the decision thresholds for pathfinding. Defaults to 0.
+                Higher values
                 prioritize shorter paths. For example, a bias of 0.25 slightly favors a single
                 conversion at weight 0.8 over two conversions at weight 1.0, whereas a bias of 0.1
                 requires a single conversion of weight > 0.9 to be preferred over two at weight 1.0.
@@ -157,7 +166,8 @@ class Conversion:
             float: The calculated weight adjusted for pathfinding optimization.
 
         Raises:
-            ValueError: If the calculated or provided weight is not between 0 and 1, inclusive.
+            ValueError: If the calculated or provided weight is not between 0 and 1
+                inclusive, or if the bias is negative.
         """
         effective_weight = (
             weight if weight is not None else getattr(self._conversion_func, "weight", 1)
@@ -166,8 +176,15 @@ class Conversion:
         if not 0 <= effective_weight <= 1:
             raise ValueError("Weight must be a float between 0 and 1, inclusive.")
 
+        if self._bias < 0:
+            # A negative bias makes edge costs negative, which silently breaks the
+            # shortest-path search (Dijkstra requires non-negative costs).
+            raise ValueError("Bias must be non-negative.")
+
         # Invert and log transform for positive weight differentiation with rustworkx
-        rx_adjusted_weight = float("inf") if effective_weight == 0 else np.log(1 / effective_weight)
+        rx_adjusted_weight = (
+            _ZERO_WEIGHT_COST if effective_weight == 0 else np.log(1 / effective_weight)
+        )
 
         adjusted_weight = rx_adjusted_weight + self._bias
 

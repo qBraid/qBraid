@@ -330,6 +330,7 @@ class ConversionGraph(rx.PyDiGraph):
         target_id: int,
         banned_nodes: frozenset[int] = frozenset(),
         banned_edges: frozenset[tuple[int, int]] = frozenset(),
+        initial_key: tuple | None = None,
     ) -> list[int] | None:
         """Return the best-ranked path between two node ids, or None if unreachable.
 
@@ -340,18 +341,24 @@ class ConversionGraph(rx.PyDiGraph):
         polynomial as conversions are added to the graph.
 
         ``banned_nodes`` and ``banned_edges`` exclude parts of the graph from the search;
-        :meth:`_k_cheapest_paths` uses them to force deviations from paths it already has.
+        :meth:`_k_cheapest_paths` uses them to force deviations from paths it already has,
+        and passes the deviation root's ranking key as ``initial_key`` so the search
+        minimizes the key of the *whole* candidate path. Seeding also keeps every cost the
+        same left-to-right float sum :meth:`_rank_key` computes -- costs that are equal in
+        exact arithmetic can otherwise differ in the last ulp between the two, making the
+        spur search and the final ranking disagree near ties.
         """
         if source_id == target_id:
             # Matches rx.all_simple_paths, which reports no simple path from a node to itself.
             return None
 
         alias_of = self._alias_of()
-        heap: list[tuple[tuple, list[int]]] = [((0.0, 1, (alias_of[source_id],)), [source_id])]
+        start_key = initial_key or (0.0, 1, (alias_of[source_id],))
+        heap: list[tuple[tuple, list[int]]] = [(start_key, [source_id])]
         settled: set[int] = set()
 
         while heap:
-            (cost, _, aliases), path = heapq.heappop(heap)
+            (cost, hops, aliases), path = heapq.heappop(heap)
             node = path[-1]
             if node == target_id:
                 return path
@@ -364,7 +371,7 @@ class ConversionGraph(rx.PyDiGraph):
                 if (node, successor) in banned_edges:
                     continue
                 extended = [*path, successor]
-                key = (cost + data["weight"], len(extended), (*aliases, alias_of[successor]))
+                key = (cost + data["weight"], hops + 1, (*aliases, alias_of[successor]))
                 heapq.heappush(heap, (key, extended))
 
         return None
@@ -380,12 +387,16 @@ class ConversionGraph(rx.PyDiGraph):
         factorial in graph density.
 
         Yen's usual proof assumes additive scalar costs; it carries over to the composite
-        ranking key because that key is strictly monotone under extending a path, which is the
-        same property that makes :meth:`_cheapest_path` exact.
+        ranking key because each spur search is seeded with its deviation root's key, so it
+        returns the deviation minimizing the full candidate's ranking key -- the property
+        the proof actually uses.
 
         Paths deeper than ``max_depth`` hops are skipped rather than counted against ``k``, so
         a depth limit cannot hide a qualifying path that merely ranks below the k-th.
         """
+        if k <= 0:
+            return
+
         best = self._cheapest_path(source_id, target_id)
         if best is None:
             return
@@ -410,7 +421,13 @@ class ConversionGraph(rx.PyDiGraph):
                     for path in accepted
                     if len(path) > index + 1 and path[: index + 1] == root
                 )
-                spur = self._cheapest_path(root[-1], target_id, frozenset(root[:-1]), banned_edges)
+                spur = self._cheapest_path(
+                    root[-1],
+                    target_id,
+                    frozenset(root[:-1]),
+                    banned_edges,
+                    initial_key=self._rank_key(root, alias_of),
+                )
                 if spur is None:
                     continue
                 candidate = root[:-1] + spur

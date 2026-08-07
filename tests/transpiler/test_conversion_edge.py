@@ -150,12 +150,23 @@ def test_invalid_weight(mock_conversion_func, invalid_weight):
 
 
 @pytest.mark.parametrize(
-    "valid_weight,expected_value", [(0.8, np.log(1.25)), (None, np.log(2)), (0, float("inf"))]
+    "valid_weight,expected_value", [(0.8, np.log(1.25)), (None, np.log(2)), (0, 1e6)]
 )
 def test_valid_weight(mock_conversion_func, valid_weight, expected_value):
-    """Test the default weight from the conversion function if not specified."""
+    """Test the default weight from the conversion function if not specified.
+
+    Weight 0 maps to a large finite cost, not ``float("inf")``: with infinity,
+    ``inf + x == inf`` breaks the translation-invariance the graph's Dijkstra and
+    Yen's searches rely on, producing provably wrong path orderings.
+    """
     conversion = Conversion("source_pkg", "target_pkg", mock_conversion_func, weight=valid_weight)
     assert conversion.weight == expected_value
+
+
+def test_negative_bias_raises(mock_conversion_func):
+    """A negative bias makes edge costs negative, voiding the Dijkstra precondition."""
+    with pytest.raises(ValueError, match="non-negative"):
+        Conversion("source_pkg", "target_pkg", mock_conversion_func, bias=-0.1)
 
 
 def test_weight_without_specified_and_no_default():
