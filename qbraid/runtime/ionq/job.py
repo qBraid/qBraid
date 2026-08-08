@@ -109,6 +109,24 @@ class IonQJob(QuantumJob):
         return self.session.get(f"/jobs/{self.id}/cost").json()
 
     @staticmethod
+    def _num_qubits(result: dict[str, Any]) -> Optional[int]:
+        """Return the width of the submitted register, which IonQ reports in the job stats."""
+        num_qubits = (result.get("stats") or {}).get("qubits")
+        return num_qubits if isinstance(num_qubits, int) and num_qubits > 0 else None
+
+    @staticmethod
+    def _rekey_to_bitstrings(meas_prob: dict[str, float], num_qubits: Optional[int]) -> MeasProb:
+        """Rekey a histogram from IonQ's decimal state indices to fixed-width bitstrings.
+
+        Qubit 0 is the least significant bit, so it lands rightmost, matching the
+        convention of every other qBraid route. Without ``num_qubits`` the width
+        falls back to the largest observed outcome, which is only as wide as the
+        shots happened to reach.
+        """
+        width = num_qubits or max((int(key) for key in meas_prob), default=0).bit_length() or 1
+        return {format(int(key), f"0{width}b"): value for key, value in meas_prob.items()}
+
+    @staticmethod
     def _get_counts(result: dict[str, Any]) -> Union[MeasCount, list[MeasCount]]:
         """Return the raw counts of the run."""
         shots: Optional[int] = result.get("shots")
@@ -117,10 +135,12 @@ class IonQJob(QuantumJob):
         if shots is None or probabilities is None:
             raise ValueError("Missing shots or probabilities in result data.")
 
+        num_qubits = IonQJob._num_qubits(result)
+
         def convert_to_counts(meas_prob: dict[str, float]) -> dict[str, int]:
             """Helper function to normalize probabilities and convert to counts."""
-            probs_dec = {int(key): value for key, value in meas_prob.items()}
-            probs_normal = normalize_data(probs_dec)
+            probs_bin = IonQJob._rekey_to_bitstrings(meas_prob, num_qubits)
+            probs_normal = normalize_data(probs_bin)
             return distribute_counts(probs_normal, shots)
 
         if all(isinstance(value, dict) for value in probabilities.values()):
@@ -131,12 +151,12 @@ class IonQJob(QuantumJob):
     @staticmethod
     def _transform_measurement_probabilities(
         probabilities: Union[MeasProb, dict[str, MeasProb]],
+        num_qubits: Optional[int] = None,
     ) -> Union[MeasProb, list[MeasProb]]:
         """Normalize raw probabilities from decimal integer keys to bit-string keys."""
 
         def normalize(meas_prob: dict) -> dict[str, float]:
-            probs_dec = {int(key): value for key, value in meas_prob.items()}
-            return normalize_data(probs_dec)
+            return normalize_data(IonQJob._rekey_to_bitstrings(meas_prob, num_qubits))
 
         if all(isinstance(value, dict) for value in probabilities.values()):
             return [normalize(probs) for probs in probabilities.values()]
@@ -167,7 +187,7 @@ class IonQJob(QuantumJob):
 
         measurement_counts = self._get_counts(job_data)
         measurement_probabilities = self._transform_measurement_probabilities(
-            job_data["probabilities"]
+            job_data["probabilities"], self._num_qubits(job_data)
         )
         data = GateModelResultData(
             measurement_counts=measurement_counts,
