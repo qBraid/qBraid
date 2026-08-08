@@ -1092,15 +1092,30 @@ def test_format_quantinuum_results(
     mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
     """Test formatting Quantinuum results."""
-    mock_azure_job.get_results.return_value = {"qreg0": ["0", "1", "1"], "qreg1": ["1", "0", "1"]}
+    # Asymmetric on purpose: one outcome must outnumber its reverse, or the
+    # assertion holds under either bit order and pins nothing.
+    mock_azure_job.get_results.return_value = {"qreg0": ["0", "0", "1"], "qreg1": ["1", "1", "0"]}
     mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
 
     result = azure_result_builder._format_quantinuum_results()
 
     assert "counts" in result
     assert "probabilities" in result
-    assert result["counts"] == {"01": 1, "10": 1, "11": 1}
-    assert result["probabilities"] == {"01": 1 / 3, "10": 1 / 3, "11": 1 / 3}
+    # Quantinuum sends c[0] last, so "01" arrives twice and is re-keyed to "10".
+    assert result["counts"] == {"10": 2, "01": 1}
+    assert result["probabilities"] == {"10": 2 / 3, "01": 1 / 3}
+
+
+@patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")
+def test_format_quantinuum_results_mismatched_registers(
+    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
+):
+    """Registers reporting different shot counts must raise, not silently truncate."""
+    mock_azure_job.get_results.return_value = {"qreg0": ["0", "1", "1"], "qreg1": ["1", "0"]}
+    mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
+
+    with pytest.raises(ValueError):
+        azure_result_builder._format_quantinuum_results()
 
 
 def test_format_ionq_results():
