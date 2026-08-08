@@ -150,7 +150,7 @@ def test_invalid_weight(mock_conversion_func, invalid_weight):
 
 
 @pytest.mark.parametrize(
-    "valid_weight,expected_value", [(0.8, np.log(1.25)), (None, np.log(2)), (0, 1e6)]
+    "valid_weight,expected_value", [(0.8, -np.log(0.8)), (None, np.log(2)), (0, 1e6)]
 )
 def test_valid_weight(mock_conversion_func, valid_weight, expected_value):
     """Test the default weight from the conversion function if not specified.
@@ -167,6 +167,17 @@ def test_negative_bias_raises(mock_conversion_func):
     """A negative bias makes edge costs negative, voiding the Dijkstra precondition."""
     with pytest.raises(ValueError, match="non-negative"):
         Conversion("source_pkg", "target_pkg", mock_conversion_func, bias=-0.1)
+
+
+def test_subnormal_weight_cost_stays_finite_and_below_zero_weight_cost(mock_conversion_func):
+    """``log(1/w)`` overflows to inf for subnormal weights; ``-log(w)`` stays finite.
+
+    An inf cost would rank a tiny positive weight *worse* than weight 0 and reintroduce
+    the broken-ordering pathology the finite zero-weight cost exists to avoid.
+    """
+    conversion = Conversion("source_pkg", "target_pkg", mock_conversion_func, weight=5e-324)
+    assert np.isfinite(conversion.weight)
+    assert conversion.weight < 1e6
 
 
 def test_weight_without_specified_and_no_default():

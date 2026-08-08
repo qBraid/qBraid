@@ -58,6 +58,7 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
     braket_circuit, _, measure_map = pytket_braket.braket_convert.tk_to_braket(circuit)
 
     measured_qubits = set()
+    measured_bits = set()
     for command in circuit.get_commands():
         if command.op.type == OpType.Barrier:
             continue
@@ -69,7 +70,16 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
                 "acted on after it has been measured."
             )
         if command.op.type == OpType.Measure:
+            if measured_bits.intersection(command.bits):
+                # pytket's later measurement overwrites the bit; Braket gives every
+                # measurement its own result bit, so converting silently would widen
+                # the register and report both outcomes.
+                raise ProgramConversionError(
+                    "Braket circuits cannot represent measuring two qubits into the "
+                    "same classical bit."
+                )
             measured_qubits.update(command.qubits)
+            measured_bits.update(command.bits)
     # measure_map maps braket qubit id -> pytket bit index; re-add in classical-bit order.
     for braket_qubit, _ in sorted(measure_map.items(), key=lambda item: item[1]):
         braket_circuit.measure(braket_qubit)

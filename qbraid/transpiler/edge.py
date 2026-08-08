@@ -181,9 +181,12 @@ class Conversion:
             # shortest-path search (Dijkstra requires non-negative costs).
             raise ValueError("Bias must be non-negative.")
 
-        # Invert and log transform for positive weight differentiation with rustworkx
+        # Log transform for positive weight differentiation with rustworkx. -log(w), not
+        # log(1/w): the reciprocal overflows to inf for subnormal weights (w < ~1e-308),
+        # which would rank a tiny positive weight worse than weight 0 and reintroduce the
+        # inf costs _ZERO_WEIGHT_COST exists to avoid. -log caps out around 745.
         rx_adjusted_weight = (
-            _ZERO_WEIGHT_COST if effective_weight == 0 else np.log(1 / effective_weight)
+            _ZERO_WEIGHT_COST if effective_weight == 0 else -np.log(effective_weight)
         )
 
         adjusted_weight = rx_adjusted_weight + self._bias

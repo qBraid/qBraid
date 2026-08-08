@@ -275,3 +275,30 @@ def test_pytket_to_braket_remeasured_qubit_raises():
 
     with pytest.raises(ProgramConversionError, match="mid-circuit measurement"):
         pytket_to_braket(tk_circuit)
+
+
+def test_pytket_to_braket_reused_classical_bit_raises():
+    """Measuring two qubits into one classical bit is rejected, not silently widened.
+
+    pytket's later measurement overwrites the bit, but Braket gives every measurement its
+    own result bit -- converting silently would report two outcomes where the source
+    circuit's register holds one.
+    """
+    pytest.importorskip("pytket", reason="pytket not installed")
+    pytest.importorskip("braket", reason="amazon-braket-sdk not installed")
+    from pytket.circuit import Circuit as TKCircuit  # pylint: disable=import-outside-toplevel
+
+    from qbraid.transpiler.conversions.pytket import (  # pylint: disable=import-outside-toplevel
+        pytket_to_braket,
+    )
+    from qbraid.transpiler.exceptions import (  # pylint: disable=import-outside-toplevel
+        ProgramConversionError,
+    )
+
+    tk_circuit = TKCircuit(2, 1)
+    tk_circuit.X(0)
+    tk_circuit.Measure(0, 0)
+    tk_circuit.Measure(1, 0)
+
+    with pytest.raises(ProgramConversionError, match="same classical bit"):
+        pytket_to_braket(tk_circuit)

@@ -110,15 +110,18 @@ def assert_pyquil_readout_intact(program) -> None:
     register = declared.group(1)
 
     measures = [
-        re.fullmatch(r"MEASURE \d+ (\S+)\[(\d+)\]", line)
+        re.fullmatch(r"MEASURE (\d+) (\S+)\[(\d+)\]", line)
         for line in lines
         if line.startswith("MEASURE")
     ]
     assert all(measures), "unparsable MEASURE instruction"
-    targets = {m.group(1) for m in measures}
+    targets = {m.group(2) for m in measures}
     assert targets == {register}, f"MEASURE targets {targets} != declared {register!r}"
-    indices = sorted(int(m.group(2)) for m in measures)
-    assert indices == list(range(NUM_QUBITS)), f"readout bits not distinct/complete: {indices}"
+    # The source measures q[i] into c[i], so any deviation from the identity mapping
+    # means a route permuted the readout -- distinct-and-complete alone would pass that.
+    mapping = sorted((int(m.group(1)), int(m.group(3))) for m in measures)
+    expected = [(index, index) for index in range(NUM_QUBITS)]
+    assert mapping == expected, f"qubit-to-readout-bit mapping permuted: {mapping}"
 
 
 @pytest.fixture(scope="module")

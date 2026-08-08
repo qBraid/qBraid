@@ -726,6 +726,30 @@ def test_max_depth_finds_path_ranked_below_top_n():
     assert len(restricted[0]) == 2
 
 
+def test_unsatisfiable_depth_cap_stays_polynomial():
+    """A depth cap must bound the search, not just filter its output.
+
+    When the cap was a post-filter, a query with no qualifying path kept Yen's hunting
+    through every simple path in the graph before concluding "no path" -- factorial in
+    density. The cap now lives inside each search, so this dense 12-node graph with no
+    direct edge answers immediately.
+    """
+    nodes = 12
+    conversions = [
+        Conversion(f"n{a}", f"n{b}", lambda x: x, 0.9, bias=0.25)
+        for a, b in itertools.permutations(range(nodes), 2)
+        if (a, b) != (0, nodes - 1)
+    ]
+    graph = ConversionGraph(conversions=conversions, require_native=False)
+
+    start = time.perf_counter()
+    with pytest.raises(ConversionPathNotFoundError):
+        graph.find_top_shortest_conversion_paths("n0", f"n{nodes - 1}", top_n=3, max_depth=1)
+    elapsed = time.perf_counter() - start
+
+    assert elapsed < 2.0, f"took {elapsed:.2f}s -- the depth cap is filtering, not bounding"
+
+
 def test_max_depth_with_no_qualifying_path_raises():
     """An unsatisfiable depth cap still reports the limit it could not meet."""
     graph = ConversionGraph(

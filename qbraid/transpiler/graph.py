@@ -324,6 +324,7 @@ class ConversionGraph(rx.PyDiGraph):
         """
         return (self._path_cost(path), len(path), tuple(alias_of[n] for n in path))
 
+    # pylint: disable-next=too-many-arguments
     def _cheapest_path(
         self,
         source_id: int,
@@ -331,6 +332,7 @@ class ConversionGraph(rx.PyDiGraph):
         banned_nodes: frozenset[int] = frozenset(),
         banned_edges: frozenset[tuple[int, int]] = frozenset(),
         initial_key: tuple | None = None,
+        max_nodes: int | None = None,
     ) -> list[int] | None:
         """Return the best-ranked path between two node ids, or None if unreachable.
 
@@ -347,6 +349,13 @@ class ConversionGraph(rx.PyDiGraph):
         same left-to-right float sum :meth:`_rank_key` computes -- costs that are equal in
         exact arithmetic can otherwise differ in the last ulp between the two, making the
         spur search and the final ranking disagree near ties.
+
+        ``max_nodes`` caps the total node count (root prefix included) so a depth limit
+        bounds the search itself. Capped search settles per ``(node, hops)`` state rather
+        than per node: with a budget, a costlier-but-shorter label is not dominated by a
+        cheaper-but-longer one. States admit revisiting walks, but the returned path is
+        always simple -- removing a cycle strictly shrinks the key while staying feasible,
+        so no walk with a repeat can be the first to reach the target.
         """
         if source_id == target_id:
             # Matches rx.all_simple_paths, which reports no simple path from a node to itself.
@@ -355,18 +364,23 @@ class ConversionGraph(rx.PyDiGraph):
         alias_of = self._alias_of()
         start_key = initial_key or (0.0, 1, (alias_of[source_id],))
         heap: list[tuple[tuple, list[int]]] = [(start_key, [source_id])]
-        settled: set[int] = set()
+        settled: set = set()
 
         while heap:
             (cost, hops, aliases), path = heapq.heappop(heap)
             node = path[-1]
             if node == target_id:
                 return path
-            if node in settled:
+            state = node if max_nodes is None else (node, hops)
+            if state in settled:
                 continue
-            settled.add(node)
+            settled.add(state)
             for _, successor, data in self.out_edges(node):
-                if successor in settled or successor in banned_nodes:
+                if successor in banned_nodes:
+                    continue
+                if max_nodes is None and successor in settled:
+                    continue
+                if max_nodes is not None and hops + 1 > max_nodes:
                     continue
                 if (node, successor) in banned_edges:
                     continue
@@ -391,26 +405,24 @@ class ConversionGraph(rx.PyDiGraph):
         returns the deviation minimizing the full candidate's ranking key -- the property
         the proof actually uses.
 
-        Paths deeper than ``max_depth`` hops are skipped rather than counted against ``k``, so
-        a depth limit cannot hide a qualifying path that merely ranks below the k-th.
+        ``max_depth`` bounds the search itself, via each search's node-count cap, rather
+        than filtering afterward: with a filter, a depth-capped query whose cheap paths
+        were all too deep degenerated into enumerating every simple path in the graph.
+        Every accepted path qualifies by construction, so a depth limit also cannot hide
+        a qualifying path that merely ranks below the k-th.
         """
         if k <= 0:
             return
 
-        best = self._cheapest_path(source_id, target_id)
+        max_nodes = None if max_depth is None else max_depth + 1
+        best = self._cheapest_path(source_id, target_id, max_nodes=max_nodes)
         if best is None:
             return
 
         alias_of = self._alias_of()
         accepted, candidates = [best], []
-        yielded = 0
-
-        def qualifies(path: list[int]) -> bool:
-            return max_depth is None or len(path) - 1 <= max_depth
-
-        if qualifies(best):
-            yield best
-            yielded += 1
+        yield best
+        yielded = 1
 
         while yielded < k:
             previous = accepted[-1]
@@ -427,6 +439,7 @@ class ConversionGraph(rx.PyDiGraph):
                     frozenset(root[:-1]),
                     banned_edges,
                     initial_key=self._rank_key(root, alias_of),
+                    max_nodes=max_nodes,
                 )
                 if spur is None:
                     continue
@@ -439,9 +452,8 @@ class ConversionGraph(rx.PyDiGraph):
 
             candidates.sort(key=lambda path: self._rank_key(path, alias_of))
             accepted.append(candidates.pop(0))
-            if qualifies(accepted[-1]):
-                yield accepted[-1]
-                yielded += 1
+            yield accepted[-1]
+            yielded += 1
 
     def find_shortest_conversion_path(self, source: str, target: str) -> list[Callable]:
         """
