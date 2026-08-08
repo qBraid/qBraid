@@ -150,8 +150,17 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.88), ("qiskit", 0.95)]
+# pytket measures a deterministic 21/24 = 0.875: CPGate, U1Gate, and RGate fail on known
+# qrisp ``pytket_converter`` bugs (u1 angles divided by pi twice; cp mapped to CRz, a
+# different gate -- both marked "# bugged" upstream). MCRXGate is skipped for this target
+# only: qrisp's gray-code synthesis emits one of two valid decompositions depending on
+# qrisp-internal session state (cirq/qiskit convert both correctly), and the upstream
+# converter mishandles one of them -- so under xdist the param is a scheduling lottery
+# that can never signal a qbraid regression.
+ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.87), ("qiskit", 0.95)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
+
+TARGET_GATE_SKIPS = {"pytket": {"MCRXGate"}}
 
 
 def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
@@ -170,14 +179,17 @@ def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
     """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
+    skips = TARGET_GATE_SKIPS.get(target, set())
     failures = {}
     for gate_name in qrisp_circuits:
+        if gate_name in skips:
+            continue
         try:
             convert_from_qrisp_to_x(target, gate_name, qrisp_circuits, conversion_graph)
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
-    total_tests = len(qrisp_circuits)
+    total_tests = len([gate for gate in qrisp_circuits if gate not in skips])
     nb_fails = len(failures)
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
