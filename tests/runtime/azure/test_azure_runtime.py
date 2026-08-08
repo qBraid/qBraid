@@ -1092,18 +1092,26 @@ def test_format_quantinuum_results(
     mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
     """Test formatting Quantinuum results."""
-    # Asymmetric on purpose: one outcome must outnumber its reverse, or the
-    # assertion holds under either bit order and pins nothing.
-    mock_azure_job.get_results.return_value = {"qreg0": ["0", "0", "1"], "qreg1": ["1", "1", "0"]}
+    # Asymmetric on purpose: one outcome must outnumber its reverse, or the assertion
+    # holds under either bit order and pins nothing. Registers are different widths so
+    # the concatenation boundary is observable too.
+    #
+    # NB: no production job has ever used more than one classical register, so the
+    # relative order of registers here reflects the implementation, not a convention
+    # verified against a real device. Single-register behaviour is the verified part.
+    mock_azure_job.get_results.return_value = {
+        "qreg0": ["01", "01", "10"],
+        "qreg1": ["1", "1", "0"],
+    }
     mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
 
     result = azure_result_builder._format_quantinuum_results()
 
     assert "counts" in result
     assert "probabilities" in result
-    # Quantinuum sends c[0] last, so "01" arrives twice and is re-keyed to "10".
-    assert result["counts"] == {"10": 2, "01": 1}
-    assert result["probabilities"] == {"10": 2 / 3, "01": 1 / 3}
+    # Quantinuum sends c[0] last, so "011" arrives twice and is re-keyed to "110".
+    assert result["counts"] == {"110": 2, "001": 1}
+    assert result["probabilities"] == {"110": 2 / 3, "001": 1 / 3}
 
 
 @patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")

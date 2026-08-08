@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 from qbraid_core._import import LazyLoader
 
+from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
@@ -36,6 +37,9 @@ if TYPE_CHECKING:
     import qbraid.runtime.ionq
 
 qbraid_rt_ionq: qbraid.runtime.ionq = LazyLoader("qbraid_rt_ionq", globals(), "qbraid.runtime.ionq")
+
+# Sanity bound on the provider-reported register width, which sizes every formatted key.
+MAX_QUBITS = 10_000
 
 
 class CostValue(TypedDict):
@@ -110,9 +114,32 @@ class IonQJob(QuantumJob):
 
     @staticmethod
     def _num_qubits(result: dict[str, Any]) -> Optional[int]:
-        """Return the width of the submitted register, which IonQ reports in the job stats."""
+        """Return the width of the submitted register, which IonQ reports in the job stats.
+
+        The width sizes every formatted key, so an implausible value is treated as absent
+        rather than trusted; callers then fall back to the widest observed outcome.
+        """
         num_qubits = (result.get("stats") or {}).get("qubits")
-        return num_qubits if isinstance(num_qubits, int) and num_qubits > 0 else None
+        if not isinstance(num_qubits, int) or isinstance(num_qubits, bool):
+            return None
+        if not 1 <= num_qubits <= MAX_QUBITS:
+            logger.warning(
+                "Ignoring implausible IonQ register width %s; inferring it from the results.",
+                num_qubits,
+            )
+            return None
+        return num_qubits
+
+    @staticmethod
+    def _widest_outcome(probabilities: Union[MeasProb, dict[str, MeasProb]]) -> int:
+        """Return the bit length of the largest state index across one or all circuits."""
+        histograms = (
+            probabilities.values()
+            if probabilities and all(isinstance(v, dict) for v in probabilities.values())
+            else (probabilities,)
+        )
+        keys = [int(key) for histogram in histograms for key in histogram]
+        return max(keys, default=0).bit_length() or 1
 
     @staticmethod
     def _rekey_to_bitstrings(meas_prob: dict[str, float], num_qubits: Optional[int]) -> MeasProb:
@@ -136,6 +163,10 @@ class IonQJob(QuantumJob):
             raise ValueError("Missing shots or probabilities in result data.")
 
         num_qubits = IonQJob._num_qubits(result)
+        if num_qubits is None:
+            # Infer once across the whole batch, so circuits that happened to sample
+            # narrower outcomes still report the same width as their siblings.
+            num_qubits = IonQJob._widest_outcome(probabilities)
 
         def convert_to_counts(meas_prob: dict[str, float]) -> dict[str, int]:
             """Helper function to normalize probabilities and convert to counts."""
@@ -186,8 +217,10 @@ class IonQJob(QuantumJob):
         job_data["shots"] = job_data.get("shots", self._cache_metadata.get("shots"))
 
         measurement_counts = self._get_counts(job_data)
+        # Same width the counts used, so both views key on identical bitstrings.
+        width = self._num_qubits(job_data) or self._widest_outcome(raw_probs)
         measurement_probabilities = self._transform_measurement_probabilities(
-            job_data["probabilities"], self._num_qubits(job_data)
+            job_data["probabilities"], width
         )
         data = GateModelResultData(
             measurement_counts=measurement_counts,

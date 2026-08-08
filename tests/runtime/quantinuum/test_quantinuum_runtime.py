@@ -450,7 +450,9 @@ class TestQuantinuumJob:
         from pytket.circuit import BasisOrder
 
         download = MagicMock()
-        download.get_counts.return_value = {(0, 0): 512, (1, 1): 488}
+        # Asymmetric outcomes: "00"/"11" are their own reverses and would pass under
+        # either basis, pinning nothing about the order actually returned.
+        download.get_counts.return_value = {(0, 1): 512, (1, 0): 488}
         result_item = MagicMock()
         result_item.download_result.return_value = download
         mock_results.return_value = [result_item]
@@ -463,7 +465,8 @@ class TestQuantinuumJob:
         result = job.result()
 
         assert result.success is True
-        assert result.data.measurement_counts == {"00": 512, "11": 488}
+        # ilo already yields c[0] first, so the tuple is joined without reordering.
+        assert result.data.measurement_counts == {"01": 512, "10": 488}
         download.get_counts.assert_called_once_with(basis=BasisOrder.ilo)
 
     @patch("qnexus.jobs.results")

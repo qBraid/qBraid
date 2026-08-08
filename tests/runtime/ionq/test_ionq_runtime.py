@@ -697,6 +697,31 @@ def test_get_counts_falls_back_to_widest_outcome_without_stats():
     assert IonQJob._get_counts(result) == {"100": 50, "101": 50}
 
 
+@pytest.mark.parametrize("qubits", [0, -1, 10_001, True, "6", None, 1.5])
+def test_num_qubits_rejects_implausible_widths(qubits):
+    """The width sizes every formatted key, so a bad value falls back rather than being trusted."""
+    assert IonQJob._num_qubits({"stats": {"qubits": qubits}}) is None
+
+
+def test_num_qubits_accepts_a_sane_width():
+    assert IonQJob._num_qubits({"stats": {"qubits": 6}}) == 6
+
+
+def test_get_counts_uses_one_width_across_a_batch():
+    """Without stats, circuits that sampled narrower outcomes still match their siblings."""
+    result = {
+        "shots": 100,
+        "probabilities": {"c0": {"5": 1.0}, "c1": {"1": 1.0}},
+    }
+    assert IonQJob._get_counts(result) == [{"101": 100}, {"100": 100}]
+
+
+def test_get_counts_falls_back_when_width_is_absurd():
+    """An out-of-range width is ignored in favour of the observed outcomes."""
+    result = {"shots": 100, "probabilities": {"1": 1.0}, "stats": {"qubits": 10**9}}
+    assert IonQJob._get_counts(result) == {"1": 100}
+
+
 def test_transform_measurement_probabilities_pads_keys():
     """Probabilities carry the same keys as the counts they are derived from."""
     probabilities = IonQJob._transform_measurement_probabilities({"1": 1.0}, 6)

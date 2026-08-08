@@ -440,10 +440,20 @@ def test_result_from_job(mock_runtime_job, mock_runtime_result, mock_result_meta
     assert result.details.get("backend_version") == mock_result_metadata["backend_version"]
 
 
-def test_result_get_counts(mock_runtime_result):
+@pytest.mark.parametrize(
+    "raw_counts,expected",
+    [
+        ({"01": 9, "10": 1, "11": 4, "00": 6}, {"10": 9, "01": 1, "11": 4, "00": 6}),
+        # Qiskit lists the last-declared register first, so reversing the whole key
+        # restores declaration order along with the bits inside each register.
+        ({"10 1": 7, "01 0": 3}, {"1 01": 7, "0 10": 3}),
+    ],
+)
+def test_result_get_counts(mock_runtime_result, raw_counts, expected):
     """Test getting raw counts from a Qiskit result."""
+    mock_runtime_result.get_counts.side_effect = None
+    mock_runtime_result.get_counts.return_value = raw_counts
     qr = QiskitGateModelResultBuilder(mock_runtime_result)
-    expected = {"10": 9, "01": 1, "11": 4, "00": 6}
     assert qr.get_counts() == expected
 
 

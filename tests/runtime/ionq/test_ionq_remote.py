@@ -50,16 +50,20 @@ def test_ionq_multicircuit_job():
     qiskit_ghz.cx(0, 1)
     qiskit_ghz.cx(0, 2)
 
-    cirq_bell = cirq.Circuit()
+    # Deliberately not a Bell state: {"00", "11"} is symmetric under bit reversal and
+    # would stay green if the IonQ bit order regressed. X on q0 alone is asymmetric,
+    # so the order and the batch widening are both pinned. The identity keeps q1 in
+    # the circuit so it stays two qubits wide.
+    cirq_circuit = cirq.Circuit()
     q0, q1 = cirq.LineQubit.range(2)
-    cirq_bell.append(cirq.H(q0))
-    cirq_bell.append(cirq.CNOT(q0, q1))
+    cirq_circuit.append(cirq.X(q0))
+    cirq_circuit.append(cirq.I(q1))
 
     device = provider.get_device("simulator")
 
     assert isinstance(device, IonQDevice)
 
-    job = device.run([qiskit_ghz, cirq_bell], name="qBraid Integration Test", shots=1000)
+    job = device.run([qiskit_ghz, cirq_circuit], name="qBraid Integration Test", shots=1000)
 
     try:
         job.wait_for_final_state(timeout=60)
@@ -83,5 +87,6 @@ def test_ionq_multicircuit_job():
 
     counts = result_data.get_counts()
 
-    # qubit 0 is leftmost, so the 2-qubit Bell result widens to the right
-    assert counts == [{"000": 500, "111": 500}, {"000": 500, "110": 500}]
+    # qubit 0 is leftmost and the 2-qubit result widens to the right, so X on q0
+    # of a 2-qubit circuit reads "100" once padded to the batch width.
+    assert counts == [{"000": 500, "111": 500}, {"100": 1000}]
