@@ -31,6 +31,8 @@ from qbraid.runtime.postprocess import (
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_data,
+    normalize_tuples,
+    reverse_bit_order,
 )
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import (
@@ -217,8 +219,50 @@ def test_format_counts_empty_input():
 def test_normalize_different_key_lengths():
     """Test normalization of measurement counts with different key lengths."""
     measurements = [{"0": 10, "1": 15}, {"00": 5, "01": 8, "10": 12}]
-    expected = [{"00": 10, "01": 15}, {"00": 5, "01": 8, "10": 12}]
+    # qubit 0 is leftmost, so "1" widens to "10", not "01"
+    expected = [{"00": 10, "10": 15}, {"00": 5, "01": 8, "10": 12}]
     assert normalize_batch_bit_lengths(measurements) == expected
+
+
+@pytest.mark.parametrize(
+    "data,expected",
+    [
+        ({"001": 90, "011": 10}, {"100": 90, "110": 10}),
+        ({"1": 5}, {"1": 5}),
+        ({}, {}),
+        # space-separated keys reverse whole, flipping register order with the bits
+        ({"10 1": 100}, {"1 01": 100}),
+    ],
+)
+def test_reverse_bit_order(data, expected):
+    """Reversing moves qubit 0 from the rightmost to the leftmost position."""
+    assert reverse_bit_order(data) == expected
+
+
+def test_reverse_bit_order_batch():
+    """A list of histograms is reversed element-wise."""
+    assert reverse_bit_order([{"01": 1}, {"110": 2}]) == [{"10": 1}, {"011": 2}]
+
+
+def test_reverse_bit_order_is_an_involution():
+    """Applying it twice returns the original keys."""
+    data = {"0110": 3, "1000": 7}
+    assert reverse_bit_order(reverse_bit_order(data)) == data
+
+
+def test_normalize_widens_on_the_right():
+    """Short keys are missing their highest qubits, which sit on the right."""
+    assert normalize_bit_lengths({"1": 4, "00": 6}) == {"10": 4, "00": 6}
+
+
+def test_normalize_accumulates_colliding_keys():
+    """Widening can map two keys onto one; neither count may be dropped."""
+    assert normalize_bit_lengths({"1": 3, "10": 4}) == {"10": 7}
+
+
+def test_normalize_tuples_pads_on_the_right():
+    """Measurement rows widen on the right, matching the bitstring keys."""
+    assert normalize_tuples([[(1,)], [(1, 1)]]) == [[(1, 0)], [(1, 1)]]
 
 
 def test_normalize_same_key_lengths():
@@ -245,7 +289,7 @@ def test_normalize_empty_dicts():
 def test_normalize_single_dict():
     """Test normalization of a single dict."""
     measurements = {"0": 2, "1": 3, "10": 4, "11": 1}
-    expected = {"00": 2, "01": 3, "10": 4, "11": 1}
+    expected = {"00": 2, "10": 4 + 3, "11": 1}
     assert normalize_bit_lengths(measurements) == expected
 
 

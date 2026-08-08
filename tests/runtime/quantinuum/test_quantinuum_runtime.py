@@ -464,7 +464,7 @@ class TestQuantinuumJob:
 
         assert result.success is True
         assert result.data.measurement_counts == {"00": 512, "11": 488}
-        download.get_counts.assert_called_once_with(basis=BasisOrder.dlo)
+        download.get_counts.assert_called_once_with(basis=BasisOrder.ilo)
 
     @patch("qnexus.jobs.results")
     def test_result_batch(self, mock_results):

@@ -83,4 +83,5 @@ def test_ionq_multicircuit_job():
 
     counts = result_data.get_counts()
 
-    assert counts == [{"000": 500, "111": 500}, {"000": 500, "011": 500}]
+    # qubit 0 is leftmost, so the 2-qubit Bell result widens to the right
+    assert counts == [{"000": 500, "111": 500}, {"000": 500, "110": 500}]

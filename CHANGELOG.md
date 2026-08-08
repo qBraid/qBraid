@@ -34,6 +34,7 @@ Writing an entry:
 - Unit tests now run in parallel (`pytest-xdist -n auto`), test collection is made deterministic so xdist workers agree (set-derived `parametrize` inputs are sorted), and CI collects coverage only on the job that uploads to Codecov — roughly halving PR CI wall time with no checks removed
 - Improved the error raised by `OpenQuantumDevice.submit` when the user has no organizations: it now points at accepting the Open Quantum terms of use rather than only reporting "No organization found for user." ([#1279](https://github.com/qBraid/qBraid/pull/1279))
 - CI workflows install `tox-uv`, so tox environments are built with the much faster `uv` installer instead of pip; local tox usage is unaffected unless `tox-uv` is installed
+- **Breaking:** measurement bitstrings now place qubit 0 first (leftmost) on every provider, matching Amazon Braket, OQC, Rigetti and CUDA-Q. Counts, probabilities and `measurements` arrays from `aws`, `aqt`, `ibm`, `ionq`, `openquantum`, `origin`, `quantinuum` and Azure's IonQ/Quantinuum paths are reversed relative to previous releases, and keys narrower than the register now widen to the right. Results from those providers must be re-read against the new order; `oqc`, `rigetti` and `qbraid` native devices are unchanged
 
 ### Deprecated
 

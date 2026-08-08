@@ -118,13 +118,13 @@ class IonQJob(QuantumJob):
     def _rekey_to_bitstrings(meas_prob: dict[str, float], num_qubits: Optional[int]) -> MeasProb:
         """Rekey a histogram from IonQ's decimal state indices to fixed-width bitstrings.
 
-        Qubit 0 is the least significant bit, so it lands rightmost, matching the
-        convention of every other qBraid route. Without ``num_qubits`` the width
-        falls back to the largest observed outcome, which is only as wide as the
+        Qubit 0 is the least significant bit of IonQ's index, so the formatted integer is
+        reversed to put it first, matching every other qBraid route. Without ``num_qubits``
+        the width falls back to the largest observed outcome, which is only as wide as the
         shots happened to reach.
         """
         width = num_qubits or max((int(key) for key in meas_prob), default=0).bit_length() or 1
-        return {format(int(key), f"0{width}b"): value for key, value in meas_prob.items()}
+        return {format(int(key), f"0{width}b")[::-1]: value for key, value in meas_prob.items()}
 
     @staticmethod
     def _get_counts(result: dict[str, Any]) -> Union[MeasCount, list[MeasCount]]:

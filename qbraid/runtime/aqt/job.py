@@ -60,15 +60,14 @@ def _samples_to_counts(
 
     The arnica finished result maps each circuit index to a list of shots, where each shot is a
     list of per-qubit measurement outcomes ordered ``[q0, q1, ...]``, e.g.
-    ``{0: [[1, 0], [1, 1], ...]}``. Each sample is reversed so the bitstring follows qBraid's
-    little-endian convention (qubit 0 as the least-significant / rightmost bit), matching the AWS
-    result builder.
+    ``{0: [[1, 0], [1, 1], ...]}``. That order already matches qBraid's convention of qubit 0
+    first, so samples are joined as-is.
     """
     per_circuit: list[MeasCount] = []
     for index in sorted(result, key=int):
         counts: MeasCount = {}
         for sample in result[index]:
-            bitstring = "".join(str(bit) for bit in reversed(sample))
+            bitstring = "".join(str(bit) for bit in sample)
             counts[bitstring] = counts.get(bitstring, 0) + 1
         per_circuit.append(counts)
 

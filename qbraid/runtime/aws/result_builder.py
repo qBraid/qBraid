@@ -68,7 +68,7 @@ class BraketGateModelResultBuilder:
         Returns:
             2D numpy array of measurement results. If partial measurements were used,
             the array is filtered to include only the originally measured qubits.
-            The qubit order is reversed to match qBraid conventions.
+            Column j holds qubit j, matching character j of the counts bitstrings.
         """
         result: GateModelQuantumTaskResult = self._result
         measurements = result.measurements
@@ -76,17 +76,17 @@ class BraketGateModelResultBuilder:
         if self.partial_measurement_qubits:
             measurements = marginal_measurement(measurements, self.partial_measurement_qubits)
 
-        # Reverse qubit order to match qBraid conventions
-        return np.flip(measurements, 1)
+        return measurements
 
     def get_counts(self) -> dict[str, int]:
         """
         Get measurement counts histogram with partial measurement support.
 
         Returns:
-            Dictionary mapping bitstrings (e.g., "101") to their counts. The bitstring
-            order is reversed to match qBraid conventions. If partial measurements were
-            used, only the counts for the originally measured qubits are returned.
+            Dictionary mapping bitstrings (e.g., "101") to their counts, with qubit 0
+            first. Braket already orders bits that way, so no reordering is applied.
+            If partial measurements were used, only the counts for the originally
+            measured qubits are returned.
         """
         result: GateModelQuantumTaskResult = self._result
         braket_counts = dict(result.measurement_counts)
@@ -95,12 +95,7 @@ class BraketGateModelResultBuilder:
         if self.partial_measurement_qubits:
             braket_counts = marginal_count(braket_counts, self.partial_measurement_qubits)
 
-        # Convert to qBraid format with reversed bitstring order
-        qbraid_counts = {}
-        for key in braket_counts:
-            str_key = "".join(reversed([str(i) for i in key]))
-            qbraid_counts[str_key] = braket_counts[key]
-        return qbraid_counts
+        return {"".join(str(i) for i in key): value for key, value in braket_counts.items()}
 
 
 class BraketAhsResultBuilder:

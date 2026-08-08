@@ -25,7 +25,7 @@ from qiskit.exceptions import QiskitError
 from qiskit.primitives.containers import PrimitiveResult
 
 from qbraid._logging import logger
-from qbraid.runtime.postprocess import normalize_tuples
+from qbraid.runtime.postprocess import normalize_tuples, reverse_bit_order
 
 if TYPE_CHECKING:
     from qiskit.result import Result
@@ -39,10 +39,14 @@ class QiskitGateModelResultBuilder:
         self._result = result
 
     def _format_measurements(self, memory_list: list[str]) -> list[list[int]]:
-        """Format the measurements into int for the given memory list"""
+        """Format the measurements into int for the given memory list.
+
+        Reversed for the same reason as the counts keys, so that column j of a shot
+        and character j of its bitstring refer to the same qubit.
+        """
         formatted_meas = []
         for str_shot in memory_list:
-            lst_shot = [int(x) for x in list(str_shot)]
+            lst_shot = [int(x) for x in reversed(list(str_shot))]
             formatted_meas.append(lst_shot)
         return formatted_meas
 
@@ -70,8 +74,13 @@ class QiskitGateModelResultBuilder:
         return np.array(qbraid_meas)
 
     def get_counts(self) -> dict[str, int] | list[dict[str, int]]:
-        """Returns the histogram data of the run"""
+        """Returns the histogram data of the run.
+
+        Qiskit reports qubit 0 as the rightmost bit and lists the last-declared
+        register first; reversing the whole key corrects both at once.
+        """
         if isinstance(self._result, PrimitiveResult):
             counts = [pub_result.join_data().get_counts() for pub_result in self._result]
+            counts = [reverse_bit_order(count) for count in counts]
             return counts[0] if len(counts) == 1 else counts
-        return self._result.get_counts()
+        return reverse_bit_order(self._result.get_counts())

@@ -501,7 +501,7 @@ class TestOriginJob:
         assert isinstance(probs, list)
         assert len(probs) == 2
         assert probs[0] == {"00": 0.5, "11": 0.5}
-        assert probs[1] == {"00": 0.3, "01": 0.7}
+        assert probs[1] == {"00": 0.3, "10": 0.7}
 
     def test_result_batch_counts(self):
         mock_job = _make_mock_qcloud_job(
@@ -522,7 +522,7 @@ class TestOriginJob:
         assert isinstance(counts, list)
         assert len(counts) == 2
         assert counts[0] == {"00": 500, "11": 500}
-        assert counts[1] == {"00": 300, "01": 700}
+        assert counts[1] == {"00": 300, "10": 700}
 
     def test_result_no_device_uses_fallback_id(self):
         mock_job = _make_mock_qcloud_job(

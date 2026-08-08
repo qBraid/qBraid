@@ -188,12 +188,11 @@ class QuantinuumJob(QuantumJob):
         if not results:
             raise QuantinuumJobError(f"No results available for Quantinuum job {self.id}")
 
-        # Quantinuum / pytket use least-significant-bit-first ordering by default.
-        # Convert to most-significant-bit-first (dlo = descending lexicographic order)
-        # for consistency with other qBraid providers.
+        # ilo (increasing lexicographic order) puts c[0] first, matching qBraid's
+        # convention; dlo would place the highest-index bit there instead.
         all_counts: list[dict[str, int]] = []
         for result_item in results:
-            counts = result_item.download_result().get_counts(basis=BasisOrder.dlo)
+            counts = result_item.download_result().get_counts(basis=BasisOrder.ilo)
             all_counts.append({"".join(map(str, k)): v for k, v in counts.items()})
 
         measurement_counts = all_counts[0] if len(all_counts) == 1 else all_counts
