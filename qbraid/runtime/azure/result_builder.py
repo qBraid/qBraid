@@ -204,7 +204,13 @@ class AzureResultBuilder:
             if classical_register != "access_token"
         ]
         counts = {}
-        combined_bitstrings = ["".join(bitstrings) for bitstrings in zip(*all_bitstrings)]
+        # Quantinuum reports c[0] as the rightmost bit; qBraid puts it first. Confirmed
+        # against production jobs whose ideal outcome distinguishes the two orders.
+        # strict=True so registers reporting different shot counts raise rather than
+        # zip truncating to the shortest and silently dropping shots.
+        combined_bitstrings = [
+            "".join(bitstrings)[::-1] for bitstrings in zip(*all_bitstrings, strict=True)
+        ]
         shots = len(combined_bitstrings)
 
         for bitstring in set(combined_bitstrings):

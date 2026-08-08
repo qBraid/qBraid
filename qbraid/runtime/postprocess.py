@@ -23,6 +23,36 @@ from math import isclose
 from typing import Any, Union
 
 
+def reverse_bit_order(
+    data: Union[dict[str, Any], list[dict[str, Any]]],
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
+    """
+    Reverses each bitstring key, moving qubit 0 from the rightmost to the leftmost position.
+
+    Used by providers whose vendor reports qubit 0 as the least significant bit, to reach
+    qBraid's convention of qubit 0 first. Space-separated keys are reversed whole, so the
+    register order flips along with the bits — which is what vendors that emit the
+    last-declared register first require.
+
+    Args:
+        data: A counts or probabilities dictionary, or a list of them for batch results.
+
+    Returns:
+        The same mapping with each key reversed.
+
+    Examples:
+        >>> reverse_bit_order({"001": 90, "011": 10})
+        {'100': 90, '110': 10}
+
+        >>> reverse_bit_order({"10 1": 100})
+        {'1 01': 100}
+    """
+    if isinstance(data, list):
+        return [reverse_bit_order(datum) for datum in data]
+
+    return {key[::-1]: value for key, value in data.items()}
+
+
 def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
     """
     Normalizes the bit lengths of binary keys in measurement count dictionaries
@@ -58,8 +88,11 @@ def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict
     for counts in measurements:
         normalized_counts = {}
         for key, value in counts.items():
-            normalized_key = key.zfill(max_bit_length)
-            normalized_counts[normalized_key] = value
+            # Qubit 0 is the leftmost character, so a short key is missing its
+            # highest qubits and therefore pads on the right.
+            normalized_key = key.ljust(max_bit_length, "0")
+            # Widening can map two keys onto one; accumulate rather than drop a count.
+            normalized_counts[normalized_key] = normalized_counts.get(normalized_key, 0) + value
         normalized_counts_list.append(normalized_counts)
 
     return normalized_counts_list
@@ -224,7 +257,7 @@ def counts_to_probabilities(
 def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tuple[int, ...]]]:
     """
     Normalizes lists of tuples in a list to have the same tuple length across all entries
-    by padding shorter tuples with zeros on the left.
+    by padding shorter tuples with zeros on the right, since qubit 0 comes first.
 
     Args:
         measurements (list[list[tuple[int, ...]]]): A list of lists containing tuples
@@ -232,7 +265,7 @@ def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tup
 
     Returns:
         list[list[tuple[int, ...]]]: A new list where each sublist's tuples have normalized
-            lengths, preserving the binary significance of the numbers.
+            lengths, preserving each qubit's column position.
     """
     max_tuple_length = max(len(tup) for sublist in measurements for tup in sublist)
 
@@ -241,7 +274,7 @@ def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tup
         normalized_sublist = []
         for tup in sublist:
             current_tuple = tuple(tup) if isinstance(tup, list) else tup
-            padded_tuple = (0,) * (max_tuple_length - len(current_tuple)) + current_tuple
+            padded_tuple = current_tuple + (0,) * (max_tuple_length - len(current_tuple))
             normalized_sublist.append(padded_tuple)
         normalized_measurements.append(normalized_sublist)
 

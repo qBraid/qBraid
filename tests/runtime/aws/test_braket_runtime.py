@@ -731,7 +731,7 @@ def test_result_measurements():
     mock_result = MagicMock()
     mock_result.measurements = mock_measurements
     result = BraketGateModelResultBuilder(mock_result)
-    expected_output = np.array([[1, 1, 0], [1, 0, 1]])
+    expected_output = np.array([[0, 1, 1], [1, 0, 1]])
     np.testing.assert_array_equal(result.measurements(), expected_output)
 
 
@@ -741,7 +741,7 @@ def test_result_get_counts():
     mock_result = MagicMock()
     mock_result.measurement_counts = mock_measurement_counts
     result = BraketGateModelResultBuilder(mock_result)
-    expected_output = {"110": 10, "101": 5}
+    expected_output = {"011": 10, "101": 5}
     assert result.get_counts() == expected_output
 
 
@@ -755,8 +755,8 @@ def test_result_measurements_with_partial_measurements():
     partial_measurement_qubits = [0, 2]
     result = BraketGateModelResultBuilder(mock_result, partial_measurement_qubits)
 
-    # Should return only measurements for qubits 0 and 2, with reversed order
-    expected_output = np.array([[1, 0], [1, 1]])  # Reversed: [[0, 1], [1, 1]]
+    # Only qubits 0 and 2, in qubit order
+    expected_output = np.array([[0, 1], [1, 1]])
     np.testing.assert_array_equal(result.measurements(), expected_output)
 
 
@@ -770,8 +770,8 @@ def test_result_get_counts_with_partial_measurements():
     partial_measurement_qubits = [0, 2]
     result = BraketGateModelResultBuilder(mock_result, partial_measurement_qubits)
 
-    # Should marginalize to qubits 0 and 2: "01": 10+3=13, "11": 5, then reverse
-    expected_output = {"10": 13, "11": 5}
+    # Marginalized to qubits 0 and 2, qubit 0 first
+    expected_output = {"01": 13, "11": 5}
     assert result.get_counts() == expected_output
 
 

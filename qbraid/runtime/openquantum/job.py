@@ -25,6 +25,7 @@ from qbraid_core._import import LazyLoader
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.postprocess import reverse_bit_order
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
@@ -101,7 +102,8 @@ class OpenQuantumJob(QuantumJob):
             raise QbraidRuntimeError(f"Job failed: {detail}")
 
         results = self.session.download_job_output(self.id)
-        data = GateModelResultData(measurement_counts=results)
+        # Open Quantum reports qubit 0 as the rightmost bit; qBraid puts it first.
+        data = GateModelResultData(measurement_counts=reverse_bit_order(results))
         device_id = self._device.id if self._device else job_data.get("backend_class_id", "")
 
         # Add readable execution plan and queue priority names

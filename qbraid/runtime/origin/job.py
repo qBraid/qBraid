@@ -26,6 +26,7 @@ from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.postprocess import reverse_bit_order
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
@@ -151,9 +152,11 @@ class OriginJob(QuantumJob):
         counts: dict[str, int] | list[dict[str, int]] | None = None
         probabilities: dict[str, float] | list[dict[str, float]] | None = None
 
+        # pyqpanda3 reports qubit 0 as the rightmost bit; qBraid puts it first.
         try:
             counts_list: list[dict[str, int]] = origin_result.get_counts_list()
             if counts_list:
+                counts_list = [reverse_bit_order(item) for item in counts_list]
                 counts = counts_list[0] if len(counts_list) == 1 else counts_list
         except RuntimeError as exc:
             logger.error("Failed to extract counts from OriginQ job: %s", exc)
@@ -161,6 +164,7 @@ class OriginJob(QuantumJob):
         try:
             probs_list: list[dict[str, float]] = origin_result.get_probs_list()
             if probs_list:
+                probs_list = [reverse_bit_order(item) for item in probs_list]
                 probabilities = probs_list[0] if len(probs_list) == 1 else probs_list
         except RuntimeError as exc:
             logger.error("Failed to extract probabilities from OriginQ job: %s", exc)
