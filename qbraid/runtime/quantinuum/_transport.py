@@ -46,7 +46,21 @@ DEFAULT_HTTP_TIMEOUT_SECONDS = 60.0
 #: is a real failure and is raised immediately.
 RETRYABLE_STATUS_CODES = frozenset({502, 503, 504})
 
+#: How long an idle pooled connection may be reused for.
+#:
+#: NEXUS closes idle keep-alive connections server-side. httpx's default expiry
+#: (5s) is not the problem; qnexus leaves the pool at whatever httpx defaults to
+#: and never revalidates, so whenever the client's window outlives the server's
+#: the next request grabs a socket NEXUS has already closed and fails with
+#: ``RemoteProtocolError: Server disconnected without sending a response`` —
+#: observed on submits spaced 35-60s apart against an otherwise healthy device.
+#: Expiring first turns that race into a cheap reconnect. Reconnect cost is
+#: negligible here: a NEXUS submit blocks for seconds to minutes in compile, so
+#: an occasional extra TLS handshake does not register.
+DEFAULT_KEEPALIVE_EXPIRY_SECONDS = 15.0
+
 _HTTP_TIMEOUT_ENV = "QUANTINUUM_NEXUS_HTTP_TIMEOUT"
+_KEEPALIVE_EXPIRY_ENV = "QUANTINUUM_NEXUS_KEEPALIVE_EXPIRY"
 
 
 class QuantinuumDeviceError(QbraidRuntimeError):
@@ -152,10 +166,38 @@ def ensure_bounded_client() -> None:
             client.timeout.pool,
         )
     )
+    bound_keepalive_expiry(client)
+
     if not explicit and not unbounded:
         return
     seconds = positive_float_env(_HTTP_TIMEOUT_ENV, DEFAULT_HTTP_TIMEOUT_SECONDS)
     client.timeout = httpx.Timeout(seconds)
+
+
+def bound_keepalive_expiry(client) -> None:
+    """Stop the client reusing a connection NEXUS has already closed.
+
+    This prevents the failure that ``retry_transient`` would otherwise have to
+    absorb, and unlike a retry it is unambiguous: a connection dropped before
+    the request is sent cannot have been half-applied server-side.
+
+    httpx fixes pool limits at construction and exposes no setter, and the
+    client belongs to qnexus, so the expiry has to be written onto the live
+    pool. That is private layout and may move, so every step is guarded: if the
+    structure is not what we expect the function logs and returns, leaving the
+    default expiry in place. Failing to tune a connection pool must never be
+    the reason a job submission fails.
+
+    Args:
+        client: The shared ``httpx.Client`` qnexus built.
+    """
+    seconds = positive_float_env(_KEEPALIVE_EXPIRY_ENV, DEFAULT_KEEPALIVE_EXPIRY_SECONDS)
+    pool = getattr(getattr(client, "_transport", None), "_pool", None)
+    if pool is None or not hasattr(pool, "_keepalive_expiry"):
+        logger.debug("Could not bound NEXUS keep-alive expiry: unrecognised httpx transport layout")
+        return
+    # pylint: disable-next=protected-access
+    pool._keepalive_expiry = seconds
 
 
 def _retryable_exception_types() -> tuple[Type[Exception], ...]:
