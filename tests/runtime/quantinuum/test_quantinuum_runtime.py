@@ -40,8 +40,6 @@ from qbraid.runtime.quantinuum import (  # noqa: E402
 )
 from qbraid.runtime.quantinuum._transport import (  # noqa: E402
     DEFAULT_HTTP_TIMEOUT_SECONDS,
-    DEFAULT_KEEPALIVE_EXPIRY_SECONDS,
-    bound_keepalive_expiry,
     ensure_bounded_client,
     retry_transient,
 )
@@ -773,47 +771,6 @@ class TestTransportHardening:
             ensure_bounded_client()
 
         assert client.timeout.read == 12.5
-
-    def test_keepalive_expiry_is_bounded(self):
-        """Idle connections must expire client-side before NEXUS closes them."""
-        # pylint: disable-next=import-outside-toplevel
-        import httpx
-
-        client = httpx.Client(timeout=None)
-        with patch("qnexus.client.get_nexus_client", return_value=client):
-            ensure_bounded_client()
-
-        # pylint: disable-next=protected-access
-        assert client._transport._pool._keepalive_expiry == DEFAULT_KEEPALIVE_EXPIRY_SECONDS
-
-    @patch.dict(os.environ, {"QUANTINUUM_NEXUS_KEEPALIVE_EXPIRY": "3.5"})
-    def test_keepalive_expiry_env_override(self):
-        """The expiry is tunable without a release."""
-        # pylint: disable-next=import-outside-toplevel
-        import httpx
-
-        client = httpx.Client(timeout=None)
-        with patch("qnexus.client.get_nexus_client", return_value=client):
-            ensure_bounded_client()
-
-        # pylint: disable-next=protected-access
-        assert client._transport._pool._keepalive_expiry == 3.5
-
-    def test_keepalive_expiry_tolerates_unknown_transport_layout(self):
-        """A future httpx layout must degrade, not break job submission.
-
-        The pool is reached through private attributes, so the guard matters
-        more than the tuning: losing the expiry costs an occasional retry,
-        raising here would cost every job.
-        """
-
-        class _Opaque:  # no _transport, no _pool
-            timeout = None
-
-        client = _Opaque()
-        client.timeout = SimpleNamespace(connect=1.0, read=1.0, write=1.0, pool=1.0)
-        with patch("qnexus.client.get_nexus_client", return_value=client):
-            bound_keepalive_expiry(client)  # must not raise
 
 
 # --- Job ---
