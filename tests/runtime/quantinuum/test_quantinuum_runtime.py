@@ -716,7 +716,7 @@ class TestQuantinuumDevice:
         self,
         mock_get_or_create,
         _mock_config,
-        mock_upload,
+        _mock_upload,
         mock_compile,
         _mock_wait,
         mock_results,
