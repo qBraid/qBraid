@@ -498,6 +498,12 @@ class TestQuantinuumDevice:
 
         assert mock_wait.call_args.kwargs["timeout"] == 120.0
 
+    @pytest.mark.skipif(
+        not hasattr(importlib.import_module("qnexus.client.jobs"), "HybridStrategy"),
+        reason="qnexus predates WaitStrategy classes (added after 0.39); "
+        "wait_for has no strategy to hang there, so the fabricated-exception "
+        "tests are the only pin available.",
+    )
     @patch("qnexus.start_compile_job")
     @patch("qnexus.circuits.upload")
     @patch("qnexus.QuantinuumConfig")
@@ -699,6 +705,53 @@ class TestQuantinuumDevice:
 
         assert mock_upload.call_count == 1
 
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_wraps_execute_dispatch_timeout(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """A timeout on the execute dispatch names the possibly-orphaned job.
+
+        The dispatch is never retried (double-submit risk), but with the shared
+        client bounded, a slow NEXUS response now times out after the server
+        may already have accepted a billable job. A bare ``httpx.ReadTimeout``
+        gives the caller nothing to find that job with; the wrapped error must
+        say which project to search and what the job is named.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_execute.side_effect = httpx.ReadTimeout("timed out")
+
+        device = _make_device()
+        with pytest.raises(
+            QuantinuumDeviceError, match=r"check project 'qbraid' for a job named 'qbraid execute"
+        ):
+            device.submit(Circuit(2), shots=100)
+
+        # Ambiguous acceptance: exactly one dispatch attempt, never a retry.
+        mock_execute.assert_called_once()
+
     @pytest.mark.parametrize(
         ("env", "value", "match"),
         [
@@ -791,6 +844,48 @@ class TestTransportHardening:
             ensure_bounded_client()
 
         assert client.timeout.read == 12.5
+
+    def test_ensure_bounded_client_fills_partial_timeout(self):
+        """A partially configured timeout gets its ``None`` holes filled.
+
+        ``httpx.Timeout(5.0, read=None)`` is constructible, and treating it as
+        "caller configured, keep it" would leave a hung read able to pin the
+        thread — the exact failure this module exists to prevent. Configured
+        components must survive; only the holes get the default.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import httpx
+
+        client = httpx.Client(timeout=httpx.Timeout(5.0, read=None))
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            ensure_bounded_client()
+
+        assert client.timeout.read == DEFAULT_HTTP_TIMEOUT_SECONDS
+        assert client.timeout.connect == 5.0
+        assert client.timeout.write == 5.0
+        assert client.timeout.pool == 5.0
+
+    @patch("qbraid.runtime.quantinuum._transport.time.sleep")
+    def test_retry_transient_rejects_statusless_resource_errors(self, _mock_sleep):
+        """A qnexus resource error with no status code is semantic, not transient.
+
+        qnexus raises ``ResourceFetchFailed(message="Job status: ...")`` with
+        ``status_code=None`` when a job finishes in a non-COMPLETED state.
+        Repeating the call cannot change that outcome, so it must surface on
+        the first attempt rather than after three misleading "transient" logs.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus.exceptions as qnx_exc
+
+        calls = []
+
+        def _semantic_failure():
+            calls.append(1)
+            raise qnx_exc.ResourceFetchFailed(message="Job status: ERROR")
+
+        with pytest.raises(qnx_exc.ResourceFetchFailed):
+            retry_transient(_semantic_failure, attempts=3)
+        assert len(calls) == 1
 
 
 # --- Job ---

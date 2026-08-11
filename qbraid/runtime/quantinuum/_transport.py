@@ -132,8 +132,10 @@ def ensure_bounded_client() -> None:
     falls back to short polling requests, both of which stay well inside it.
 
     An explicitly set ``QUANTINUUM_NEXUS_HTTP_TIMEOUT`` always wins. Otherwise
-    the default is applied only when the client is still unbounded, so a caller
-    that configured its own timeout keeps it.
+    the default fills only the timeout components that are still ``None``, so a
+    caller that configured its own timeout keeps every value it set — but a
+    partial configuration (``httpx.Timeout(5.0, read=None)`` is constructible)
+    cannot leave a hole through which a hung read pins the thread anyway.
     """
     # pylint: disable-next=import-outside-toplevel
     import httpx
@@ -142,20 +144,23 @@ def ensure_bounded_client() -> None:
     import qnexus as qnx
 
     client = qnx.client.get_nexus_client()
-    explicit = os.getenv(_HTTP_TIMEOUT_ENV) is not None
-    unbounded = all(
-        component is None
-        for component in (
-            client.timeout.connect,
-            client.timeout.read,
-            client.timeout.write,
-            client.timeout.pool,
-        )
-    )
-    if not explicit and not unbounded:
+    if os.getenv(_HTTP_TIMEOUT_ENV) is not None:
+        seconds = positive_float_env(_HTTP_TIMEOUT_ENV, DEFAULT_HTTP_TIMEOUT_SECONDS)
+        client.timeout = httpx.Timeout(seconds)
         return
-    seconds = positive_float_env(_HTTP_TIMEOUT_ENV, DEFAULT_HTTP_TIMEOUT_SECONDS)
-    client.timeout = httpx.Timeout(seconds)
+    current = client.timeout
+    if all(
+        component is not None
+        for component in (current.connect, current.read, current.write, current.pool)
+    ):
+        return
+    default = DEFAULT_HTTP_TIMEOUT_SECONDS
+    client.timeout = httpx.Timeout(
+        connect=current.connect if current.connect is not None else default,
+        read=current.read if current.read is not None else default,
+        write=current.write if current.write is not None else default,
+        pool=current.pool if current.pool is not None else default,
+    )
 
 
 def _retryable_exception_types() -> tuple[Type[Exception], ...]:
@@ -177,14 +182,21 @@ def _retryable_exception_types() -> tuple[Type[Exception], ...]:
 def _is_retryable(err: Exception) -> bool:
     """Return whether ``err`` represents a transient NEXUS failure.
 
-    Connection-level errors always are. qnexus's own resource errors carry the
-    HTTP status code, so they are retried only for gateway-class responses; a
-    400 or a rejected program must surface immediately.
+    Connection-level errors always are. qnexus's own resource errors are
+    retried only when they carry a gateway-class HTTP status code. That is a
+    deliberate double filter: qnexus also raises them from non-HTTP paths with
+    ``status_code=None`` (e.g. ``jobs.results`` on a job that finished in a
+    non-COMPLETED state), and those are semantic failures that repeating
+    cannot fix, so they must surface immediately rather than after three
+    backoffs behind a "transient" log line.
     """
+    # pylint: disable-next=import-outside-toplevel
+    import qnexus.exceptions as qnx_exc
+
     status_code = getattr(err, "status_code", None)
-    if status_code is None:
-        return True
-    return status_code in RETRYABLE_STATUS_CODES
+    if status_code is not None:
+        return status_code in RETRYABLE_STATUS_CODES
+    return not isinstance(err, (qnx_exc.ResourceCreateFailed, qnx_exc.ResourceFetchFailed))
 
 
 def retry_transient(fn: Callable[[], _T], attempts: int = 3, base_delay: float = 0.5) -> _T:

@@ -125,6 +125,7 @@ class QuantinuumDevice(QuantumDevice):
         exceeding either raises :class:`QuantinuumDeviceError`.
         """
         # pylint: disable=import-outside-toplevel
+        import httpx
         import qnexus as qnx
         import qnexus.exceptions as qnx_exc
         from qnexus.models.language import Language
@@ -208,13 +209,27 @@ class QuantinuumDevice(QuantumDevice):
         )
 
         # Deliberately NOT retried: a disconnect after the server accepted this
-        # request would double-submit (and double-bill) the execution.
-        execute_job = qnx.start_execute_job(
-            programs=compiled_refs,
-            name=unique("execute"),
-            n_shots=[shots] * len(compiled_refs),
-            backend_config=backend_config,
-            project=project,
-            language=Language.QIR,
-        )
+        # request would double-submit (and double-bill) the execution. But it
+        # must not go unwrapped either: since the shared client now carries a
+        # read timeout, a slow NEXUS response here raises after the server may
+        # already have accepted a billable job, and a bare httpx exception gives
+        # the caller no way to find it. Name the job first so the error can say
+        # exactly what to look for.
+        execute_name = unique("execute")
+        try:
+            execute_job = qnx.start_execute_job(
+                programs=compiled_refs,
+                name=execute_name,
+                n_shots=[shots] * len(compiled_refs),
+                backend_config=backend_config,
+                project=project,
+                language=Language.QIR,
+            )
+        except (httpx.TransportError, ConnectionError) as err:
+            raise QuantinuumDeviceError(
+                f"No response received for the execute dispatch ({err}). NEXUS may still "
+                f"have accepted the job: check project {resolved_project_name!r} for a job "
+                f"named {execute_name!r} and cancel it if it is running, or its shots will "
+                "be billed with no local handle to poll."
+            ) from err
         return QuantinuumJob(job_id=str(execute_job.id), device=self, job=execute_job)
