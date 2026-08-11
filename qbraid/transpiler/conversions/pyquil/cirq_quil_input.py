@@ -44,9 +44,12 @@ from cirq.ops import (
     T,
     TwoQubitDiagonalGate,
     X,
+    XXPowGate,
     Y,
+    YYPowGate,
     Z,
     ZPowGate,
+    ZZPowGate,
     rx,
     ry,
     rz,
@@ -179,6 +182,46 @@ def xy(param: float) -> ISwapPowGate:
     return ISwapPowGate(exponent=param / np.pi)
 
 
+def rxx(param: float) -> XXPowGate:
+    """Returns pyQuil's RXX gate as a Cirq XXPowGate.
+
+    ``RXX(theta) = exp(-i theta XX / 2)``, which is ``XXPowGate`` with exponent
+    ``theta / pi`` and the ``-0.5`` global shift that removes the phase Cirq's
+    unshifted convention would otherwise introduce.
+
+    Args:
+        param: Gate parameter (in radians).
+
+    Returns:
+        An XXPowGate equivalent to an RXX gate of given angle.
+    """
+    return XXPowGate(exponent=param / np.pi, global_shift=-0.5)
+
+
+def ryy(param: float) -> YYPowGate:
+    """Returns pyQuil's RYY gate as a Cirq YYPowGate.
+
+    Args:
+        param: Gate parameter (in radians).
+
+    Returns:
+        A YYPowGate equivalent to an RYY gate of given angle.
+    """
+    return YYPowGate(exponent=param / np.pi, global_shift=-0.5)
+
+
+def rzz(param: float) -> ZZPowGate:
+    """Returns pyQuil's RZZ gate as a Cirq ZZPowGate.
+
+    Args:
+        param: Gate parameter (in radians).
+
+    Returns:
+        A ZZPowGate equivalent to an RZZ gate of given angle.
+    """
+    return ZZPowGate(exponent=param / np.pi, global_shift=-0.5)
+
+
 PRAGMA_ERROR = """
 Please remove PRAGMAs from your Quil program.
 If you would like to add noise, do so after conversion.
@@ -207,6 +250,9 @@ SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
     "RX": rx,
     "RY": ry,
     "RZ": rz,
+    "RXX": rxx,
+    "RYY": ryy,
+    "RZZ": rzz,
     "S": S,
     "SWAP": SWAP,
     "T": T,

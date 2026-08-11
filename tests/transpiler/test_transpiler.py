@@ -18,6 +18,7 @@
 Unit tests for the qbraid transpiler.
 
 """
+
 import cirq
 import numpy as np
 import pytest
@@ -43,12 +44,6 @@ from ..fixtures.cirq.gates import cirq_gates as cirq_gates_dict
 from ..fixtures.cirq.gates import create_cirq_gate
 from ..fixtures.qiskit.gates import qiskit_gates as qiskit_gates_dict
 from .cirq_utils import _equal
-
-
-@pytest.fixture
-def conversion_graph():
-    """Return the conversion graph."""
-    return ConversionGraph()
 
 
 @pytest.mark.parametrize(
@@ -84,18 +79,22 @@ def test_to_cirq_bad_openqasm_program(item):
 
 
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)
-@pytest.mark.parametrize("to_type", QPROGRAM_ALIASES)
-def test_cirq_round_trip(bell_circuit, to_type, conversion_graph: ConversionGraph):
+@pytest.mark.parametrize("to_type", sorted(QPROGRAM_ALIASES))
+def test_cirq_round_trip(bell_circuit, to_type):
     """Test converting Cirq circuits to other supported types."""
+    # Use a single graph for both the path check and the transpile calls so the
+    # skip guard and the conversion agree on which edges are available. Native
+    # targets are tested with native-only conversions (require_native=True),
+    # preserving the original intent of exercising native conversion paths.
+    require_native = is_registered_alias_native(to_type)
+    conversion_graph = ConversionGraph(require_native=require_native)
     if not conversion_graph.has_path("cirq", to_type) or not conversion_graph.has_path(
         to_type, "cirq"
     ):
         pytest.skip(f"cirq to {to_type} round-trip not yet supported")
     circuit_in, _ = bell_circuit
-
-    require_native = is_registered_alias_native(to_type)
-    circuit_mid = transpile(circuit_in, to_type, require_native=require_native)
-    circuit_out = transpile(circuit_mid, "cirq", require_native=require_native)
+    circuit_mid = transpile(circuit_in, to_type, conversion_graph=conversion_graph)
+    circuit_out = transpile(circuit_mid, "cirq", conversion_graph=conversion_graph)
     assert _equal(circuit_in, circuit_out), f"Failed round-trip from cirq to {to_type}"
 
 
@@ -149,13 +148,16 @@ def test_15(shared15_circuit, shared15_unitary, target_package):
 
 @pytest.mark.parametrize("target", packages_bell)
 @pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
-def test_bell(bell_circuit, bell_unitary, target, conversion_graph: ConversionGraph):
+def test_bell(bell_circuit, bell_unitary, target):
     """Tests transpiling bell circuits."""
     circuit, source = bell_circuit
+    conversion_graph = ConversionGraph(require_native=True)
     if not conversion_graph.has_path(source, target):
         pytest.skip(f"{source} to {target} conversion not yet supported")
     qbraid_circuit = load_program(circuit)
-    transpiled_circuit = transpile(qbraid_circuit.program, target, require_native=True)
+    transpiled_circuit = transpile(
+        qbraid_circuit.program, target, conversion_graph=conversion_graph
+    )
     try:
         transpiled_unitary = load_program(transpiled_circuit).unitary()
         assert_allclose_up_to_global_phase(transpiled_unitary, bell_unitary, atol=1e-7)
@@ -272,9 +274,9 @@ braket_gate_set = set(braket_gates_dict.keys())
 qiskit_gate_set = set(qiskit_gates_dict.keys())
 cirq_gate_set = set(cirq_gates_dict.keys())
 
-intersect_braket_qiskit = list(braket_gate_set.intersection(list(qiskit_gate_set)))
-intersect_qiskit_cirq = list(qiskit_gate_set.intersection(list(cirq_gate_set)))
-intersect_cirq_braket = list(cirq_gate_set.intersection(list(braket_gate_set)))
+intersect_braket_qiskit = sorted(braket_gate_set.intersection(list(qiskit_gate_set)))
+intersect_qiskit_cirq = sorted(qiskit_gate_set.intersection(list(cirq_gate_set)))
+intersect_cirq_braket = sorted(cirq_gate_set.intersection(list(braket_gate_set)))
 
 # skipping
 intersect_braket_qiskit.remove("RXX")
@@ -333,14 +335,18 @@ def test_gate_intersect_braket_cirq(gate_str):
     assert_allclose_up_to_global_phase(braket_u, braket_transpile_u, atol=1e-7)
 
 
-yes_braket_no_qiskit = list(set(braket_gates_dict).difference(qiskit_gates_dict))
-yes_qiskit_no_braket = list(set(qiskit_gates_dict).difference(braket_gates_dict))
-yes_braket_no_cirq = list(set(braket_gates_dict).difference(cirq_gates_dict))
-yes_cirq_no_braket = list(set(cirq_gates_dict).difference(braket_gates_dict))
-yes_cirq_no_qiskit = list(set(cirq_gates_dict).difference(qiskit_gates_dict))
-yes_qiskit_no_cirq = list(set(qiskit_gates_dict).difference(cirq_gates_dict))
+yes_braket_no_qiskit = sorted(set(braket_gates_dict).difference(qiskit_gates_dict))
+yes_qiskit_no_braket = sorted(set(qiskit_gates_dict).difference(braket_gates_dict))
+yes_braket_no_cirq = sorted(set(braket_gates_dict).difference(cirq_gates_dict))
+yes_cirq_no_braket = sorted(set(cirq_gates_dict).difference(braket_gates_dict))
+yes_cirq_no_qiskit = sorted(set(cirq_gates_dict).difference(qiskit_gates_dict))
+yes_qiskit_no_cirq = sorted(set(qiskit_gates_dict).difference(cirq_gates_dict))
 
-NOT_SUPPORTED = ["RCCX", "RXX", "RYY", "RZX", "CSX", "CRX", "CRY", "U"]
+# Gates that cannot currently be transpiled from Qiskit to Braket/Cirq (e.g. due
+# to missing decompositions). Previously held ["RCCX", "RXX", "RYY", "RZX",
+# "CSX", "CRX", "CRY", "U"], all of which now transpile correctly, so the test
+# coverage they were gating is re-enabled. Keep the guard for future gaps.
+NOT_SUPPORTED: list[str] = []
 
 
 @pytest.mark.parametrize("gate_str", yes_braket_no_qiskit)

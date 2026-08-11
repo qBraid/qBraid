@@ -21,7 +21,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pyquil
-from pyquil.quilbase import Declare, Measurement
+from pyquil.quilatom import Qubit
+from pyquil.quilbase import Declare, Gate, Measurement
 from pyquil.simulation.tools import program_unitary
 from qbraid_core.services.runtime.schemas import Program
 
@@ -58,6 +59,39 @@ class PyQuilProgram(GateModelProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(self.program)
 
+    def _remap_qubits(self, mapping: dict[int, int]) -> None:
+        """Rebuild the program with each qubit index replaced via ``mapping``."""
+        remapped = pyquil.Program()
+        for instruction in self.program:
+            if isinstance(instruction, Gate):
+                remapped += Gate(
+                    instruction.name,
+                    list(instruction.params),
+                    [Qubit(mapping[qubit.index]) for qubit in instruction.qubits],
+                    instruction.modifiers,
+                )
+            elif isinstance(instruction, Measurement):
+                remapped += Measurement(
+                    Qubit(mapping[instruction.qubit.index]), instruction.classical_reg
+                )
+            else:
+                remapped += instruction
+        self._program = remapped
+
+    def remove_idle_qubits(self) -> None:
+        """Remap the program's qubits onto contiguous indices starting at zero."""
+        qubits = sorted(self.program.get_qubits())
+        mapping = {qubit: index for index, qubit in enumerate(qubits)}
+        if all(qubit == index for qubit, index in mapping.items()):
+            return
+        self._remap_qubits(mapping)
+
+    def reverse_qubit_order(self) -> None:
+        """Reverse the qubit ordering of the program."""
+        qubits = sorted(self.program.get_qubits())
+        mapping = dict(zip(qubits, reversed(qubits)))
+        self._remap_qubits(mapping)
+
     @staticmethod
     def remove_measurements(original_program):
         """Remove MEASURE and DECLARE instructions from a pyQuil program."""
@@ -70,6 +104,13 @@ class PyQuilProgram(GateModelProgram):
     def _unitary(self) -> np.ndarray:
         """Return the unitary of a pyQuil program."""
         program_copy = self.remove_measurements(self.program)
+        qubits = sorted(program_copy.get_qubits())
+        if qubits and max(qubits) >= self.num_qubits:
+            raise ValueError(
+                "PyQuilProgram.unitary() requires contiguous qubit indices starting at 0; "
+                f"got {qubits}. Call remove_idle_qubits() first or use "
+                "circuits_allclose(..., index_contig=True)."
+            )
         return program_unitary(program_copy, n_qubits=self.num_qubits)
 
     def serialize(self) -> Program:

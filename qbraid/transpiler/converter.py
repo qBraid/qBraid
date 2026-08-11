@@ -23,8 +23,6 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-from qbraid_core._import import LazyLoader
-
 from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_ALIASES
 from qbraid.programs.alias_manager import (
@@ -139,22 +137,13 @@ def transpile(
                     temp_program = convert_func(temp_program)
                 except Exception as err:  # pylint: disable=broad-exception-caught
                     alias = get_program_type_alias(temp_program, safe=True)
-
-                    if alias == "cirq":
-                        cirq_qasm_import = LazyLoader(
-                            "cirq_qasm_import", globals(), "cirq.contrib.qasm_import"
-                        )
-                        qasm: str = temp_program.to_qasm()  # type: ignore[attr-defined]
-                        temp_program = cirq_qasm_import.circuit_from_qasm(qasm)
-                        temp_program = convert_func(temp_program)  # Retry conversion
-                    else:
-                        error_detail = (
-                            f"Conversion {path_details} failed due to "
-                            f"exception raised while converting from '{alias}'."
-                        )
-                        error_messages.append(error_detail)
-                        error_messages.append(_format_exception(err))
-                        raise
+                    error_detail = (
+                        f"Conversion {path_details} failed due to "
+                        f"exception raised while converting from '{alias}'."
+                    )
+                    error_messages.append(error_detail)
+                    error_messages.append(_format_exception(err))
+                    raise
 
             logger.info("Successfully transpiled using conversions: %s", path_details)
             return temp_program

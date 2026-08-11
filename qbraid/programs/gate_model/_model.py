@@ -79,7 +79,11 @@ class GateModelProgram(QuantumProgram, ABC):
             ValueError: If the input matrix is not square or its size is not a power of 2.
         """
         matrix = self._unitary()
-        if matrix.shape[0] != matrix.shape[1] or (matrix.shape[0] & (matrix.shape[0] - 1)) != 0:
+        if (
+            matrix.ndim != 2
+            or matrix.shape[0] != matrix.shape[1]
+            or (matrix.shape[0] & (matrix.shape[0] - 1)) != 0
+        ):
             raise ValueError("Input matrix must be a square matrix of size 2^N for some integer N.")
 
         # Determine the number of qubits from the matrix size

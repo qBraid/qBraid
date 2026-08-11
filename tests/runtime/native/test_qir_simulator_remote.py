@@ -21,7 +21,7 @@ import pyqir
 import pytest
 from qiskit import QuantumCircuit
 
-from qbraid.runtime import JobStatus, QbraidProvider
+from qbraid.runtime import DeviceStatus, JobStatus, QbraidProvider
 
 DEFAULT_TIMEOUT = 120
 DEVICE_ID = "qbraid:qbraid:sim:qir-sv"
@@ -79,6 +79,10 @@ def test_qir_simulator_qasm_circuit(bell_qasm_circuit):
     provider = QbraidProvider()
     device = provider.get_device(DEVICE_ID)
 
+    device_status = device.status()
+    if device_status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {device_status.value}")
+
     job = device.run(bell_qasm_circuit, shots=SHOTS)
 
     try:
@@ -98,6 +102,10 @@ def test_qir_simulator_qir_module(bell_qir_module):
     """Test submitting a QIR module to the QIR simulator device."""
     provider = QbraidProvider()
     device = provider.get_device(DEVICE_ID)
+
+    device_status = device.status()
+    if device_status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {device_status.value}")
 
     job = device.run(bell_qir_module, shots=SHOTS)
 

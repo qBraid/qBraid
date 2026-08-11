@@ -117,3 +117,33 @@ def test_assert_allclose_up_to_global_phase_fail():
     b = np.array([10 + 10j, 20 + 20j])
     with pytest.raises(AssertionError):
         assert_allclose_up_to_global_phase(a, b, atol=1e-10)
+
+
+def test_circuits_allclose_mismatched_dimensions_returns_false():
+    """Circuits whose unitaries have different dimensions are not equivalent and
+    must compare False rather than raising during the comparison."""
+    cirq = pytest.importorskip("cirq")
+    from qbraid.interface import circuits_allclose  # pylint: disable=import-outside-toplevel
+
+    q = cirq.LineQubit.range(2)
+    two_qubit = cirq.Circuit([cirq.X(q[0]), cirq.X(q[1])])
+    one_qubit = cirq.Circuit([cirq.X(q[0])])
+
+    assert circuits_allclose(two_qubit, one_qubit) is False
+    assert circuits_allclose(two_qubit, one_qubit, allow_rev_qubits=True) is False
+
+
+def test_circuits_allclose_empty_target_unitary_returns_false():
+    """A measurement-only circuit converts to an empty Braket circuit (no operating
+    qubits), whose unitary has shape ``(0,)``. ``circuits_allclose`` must return
+    False instead of raising an ``IndexError`` in ``unitary_rev_qubits``."""
+    cirq = pytest.importorskip("cirq")
+    pytest.importorskip("braket")
+    from qbraid.interface import circuits_allclose  # pylint: disable=import-outside-toplevel
+    from qbraid.transpiler import transpile  # pylint: disable=import-outside-toplevel
+
+    q = cirq.LineQubit.range(3)
+    source = cirq.Circuit(cirq.measure(*q, key="m"))
+    target = transpile(source, "braket")
+
+    assert circuits_allclose(source, target) is False

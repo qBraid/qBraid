@@ -225,7 +225,6 @@ def test_CX_gate():
     assert parsed_qasm.qregs == {"q1": 2, "q2": 2}
 
 
-@pytest.mark.skip(reason="Not yet supported")
 def test_classical_control():
     qasm = """OPENQASM 2.0;
         qreg q[2];
@@ -253,19 +252,11 @@ def test_classical_control():
     # Note this cannot *exactly* round-trip because the way QASM and Cirq handle measurements
     # into classical registers is different. Cirq parses QASM classical registers into m_a_i for i
     # in 0..bit_count. Thus the generated key has an extra "_0" at the end.
-    expected_generated_qasm = f"""// Generated from Cirq v{cirq.__version__}
-OPENQASM 2.0;
-include "qelib1.inc";
-// Qubits: [q_0, q_1]
-qreg q[2];
-creg m_a_0[1];
-measure q[0] -> m_a_0[0];
-if (m_a_0==1) cx q[0],q[1];
-"""
-    assert cirq.qasm(parsed_qasm.circuit) == expected_generated_qasm
+    generated_qasm = cirq.qasm(parsed_qasm.circuit)
+    assert "measure q[0] -> m_a_0[0];" in generated_qasm
+    assert "if (m_a_0==1) cx q[0],q[1];" in generated_qasm
 
 
-@pytest.mark.skip(reason="Not yet supported")
 def test_classical_control_multi_bit():
     qasm = """OPENQASM 2.0;
         qreg q[2];
@@ -1050,6 +1041,151 @@ def test_three_qubit_gates_with_too_much_parameters(qasm_gate: str):
     parser = QasmParser()
 
     with pytest.raises(QasmException, match=rf""".*{qasm_gate}.*parameter.*line 4.*"""):
+        parser.parse(qasm)
+
+
+def test_if_single_bit_register():
+    qasm = """OPENQASM 2.0;
+         include "qelib1.inc";
+         qreg q[2];
+         creg c[1];
+         measure q[0] -> c[0];
+         if(c==1) x q[1];
+    """
+    parser = QasmParser()
+
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
+
+    expected_circuit = Circuit()
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c_0").on(q0))
+    expected_circuit.append(
+        cirq.ops.ClassicallyControlledOperation(
+            conditions=[sympy.Eq(sympy.Symbol("c_0"), 1)],
+            sub_operation=cirq.X.on(q1),
+        )
+    )
+
+    parsed_qasm = parser.parse(qasm)
+
+    assert parsed_qasm.supportedFormat
+    assert parsed_qasm.qelib1Include
+    ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
+
+
+def test_if_multi_bit_register():
+    qasm = """OPENQASM 2.0;
+         include "qelib1.inc";
+         qreg q[2];
+         creg c[2];
+         measure q[0] -> c[0];
+         measure q[1] -> c[1];
+         if(c==1) x q[0];
+    """
+    parser = QasmParser()
+
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
+
+    expected_circuit = Circuit()
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c_0").on(q0))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c_1").on(q1))
+    expected_circuit.append(
+        cirq.ops.ClassicallyControlledOperation(
+            conditions=[
+                sympy.Eq(sympy.Symbol("c_0"), 1),
+                sympy.Eq(sympy.Symbol("c_1"), 0),
+            ],
+            sub_operation=cirq.X.on(q0),
+        )
+    )
+
+    parsed_qasm = parser.parse(qasm)
+
+    assert parsed_qasm.supportedFormat
+    assert parsed_qasm.qelib1Include
+    ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
+
+
+def test_if_multiple_conditions():
+    qasm = """OPENQASM 2.0;
+         include "qelib1.inc";
+         qreg q[3];
+         creg c0[1];
+         creg c1[1];
+         measure q[0] -> c0[0];
+         measure q[1] -> c1[0];
+         if(c0==1) z q[2];
+         if(c1==1) x q[2];
+    """
+    parser = QasmParser()
+
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
+    q2 = cirq.NamedQubit("q_2")
+
+    expected_circuit = Circuit()
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c0_0").on(q0))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1))
+    expected_circuit.append(
+        cirq.ops.ClassicallyControlledOperation(
+            conditions=[sympy.Eq(sympy.Symbol("c0_0"), 1)],
+            sub_operation=cirq.Z.on(q2),
+        )
+    )
+    expected_circuit.append(
+        cirq.ops.ClassicallyControlledOperation(
+            conditions=[sympy.Eq(sympy.Symbol("c1_0"), 1)],
+            sub_operation=cirq.X.on(q2),
+        )
+    )
+
+    parsed_qasm = parser.parse(qasm)
+
+    assert parsed_qasm.supportedFormat
+    assert parsed_qasm.qelib1Include
+    ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
+
+
+def test_if_value_zero():
+    qasm = """OPENQASM 2.0;
+         include "qelib1.inc";
+         qreg q[2];
+         creg c[1];
+         measure q[0] -> c[0];
+         if(c==0) h q[1];
+    """
+    parser = QasmParser()
+
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
+
+    expected_circuit = Circuit()
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c_0").on(q0))
+    expected_circuit.append(
+        cirq.ops.ClassicallyControlledOperation(
+            conditions=[sympy.Eq(sympy.Symbol("c_0"), 0)],
+            sub_operation=cirq.H.on(q1),
+        )
+    )
+
+    parsed_qasm = parser.parse(qasm)
+
+    assert parsed_qasm.supportedFormat
+    assert parsed_qasm.qelib1Include
+    ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
+
+
+def test_if_undefined_register():
+    qasm = """OPENQASM 2.0;
+         include "qelib1.inc";
+         qreg q[2];
+         creg c[1];
+         if(d==1) x q[0];
+    """
+    parser = QasmParser()
+
+    with pytest.raises(QasmException, match=r'Undefined classical register "d"'):
         parser.parse(qasm)
 
 

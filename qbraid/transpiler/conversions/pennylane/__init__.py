@@ -24,8 +24,12 @@ Functions
    :toctree: ../stubs/
 
    pennylane_to_qasm2
+   pennylane_to_qiskit
+   pennylane_to_braket
+   pennylane_to_cirq
 
 """
+from .pennylane_extras import pennylane_to_braket, pennylane_to_cirq, pennylane_to_qiskit
 from .pennylane_to_qasm2 import pennylane_to_qasm2
 
-__all__ = ["pennylane_to_qasm2"]
+__all__ = ["pennylane_to_qasm2", "pennylane_to_qiskit", "pennylane_to_braket", "pennylane_to_cirq"]

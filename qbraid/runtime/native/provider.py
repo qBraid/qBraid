@@ -20,8 +20,7 @@ from __future__ import annotations
 
 import base64
 import json
-import warnings
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
 from qbraid_core.exceptions import AuthError
@@ -29,6 +28,7 @@ from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeSer
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
 from qbraid._caching import cached_method
+from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -92,7 +92,7 @@ def validate_qasm_to_ionq(program: Qasm2StringType | Qasm3StringType, device_id:
 
 def get_program_spec_lambdas(
     program_type_alias: str, device_id: str
-) -> dict[str, Optional[Callable[[Any], None]]]:
+) -> dict[str, Callable[[Any], None] | None]:
     """Returns conversion and validation functions for the given program type and device."""
     if program_type_alias == "pyqir":
         return {"serialize": _serialize_pyqir, "validate": None}
@@ -127,9 +127,7 @@ class QbraidProvider(QuantumProvider):
             qBraid QuantumRuntimeClient object
     """
 
-    def __init__(
-        self, api_key: Optional[str] = None, client: Optional[QuantumRuntimeClient] = None
-    ):
+    def __init__(self, api_key: str | None = None, client: QuantumRuntimeClient | None = None):
         """
         Initializes the QbraidProvider object
 
@@ -157,17 +155,18 @@ class QbraidProvider(QuantumProvider):
         return self._client
 
     @staticmethod
-    def _get_program_spec(run_package: Optional[str], device_id: str) -> Optional[ProgramSpec]:
+    def _get_program_spec(run_package: str | None, device_id: str) -> ProgramSpec | None:
         """Return the program spec for the given run package and device."""
         if not run_package:
             return None
 
         program_type = QPROGRAM_REGISTRY.get(run_package)
         if program_type is None:
-            warnings.warn(
-                f"The default runtime configuration for device '{device_id}' includes "
-                f"transpilation to program type '{run_package}', which is not registered.",
-                RuntimeWarning,
+            logger.info(
+                "The default runtime configuration for device '%s' includes "
+                "transpilation to program type '%s', which is not registered.",
+                device_id,
+                run_package,
             )
         lambdas = get_program_spec_lambdas(run_package, device_id)
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
@@ -182,7 +181,7 @@ class QbraidProvider(QuantumProvider):
         ]
 
     @staticmethod
-    def _get_basis_gates(device_qrn: str) -> Optional[list[str]]:
+    def _get_basis_gates(device_qrn: str) -> list[str] | None:
         """Return the basis gates for the qBraid device."""
         _vendor, provider, device_type, name = device_qrn.split(":")
         if provider == "ionq":
@@ -213,16 +212,16 @@ class QbraidProvider(QuantumProvider):
             name=device.name,
             pricing=device.pricing,
             basis_gates=basis_gates,
+            batch_job_support=device.batchJobSupport,
         )
 
     @cached_method(ttl=120)
-    def get_devices(self) -> list[QbraidDevice]:
+    def get_devices(self, include_retired: bool = False, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
-        # query = kwargs or None
 
         try:
             # TODO: Implement support for device query
-            devices = self.client.list_devices()
+            devices = self.client.list_devices(include_retired=include_retired, **kwargs)
         except (ValueError, QuantumRuntimeServiceRequestError) as err:
             raise ResourceNotFoundError("No devices found matching given criteria.") from err
 

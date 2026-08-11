@@ -21,6 +21,7 @@
 Module defining qBraid Cirq QuilOutput.
 
 """
+
 from __future__ import annotations
 
 import string
@@ -39,6 +40,17 @@ def exponent_to_pi_string(exp: float) -> str:
 
     exp_div_pi = exp / np.pi
     exponent_fraction = Fraction(exp_div_pi).limit_denominator(12)
+
+    # Only use the pi-fraction form when it reproduces the angle exactly (up to
+    # float noise); otherwise emit the raw float so the value is not silently
+    # changed (limit_denominator always returns a nearest fraction, e.g. pi/17
+    # would become pi/12 and anything below pi/24 would become 0). The tolerance
+    # scales down with the magnitude so a tiny nonzero angle is never accepted
+    # as the zero fraction, and is capped at 1e-9 so a huge angle is never
+    # snapped to a wrong fraction.
+    tolerance = 1e-9 * min(abs(exp_div_pi), 1.0)
+    if abs(float(exponent_fraction) - exp_div_pi) > tolerance:
+        return repr(float(exp))
 
     if abs(exponent_fraction.numerator) == 1 and exponent_fraction.denominator == 1:
         exponent = "pi" if exponent_fraction > 0 else "-pi"
@@ -255,18 +267,24 @@ def _quiltwoqubit_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
-def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
+def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.SwapPowGate, op.gate)
     if gate._exponent % 2 == 1:
         return formatter.format("SWAP {0} {1}\n", op.qubits[0], op.qubits[1])
-    return formatter.format(
-        "PSWAP({0}) {1} {2}\n", gate._exponent * np.pi, op.qubits[0], op.qubits[1]
-    )
+    # Non-integer powers: Quil's PSWAP is a parametric swap-with-phase, not a
+    # fractional SWAP, so PSWAP(pi*t) does not reproduce SWAP**t. Return None to
+    # fall back to cirq's decomposition (CNOT / RY / CPHASE), which Quil
+    # represents exactly.
+    return None
 
 
 def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.TwoQubitDiagonalGate, op.gate)
-    diag_angles_radians = np.asarray(gate._diag_angles_radians)
+    # The diagonal angles are real phase angles, but may be stored as a complex
+    # array (e.g. when the gate originates from a pyQuil CPHASExx round-trip).
+    # Take the real part so they can be formatted as Quil parameters; a complex
+    # value would otherwise raise a TypeError in exponent_to_pi_string's Fraction.
+    diag_angles_radians = np.real(np.asarray(gate._diag_angles_radians))
     if np.count_nonzero(diag_angles_radians) != 1:
         return None
     if diag_angles_radians[0] != 0:
@@ -310,15 +328,18 @@ def _xpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
 
 
 def _xxpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
-    gate = cast(cirq.XPowGate, op.gate)
+    gate = cast(cirq.XXPowGate, op.gate)
     if gate._exponent == 1:
         return formatter.format("X {0}\nX {1}\n", op.qubits[0], op.qubits[1])
+    # XX**t = (H (x) H) . ZZ**t . (H (x) H), with ZZ**t = diag(1, e^{i pi t},
+    # e^{i pi t}, 1) realized exactly (including global phase) by single-qubit
+    # PHASE gates and a CPHASE.
     return formatter.format(
-        "RX({0}) {1}\nRX({2}) {3}\n",
-        gate._exponent * np.pi,
+        "H {0}\nH {1}\nPHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\nH {0}\nH {1}\n",
         op.qubits[0],
-        gate._exponent * np.pi,
         op.qubits[1],
+        gate._exponent * np.pi,
+        -2 * gate._exponent * np.pi,
     )
 
 
@@ -334,12 +355,19 @@ def _yypow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     if gate._exponent == 1:
         return formatter.format("Y {0}\nY {1}\n", op.qubits[0], op.qubits[1])
 
+    # YY**t = (RX(pi/2) (x) RX(pi/2)) . ZZ**t . (RX(-pi/2) (x) RX(-pi/2)); the
+    # RX conjugation rotates the Y eigenbasis onto the Z eigenbasis and cancels
+    # exactly, so the global phase of ZZ**t is preserved.
     return formatter.format(
-        "RY({0}) {1}\nRY({2}) {3}\n",
-        gate._exponent * np.pi,
+        "RX({4}) {0}\nRX({4}) {1}\n"
+        "PHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\n"
+        "RX({5}) {0}\nRX({5}) {1}\n",
         op.qubits[0],
-        gate._exponent * np.pi,
         op.qubits[1],
+        gate._exponent * np.pi,
+        -2 * gate._exponent * np.pi,
+        np.pi / 2,
+        -np.pi / 2,
     )
 
 
@@ -355,12 +383,14 @@ def _zzpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     if gate._exponent == 1:
         return formatter.format("Z {0}\nZ {1}\n", op.qubits[0], op.qubits[1])
 
+    # ZZ**t = diag(1, e^{i pi t}, e^{i pi t}, 1) is realized exactly (including
+    # global phase) by a PHASE on each qubit and a compensating CPHASE.
     return formatter.format(
-        "RZ({0}) {1}\nRZ({2}) {3}\n",
-        gate._exponent * np.pi,
+        "PHASE({2}) {0}\nPHASE({2}) {1}\nCPHASE({3}) {0} {1}\n",
         op.qubits[0],
-        gate._exponent * np.pi,
         op.qubits[1],
+        gate._exponent * np.pi,
+        -2 * gate._exponent * np.pi,
     )
 
 

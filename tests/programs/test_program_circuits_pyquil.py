@@ -16,10 +16,13 @@
 Unit tests for qbraid.programs.pyquil.PyQuilProgram
 
 """
+import numpy as np
 import pytest
 
 try:
     from pyquil import Program
+    from pyquil.gates import CNOT, CZ, MEASURE, H
+    from pyquil.quilbase import Declare
     from qbraid_core.services.runtime.schemas import Program as RuntimeProgram
 
     from qbraid.programs.exceptions import ProgramTypeError
@@ -60,3 +63,65 @@ def test_pyquil_program_serialize():
     assert serialized.format == "quil"
     assert "H 0" in serialized.data
     assert "CNOT 0 1" in serialized.data
+
+
+def test_remove_idle_qubits_remaps_to_contiguous():
+    """Non-contiguous qubits are remapped to contiguous indices from zero,
+    preserving the (reduced) unitary."""
+    program = PyQuilProgram(Program(H(2), CNOT(2, 5)))
+    program.remove_idle_qubits()
+
+    assert sorted(program.program.get_qubits()) == [0, 1]
+    reference = PyQuilProgram(Program(H(0), CNOT(0, 1)))
+    assert np.allclose(program.unitary(), reference.unitary())
+
+
+def test_remove_idle_qubits_noop_when_contiguous():
+    """A program already on contiguous qubits is left unchanged."""
+    program = PyQuilProgram(Program(H(0), CNOT(0, 1)))
+    program.remove_idle_qubits()
+    assert sorted(program.program.get_qubits()) == [0, 1]
+
+
+def test_sparse_qubit_unitary_error_is_actionable():
+    """Sparse qubit indices raise an error that explains how to compact them."""
+    program = PyQuilProgram(Program(H(0), CNOT(0, 2)))
+
+    with pytest.raises(ValueError, match=r"got \[0, 2\].*index_contig=True"):
+        program.unitary()
+
+
+def test_unitary_allows_measured_only_qubits():
+    """A qubit that is measured but never gated still counts toward num_qubits."""
+    quil = Program(Declare("ro", "BIT", 3), H(0), CZ(0, 2))
+    for qubit in range(3):
+        quil += MEASURE(qubit, ("ro", qubit))
+    program = PyQuilProgram(quil)
+
+    assert program.unitary().shape == (8, 8)
+
+
+def test_reverse_qubit_order():
+    """Reversing qubit order swaps the qubit indices of every instruction."""
+    program = PyQuilProgram(Program(H(0), CNOT(0, 1)))
+    program.reverse_qubit_order()
+    out = program.program.out()
+    assert "H 1" in out
+    assert "CNOT 1 0" in out
+
+
+def test_remove_idle_qubits_remaps_measurements_and_passes_through_declarations():
+    """Measurements are remapped and non-gate instructions (e.g. DECLARE) are
+    preserved when remapping qubits."""
+    program = Program()
+    ro = program.declare("ro", "BIT", 1)
+    program += H(2)
+    program += MEASURE(2, ro[0])
+
+    qprogram = PyQuilProgram(program)
+    qprogram.remove_idle_qubits()
+    out = qprogram.program.out()
+
+    assert "DECLARE ro BIT[1]" in out
+    assert "H 0" in out
+    assert "MEASURE 0 ro[0]" in out

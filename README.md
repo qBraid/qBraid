@@ -68,7 +68,7 @@ pip install .
 
 > _Note:_ The qBraid-SDK requires Python 3.10 or greater.
 
-To use [qBraid Runtime](https://docs.qbraid.com/v2/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_ionq), [OQCProvider](https://docs.qbraid.com/v2/sdk/user-guide/runtime_oqc), and [AzureQuantumProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/azure), as applicable.
+To use [qBraid Runtime](https://docs.qbraid.com/v2/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/native), [BraketProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/aws), [QiskitRuntimeProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/ibm), [IonQProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/ionq), [OQCProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/oqc), [AzureQuantumProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/azure), [OriginProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/origin), [PasqalProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/pasqal), [QuantinuumProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/quantinuum), and [RigettiProvider](https://docs.qbraid.com/v2/sdk/user-guide/providers/rigetti) as applicable.
 
 ## Quickstart
 
@@ -114,7 +114,9 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'stim': stim._stim_sse2.Circuit,
  'pulser': pulser.sequence.sequence.Sequence,
  'pyqpanda3': pyqpanda3.core.QProg,
- 'autoqasm': autoqasm.program.program.Program}
+ 'autoqasm': autoqasm.program.program.Program,
+ 'qrisp': qrisp.circuit.quantum_circuit.QuantumCircuit,
+ 'qat': qat.core.wrappers.circuit.Circuit}
 ```
 
 Pass any registered quantum program along with a target package from

@@ -35,6 +35,7 @@ except ImportError:
 from qbraid.programs import ExperimentType, register_program_type, unregister_program_type
 from qbraid.programs.analog import submodules as ahs_submodules
 from qbraid.programs.annealing import submodules as annealing_submodules
+from qbraid.programs.exceptions import PackageValueError
 from qbraid.programs.gate_model import submodules as gate_model_submodules
 from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
 from qbraid.transpiler.conversions import conversion_functions
@@ -83,7 +84,7 @@ def bound_method_str(source, target):
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
-@pytest.mark.parametrize("func", conversion_functions)
+@pytest.mark.parametrize("func", sorted(conversion_functions))
 def test_conversion_functions_syntax(func):
     """Test that all conversion functions are named correctly."""
     source, target = func.split("_to_")
@@ -99,7 +100,7 @@ def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
         "qiskit", "cirq", top_n=3
     )
     assert len(shortest_path) == 2
-    valid_intermediates = {"qasm2", "qasm3"}
+    valid_intermediates = {"qasm2", "qasm3", "qrisp"}
     path_strs = [str(edge) for edge in shortest_path]
     intermediate = None
     for mid in valid_intermediates:
@@ -150,7 +151,7 @@ def test_add_conversion():
             bound_method_str(mid, "cirq"),
             bound_method_str("cirq", target),
         ]
-        for mid in ("qasm2", "qasm3")
+        for mid in ("qasm2", "qasm3", "qrisp")
     ]
     assert actual_strs in valid_paths, f"Unexpected path: {actual_strs}"
 
@@ -465,3 +466,40 @@ def test_subgraph_by_experiment_type():
     with pytest.raises(ValueError) as excinfo:
         graph.subgraph(ExperimentType.OTHER)
     assert "No program type nodes found with experiment type(s)" in str(excinfo.value)
+
+
+def test_unregistered_node_arg_raises():
+    """Specifying an unregistered program type as a node raises PackageValueError."""
+    aliases_backup = QPROGRAM_ALIASES.copy()
+    registry_backup = QPROGRAM_REGISTRY.copy()
+    unregister_program_type("qasm2")
+    try:
+        with pytest.raises(PackageValueError):
+            ConversionGraph(nodes=["qasm2"])
+    finally:
+        QPROGRAM_ALIASES.clear()
+        QPROGRAM_ALIASES.update(aliases_backup)
+        QPROGRAM_REGISTRY.clear()
+        QPROGRAM_REGISTRY.update(registry_backup)
+
+
+def test_unknown_node_arg_raises():
+    """Specifying a node that was never a registered program type raises."""
+    with pytest.raises(PackageValueError):
+        ConversionGraph(nodes=["not_a_program_type"])
+
+
+def test_unknown_node_arg_raises_with_require_native():
+    """Unregistered nodes are rejected even when require_native is True."""
+    with pytest.raises(PackageValueError):
+        ConversionGraph(nodes=["not_a_program_type"], require_native=True)
+
+
+def test_custom_conversion_endpoints_allowed_as_nodes():
+    """Nodes that are endpoints of a supplied conversion are permitted even if
+    they are not registered program types."""
+    conversion = Conversion("custom_a", "custom_b", lambda program: program)
+    graph = ConversionGraph(
+        conversions=[conversion], nodes=["custom_a", "custom_b"], include_isolated=True
+    )
+    assert set(graph.nodes()) == {"custom_a", "custom_b"}

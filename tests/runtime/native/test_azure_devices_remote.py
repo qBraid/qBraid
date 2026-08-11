@@ -102,9 +102,10 @@ def test_submit_pulser_sequence_to_pasqal(pulser_sequence: pulser_.Sequence):
 
 
 @pytest.fixture
-@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
+    if not pyquil_found:
+        pytest.skip("pyquil not installed")
     # pylint: disable=import-outside-toplevel
     import pyquil
     import pyquil.gates
