@@ -19,6 +19,7 @@
 Unit tests for Quantinuum provider, device, and job classes.
 
 """
+import importlib
 import os
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
@@ -26,8 +27,27 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-pytest.importorskip("qnexus", reason="qnexus is not installed.")
-pytest.importorskip("pytket", reason="pytket is not installed.")
+
+def _import_or_skip(name: str):
+    """Skip the module only when ``name`` itself is not installed.
+
+    ``pytest.importorskip`` swallows any ImportError, including one raised
+    from inside an installed package. That is how qnexus 0.48.0, which
+    imports the undeclared ``selene_core``, silently skipped this entire
+    file in CI: every job stayed green while patch coverage read 0%. A
+    broken dependency should fail loudly; only a genuinely absent one may
+    skip.
+    """
+    try:
+        importlib.import_module(name)
+    except ModuleNotFoundError as exc:
+        if exc.name == name:
+            pytest.skip(f"{name} is not installed.", allow_module_level=True)
+        raise
+
+
+_import_or_skip("qnexus")
+_import_or_skip("pytket")
 
 # pylint: disable=wrong-import-position
 from qbraid.runtime.enums import DeviceStatus, JobStatus  # noqa: E402

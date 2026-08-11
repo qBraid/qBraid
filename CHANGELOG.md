@@ -71,6 +71,7 @@ Writing an entry:
 - Fixed `QuantinuumDevice.status()` raising `ResourceFetchFailed` (400 "Invalid machine name") for cloud-hosted NEXUS emulators such as `H2-Emulator`, which broke `device.run()` since pre-submit validation checks status. Devices now carry a `nexus_hosted` profile flag, and cloud-hosted emulators report `ONLINE` without calling the hardware-only machine status endpoint ([#1295](https://github.com/qBraid/qBraid/pull/1295))
 
 ### Dependencies
+- Excluded `qnexus` 0.48.0 from the `quantinuum` extra (`>=0.39.0,!=0.48.0`). That release imports `selene_core` without declaring it as a dependency, so `import qnexus` raises `ModuleNotFoundError` on a clean install. In CI the broken import made `pytest.importorskip` silently skip the entire Quantinuum test file — every job green, patch coverage 0% — so the tests now skip only when qnexus itself is absent and fail loudly when it is installed but broken ([#1297](https://github.com/qBraid/qBraid/pull/1297))
 
 ## [0.12.2] - 2026-07-11
 
