@@ -31,6 +31,7 @@ from qbraid.runtime.postprocess import (
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_data,
+    reverse_bit_order,
 )
 from qbraid.runtime.result import BatchResult, Result
 from qbraid.runtime.result_data import (
@@ -881,3 +882,29 @@ def test_distribute_counts_diff_non_zero():
     result = distribute_counts(probs, shots)
     assert sum(result.values()) == shots, "Counts do not sum to the number of shots."
     assert result[0] + result[1] + result[2] == shots, "Counts adjustment did not work as expected."
+
+
+class TestReverseBitOrder:
+    """qBraid reports qubit 0 last; providers that report it first are flipped here."""
+
+    def test_moves_qubit_zero_from_first_to_last(self):
+        assert reverse_bit_order({"100": 90, "110": 10}) == {"001": 90, "011": 10}
+
+    def test_multi_register_keys_reverse_whole(self):
+        """Register order flips with the bits, for vendors that emit registers reversed."""
+        assert reverse_bit_order({"1 01": 100}) == {"10 1": 100}
+
+    def test_batch_input_is_mapped_elementwise(self):
+        assert reverse_bit_order([{"100": 5}, {"011": 7}]) == [{"001": 5}, {"110": 7}]
+
+    def test_is_its_own_inverse(self):
+        """Applying it twice restores the input, which is why every call site is justified
+        against a verified provider order rather than added defensively."""
+        counts = {"1011": 3, "0100": 9}
+        assert reverse_bit_order(reverse_bit_order(counts)) == counts
+
+    def test_values_are_untouched(self):
+        assert list(reverse_bit_order({"10": 7}).values()) == [7]
+
+    def test_empty_input(self):
+        assert reverse_bit_order({}) == {}

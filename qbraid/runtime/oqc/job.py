@@ -26,6 +26,7 @@ from qbraid_core._import import LazyLoader
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.postprocess import reverse_bit_order
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
@@ -189,7 +190,9 @@ class OQCJob(QuantumJob):
         if not task_results or not task_results.result:
             raise ResourceNotFoundError("No result found for the task")
 
-        counts = self._get_counts(task_results.result)
+        # OQC reports qubit 0 first; qBraid's convention is qubit 0 last (little-endian,
+        # as Qiskit and IonQ already use), so the key is reversed here.
+        counts = reverse_bit_order(self._get_counts(task_results.result))
         data = GateModelResultData(measurement_counts=counts)
         return Result(device_id=self.qpu_id, job_id=job_id, success=True, data=data, **task_data)
 
