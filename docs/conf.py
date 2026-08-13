@@ -58,6 +58,7 @@ autodoc_mock_imports = [
     "pyquil",
     "qcs_sdk",
     "icalendar",
+    "iqm",
     "recurring_ical_events",
     "pytket",
     "qcaas_client",

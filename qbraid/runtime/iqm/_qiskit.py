@@ -16,62 +16,53 @@
 Qiskit helpers for the IQM runtime integration.
 
 qBraid still needs a thin wrapper here because IQM submission expects
-``iqm.pulse`` circuit objects, while qBraid compiles user programs as
-``qiskit.QuantumCircuit`` instances. The actual qiskit-to-IQM conversion logic
-comes from ``iqm-client[qiskit]``; this module only keeps the import lazy and
-adapts IQM's result formatting into qBraid's result-data shape.
+``iqm.pulse.Circuit`` Python objects, while qBraid compiles user programs as
+``qiskit.QuantumCircuit`` instances. The instruction conversion itself comes
+from ``iqm-client[qiskit]``.
 """
 
 from __future__ import annotations
 
 import json
-from collections import Counter
-from typing import Any
+from typing import TYPE_CHECKING
 
-import numpy as np
+from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit
 
-from . import _compat
+if TYPE_CHECKING:
+    from iqm.iqm_client import Circuit
+
+iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
+iqm_qiskit = LazyLoader(
+    "iqm_qiskit",
+    globals(),
+    "iqm.qiskit_iqm.qiskit_to_iqm",
+)
 
 
 def serialize_circuit(
     circuit: QuantumCircuit,
     *,
     qubit_index_to_name: dict[int, str],
-    circuit_cls,
-) -> Any:
-    """Serialize a qiskit circuit into an IQM circuit object."""
+) -> Circuit:
+    """Convert a Qiskit circuit into an ``iqm.pulse.Circuit`` Python object.
+
+    IQM sends circuit metadata through a JSON API. Non-JSON-serializable Qiskit
+    metadata is therefore omitted so otherwise valid circuits can still be
+    submitted.
+    """
     # IQM's qiskit adapter owns the instruction-level conversion rules.
-    instructions = tuple(
-        _compat.load_iqm_qiskit_symbols().serialize_instructions(circuit, qubit_index_to_name)
-    )
+    instructions = tuple(iqm_qiskit.serialize_instructions(circuit, qubit_index_to_name))
 
     metadata = circuit.metadata
     if metadata is not None:
         try:
             json.dumps(metadata)
-        except TypeError:
+        except (TypeError, ValueError):
             metadata = None
 
-    return circuit_cls(name=circuit.name, instructions=instructions, metadata=metadata)
-
-
-def format_measurement_results(
-    measurement_results: dict[str, list[list[int]]],
-) -> tuple[list[str], np.ndarray, dict[str, int]]:
-    """Convert IQM measurement results into memory strings, shot arrays and counts."""
-    # IQM's qiskit adapter already defines the classical-register ordering and
-    # bitstring layout, so qBraid only derives its array/count views from that.
-    memory = _compat.load_iqm_qiskit_symbols().format_measurement_results(
-        measurement_results,
-        0,
-        False,
+    return iqm_client.Circuit(
+        name=circuit.name,
+        instructions=instructions,
+        metadata=metadata,
     )
-    bitstrings = [item.replace(" ", "") for item in memory]
-    measurements = (
-        np.array([[int(bit) for bit in bitstring] for bitstring in bitstrings], dtype=int)
-        if bitstrings
-        else np.empty((0, 0), dtype=int)
-    )
-    counts = dict(sorted(Counter(bitstrings).items()))
-    return memory, measurements, counts

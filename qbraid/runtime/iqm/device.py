@@ -12,23 +12,41 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""IQM device implementation."""
+
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union, cast
+from typing import TYPE_CHECKING, Any
+from uuid import UUID
 
+from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit, transpile
 
-from qbraid.programs import ProgramSpec, get_program_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
-from . import _compat
 from ._qiskit import serialize_circuit
 from .job import IQMJob
 
 if TYPE_CHECKING:
+    import iqm.iqm_client
+
     import qbraid.runtime
     import qbraid.runtime.iqm.provider
+
+iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
+
+
+def to_iqm_circuit(
+    circuit: QuantumCircuit,
+    *,
+    qubit_index_to_name: dict[int, str],
+) -> iqm.iqm_client.Circuit:
+    """Serialize a qiskit circuit to the circuit model accepted by IQM."""
+    return serialize_circuit(
+        circuit,
+        qubit_index_to_name=qubit_index_to_name,
+    )
 
 
 class IQMDevice(QuantumDevice):
@@ -69,7 +87,7 @@ class IQMDevice(QuantumDevice):
             return DeviceStatus.UNAVAILABLE
         return DeviceStatus.ONLINE
 
-    def _get_coupling_map(self) -> Optional[list[list[int]]]:
+    def _get_coupling_map(self) -> list[list[int]] | None:
         """Convert IQM connectivity into a qiskit integer coupling map."""
         if not self.qubit_connectivity:
             return None
@@ -97,8 +115,12 @@ class IQMDevice(QuantumDevice):
 
     def transform(self, run_input: QuantumCircuit) -> QuantumCircuit:
         """Transform the input circuit to IQM-compatible qiskit basis gates."""
+        # MOVE is an IQM-native operation but not a standard qiskit basis gate.
+        # Existing/inferred MOVE operations are handled on the typed IQM circuit
+        # in submit(), after qiskit lowering has finished.
+        basis_gates = set(self.profile.basis_gates or {"r", "cz"}) - {"move"}
         transpile_kwargs: dict[str, Any] = {
-            "basis_gates": sorted(self.profile.basis_gates or {"r", "cz"}),
+            "basis_gates": sorted(basis_gates),
             "optimization_level": 0,
             "seed_transpiler": 0,
         }
@@ -108,69 +130,27 @@ class IQMDevice(QuantumDevice):
 
         return transpile(run_input, **transpile_kwargs)
 
-    def _resolve_calibration_set_id(self, calibration_set_id=None):
+    def _resolve_calibration_set_id(self, calibration_set_id: UUID | None = None) -> UUID | None:
         """Resolve the calibration set to use for a single IQM run."""
-        return calibration_set_id if calibration_set_id is not None else self.profile.get(
-            "calibration_set_id"
+        return (
+            calibration_set_id
+            if calibration_set_id is not None
+            else self.profile.get("calibration_set_id")
         )
-
-    def prepare(self, run_input: QuantumCircuit, *, calibration_set_id=None) -> Any:
-        """Serialize a transpiled qiskit circuit into an IQM circuit."""
-        if self._target_spec is None or not self._options.get("prepare"):
-            return run_input
-
-        symbols = _compat.load_iqm_symbols()
-        resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
-        qubit_index_to_name = {index: qubit for index, qubit in enumerate(self.qubits)}
-        iqm_circuit = serialize_circuit(
-            run_input,
-            qubit_index_to_name=qubit_index_to_name,
-            circuit_cls=symbols.Circuit,
-        )
-        if not self.profile.get("computational_resonators"):
-            return iqm_circuit
-
-        dynamic_architecture = self.session.get_dynamic_quantum_architecture(resolved_calibration_set_id)
-        return symbols.transpile_insert_moves(
-            iqm_circuit,
-            dynamic_architecture,
-            existing_moves=symbols.ExistingMoveHandlingOptions.KEEP,
-        )
-
-    def apply_runtime_profile(self, run_input: QuantumCircuit, *, calibration_set_id=None) -> Any:
-        """Process a qiskit program using a single calibration set across preparation and submission."""
-        if self._target_spec is not None and self._options.get("transpile") is True:
-            run_input_alias = get_program_type_alias(run_input, safe=True)
-            run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
-            run_input = self.transpile(run_input, run_input_spec)
-
-        is_single_output = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_output else run_input
-
-        if self._options.get("transform") is True:
-            run_input = [self.transform(p) for p in cast(list, run_input)]
-
-        self.validate(run_input)
-        run_input = [
-            self.prepare(p, calibration_set_id=calibration_set_id) for p in cast(list, run_input)
-        ]
-
-        run_input = run_input[0] if is_single_output else run_input
-        return run_input
 
     @staticmethod
-    def _build_compilation_options(
-        compilation_options=None,
+    def _build_compilation_options(  # pylint: disable=too-many-arguments
+        compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
         *,
-        circuit_compilation_options=None,
-        max_circuit_duration_over_t2=None,
-        heralding_mode=None,
-        move_gate_validation=None,
-        move_gate_frame_tracking=None,
-        active_reset_cycles=None,
-        dd_mode=None,
-        dd_strategy=None,
-    ):
+        circuit_compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
+        max_circuit_duration_over_t2: float | None = None,
+        heralding_mode: iqm.iqm_client.HeraldingMode | None = None,
+        move_gate_validation: iqm.iqm_client.MoveGateValidationMode | None = None,
+        move_gate_frame_tracking: iqm.iqm_client.MoveGateFrameTrackingMode | None = None,
+        active_reset_cycles: int | None = None,
+        dd_mode: iqm.iqm_client.DDMode | None = None,
+        dd_strategy: iqm.iqm_client.DDStrategy | None = None,
+    ) -> iqm.iqm_client.CircuitCompilationOptions | None:
         if compilation_options is not None and circuit_compilation_options is not None:
             raise ValueError(
                 "Use either 'compilation_options' or 'circuit_compilation_options', not both."
@@ -199,34 +179,28 @@ class IQMDevice(QuantumDevice):
         if not option_kwargs:
             return None
 
-        symbols = _compat.load_iqm_symbols()
-        return symbols.CircuitCompilationOptions(**option_kwargs)
+        return iqm_client.CircuitCompilationOptions(**option_kwargs)
 
-    # pylint: disable-next=arguments-differ
+    # pylint: disable-next=arguments-differ,too-many-arguments
     def submit(
         self,
-        run_input: Union[Any, list[Any]],
+        run_input: iqm.iqm_client.Circuit | list[iqm.iqm_client.Circuit],
         shots: int = 1,
         *,
-        qubit_mapping: Optional[dict[str, str]] = None,
-        calibration_set_id=None,
-        compilation_options=None,
-        circuit_compilation_options=None,
+        qubit_mapping: iqm.iqm_client.QubitMapping | None = None,
+        calibration_set_id: UUID | None = None,
+        compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
+        circuit_compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
         use_timeslot: bool = False,
-        max_circuit_duration_over_t2=None,
-        heralding_mode=None,
-        move_gate_validation=None,
-        move_gate_frame_tracking=None,
-        active_reset_cycles=None,
-        dd_mode=None,
-        dd_strategy=None,
-        **kwargs,
+        max_circuit_duration_over_t2: float | None = None,
+        heralding_mode: iqm.iqm_client.HeraldingMode | None = None,
+        move_gate_validation: iqm.iqm_client.MoveGateValidationMode | None = None,
+        move_gate_frame_tracking: iqm.iqm_client.MoveGateFrameTrackingMode | None = None,
+        active_reset_cycles: int | None = None,
+        dd_mode: iqm.iqm_client.DDMode | None = None,
+        dd_strategy: iqm.iqm_client.DDStrategy | None = None,
     ) -> IQMJob:
         """Submit one or more IQM circuits to the configured server."""
-        if kwargs:
-            unsupported = ", ".join(sorted(kwargs))
-            raise ValueError(f"Unsupported keyword arguments: {unsupported}")
-
         circuits = [run_input] if not isinstance(run_input, list) else run_input
         if not circuits:
             raise ValueError("run_input list cannot be empty.")
@@ -244,6 +218,19 @@ class IQMDevice(QuantumDevice):
         )
         resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
 
+        if self.profile.get("computational_resonators"):
+            dynamic_architecture = self.session.get_dynamic_quantum_architecture(
+                resolved_calibration_set_id
+            )
+            circuits = [
+                iqm_client.transpile_insert_moves(
+                    circuit,
+                    dynamic_architecture,
+                    existing_moves=iqm_client.ExistingMoveHandlingOptions.KEEP,
+                )
+                for circuit in circuits
+            ]
+
         job = self.session.submit_circuits(
             circuits,
             qubit_mapping=qubit_mapping,
@@ -259,28 +246,4 @@ class IQMDevice(QuantumDevice):
             job=job,
             shots=shots,
             circuit_count=len(circuits),
-        )
-
-    # pylint: disable-next=arguments-differ
-    def run(
-        self,
-        run_input: Union[QuantumCircuit, list[QuantumCircuit]],
-        *args,
-        calibration_set_id=None,
-        **kwargs,
-    ) -> Union[IQMJob, list[IQMJob]]:
-        """Run IQM jobs using one resolved calibration set for both preparation and submission."""
-        is_single_input = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_input else run_input
-        resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
-        run_input_compat = [
-            self.apply_runtime_profile(program, calibration_set_id=resolved_calibration_set_id)
-            for program in run_input
-        ]
-        run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
-        return self.submit(
-            run_input_compat,
-            *args,
-            calibration_set_id=resolved_calibration_set_id,
-            **kwargs,
         )

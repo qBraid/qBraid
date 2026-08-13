@@ -17,6 +17,7 @@ Submodules
    ibm
    azure
    ionq
+   iqm
    openquantum
    oqc
    origin

@@ -12,12 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""IQM provider, session, and quantum-computer discovery helpers."""
+
 from __future__ import annotations
 
 import os
-from typing import Optional
+import platform
+from functools import partial
+from importlib.metadata import PackageNotFoundError, version
+from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 from uuid import UUID
 
+import requests
+from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit
 
 from qbraid._caching import cached_method
@@ -27,12 +35,105 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
-from . import _compat
-from .device import IQMDevice
+from .device import IQMDevice, to_iqm_circuit
+
+if TYPE_CHECKING:
+    import iqm.iqm_client
+    import iqm.iqm_server_client.iqm_server_client
+    import iqm.station_control.client.authentication
+
+iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
+iqm_server_client = LazyLoader(
+    "iqm_server_client",
+    globals(),
+    "iqm.iqm_server_client.iqm_server_client",
+)
+iqm_authentication = LazyLoader(
+    "iqm_authentication",
+    globals(),
+    "iqm.station_control.client.authentication",
+)
 
 IQM_SERVER_URL_ENV = "IQM_SERVER_URL"
 IQM_QUANTUM_COMPUTER_ENV = "IQM_QUANTUM_COMPUTER"
 DEFAULT_IQM_SERVER_URL = "https://resonance.meetiqm.com"
+
+
+def _create_client_signature(client_signature: str | None) -> str:
+    """Build the User-Agent value expected by the IQM server client."""
+    signature = platform.platform(terse=True)
+    signature += f", python {platform.python_version()}"
+    try:
+        iqm_client_version = version("iqm-client")
+    except PackageNotFoundError:
+        iqm_client_version = "unknown"
+    signature += f", IQMClient iqm-client {iqm_client_version}"
+    if client_signature:
+        signature += f", {client_signature}"
+    return signature
+
+
+def _normalize_server_url(iqm_server_url: str) -> str:
+    """Validate and normalize an IQM server base URL."""
+    if not iqm_server_url.isascii():
+        raise iqm_authentication.ClientConfigurationError(
+            f"Non-ASCII characters in URL: {iqm_server_url}"
+        )
+    try:
+        url = urlparse(iqm_server_url)
+    except Exception as err:  # pragma: no cover - ``urlparse`` is very permissive.
+        raise iqm_authentication.ClientConfigurationError(f"Invalid URL: {iqm_server_url}") from err
+
+    if url.scheme not in {"http", "https"}:
+        raise iqm_authentication.ClientConfigurationError(
+            f"The URL schema has to be http or https. Incorrect schema in URL: {iqm_server_url}"
+        )
+    if url.hostname is None:
+        raise iqm_authentication.ClientConfigurationError(f"Invalid URL: {iqm_server_url}")
+    if url.path not in {"", "/"}:
+        raise iqm_authentication.ClientConfigurationError(
+            "The IQM Server URL must be a server base URL without a quantum computer path."
+        )
+
+    port_suffix = f":{url.port}" if url.port else ""
+    return f"{url.scheme}://{url.hostname}{port_suffix}"
+
+
+def list_quantum_computers(
+    iqm_server_url: str,
+    *,
+    token: str | None = None,
+    tokens_file: str | None = None,
+    client_signature: str | None = None,
+) -> tuple[str, ...]:
+    """List the quantum-computer aliases visible through an IQM server."""
+    root_url = _normalize_server_url(iqm_server_url)
+    token_manager = iqm_authentication.TokenManager(token, tokens_file)
+    auth_header_callback = token_manager.get_auth_header_callback()
+    headers = {
+        "User-Agent": _create_client_signature(client_signature),
+        "Accept": "application/json",
+    }
+    if auth_header_callback:
+        headers["Authorization"] = auth_header_callback()
+
+    response = requests.get(
+        f"{root_url}/api/v1/quantum-computers",
+        headers=headers,
+        timeout=iqm_server_client.REQUESTS_TIMEOUT,
+    )
+    if not response.ok:
+        try:
+            response_json = response.json()
+            error_message = response_json.get("message") or response_json["detail"]
+        except (ValueError, KeyError):
+            error_message = response.text
+
+        error_class = iqm_server_client.map_from_status_code_to_error(response.status_code)
+        raise error_class(error_message)
+
+    payload = iqm_server_client.ListQuantumComputersResponse.model_validate_json(response.text)
+    return tuple(quantum_computer.alias for quantum_computer in payload.quantum_computers)
 
 
 class IQMSession:
@@ -40,12 +141,12 @@ class IQMSession:
 
     def __init__(
         self,
-        url: Optional[str] = None,
+        url: str | None = None,
         *,
-        quantum_computer: Optional[str] = None,
-        token: Optional[str] = None,
-        tokens_file: Optional[str] = None,
-        client_signature: Optional[str] = None,
+        quantum_computer: str | None = None,
+        token: str | None = None,
+        tokens_file: str | None = None,
+        client_signature: str | None = None,
     ):
         resolved_url = (url or os.getenv(IQM_SERVER_URL_ENV) or DEFAULT_IQM_SERVER_URL).rstrip("/")
 
@@ -54,7 +155,7 @@ class IQMSession:
         self.client_signature = client_signature or f"QbraidSDK/{qbraid_version}"
         self._token = token
         self._tokens_file = tokens_file
-        self._client = None
+        self._client: iqm.iqm_client.IQMClient | None = None
         self._auth_config = {
             "quantum_computer": self.quantum_computer,
             "token": self._token,
@@ -72,11 +173,10 @@ class IQMSession:
         )
 
     @property
-    def client(self):
+    def client(self) -> iqm.iqm_client.IQMClient:
         """Return the underlying IQM client."""
         if self._client is None:
-            symbols = _compat.load_iqm_symbols()
-            self._client = symbols.IQMClient(
+            self._client = iqm_client.IQMClient(
                 self.url,
                 quantum_computer=self.quantum_computer,
                 token=self._token,
@@ -89,23 +189,43 @@ class IQMSession:
     def _coerce_job_id(job_id: str | UUID) -> UUID:
         return job_id if isinstance(job_id, UUID) else UUID(str(job_id))
 
-    def get_static_quantum_architecture(self):
+    def get_static_quantum_architecture(self) -> iqm.iqm_client.StaticQuantumArchitecture:
         """Return the static quantum architecture for the selected quantum computer."""
         return self.client.get_static_quantum_architecture()
 
-    def get_dynamic_quantum_architecture(self, calibration_set_id: UUID | None = None):
+    def get_dynamic_quantum_architecture(
+        self, calibration_set_id: UUID | None = None
+    ) -> iqm.iqm_client.DynamicQuantumArchitecture:
         """Return the dynamic quantum architecture for the selected quantum computer."""
         return self.client.get_dynamic_quantum_architecture(calibration_set_id)
 
-    def submit_circuits(self, circuits, **kwargs):
+    def submit_circuits(  # pylint: disable=too-many-arguments
+        self,
+        circuits: iqm.iqm_client.CircuitBatch,
+        *,
+        qubit_mapping: iqm.iqm_client.QubitMapping | None = None,
+        calibration_set_id: UUID | None = None,
+        shots: int = 1,
+        options: iqm.iqm_client.CircuitCompilationOptions | None = None,
+        use_timeslot: bool = False,
+    ) -> iqm.iqm_client.CircuitJob:
         """Submit one or more IQM circuits."""
-        return self.client.submit_circuits(circuits, **kwargs)
+        return self.client.submit_circuits(
+            circuits,
+            qubit_mapping=qubit_mapping,
+            calibration_set_id=calibration_set_id,
+            shots=shots,
+            options=options,
+            use_timeslot=use_timeslot,
+        )
 
-    def get_job(self, job_id: str | UUID):
+    def get_job(self, job_id: str | UUID) -> iqm.iqm_client.CircuitJob:
         """Return the current state of an IQM job."""
         return self.client.get_job(self._coerce_job_id(job_id))
 
-    def get_job_measurements(self, job_id: str | UUID):
+    def get_job_measurements(
+        self, job_id: str | UUID
+    ) -> iqm.iqm_client.CircuitMeasurementResultsBatch:
         """Return the measurement results for a completed IQM job."""
         return self.client.get_job_measurements(self._coerce_job_id(job_id))
 
@@ -117,7 +237,7 @@ class IQMSession:
         """Return the quantum computer aliases visible through the configured account."""
         if self.quantum_computer is not None:
             return (self.quantum_computer,)
-        return _compat.list_quantum_computers(
+        return list_quantum_computers(
             self.url,
             token=self._token,
             tokens_file=self._tokens_file,
@@ -130,12 +250,12 @@ class IQMProvider(QuantumProvider):
 
     def __init__(
         self,
-        url: Optional[str] = None,
+        url: str | None = None,
         *,
-        quantum_computer: Optional[str] = None,
-        token: Optional[str] = None,
-        tokens_file: Optional[str] = None,
-        client_signature: Optional[str] = None,
+        quantum_computer: str | None = None,
+        token: str | None = None,
+        tokens_file: str | None = None,
+        client_signature: str | None = None,
     ):
         self.session = IQMSession(
             url,
@@ -153,6 +273,8 @@ class IQMProvider(QuantumProvider):
             basis_gates.append("r")
         if "cz" in gates:
             basis_gates.append("cz")
+        if "move" in gates:
+            basis_gates.append("move")
         return basis_gates
 
     @staticmethod
@@ -166,8 +288,8 @@ class IQMProvider(QuantumProvider):
     @classmethod
     def _build_qubit_connectivity(
         cls,
-        static_architecture,
-        dynamic_architecture,
+        static_architecture: iqm.iqm_client.StaticQuantumArchitecture,
+        dynamic_architecture: iqm.iqm_client.DynamicQuantumArchitecture,
     ) -> tuple[tuple[str, str], ...]:
         """Build the simplified qubit-only CZ graph used for qiskit transpilation."""
         qubits = tuple(static_architecture.qubits)
@@ -218,17 +340,15 @@ class IQMProvider(QuantumProvider):
 
     def _build_profile(
         self,
-        static_architecture,
-        dynamic_architecture,
+        static_architecture: iqm.iqm_client.StaticQuantumArchitecture,
+        dynamic_architecture: iqm.iqm_client.DynamicQuantumArchitecture,
         *,
         quantum_computer: str | None,
     ) -> TargetProfile:
         """Build a qBraid target profile from IQM architecture data."""
         native_operations = set(dynamic_architecture.gates.keys())
         device_id = (
-            quantum_computer
-            or getattr(static_architecture, "dut_label", None)
-            or self.session.url
+            quantum_computer or getattr(static_architecture, "dut_label", None) or self.session.url
         )
         dut_label = getattr(static_architecture, "dut_label", None)
         return TargetProfile(
@@ -236,7 +356,14 @@ class IQMProvider(QuantumProvider):
             simulator=False,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=len(static_architecture.qubits),
-            program_spec=ProgramSpec(QuantumCircuit, alias="qiskit"),
+            program_spec=ProgramSpec(
+                QuantumCircuit,
+                alias="qiskit",
+                serialize=partial(
+                    to_iqm_circuit,
+                    qubit_index_to_name=dict(enumerate(static_architecture.qubits)),
+                ),
+            ),
             provider_name="IQM",
             basis_gates=self._build_basis_gates(native_operations),
             device_name=dut_label or device_id,
@@ -282,7 +409,10 @@ class IQMProvider(QuantumProvider):
     def get_devices(self, **kwargs) -> list[IQMDevice]:
         """Return the IQM device list for the configured server."""
         device_id = kwargs.get("device_id")
-        devices = [self._build_device(quantum_computer) for quantum_computer in self.session.list_quantum_computers()]
+        devices = [
+            self._build_device(quantum_computer)
+            for quantum_computer in self.session.list_quantum_computers()
+        ]
         if device_id is not None:
             return [
                 device
