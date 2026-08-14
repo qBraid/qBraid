@@ -36,6 +36,7 @@ from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 try:
+    from qbraid_core.decimal import USD
     from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
 
     from qbraid.programs import NATIVE_REGISTRY, ExperimentType, ProgramSpec
@@ -44,7 +45,6 @@ try:
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
     from qbraid.runtime.postprocess import counts_to_probabilities
-    from qbraid_core.decimal import USD
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
