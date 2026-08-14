@@ -839,6 +839,12 @@ def test_oqc_result_reports_qubit_zero_last(oqc_job):
     Asserted at ``result()`` rather than on ``_get_counts``: the vendor parsing is
     deliberately left in OQC's order, and the conversion is the step that was missing.
     An asymmetric key is used so a no-op would fail.
+
+    NOTE: this module is currently skipped everywhere -- its import guard reaches for
+    ``qbraid.runtime.schemas.base.USD``, which no longer exists, so all 35 tests here
+    are skipped under the misleading reason "qcaas_client not installed". This test is
+    written to be correct when that is fixed; until then the conversion it covers is
+    exercised only through ``test_result.py``.
     """
     vendor_counts = {"100": 90, "110": 10}
 
