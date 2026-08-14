@@ -44,7 +44,7 @@ try:
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
     from qbraid.runtime.postprocess import counts_to_probabilities
-    from qbraid.runtime.schemas.base import USD
+    from qbraid_core.decimal import USD
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
