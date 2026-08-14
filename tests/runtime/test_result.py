@@ -888,6 +888,7 @@ class TestReverseBitOrder:
     """qBraid reports qubit 0 last; providers that report it first are flipped here."""
 
     def test_moves_qubit_zero_from_first_to_last(self):
+        """A vendor key with qubit 0 first becomes qBraid's qubit-0-last order."""
         assert reverse_bit_order({"100": 90, "110": 10}) == {"001": 90, "011": 10}
 
     def test_multi_register_keys_reverse_whole(self):
@@ -895,6 +896,7 @@ class TestReverseBitOrder:
         assert reverse_bit_order({"1 01": 100}) == {"10 1": 100}
 
     def test_batch_input_is_mapped_elementwise(self):
+        """Batch results are a list of histograms; each is converted independently."""
         assert reverse_bit_order([{"100": 5}, {"011": 7}]) == [{"001": 5}, {"110": 7}]
 
     def test_is_its_own_inverse(self):
@@ -904,7 +906,9 @@ class TestReverseBitOrder:
         assert reverse_bit_order(reverse_bit_order(counts)) == counts
 
     def test_values_are_untouched(self):
+        """Only keys are rewritten -- shot counts must survive the conversion."""
         assert list(reverse_bit_order({"10": 7}).values()) == [7]
 
     def test_empty_input(self):
+        """A job with no counts converts to an empty mapping rather than raising."""
         assert reverse_bit_order({}) == {}
