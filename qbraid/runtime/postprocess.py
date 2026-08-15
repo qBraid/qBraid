@@ -187,11 +187,7 @@ def normalize_data(
         format_data(datum, include_zero_values=include_zero_values, decimal=decimal)
         for datum in data
     ]
-
-    if decimal:
-        return batch_data
-
-    return normalize_batch_bit_lengths(batch_data)
+    return batch_data
 
 
 def _counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
