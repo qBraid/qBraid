@@ -26,6 +26,7 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
+from ._transport import ensure_bounded_client
 from .device import QuantinuumDevice
 
 if TYPE_CHECKING:
@@ -37,6 +38,10 @@ def _fetch_quantinuum_devices_df():
     # pylint: disable-next=import-outside-toplevel
     import qnexus as qnx
 
+    # Device enumeration is often the first qnexus call a process makes, so it
+    # must apply the client bound itself rather than rely on a device or job
+    # call having run first.
+    ensure_bounded_client()
     return qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
 
 

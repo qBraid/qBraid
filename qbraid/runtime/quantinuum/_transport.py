@@ -34,7 +34,8 @@ import time
 from typing import Callable, Type, TypeVar
 
 from qbraid._logging import logger
-from qbraid.runtime.exceptions import QbraidRuntimeError
+
+from .exceptions import QuantinuumDeviceError
 
 _T = TypeVar("_T")
 
@@ -47,10 +48,6 @@ DEFAULT_HTTP_TIMEOUT_SECONDS = 60.0
 RETRYABLE_STATUS_CODES = frozenset({502, 503, 504})
 
 _HTTP_TIMEOUT_ENV = "QUANTINUUM_NEXUS_HTTP_TIMEOUT"
-
-
-class QuantinuumDeviceError(QbraidRuntimeError):
-    """Exception raised by QuantinuumDevice."""
 
 
 def positive_float_env(name: str, default: float) -> float:

@@ -91,12 +91,21 @@ class TestStatusMapping:
             ("QUEUED", JobStatus.QUEUED),
             ("RETRYING", JobStatus.QUEUED),
             ("RUNNING", JobStatus.RUNNING),
-            ("UNEXPECTED_VALUE", JobStatus.UNKNOWN),
             (None, JobStatus.UNKNOWN),
         ],
     )
     def test_map_quantinuum_status(self, raw, expected):
         assert _map_quantinuum_status(raw) == expected
+
+    def test_map_quantinuum_status_raises_on_unrecognized_value(self):
+        """An unmapped NEXUS status must fail loudly, not degrade to UNKNOWN.
+
+        ``UNKNOWN`` is not terminal, so an 11th NEXUS state that stops a job
+        would be polled forever if it fell through silently — the exact bug
+        ``TERMINATED``/``DEPLETED`` had before the map was completed.
+        """
+        with pytest.raises(QuantinuumJobError, match="Unrecognized Quantinuum job status"):
+            _map_quantinuum_status("UNEXPECTED_VALUE")
 
     def test_status_map_covers_every_nexus_status(self):
         """The map must cover all of qnexus's statuses, checked against qnexus.
@@ -198,6 +207,22 @@ class TestQuantinuumProvider:
     )
     def test_simulator_classification(self, device_name, nexus_hosted, expected):
         assert _is_simulator(device_name, nexus_hosted) is expected
+
+    @patch("qbraid.runtime.quantinuum.provider.ensure_bounded_client")
+    @patch("qnexus.devices.get_all")
+    def test_device_listing_bounds_the_client(self, mock_get_all, mock_ensure):
+        """Device enumeration must bound the shared client itself.
+
+        In a fresh process the device listing is typically the first qnexus
+        call made (the ``qbraid-runtime-api`` startup path), so it cannot rely
+        on a device or job call having applied the timeout first.
+        """
+        df_mock = MagicMock()
+        df_mock.iterrows.return_value = iter([])
+        mock_get_all.return_value.df.return_value = df_mock
+
+        QuantinuumProvider().get_devices()
+        mock_ensure.assert_called_once()
 
     def test_provider_is_hashable(self):
         """``QuantinuumProvider`` instances must be hashable for ``cached_method``."""
@@ -752,6 +777,97 @@ class TestQuantinuumDevice:
         # Ambiguous acceptance: exactly one dispatch attempt, never a retry.
         mock_execute.assert_called_once()
 
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_wraps_execute_dispatch_gateway_error(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        _mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """A gateway 502/503 on the dispatch gets the same orphaned-job guidance.
+
+        qnexus checks status codes by hand, so a gateway failure arrives as
+        ``ResourceCreateFailed``, not an httpx error — and a gateway can fail
+        after forwarding the request, so acceptance is just as ambiguous as a
+        timeout. Still never retried.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus.exceptions as qnx_exc
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_execute.side_effect = qnx_exc.ResourceCreateFailed(
+            message="bad gateway", status_code=502
+        )
+
+        device = _make_device()
+        with pytest.raises(
+            QuantinuumDeviceError, match=r"check project 'qbraid' for a job named 'qbraid execute"
+        ):
+            device.submit(Circuit(2), shots=100)
+
+        mock_execute.assert_called_once()
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_execute_dispatch_rejection_propagates(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        _mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """A non-gateway rejection means NEXUS refused the job: no ambiguity.
+
+        The orphaned-job wording would be misleading for a 4xx, so the qnexus
+        error propagates untouched, matching how the earlier stages surface
+        semantic failures.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus.exceptions as qnx_exc
+
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_execute.side_effect = qnx_exc.ResourceCreateFailed(
+            message="invalid program", status_code=422
+        )
+
+        device = _make_device()
+        with pytest.raises(qnx_exc.ResourceCreateFailed):
+            device.submit(Circuit(2), shots=100)
+
+        mock_execute.assert_called_once()
+
     @pytest.mark.parametrize(
         ("env", "value", "match"),
         [
@@ -965,15 +1081,16 @@ class TestQuantinuumJob:
         mock_status.assert_called_once()
 
     @patch("qnexus.jobs.status")
-    def test_status_unknown_on_unrecognized_value(self, mock_status):
-        """An unrecognized status maps to UNKNOWN rather than raising."""
+    def test_status_raises_on_unrecognized_value(self, mock_status):
+        """An unrecognized NEXUS status raises rather than reading as UNKNOWN."""
         mock_status.return_value = SimpleNamespace(
             status=SimpleNamespace(value="SOMETHING_UNEXPECTED"),
             message="",
             error_detail=None,
         )
         job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
-        assert job.status() == JobStatus.UNKNOWN
+        with pytest.raises(QuantinuumJobError, match="Unrecognized Quantinuum job status"):
+            job.status()
 
     @patch("qnexus.jobs.status")
     def test_status_wraps_lookup_errors(self, mock_status):
@@ -1045,11 +1162,31 @@ class TestQuantinuumJob:
         with pytest.raises(QuantinuumJobError, match="completed_time or running_time is missing"):
             job.execution_time_s()
 
-    def test_execution_time_missing_detail_raises(self):
-        """A job whose terminal status came from cached metadata has no detail."""
-        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
-        job._cache_metadata["status"] = JobStatus.COMPLETED  # pylint: disable=protected-access
-        with pytest.raises(QuantinuumJobError, match="status detail is missing"):
+    @patch("qnexus.jobs.status")
+    def test_execution_time_fetches_detail_for_cached_terminal_status(self, mock_status):
+        """A cached terminal status must not break the timing readers.
+
+        ``status()`` early-returns on a cached terminal status without touching
+        NEXUS, so a job constructed with ``status=COMPLETED`` (e.g. rehydrated
+        from persisted metadata) reaches this point with no status detail.
+        The detail is fetched on demand rather than failing a finished job.
+        """
+        start = datetime.now(timezone.utc)
+        end = start + timedelta(seconds=42)
+        mock_status.return_value = _nexus_status(
+            "COMPLETED", running_time=start, completed_time=end
+        )
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"), status=JobStatus.COMPLETED)
+        assert job.execution_time_s() == pytest.approx(42.0)
+        # The cached status short-circuited status(); only the detail fetch ran.
+        mock_status.assert_called_once()
+
+    @patch("qnexus.jobs.status")
+    def test_execution_time_detail_fetch_errors_are_wrapped(self, mock_status):
+        """A failed on-demand detail fetch surfaces as QuantinuumJobError."""
+        mock_status.side_effect = RuntimeError("nexus down")
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"), status=JobStatus.COMPLETED)
+        with pytest.raises(QuantinuumJobError, match="Unable to retrieve job status"):
             job.execution_time_s()
 
     @patch("qnexus.jobs.status")
@@ -1126,6 +1263,22 @@ class TestQuantinuumJob:
         mock_status.return_value = _nexus_status("COMPLETED")
         job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
         with pytest.raises(QuantinuumJobError, match="Failed to fetch results"):
+            job.result()
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_result_wraps_download_errors(self, mock_results, mock_status):
+        """``download_result`` is lazy and makes its own NEXUS request per item.
+
+        A blip there must surface as QuantinuumJobError like every other
+        qnexus call in the job class, not as a raw qnexus/httpx error.
+        """
+        result_item = MagicMock()
+        result_item.download_result.side_effect = RuntimeError("connection reset")
+        mock_results.return_value = [result_item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        with pytest.raises(QuantinuumJobError, match="Failed to download results"):
             job.result()
 
     @patch("qnexus.jobs.status")

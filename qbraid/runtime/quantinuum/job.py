@@ -22,12 +22,12 @@ from typing import TYPE_CHECKING, Any
 
 from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
 from ._transport import ensure_bounded_client
+from .exceptions import QuantinuumJobError
 
 if TYPE_CHECKING:
     from qnexus.models.job_status import JobStatus as NexusJobStatus
@@ -36,10 +36,10 @@ if TYPE_CHECKING:
     from qbraid.runtime.quantinuum.device import QuantinuumDevice
 
 #: Every member of ``qnexus.models.job_status.JobStatusEnum``, keyed by value so
-#: the module does not need qnexus imported to be defined. The two terminal
-#: failure states NEXUS reports besides ``ERROR`` matter most here: an unmapped
-#: status falls through to ``UNKNOWN``, which is not terminal, so a job that has
-#: actually stopped would be polled until the caller's own timeout.
+#: the module does not need qnexus imported to be defined. An unmapped status
+#: raises rather than degrading to ``UNKNOWN``: ``UNKNOWN`` is not terminal, so
+#: a new NEXUS state that actually stops a job would otherwise be polled until
+#: the caller's own timeout, silently.
 #:
 #: - ``SUBMITTED`` is the state a job enters the moment NEXUS accepts it, before
 #:   the device queues it, so it is the first status most jobs ever report.
@@ -61,15 +61,18 @@ _QUANTINUUM_STATUS_MAP: dict[str, JobStatus] = {
 }
 
 
-class QuantinuumJobError(QbraidRuntimeError):
-    """Class for errors raised while processing a Quantinuum job."""
-
-
 def _map_quantinuum_status(last_status: str | None) -> JobStatus:
-    """Map a qnexus job status value to a qBraid :class:`JobStatus`."""
+    """Map a qnexus job status value to a qBraid :class:`JobStatus`.
+
+    Raises:
+        QuantinuumJobError: If NEXUS reports a status the map does not cover.
+    """
     if last_status is None:
         return JobStatus.UNKNOWN
-    return _QUANTINUUM_STATUS_MAP.get(last_status, JobStatus.UNKNOWN)
+    try:
+        return _QUANTINUUM_STATUS_MAP[last_status]
+    except KeyError as err:
+        raise QuantinuumJobError(f"Unrecognized Quantinuum job status {last_status!r}.") from err
 
 
 class QuantinuumJob(QuantumJob):
@@ -134,6 +137,30 @@ class QuantinuumJob(QuantumJob):
         self._cache_metadata["status"] = status
         return status
 
+    def _get_status_detail(self) -> NexusJobStatus:
+        """Return the NEXUS status detail, fetching it when not already cached.
+
+        :meth:`status` early-returns on a cached terminal status without
+        touching NEXUS, so a job constructed with ``status=COMPLETED`` (or one
+        rehydrated from persisted metadata) reaches the timing and error-detail
+        readers with ``_status_detail`` still unset. Fetching on demand keeps
+        those readers working for such jobs instead of failing on a job that
+        genuinely finished.
+        """
+        if self._status_detail is not None:
+            return self._status_detail
+
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus as qnx
+
+        try:
+            ref = self._get_ref()
+            ensure_bounded_client()
+            self._status_detail = qnx.jobs.status(ref)
+        except Exception as exc:
+            raise QuantinuumJobError(f"Unable to retrieve job status for {self.id}") from exc
+        return self._status_detail
+
     def _resolve_device_id(self, ref: ExecuteJobRef) -> str:
         """Resolve the target device name for a job.
 
@@ -188,11 +215,7 @@ class QuantinuumJob(QuantumJob):
         """
         if self.status() != JobStatus.COMPLETED:
             return None
-        detail = self._status_detail
-        if detail is None:
-            raise QuantinuumJobError(
-                f"Execution time not available for {self.id}: status detail is missing"
-            )
+        detail = self._get_status_detail()
         completed_time = detail.completed_time
         running_time = detail.running_time
         if completed_time is None or running_time is None:
@@ -234,10 +257,17 @@ class QuantinuumJob(QuantumJob):
         # Quantinuum / pytket use least-significant-bit-first ordering by default.
         # Convert to most-significant-bit-first (dlo = descending lexicographic order)
         # for consistency with other qBraid providers.
+        # ``download_result`` is lazy and issues its own NEXUS request per item,
+        # so the loop needs the same wrapping as the results listing above.
         all_counts: list[dict[str, int]] = []
-        for result_item in results:
-            counts = result_item.download_result().get_counts(basis=BasisOrder.dlo)
-            all_counts.append({"".join(map(str, k)): v for k, v in counts.items()})
+        try:
+            for result_item in results:
+                counts = result_item.download_result().get_counts(basis=BasisOrder.dlo)
+                all_counts.append({"".join(map(str, k)): v for k, v in counts.items()})
+        except Exception as exc:
+            raise QuantinuumJobError(
+                f"Failed to download results for Quantinuum job {self.id}"
+            ) from exc
 
         measurement_counts = all_counts[0] if len(all_counts) == 1 else all_counts
         device_id = self._resolve_device_id(ref)

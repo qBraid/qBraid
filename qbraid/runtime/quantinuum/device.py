@@ -19,6 +19,7 @@ Module defining Quantinuum device class.
 from __future__ import annotations
 
 import asyncio
+import functools
 import os
 import uuid
 from datetime import datetime, timezone
@@ -29,12 +30,13 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
 from ._transport import (
-    QuantinuumDeviceError,
+    RETRYABLE_STATUS_CODES,
     bounded_int_env,
     ensure_bounded_client,
     positive_float_env,
     retry_transient,
 )
+from .exceptions import QuantinuumDeviceError
 from .job import QuantinuumJob
 
 if TYPE_CHECKING:
@@ -160,15 +162,15 @@ class QuantinuumDevice(QuantumDevice):
             ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
             return f"qbraid {label} {ts}-{uuid.uuid4().hex[:6]}"
 
+        def upload_circuit(index: int, circuit: Circuit):
+            return qnx.circuits.upload(
+                name=unique(f"circuit-{index}"), circuit=circuit, project=project
+            )
+
         # Pre-execute stages are retried on transient connection errors; a repeat
         # at worst orphans an upload or compile job, with no execution cost.
         circuit_refs = [
-            retry_transient(
-                lambda i=i, c=c: qnx.circuits.upload(
-                    name=unique(f"circuit-{i}"), circuit=c, project=project
-                )
-            )
-            for i, c in enumerate(circuits)
+            retry_transient(functools.partial(upload_circuit, i, c)) for i, c in enumerate(circuits)
         ]
 
         compile_job = retry_transient(
@@ -214,7 +216,11 @@ class QuantinuumDevice(QuantumDevice):
         # read timeout, a slow NEXUS response here raises after the server may
         # already have accepted a billable job, and a bare httpx exception gives
         # the caller no way to find it. Name the job first so the error can say
-        # exactly what to look for.
+        # exactly what to look for. The same ambiguity applies to a gateway
+        # 502/503/504: qnexus reports those as ``ResourceCreateFailed`` rather
+        # than an httpx error, and a gateway can fail after forwarding the
+        # request, so they get the same guidance. Other status codes mean NEXUS
+        # itself rejected the dispatch, and those propagate untouched.
         execute_name = unique("execute")
         try:
             execute_job = qnx.start_execute_job(
@@ -231,5 +237,15 @@ class QuantinuumDevice(QuantumDevice):
                 f"have accepted the job: check project {resolved_project_name!r} for a job "
                 f"named {execute_name!r} and cancel it if it is running, or its shots will "
                 "be billed with no local handle to poll."
+            ) from err
+        except qnx_exc.ResourceCreateFailed as err:
+            if err.status_code not in RETRYABLE_STATUS_CODES:
+                raise
+            raise QuantinuumDeviceError(
+                f"Gateway error on the execute dispatch ({err}). NEXUS may still have "
+                f"accepted the job behind the gateway: check project "
+                f"{resolved_project_name!r} for a job named {execute_name!r} and cancel "
+                "it if it is running, or its shots will be billed with no local handle "
+                "to poll."
             ) from err
         return QuantinuumJob(job_id=str(execute_job.id), device=self, job=execute_job)
