@@ -19,16 +19,22 @@ Module defining QUDORA device class
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
+from qbraid.programs.typer import get_qasm_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import QudoraJob
 
 if TYPE_CHECKING:
     import qbraid.runtime
     import qbraid.runtime.qudora.provider
+
+
+class QudoraDeviceError(QbraidRuntimeError):
+    """Class for errors raised while processing a QUDORA device."""
 
 
 # Maps QUDORA ``BackendStatusName`` values to qBraid ``DeviceStatus``.
@@ -38,6 +44,9 @@ _DEVICE_STATUS_MAP = {
     "Calibrating": DeviceStatus.UNAVAILABLE,
     "Unresponsive": DeviceStatus.OFFLINE,
 }
+
+# Maps qBraid QASM type aliases to the QUDORA ``language`` values.
+_QASM_LANGUAGE_MAP = {"qasm2": "OpenQASM2", "qasm3": "OpenQASM3"}
 
 
 class QudoraDevice(QuantumDevice):
@@ -61,15 +70,21 @@ class QudoraDevice(QuantumDevice):
         return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self) -> DeviceStatus:
-        """Return the current status of the QUDORA device."""
-        backend_id = self.profile.get("qudora_backend_id")
-        if backend_id is None:
-            # The QUDORA ``/backends/`` listing carries no per-backend status field, and the
-            # status endpoint is keyed by an integer id. When that id is unavailable, a device
-            # that appears in the listing is treated as online.
-            return DeviceStatus.ONLINE
-        status_name = self.session.get_backend_status(backend_id)
-        return _DEVICE_STATUS_MAP.get(status_name, DeviceStatus.UNAVAILABLE)
+        """Return the current status of the QUDORA device.
+
+        Raises:
+            QudoraDeviceError: If QUDORA reports a ``BackendStatusName`` that is not mapped.
+                Failing here is deliberate: defaulting an unrecognized value would let the
+                device advertise a status it never reported.
+        """
+        status_name = self.session.get_backend_status(self.profile["qudora_backend_id"])
+        try:
+            return _DEVICE_STATUS_MAP[status_name]
+        except KeyError as err:
+            raise QudoraDeviceError(
+                f"Unrecognized QUDORA backend status '{status_name}'. "
+                f"Known values: {sorted(_DEVICE_STATUS_MAP)}."
+            ) from err
 
     def available_settings(self) -> dict[str, Any]:
         """Return the configurable QUDORA backend settings and their schema.
@@ -78,38 +93,50 @@ class QudoraDevice(QuantumDevice):
         simulators, the noise parameters ``measurement_error_probability``,
         ``two_qubit_gate_noise_strength``, ``single_qubit_gate_noise_strength``, and
         ``dephasing_T2_time`` — each entry carrying its ``default`` (and any bounds). Derived
-        from the backend's ``user_settings_schema``; empty when the backend exposes none.
+        from the backend's ``user_settings_schema``, which every backend publishes; empty
+        only when that schema declares no properties.
         """
-        schema = self.profile.get("user_settings_schema") or {}
+        schema = self.profile["user_settings_schema"]
         return schema.get("properties", {})
 
     @staticmethod
     def _detect_language(program: str) -> str:
-        """Return the QUDORA ``language`` (``OpenQASM2``/``OpenQASM3``) for a QASM string."""
-        for line in program.splitlines():
-            stripped = line.strip()
-            if stripped.startswith("OPENQASM"):
-                if stripped.startswith("OPENQASM 2"):
-                    return "OpenQASM2"
-                if stripped.startswith("OPENQASM 3"):
-                    return "OpenQASM3"
-                break
-        raise ValueError("Could not determine the OpenQASM version from the program header.")
+        """Return the QUDORA ``language`` (``OpenQASM2``/``OpenQASM3``) for a QASM string.
 
+        Version detection is delegated to qBraid's shared QASM typing rather than scanning
+        for a line starting with ``OPENQASM``: that scan reads a version named inside a
+        block comment as the program's own, and accepts a header missing its semicolon.
+
+        Raises:
+            QasmError: If the OpenQASM version cannot be determined.
+            ValueError: If the program is a QASM dialect QUDORA does not accept.
+        """
+        alias = get_qasm_type_alias(program)
+        try:
+            return _QASM_LANGUAGE_MAP[alias]
+        except KeyError as err:
+            raise ValueError(
+                f"QUDORA accepts {sorted(_QASM_LANGUAGE_MAP)} programs, got '{alias}'."
+            ) from err
+
+    # The base signature is deliberately narrowed: QUDORA accepts only OpenQASM strings, and
+    # the extra arguments are the vendor's documented submit options.
     # pylint:disable-next=arguments-differ
-    def submit(
+    def submit(  # type: ignore[override]
         self,
-        run_input: Union[str, list[str]],
+        run_input: str | list[str],
         shots: int = 100,
-        name: Optional[str] = None,
-        backend_settings: Optional[dict[str, Any]] = None,
+        name: str | None = None,
+        backend_settings: dict[str, Any] | None = None,
     ) -> QudoraJob:
         """Submit one or more OpenQASM programs to the QUDORA device.
 
         Args:
             run_input: An OpenQASM 2/3 string, or a list of them for a batch job.
             shots: Number of repetitions per program.
-            name: Optional job name (defaults to ``"qbraid"``).
+            name: Optional job name. Defaults to ``"qbraid"`` rather than being omitted:
+                QUDORA's submit schema requires ``name`` to be a string, and rejects both
+                a ``null`` value and a missing key with a 422.
             backend_settings: Optional QUDORA backend settings (e.g. noise parameters).
 
         Returns:
@@ -117,8 +144,8 @@ class QudoraDevice(QuantumDevice):
         """
         programs = run_input if isinstance(run_input, list) else [run_input]
 
-        max_programs = self.profile.get("max_programs_per_job")
-        if max_programs is not None and len(programs) > max_programs:
+        max_programs = self.profile["max_programs_per_job"]
+        if len(programs) > max_programs:
             raise ValueError(
                 f"Number of programs ({len(programs)}) exceeds the device's maximum of "
                 f"{max_programs} programs per job."
