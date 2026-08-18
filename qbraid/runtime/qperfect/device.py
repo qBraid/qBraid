@@ -98,20 +98,21 @@ class QPerfectDevice(QuantumDevice):
 
         Args:
             run_input: A native ``mimiqcircuits.Circuit`` (or a list of them for a batch), as
-                produced by the ``qiskit -> mimiq`` transpiler conversion during ``run``. A batch is
+                produced by the ``qiskit -> mimiqcircuits`` conversion during ``run``. A batch is
                 executed as a single job; results come back per circuit in submission order.
             shots: Number of samples per circuit (MIMIQ ``nsamples``). Defaults to 100.
             name: Optional human-readable label for the job.
             **options: MIMIQ submit options forwarded to the emulator, e.g. ``algorithm``
                 (``"auto"`` / ``"statevector"`` / ``"mps"``), ``timelimit``, ``bonddim``,
                 ``entdim``, ``seed``, ``bitstrings``, or ``noisemodel``. ``algorithm`` defaults
-                to ``"auto"``.
+                to ``"auto"`` for a single circuit, and is required for a batch.
 
         Returns:
             QPerfectJob: A handle to the submitted job.
 
         Raises:
-            ValueError: If an unsupported submit option is passed.
+            ValueError: If an unsupported submit option is passed, or if a batch is submitted
+                without an explicit ``algorithm``.
         """
         unknown = set(options) - _SUBMIT_OPTIONS
         if unknown:
@@ -121,6 +122,13 @@ class QPerfectDevice(QuantumDevice):
             )
         connection = self._provider.connection
         kwargs: dict[str, Any] = {"nsamples": shots, "label": name or "qbraid", **options}
-        kwargs.setdefault("algorithm", "auto")
+        # MIMIQ rejects algorithm="auto" for batches, so only single circuits get the default.
+        if not isinstance(run_input, list):
+            kwargs.setdefault("algorithm", "auto")
+        elif "algorithm" not in kwargs:
+            raise ValueError(
+                "Batch submission requires an explicit algorithm: pass algorithm='statevector' "
+                "or algorithm='mps'. MIMIQ only supports algorithm='auto' for a single circuit."
+            )
         execution = connection.submit(run_input, **kwargs)
         return QPerfectJob(job_id=str(execution), connection=connection, device=self, shots=shots)

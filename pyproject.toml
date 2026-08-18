@@ -80,7 +80,7 @@ qasm2 = "qbraid.programs.gate_model.qasm2:OpenQasm2Program"
 qasm3 = "qbraid.programs.gate_model.qasm3:OpenQasm3Program"
 cudaq = "qbraid.programs.gate_model.cudaq:CudaQKernel"
 qrisp = "qbraid.programs.gate_model.qrisp:QrispCircuit"
-mimiq = "qbraid.programs.gate_model.mimiq:MimiqProgram"
+mimiqcircuits = "qbraid.programs.gate_model.mimiqcircuits:MimiqProgram"
 
 [project.entry-points."qbraid.providers"]
 aws = "qbraid.runtime.aws.provider:BraketProvider"

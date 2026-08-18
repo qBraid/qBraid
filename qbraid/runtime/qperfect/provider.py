@@ -18,7 +18,7 @@ Module defining QPerfect (MIMIQ) provider class.
 Authentication and all job I/O are driven through the vendor ``mimiqcircuits`` SDK: the provider
 holds an authenticated ``MimiqConnection`` (established from ``QPERFECT_API_TOKEN`` via
 ``connectToken``) and hands it to each device/job. Circuit conversion to the MIMIQ native circuit is
-handled by the transpiler's ``qiskit -> mimiq`` edge (:func:`qiskit_to_mimiq`).
+handled by the transpiler's ``qiskit -> mimiqcircuits`` edge (:func:`qiskit_to_mimiqcircuits`).
 
 """
 
@@ -76,9 +76,10 @@ class QPerfectProvider(QuantumProvider):
             # The emulator auto-selects a state-vector or MPS backend per job; advertise the largest
             # reach across backends (the algorithm is chosen at submit time via runtime options).
             num_qubits=max(_ALGORITHM_QUBITS.values()),
-            # Target the native "mimiq" program type: the transpiler routes any supported program to
-            # a qiskit circuit and then to the MIMIQ native circuit via the qiskit -> mimiq edge.
-            program_spec=ProgramSpec(MimiqCircuit, alias="mimiq"),
+            # Target the native "mimiqcircuits" program type: the transpiler routes any supported
+            # program to a qiskit circuit, then to the MIMIQ native circuit via the
+            # qiskit -> mimiqcircuits edge.
+            program_spec=ProgramSpec(MimiqCircuit),
             provider_name="QPerfect",
         )
 

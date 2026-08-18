@@ -56,9 +56,9 @@ def test_get_device_unknown(provider):
         provider.get_device("nonexistent")
 
 
-def test_program_spec_targets_mimiq(provider):
-    """The device profile accepts the native ``mimiq`` circuit format."""
-    assert provider.get_device("mimiq-emulator").profile.program_spec.alias == "mimiq"
+def test_program_spec_targets_mimiqcircuits(provider):
+    """The device profile accepts the native ``mimiqcircuits`` circuit format."""
+    assert provider.get_device("mimiq-emulator").profile.program_spec.alias == "mimiqcircuits"
 
 
 def test_provider_is_hashable(provider):

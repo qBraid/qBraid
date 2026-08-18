@@ -13,13 +13,13 @@
 # limitations under the License.
 
 """
-Module defining the ``qiskit -> mimiq`` conversion.
+Module defining the ``qiskit -> mimiqcircuits`` conversion.
 
 Builds a native ``mimiqcircuits.Circuit`` from a qiskit circuit by delegating to QPerfect's
-``mimiq-qiskit`` package (Apache-2.0, ``mimiq_qiskit.qiskit_to_mimiq``). This registers ``mimiq`` as
-a transpiler target, so qBraid routes any supported program to a qiskit circuit and then to the
-MIMIQ native circuit (any -> qiskit -> mimiq). QPerfect maintains the gate mapping, so it is not
-reimplemented here.
+``mimiq-qiskit`` package (Apache-2.0, ``mimiq_qiskit.qiskit_to_mimiq``). This registers
+``mimiqcircuits`` as a transpiler target, so qBraid routes any supported program to a qiskit circuit
+and then to the MIMIQ native circuit (any -> qiskit -> mimiqcircuits). QPerfect maintains the gate
+mapping, so it is not reimplemented here.
 
 """
 
@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("mimiq_qiskit")
-def qiskit_to_mimiq(circuit: qiskit_.QuantumCircuit) -> mimiqcircuits_.Circuit:
+def qiskit_to_mimiqcircuits(circuit: qiskit_.QuantumCircuit) -> mimiqcircuits_.Circuit:
     """Convert a qiskit ``QuantumCircuit`` to a native ``mimiqcircuits.Circuit``.
 
     Thin delegator to ``mimiq_qiskit.qiskit_to_mimiq`` — QPerfect's maintained converter — so the

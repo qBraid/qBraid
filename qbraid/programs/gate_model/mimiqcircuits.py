@@ -31,7 +31,7 @@ class MimiqProgram(GateModelProgram):
     MIMIQ native circuits are submitted directly to the QPerfect cloud, so — like ``QiskitCircuit``
     and ``CirqCircuit`` — this class does not implement ``serialize`` (it inherits the base
     ``NotImplementedError``); it exists so the transpiler and ``QuantumDevice.validate`` can
-    introspect a ``mimiq`` program (e.g. its qubit count).
+    introspect a ``mimiqcircuits`` program (e.g. its qubit count).
     """
 
     def __init__(self, program: MimiqCircuit):
