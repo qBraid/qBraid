@@ -19,7 +19,7 @@ Module defining QPerfect (MIMIQ) job class.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -32,8 +32,9 @@ from .client import build_connection, resolve_token
 if TYPE_CHECKING:
     from mimiqcircuits import MimiqConnection
 
-# MIMIQ execution status (mimiqlink ``RequestInfo.status``) -> qBraid ``JobStatus``.
-_STATUS_MAP = {
+# MIMIQ execution status (mimiqlink ``RequestInfo.status``) -> qBraid ``JobStatus``. Covers the
+# full vocabulary mimiqlink publishes in ``RequestInfo.STATUS_COLORS``.
+_STATUS_MAP: dict[str, JobStatus] = {
     "NEW": JobStatus.QUEUED,
     "RUNNING": JobStatus.RUNNING,
     "DONE": JobStatus.COMPLETED,
@@ -66,7 +67,7 @@ class QPerfectJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        connection: Optional[MimiqConnection] = None,
+        connection: MimiqConnection | None = None,
         **kwargs,
     ):
         super().__init__(job_id=job_id, **kwargs)
@@ -84,9 +85,17 @@ class QPerfectJob(QuantumJob):
 
         Uses a single ``requestInfo`` API call (the ``mimiqlink`` ``isJob*`` helpers each issue
         their own request, so they are not used here).
+
+        Raises:
+            QPerfectJobError: If MIMIQ reports a status outside the known mapping.
         """
         info = self._connection.connection.requestInfo(self.id)
-        return _STATUS_MAP.get(info.status, JobStatus.UNKNOWN)
+        if info.status not in _STATUS_MAP:
+            raise QPerfectJobError(
+                f"Unknown MIMIQ job status '{info.status}'. "
+                f"Expected one of: {', '.join(_STATUS_MAP)}"
+            )
+        return _STATUS_MAP[info.status]
 
     def cancel(self) -> None:
         """Cancel the QPerfect job.
@@ -113,9 +122,7 @@ class QPerfectJob(QuantumJob):
         if not isinstance(results, list):
             results = [results]
         counts = [_histogram_to_counts(result.histogram()) for result in results]
-        measurement_counts: Union[MeasCount, list[MeasCount]] = (
-            counts[0] if len(counts) == 1 else counts
-        )
+        measurement_counts: MeasCount | list[MeasCount] = counts[0] if len(counts) == 1 else counts
         data = GateModelResultData(measurement_counts=measurement_counts)
         device_id = self._device.id if self._device is not None else ""
         return Result(device_id=device_id, job_id=self.id, success=True, data=data)

@@ -19,7 +19,7 @@ Module defining QPerfect (MIMIQ) device class.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -88,10 +88,10 @@ class QPerfectDevice(QuantumDevice):
     # pylint: disable-next=arguments-differ
     def submit(
         self,
-        run_input: Union[MimiqCircuit, list[MimiqCircuit]],
+        run_input: MimiqCircuit | list[MimiqCircuit],
         shots: int = 100,
         *,
-        name: Optional[str] = None,
+        name: str | None = None,
         **options: Any,
     ) -> QPerfectJob:
         """Submit one or more native MIMIQ circuits to the emulator.

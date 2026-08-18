@@ -36,13 +36,23 @@ def _job(connection, device=None) -> QPerfectJob:
         ("DONE", JobStatus.COMPLETED),
         ("ERROR", JobStatus.FAILED),
         ("CANCELED", JobStatus.CANCELLED),
-        ("SOMETHING_ELSE", JobStatus.UNKNOWN),
     ],
 )
 def test_status_mapping(mock_connection, mimiq_status, expected):
     """Each MIMIQ status string maps to the right qBraid JobStatus."""
     mock_connection.connection.requestInfo.return_value.status = mimiq_status
     assert _job(mock_connection).status() == expected
+
+
+def test_unknown_status_raises(mock_connection):
+    """A status outside the known mapping surfaces instead of reading as UNKNOWN.
+
+    MIMIQ adding an enum member should name itself in the error, not silently degrade a
+    live job to an indeterminate state.
+    """
+    mock_connection.connection.requestInfo.return_value.status = "SOMETHING_ELSE"
+    with pytest.raises(QPerfectJobError, match="Unknown MIMIQ job status 'SOMETHING_ELSE'"):
+        _job(mock_connection).status()
 
 
 def test_status_is_a_single_api_call(mock_connection):

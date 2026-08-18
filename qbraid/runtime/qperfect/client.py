@@ -23,13 +23,12 @@ authenticated connection from a token without a circular import.
 from __future__ import annotations
 
 import os
-from typing import Optional
 
 from mimiqcircuits import MimiqConnection
 from mimiqlink import QPERFECT_CLOUD
 
 
-def resolve_token(token: Optional[str]) -> str:
+def resolve_token(token: str | None) -> str:
     """Return the QPerfect API token, falling back to the ``QPERFECT_API_TOKEN`` env var.
 
     Raises:
@@ -44,7 +43,7 @@ def resolve_token(token: Optional[str]) -> str:
     return token
 
 
-def build_connection(token: str, *, url: Optional[str] = None) -> MimiqConnection:
+def build_connection(token: str, *, url: str | None = None) -> MimiqConnection:
     """Build and authenticate a MIMIQ connection from an API token.
 
     Args:

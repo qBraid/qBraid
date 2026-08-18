@@ -24,8 +24,6 @@ handled by the transpiler's ``qiskit -> mimiqcircuits`` edge (:func:`qiskit_to_m
 
 from __future__ import annotations
 
-from typing import Optional
-
 from mimiqcircuits import Circuit as MimiqCircuit
 from mimiqcircuits import MimiqConnection
 
@@ -54,10 +52,10 @@ _ALGORITHM_QUBITS: dict[str, int] = {
 class QPerfectProvider(QuantumProvider):
     """QPerfect (MIMIQ) provider class."""
 
-    def __init__(self, token: Optional[str] = None, *, url: Optional[str] = None):
+    def __init__(self, token: str | None = None, *, url: str | None = None):
         self._token = resolve_token(token)
         self._url = url
-        self._connection: Optional[MimiqConnection] = None
+        self._connection: MimiqConnection | None = None
 
     @property
     def connection(self) -> MimiqConnection:
