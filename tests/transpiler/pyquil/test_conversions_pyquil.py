@@ -308,6 +308,8 @@ def test_single_terminal_measurement_is_left_alone():
         cirq_ops.measure(*qubits, key="result"),
     )
     assert _merge_terminal_measurements(circuit) is circuit
+
+
 def test_cirq_reset_to_pyquil():
     """A Cirq circuit containing ``cirq.reset`` converts directly to a pyQuil
     program with a RESET on the same qubit, preserving operation order.

@@ -28,6 +28,13 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 MODULE = "qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2"
 
 
+class _StubKernel:
+    """Minimal stand-in for a PyKernel: the conversion compiles before translating."""
+
+    def compile(self):
+        """No-op; the stubbed cudaq.translate is what the test drives."""
+
+
 @pytest.fixture
 def cudaq_to_qasm2_with_stub():
     """Load the conversion module against a stubbed ``cudaq``, so its logic is
@@ -54,11 +61,11 @@ def test_cudaq_to_qasm2_raises_on_failed_translation(cudaq_to_qasm2_with_stub):
     module, stub = cudaq_to_qasm2_with_stub
     stub.translate = lambda *args, **kwargs: "{translation failed}"
     with pytest.raises(ProgramConversionError, match="failed to produce QASM2"):
-        module.cudaq_to_qasm2(object())
+        module.cudaq_to_qasm2(_StubKernel())
 
 
 def test_cudaq_to_qasm2_returns_valid_qasm(cudaq_to_qasm2_with_stub):
     """A successful translation passes through unchanged."""
     module, stub = cudaq_to_qasm2_with_stub
     stub.translate = lambda *args, **kwargs: 'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
-    assert module.cudaq_to_qasm2(object()).startswith("OPENQASM 2.0;")
+    assert module.cudaq_to_qasm2(_StubKernel()).startswith("OPENQASM 2.0;")
