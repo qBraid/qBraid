@@ -83,8 +83,13 @@ def test_measurement_invert_mask_emits_x():
         ops.H(q0), ops.H(q1), cirq.measure(q0, q1, key="m", invert_mask=(False, True))
     )
     braket_circuit = cirq_to_braket(circuit)
-    tail = [(str(i.operator), [int(q) for q in i.target]) for i in braket_circuit.instructions[-3:]]
-    assert tail == [("Measure", [0]), ("X('qubit_count': 1)", [1]), ("Measure", [1])]
+    # Compare operator types, not repr: "X('qubit_count': 1)" is a Braket SDK
+    # formatting detail that a version bump could restyle.
+    tail = [
+        (type(i.operator).__name__, [int(q) for q in i.target])
+        for i in braket_circuit.instructions[-3:]
+    ]
+    assert tail == [("Measure", [0]), ("X", [1]), ("Measure", [1])]
 
 
 def test_measurement_confusion_map_raises():

@@ -89,7 +89,9 @@ def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuit
     could observe the order) are rejected by ``QuilOutput``.
 
     Raises:
-        ProgramConversionError: If a terminal measurement carries a confusion map.
+        ProgramConversionError: If a confusion map is present on a terminal measurement
+            that would be merged. A circuit with a single terminal measurement is returned
+            unchanged and is never checked.
     """
     operations = list(circuit.all_operations())
     last_op_on_qubit = {}
