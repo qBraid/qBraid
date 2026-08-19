@@ -73,6 +73,7 @@ Writing an entry:
 - Fixed `QuantinuumDevice.status()` raising `ResourceFetchFailed` (400 "Invalid machine name") for cloud-hosted NEXUS emulators such as `H2-Emulator`, which broke `device.run()` since pre-submit validation checks status. Devices now carry a `nexus_hosted` profile flag, and cloud-hosted emulators report `ONLINE` without calling the hardware-only machine status endpoint ([#1295](https://github.com/qBraid/qBraid/pull/1295))
 
 ### Dependencies
+- CUDA-Q support moves to `cudaq>=0.14.0,<0.15.0`, and the `cudaq` extra now installs only on Python 3.11+. Kernels are compiled before translation, which 0.14 requires: without it `cudaq.translate` fails with `has multiple entrypoints` once a process holds more than one kernel, so conversions broke as soon as a second one ran ([#1143](https://github.com/qBraid/qBraid/pull/1143))
 
 ## [0.12.2] - 2026-07-11
 
