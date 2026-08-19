@@ -16,6 +16,7 @@
 Unit tests for conversions between Cirq circuits and Qiskit circuits.
 
 """
+
 import cirq
 import numpy as np
 import pyqasm
@@ -31,11 +32,23 @@ from qbraid.programs import load_program
 from qbraid.transpiler.conversions.cirq import cirq_to_qasm2
 from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
 from qbraid.transpiler.conversions.qasm3 import qasm3_to_qiskit
-from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir, qiskit_to_qasm2, qiskit_to_qasm3
+from qbraid.transpiler.conversions.qiskit import (
+    qiskit_to_pyqir,
+    qiskit_to_qasm2,
+    qiskit_to_qasm3,
+    qiskit_to_qrisp,
+)
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import ProgramConversionError
 
 from ..cirq_utils import _equal
+
+try:
+    import qrisp
+
+    qrisp_not_installed = False
+except ImportError:
+    qrisp_not_installed = True
 
 
 def test_bell_state_to_from_circuits():
@@ -178,15 +191,24 @@ def test_common_gates_from_qiskit():
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
-@pytest.mark.skip(reason="Phase gates resulting in error")
 def test_phase_gates_from_qiskit():
-    """Tests converting standard gates from Qiskit to Cirq."""
+    """Tests converting phase-family gates (p, sxdg, cp) from Qiskit to Cirq.
+
+    The gates act on a subset of the register, so ``index_contig=True`` drops the
+    idle qubits to give the source and converted unitaries matching dimensions.
+
+    Equivalence is checked up to global phase: these gates are not OpenQASM
+    stdgates, so Qiskit exports them as decompositions (e.g. ``sxdg`` becomes
+    ``s; h; s`` = ``exp(i*pi/4) . SXdg``), and QASM carries no global phase, so the
+    exact phase is not recoverable through the QASM-mediated path (and the
+    decomposition Qiskit chooses can vary by version).
+    """
     qiskit_circuit = QuantumCircuit(4)
     qiskit_circuit.p(np.pi / 8, 3)
     qiskit_circuit.sxdg(1)
     qiskit_circuit.cp(np.pi / 4, 2, 3)
     cirq_circuit = transpile(qiskit_circuit, "cirq")
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, index_contig=True, strict_gphase=False)
 
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
@@ -373,3 +395,16 @@ def test_qiskit_to_qir_entry_point():
     func = next(filter(pyqir.is_entry_point, module.functions))
     assert pyqir.required_num_qubits(func) == 2
     assert pyqir.required_num_results(func) == 2
+
+
+@pytest.mark.skipif(qrisp_not_installed, reason="Qrisp is not installed")
+def test_qiskit_to_qrisp_with_swap():
+    """Tests converting a Qiskit circuit with a swap gate to Qrisp."""
+    circuit = QuantumCircuit(2)
+    circuit.swap(0, 1)
+
+    qrisp_circuit = qiskit_to_qrisp(circuit)
+
+    assert isinstance(qrisp_circuit, qrisp.QuantumCircuit)
+    assert qrisp_circuit.num_qubits() == 2
+    assert qrisp_circuit.count_ops() == {"swap": 1}

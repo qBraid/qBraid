@@ -46,7 +46,9 @@ extensions = [
 autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = [
+    "aqt_connector",
     "autoqasm",
+    "qat",
     "boto3",
     "braket",
     "cirq",
@@ -55,10 +57,13 @@ autodoc_mock_imports = [
     "pyqir",
     "pyquil",
     "qcs_sdk",
+    "icalendar",
+    "recurring_ical_events",
     "pytket",
     "qcaas_client",
     "qiskit",
     "qiskit_ibm_runtime",
+    "qrisp",
     "scc",
     "stim",
     "sympy",

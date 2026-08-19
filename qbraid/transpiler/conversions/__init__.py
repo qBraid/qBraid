@@ -35,6 +35,7 @@ Submodules
    pytket
    qiskit
    cudaq
+   qrisp
 
 """
 import importlib

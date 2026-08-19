@@ -22,7 +22,6 @@ from typing import Any, Optional
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsQuantumTask, AwsSession
 from braket.tracking.tracker import Tracker, _get_qpu_task_cost, _get_simulator_task_cost
-from braket.tracking.tracking_context import register_tracker
 from braket.tracking.tracking_events import _TaskCompletionEvent, _TaskCreationEvent
 
 
@@ -61,15 +60,21 @@ def _get_tracker_task_details(
     boto_data: dict[str, Any], aws_session: Optional[AwsSession] = None
 ) -> dict[str, Any]:
     """Get the quantum task details populated by the Amazon Braket cost tracker."""
-    tracker = Tracker()
-    register_tracker(tracker)
-    creation_event = _generate_creation_event(boto_data)
-    completion_event = _generate_completion_event(boto_data, aws_session=aws_session)
-    tracker.receive_event(creation_event)
-    tracker.receive_event(completion_event)
+    # Use ``Tracker`` as a context manager so it is deregistered from Braket's
+    # process-global ``TrackingContext`` once we are done. Registering without
+    # ever deregistering (the previous behaviour) leaked a tracker into that
+    # global set on every cost lookup. Because ``broadcast_event`` iterates the
+    # set without a lock, the ever-growing set widened a thread-safety window in
+    # which a concurrent ``get_quantum_task`` (e.g. during job submission) would
+    # raise "RuntimeError: Set changed size during iteration".
+    with Tracker() as tracker:
+        creation_event = _generate_creation_event(boto_data)
+        completion_event = _generate_completion_event(boto_data, aws_session=aws_session)
+        tracker.receive_event(creation_event)
+        tracker.receive_event(completion_event)
 
-    task_arn = boto_data["quantumTaskArn"]
-    return tracker._resources[task_arn]
+        task_arn = boto_data["quantumTaskArn"]
+        return tracker._resources[task_arn]
 
 
 def get_quantum_task_cost(task_arn: str, aws_session: Optional[AwsSession] = None) -> Decimal:

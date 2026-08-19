@@ -22,6 +22,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import EXECUTION_PLAN_TYPES, QUEUE_PRIORITY_TYPES, OpenQuantumJob
 
@@ -89,11 +90,14 @@ class OpenQuantumDevice(QuantumDevice):
                 for i, item in enumerate(run_input)
             ]
 
-        # Auto-select organization (your logic — perfect)
+        # Auto-select the user's first organization when none is specified.
         if organization_id is None:
             orgs = self.session.get_user_organizations()
             if not orgs:
-                raise ValueError("No organization found for user.")
+                raise QbraidRuntimeError(
+                    "No organization found. Please accept the Open Quantum "
+                    "terms of use to continue."
+                )
             organization_id = orgs[0]["id"]
 
         # Encode QASM
@@ -109,6 +113,7 @@ class OpenQuantumDevice(QuantumDevice):
             "upload_endpoint_id": upload_id,
             "shots": shots,
             "configuration_data": kwargs.get("configuration_data", {}),
+            "submitted_with": "qbraid",
         }
         if subcategory is not None:
             prep_payload["job_subcategory_id"] = subcategory

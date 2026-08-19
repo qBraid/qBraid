@@ -84,7 +84,7 @@ def bound_method_str(source, target):
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
-@pytest.mark.parametrize("func", conversion_functions)
+@pytest.mark.parametrize("func", sorted(conversion_functions))
 def test_conversion_functions_syntax(func):
     """Test that all conversion functions are named correctly."""
     source, target = func.split("_to_")
@@ -100,7 +100,7 @@ def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
         "qiskit", "cirq", top_n=3
     )
     assert len(shortest_path) == 2
-    valid_intermediates = {"qasm2", "qasm3"}
+    valid_intermediates = {"qasm2", "qasm3", "qrisp"}
     path_strs = [str(edge) for edge in shortest_path]
     intermediate = None
     for mid in valid_intermediates:
@@ -151,7 +151,7 @@ def test_add_conversion():
             bound_method_str(mid, "cirq"),
             bound_method_str("cirq", target),
         ]
-        for mid in ("qasm2", "qasm3")
+        for mid in ("qasm2", "qasm3", "qrisp")
     ]
     assert actual_strs in valid_paths, f"Unexpected path: {actual_strs}"
 

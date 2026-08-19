@@ -16,6 +16,7 @@
 Module containing Cirq conversion extras.
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -26,11 +27,15 @@ from qbraid.transpiler.annotations import requires_extras
 
 stimcirq = LazyLoader("stimcirq", globals(), "stimcirq")
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
+qat_interop_cirq = LazyLoader("qat_interop_cirq", globals(), "qat.interop.cirq")
+pytket_cirq = LazyLoader("pytket_cirq", globals(), "pytket.extensions.cirq")
 
 if TYPE_CHECKING:
     import cirq
     import pyqir  # type: ignore
+    import pytket.circuit
     import stim  # type: ignore
+    from qat.core.wrappers.circuit import Circuit as QatCircuit  # type: ignore
 
 
 @requires_extras("stim", "stimcirq")
@@ -70,3 +75,29 @@ def cirq_to_pyqir(circuit: cirq.Circuit) -> pyqir.Module:
         pyqir.Module: module equivalent to input cirq circuit.
     """
     return qbraid_qir.cirq.cirq_to_qir(circuit)
+
+
+@requires_extras("pytket.extensions.cirq")
+def cirq_to_pytket(circuit: cirq.Circuit) -> pytket.circuit.Circuit:
+    """Returns a PyTKET circuit equivalent to the input Cirq circuit.
+
+    Args:
+        circuit (cirq.Circuit): Cirq circuit to convert to a PyTKET circuit.
+
+    Returns:
+        pytket.circuit.Circuit: PyTKET circuit equivalent to input Cirq circuit.
+    """
+    return pytket_cirq.cirq_to_tk(circuit)
+
+
+@requires_extras("qat.interop.cirq")
+def cirq_to_qat(circuit: cirq.Circuit) -> QatCircuit:
+    """Returns a qat.core.wrappers.circuit.Circuit equivalent to the input Cirq circuit.
+
+    Args:
+        circuit: Cirq Circuit to convert.
+
+    Returns:
+        qat.core.wrappers.circuit.Circuit equivalent to the input Cirq circuit.
+    """
+    return qat_interop_cirq.cirq_to_qlm(circuit)

@@ -62,6 +62,7 @@ def test_get_providers():
         providers
         == PROVIDERS
         == [
+            "aqt",
             "aws",
             "azure",
             "ibm",
@@ -71,6 +72,7 @@ def test_get_providers():
             "pasqal",
             "qbraid",
             "quantinuum",
+            "qudora",
             "rigetti",
         ]
     )

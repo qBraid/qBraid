@@ -65,7 +65,12 @@ class FakeDevice(GenericBackendV2):
         status_msg="active",
         **kwargs,
     ):
-        super().__init__(num_qubits)
+        # Seed GenericBackendV2 so its coupling map (and thus transpilation) is
+        # deterministic. An unseeded map is random per instantiation and
+        # occasionally routes into extra single-qubit gates, which made
+        # count-based assertions (e.g. test_transform_run_input) flaky on
+        # qiskit >= 2.5.
+        super().__init__(num_qubits, seed=42)
         self._num_qubits = num_qubits
         self._operational = operational
         self._status_msg = status_msg

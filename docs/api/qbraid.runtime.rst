@@ -12,6 +12,7 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
+   aqt
    aws
    ibm
    azure
@@ -20,6 +21,7 @@ Submodules
    oqc
    origin
    quantinuum
+   qudora
    native
    rigetti
    pasqal

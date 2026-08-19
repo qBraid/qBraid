@@ -18,18 +18,25 @@ Module defining OpenQuantum session and provider classes
 """
 import os
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 import requests
 from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
-from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import OpenQuantumDevice
+
+TERMS_OF_USE_REQUIRED_MESSAGE = (
+    "Please visit https://www.openquantum.com to accept the Terms of Use before submitting jobs."
+)
+
+# Stable error types from Open Quantum API (api-common ApiErrorType)
+API_ERROR_TYPE_TERMS_OF_USE_REQUIRED = "TERMS_OF_USE_REQUIRED"
 
 
 class OpenQuantumSession(Session):
@@ -39,25 +46,73 @@ class OpenQuantumSession(Session):
         self,
         client_id: Optional[str] = None,
         client_secret: Optional[str] = None,
+        token_provider: Optional[Callable[[], tuple[str, float]]] = None,
     ):
-        self.client_id = client_id or os.getenv("OPENQUANTUM_CLIENT_ID")
-        self.client_secret = client_secret or os.getenv("OPENQUANTUM_CLIENT_SECRET")
+        # token_provider lets a caller supply (access_token, expires_at_epoch) on
+        # demand — e.g. an externally-managed per-user token — instead of the
+        # session minting its own via the client_credentials grant. When set, the
+        # client_credentials grant (and so client_id/secret) is not needed.
+        self._token_provider = token_provider
 
-        if not self.client_id or not self.client_secret:
-            raise ValueError(
-                "OpenQuantum client_id and client_secret are required. "
-                "Set OPENQUANTUM_CLIENT_ID and OPENQUANTUM_CLIENT_SECRET environment variables."
-            )
+        if token_provider is None:
+            self.client_id = client_id or os.getenv("OPENQUANTUM_CLIENT_ID")
+            self.client_secret = client_secret or os.getenv("OPENQUANTUM_CLIENT_SECRET")
+
+            if not self.client_id or not self.client_secret:
+                raise ValueError(
+                    "OpenQuantum client_id and client_secret are required. "
+                    "Set OPENQUANTUM_CLIENT_ID and OPENQUANTUM_CLIENT_SECRET environment variables."
+                )
+        else:
+            self.client_id = client_id
+            self.client_secret = client_secret
 
         self.auth_url = "https://id.openquantum.com"
         self.scheduler_url = "https://scheduler.openquantum.com"
         self.management_url = "https://management.openquantum.com"
 
         super().__init__(base_url=self.scheduler_url)
+        self._raise_for_status = False
         self._token = None
         self._token_expires_at = 0
 
-    def _fetch_token(self):
+    @staticmethod
+    def _format_api_message(raw: Any) -> Optional[str]:
+        """Normalize API ``message`` values (string or list) to a single string."""
+        if isinstance(raw, list):
+            return "; ".join(str(m) for m in raw) if raw else None
+        if raw:
+            return str(raw)
+        return None
+
+    @staticmethod
+    def _raise_for_api_error(response: requests.Response) -> None:
+        """Raise a clear error using the API ``type`` field when present."""
+        if response.ok:
+            return
+
+        error_type = None
+        message = None
+        try:
+            payload = response.json()
+            error_type = payload.get("type")
+            message = OpenQuantumSession._format_api_message(payload.get("message", response.text))
+        except ValueError:
+            message = response.text or None
+
+        if error_type == API_ERROR_TYPE_TERMS_OF_USE_REQUIRED:
+            raise QbraidRuntimeError(TERMS_OF_USE_REQUIRED_MESSAGE)
+
+        detail = message or response.reason or f"HTTP {response.status_code}"
+        type_part = f" [{error_type}]" if error_type else ""
+        raise QbraidRuntimeError(
+            f"OpenQuantum API error ({response.status_code}){type_part}: {detail}"
+        )
+
+    def _fetch_token(self) -> None:
+        if self._token_provider is not None:
+            self._token, self._token_expires_at = self._token_provider()
+            return
         url = f"{self.auth_url}/realms/platform/protocol/openid-connect/token"
         payload = {
             "grant_type": "client_credentials",
@@ -90,9 +145,11 @@ class OpenQuantumSession(Session):
             params = {"limit": 100}
             if cursor:
                 params["cursor"] = cursor
-            resp = self.get(url, params=params).json()
-            devices.extend(resp.get("backend_classes", []))
-            cursor = resp.get("pagination", {}).get("next_cursor")
+            resp = self.get(url, params=params)
+            self._raise_for_api_error(resp)
+            body = resp.json()
+            devices.extend(body.get("backend_classes", []))
+            cursor = body.get("pagination", {}).get("next_cursor")
             if not cursor:
                 break
         return devices
@@ -100,32 +157,41 @@ class OpenQuantumSession(Session):
     def get_backend_class_details(self, backend_id: str) -> dict[str, Any]:
         """Get detailed information for a specific backend class."""
         url = f"{self.scheduler_url}/v1/backends/classes/{backend_id}"
-        return self.get(url).json()
+        resp = self.get(url)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def get_user_organizations(self) -> list[dict[str, Any]]:
         """Get user organizations."""
         url = f"{self.management_url}/v1/users/organizations"
-        resp = self.get(url, params={"limit": 10}).json()
-        return resp.get("organizations", [])
+        resp = self.get(url, params={"limit": 10})
+        self._raise_for_api_error(resp)
+        return resp.json().get("organizations", [])
 
     def upload_input(self, content: bytes) -> str:
         """Upload input file content."""
         url = f"{self.scheduler_url}/v1/jobs/upload"
-        resp = self.post(url).json()
-        upload_id = resp["id"]
-        upload_url = resp["url"]
+        resp = self.post(url)
+        self._raise_for_api_error(resp)
+        body = resp.json()
+        upload_id = body["id"]
+        upload_url = body["url"]
         requests.put(upload_url, data=content, timeout=60).raise_for_status()
         return upload_id
 
     def prepare_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Prepare a job."""
         url = f"{self.scheduler_url}/v1/jobs/prepare"
-        return self.post(url, json=data).json()
+        resp = self.post(url, json=data)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def get_preparation_result(self, prep_id: str) -> dict[str, Any]:
         """Get job preparation result."""
         url = f"{self.scheduler_url}/v1/jobs/prepare/{prep_id}"
-        return self.get(url).json()
+        resp = self.get(url)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def wait_for_preparation(self, prep_id: str, timeout: int = 300) -> list[dict[str, Any]]:
         """Wait for job preparation to complete and return the quote."""
@@ -136,24 +202,30 @@ class OpenQuantumSession(Session):
             if status == "Completed":
                 return res["quote"]
             if status == "Failed":
-                raise ValueError(f"Job preparation failed: {res.get('message')}")
+                detail = self._format_api_message(res.get("message")) or "unknown error"
+                raise ValueError(f"Job preparation failed: {detail}")
             time.sleep(2)
         raise TimeoutError("Job preparation timed out.")
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job."""
         url = f"{self.scheduler_url}/v1/jobs"
-        return self.post(url, json=data).json()
+        resp = self.post(url, json=data)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Get a specific job."""
         url = f"{self.scheduler_url}/v1/jobs/{job_id}"
-        return self.get(url).json()
+        resp = self.get(url)
+        self._raise_for_api_error(resp)
+        return resp.json()
 
     def cancel_job(self, job_id: str) -> None:
         """Cancel a job."""
         url = f"{self.scheduler_url}/v1/jobs/{job_id}"
-        self.delete(url).raise_for_status()
+        resp = self.delete(url)
+        self._raise_for_api_error(resp)
 
     def download_job_output(self, job_id: str) -> dict[str, Any]:
         """Download job output."""

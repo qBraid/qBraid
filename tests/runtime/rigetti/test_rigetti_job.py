@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=no-name-in-module,redefined-outer-name,possibly-used-before-assignment,ungrouped-imports
+# pylint: disable=no-name-in-module,redefined-outer-name,possibly-used-before-assignment,ungrouped-imports,too-many-lines
 
 """Unit tests for RigettiJob."""
 
@@ -169,6 +169,19 @@ class TestRigettiJobProperties:
         job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device)
         assert job._ro_sources == {}
 
+    def test_compiled_program_stored_correctly(self, rigetti_device: RigettiDevice) -> None:
+        """A compiled_program kwarg must be exposed via the compiled_program property."""
+        native_quil = "DECLARE ro BIT[1]\nRX(pi) 0\nMEASURE 0 ro[0]\n"
+        job = RigettiJob(
+            job_id="x", num_shots=1, device=rigetti_device, compiled_program=native_quil
+        )
+        assert job.compiled_program == native_quil
+
+    def test_compiled_program_defaults_to_none(self, rigetti_device: RigettiDevice) -> None:
+        """A rehydrated job (no compiled_program kwarg) must report None."""
+        job = RigettiJob(job_id="x", num_shots=1, device=rigetti_device)
+        assert job.compiled_program is None
+
     def test_execution_options_stored_at_submission_time(
         self, rigetti_device: RigettiDevice
     ) -> None:
@@ -263,6 +276,33 @@ class TestRigettiJobStatus:
             side_effect=QpuApiError("request timeout exceeded"),
         ):
             assert rigetti_job.status() == JobStatus.INITIALIZING
+
+    def test_status_failed_records_error_message(self, rigetti_job: RigettiJob) -> None:
+        """The QpuApiError text must be preserved as the FAILED status message."""
+        error_text = "job execution ID not found: d111fce6-6a89-47e0-98e2-653baa38a21c"
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            side_effect=QpuApiError(error_text),
+        ):
+            status = rigetti_job.status()
+        assert status == JobStatus.FAILED
+        assert status.status_message == error_text
+        # The per-instance copy is race-free under concurrent polling.
+        assert rigetti_job.status_message == error_text
+
+    def test_status_message_is_none_before_any_failure(self, rigetti_job: RigettiJob) -> None:
+        """status_message must default to None until a failure is observed."""
+        assert rigetti_job.status_message is None
+
+    def test_status_failed_logs_error(self, rigetti_job: RigettiJob, caplog) -> None:
+        """A non-timeout QpuApiError must be logged, not silently swallowed."""
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            side_effect=QpuApiError("access denied"),
+        ):
+            with caplog.at_level("ERROR", logger="qbraid"):
+                rigetti_job.status()
+        assert "access denied" in caplog.text
 
 
 # ===========================================================================
@@ -596,21 +636,44 @@ class TestRigettiJobParseResults:
         assert result.measurement_counts is not None
         assert result.get_probabilities() is not None
 
-    def test_parse_results_multiple_registers_concatenated_in_sorted_order(
+    def test_parse_results_multiple_registers_concatenated_in_declaration_order(
         self, rigetti_device: RigettiDevice
     ) -> None:
-        """When multiple registers exist, they are concatenated in sorted order."""
-        # "aux" comes before "ro" alphabetically, so aux bits come first
+        """Registers concatenate in the program's DECLARE order, not sorted order.
+
+        Reproduces the production shape from #1308: declaration order is
+        ``ro``, ``r1``, which lexicographic sorting would reverse. The
+        ``q<N>_unclassified`` entries mirror what ``translate()`` actually
+        returns alongside the memory references; they must be ignored.
+        """
+        compiled_program = (
+            "DECLARE ro BIT[2]\n"
+            "DECLARE r1 BIT[2]\n"
+            "H 0\n"
+            "CNOT 0 1\n"
+            "CNOT 0 2\n"
+            "CNOT 0 3\n"
+            "MEASURE 0 ro[0]\n"
+            "MEASURE 1 ro[1]\n"
+            "MEASURE 2 r1[0]\n"
+            "MEASURE 3 r1[1]\n"
+        )
         ro_sources = {
-            "ro[0]": "r0",
-            "aux[0]": "a0",
-            "aux[1]": "a1",
+            "q0_unclassified": "q0_unclassified",
+            "q1_unclassified": "q1_unclassified",
+            "r1[1]": "q3_classified",
+            "r1[0]": "q2_classified",
+            "ro[1]": "q1_classified",
+            "ro[0]": "q0_classified",
         }
-        # 2 shots
+        # Asymmetric data: ro = [1, 1], r1 = [0, 0] on shot 1; reversed on shot 2.
         readout_data = {
-            "r0": [0, 1],
-            "a0": [1, 0],
-            "a1": [1, 1],
+            "q0_classified": [1, 0],
+            "q1_classified": [1, 0],
+            "q2_classified": [0, 1],
+            "q3_classified": [0, 1],
+            "q0_unclassified": [0, 0],
+            "q1_unclassified": [0, 0],
         }
         exec_results = _make_execution_results(readout_data)
 
@@ -619,12 +682,82 @@ class TestRigettiJobParseResults:
             device=rigetti_device,
             num_shots=2,
             ro_sources=ro_sources,
+            compiled_program=compiled_program,
         )
         result = job._parse_results(exec_results)
 
-        # Shot 1: aux=[1,1], ro=[0] -> "110"
-        # Shot 2: aux=[0,1], ro=[1] -> "011"
-        assert result.measurement_counts == {"110": 1, "011": 1}
+        # ro bits first, then r1 -- sorted order would return {"0011": 1, "1100": 1}
+        # with the halves swapped on every shot.
+        assert result.measurement_counts == {"1100": 1, "0011": 1}
+
+    def test_parse_results_multiple_registers_without_program_raises(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Without the submitted program, multi-register order is unrecoverable.
+
+        A rehydrated job has no compiled_program; guessing an order silently
+        corrupts bitstrings, so _parse_results must refuse. The caller built
+        this job by hand, so the error must name the way out.
+        """
+        ro_sources = {"ro[0]": "r0", "aux[0]": "a0"}
+        exec_results = _make_execution_results({"r0": [0], "a0": [1]})
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1, ro_sources=ro_sources
+        )
+
+        with pytest.raises(RigettiJobError, match="declaration order") as exc_info:
+            job._parse_results(exec_results)
+        assert "compiled_program=" in str(exc_info.value)
+
+    def test_parse_results_register_missing_declare_raises(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A register in ro_sources with no DECLARE in the program is an error."""
+        ro_sources = {"ro[0]": "r0", "aux[0]": "a0"}
+        exec_results = _make_execution_results({"r0": [0], "a0": [1]})
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=1,
+            ro_sources=ro_sources,
+            compiled_program="DECLARE ro BIT[1]\nMEASURE 0 ro[0]\n",
+        )
+
+        with pytest.raises(RigettiJobError, match="no DECLARE"):
+            job._parse_results(exec_results)
+
+    def test_parse_results_register_absent_from_register_map_raises(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A declared register the register map cannot supply is an error,
+        not a silent skip that shortens every bitstring."""
+        exec_results, ro_sources = _make_simple_execution_results([[1, 0]])
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=1, ro_sources=ro_sources
+        )
+        register_map = MagicMock()
+        register_map.get_register_matrix.return_value = None
+        register_map.keys.return_value = []
+
+        with patch.object(job, "_build_register_map", return_value=register_map):
+            with pytest.raises(RigettiJobError, match="No data returned for declared register"):
+                job._parse_results(exec_results)
+
+    def test_parse_results_single_register_needs_no_program(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """Single-register jobs (the overwhelming majority) parse without
+        compiled_program; there is only one possible order."""
+        exec_results, ro_sources = _make_simple_execution_results([[1, 0], [1, 0]])
+
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID, device=rigetti_device, num_shots=2, ro_sources=ro_sources
+        )
+        result = job._parse_results(exec_results)
+
+        assert result.measurement_counts == {"10": 2}
 
     def test_parse_results_all_zeros(self, rigetti_device: RigettiDevice) -> None:
         """All-zero measurements must produce a single '000...' count."""
@@ -693,6 +826,42 @@ class TestRigettiJobResult:
             res = job.result()
 
         assert isinstance(res, Result)
+
+    def test_result_includes_compiled_program_in_details(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """result() must surface the compiled program in Result.details when known."""
+        exec_results, ro_sources = _make_simple_execution_results([[0, 1], [1, 0]])
+        native_quil = "DECLARE ro BIT[2]\nRX(pi) 0\nMEASURE 0 ro[0]\nMEASURE 1 ro[1]\n"
+        job = RigettiJob(
+            job_id=DUMMY_JOB_ID,
+            device=rigetti_device,
+            num_shots=2,
+            ro_sources=ro_sources,
+            compiled_program=native_quil,
+        )
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ):
+            res = job.result()
+
+        assert res.details["compiled_program"] == native_quil
+
+    def test_result_omits_compiled_program_when_unknown(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A rehydrated job (compiled_program=None) must not add a None detail."""
+        job, exec_results = self._make_job_with_results(rigetti_device, [[0, 1], [1, 0]])
+
+        with patch(
+            "qbraid.runtime.rigetti.job.retrieve_results",
+            return_value=exec_results,
+        ):
+            res = job.result()
+
+        assert "compiled_program" not in res.details
 
     def test_result_success_true_on_happy_path(self, rigetti_device: RigettiDevice) -> None:
         """result() must report success=True when get_result() does not raise."""

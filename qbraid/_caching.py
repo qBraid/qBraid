@@ -14,14 +14,18 @@
 
 """
 Functions and decorators for efficient caching to improve function and method performance.
-Includes per-instance LRU caching, TTL expiration, and customizable caching for specific needs.
+Includes bounded method-result caching with TTL expiration and customizable caching for
+specific needs.
 
 """
+
 import functools
 import hashlib
 import json
 import os
+import threading
 import time
+from collections import namedtuple
 from contextlib import contextmanager
 from typing import Any, Callable, Generator, Optional, TypeVar, overload
 
@@ -30,11 +34,28 @@ TFunc = TypeVar("TFunc", bound=Callable)
 
 _CACHE_REGISTRY = []
 
+# Mirrors the field layout of ``functools.lru_cache().cache_info()`` so callers
+# relying on ``cache_info().currsize`` (etc.) keep working.
+CacheInfo = namedtuple("CacheInfo", ["hits", "misses", "maxsize", "currsize"])
+
 
 def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict) -> str:
-    """Generate a cache key based on the class name, function name, args, and kwargs."""
+    """Generate a cache key based on the class name, instance identity, function name,
+    args, and kwargs.
+
+    Instance identity comes from ``hash(instance)``, so two instances of the same class
+    only share cache entries when their hashes match (providers hash their credentials,
+    so same credentials → shared cache; different credentials → separate entries). Classes
+    that are unhashable (e.g. define ``__eq__`` without ``__hash__``) fall back to
+    ``id(instance)``, degrading to per-instance caching rather than raising.
+    """
+    try:
+        instance_key = hash(instance)
+    except TypeError:
+        instance_key = id(instance)
     key_data = {
         "class_name": instance.__class__.__name__,
+        "instance_key": instance_key,
         "func_name": func_name,
         "args": args,
         "kwargs": kwargs,
@@ -43,43 +64,81 @@ def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict
     return hashlib.sha256(key_str.encode()).hexdigest()
 
 
-def _cached_method_wrapper(
-    ttl: int = 120, maxsize: Optional[int] = 128, typed: bool = False
-) -> Callable:
-    """A decorator to cache the results of methods with optional TTL, maxsize, and typed options."""
+def _cached_method_wrapper(ttl: int = 120, maxsize: Optional[int] = 128) -> Callable:
+    """A decorator to cache the results of methods with optional TTL and maxsize options.
+
+    Entries are keyed by ``_generate_cache_key``, a SHA-256 of the JSON-serialized
+    (class, method, args, kwargs). Because the key is derived from a JSON serialization
+    rather than by hashing the raw arguments, decorated methods may be called with
+    unhashable arguments (e.g. ``list`` / ``dict``) and still be cached — unlike a plain
+    ``functools.lru_cache``, which raises ``TypeError: unhashable type`` for such args.
+
+    ``maxsize`` bounds the cache, evicting the oldest entry *by insertion time* — not
+    strict LRU, since reads don't refresh the timestamp (it also drives TTL expiry, and
+    refreshing it on hits would keep hot entries stale forever). ``maxsize=0`` disables
+    caching entirely, matching ``functools.lru_cache``. Cache reads/writes are guarded
+    by a per-method lock; the decorated function itself runs outside the lock, so slow
+    concurrent misses may compute duplicates but never serialize.
+    """
 
     def decorator(func: Callable[..., Any]) -> Callable[..., Any]:
+        # Maps cache key -> (result, timestamp). Keyed by the JSON-derived hash, so
+        # unhashable positional/keyword arguments are supported.
+        cache: dict[str, tuple[Any, float]] = {}
+        stats = {"hits": 0, "misses": 0}
+        lock = threading.RLock()
 
-        @functools.lru_cache(maxsize=maxsize, typed=typed)
-        def cached_func(self, *args, **kwargs):
-            return func(self, *args, **kwargs)
+        def _evict_if_needed() -> None:
+            # Bound the cache size by evicting the oldest entry by insertion timestamp.
+            if maxsize is not None and cache and len(cache) >= maxsize:
+                oldest_key = min(cache, key=lambda k: cache[k][1])
+                del cache[oldest_key]
 
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
-            if os.getenv("DISABLE_CACHE") == "1":
+            # When caching is disabled (globally, per-instance, or maxsize=0) bypass
+            # the cache entirely: don't read, write, evict, or mutate stats.
+            if (
+                os.getenv("DISABLE_CACHE") == "1"
+                or getattr(self, "__cache_disabled", False)
+                or maxsize == 0
+            ):
                 return func(self, *args, **kwargs)
             key = _generate_cache_key(self, func.__name__, args, kwargs)
 
-            if not getattr(self, "__cache_disabled", False) and key in cached_func.cache:
-                cached_result, timestamp = cached_func.cache[key]
-                if (time.time() - timestamp) < ttl:
-                    return cached_result
+            with lock:
+                if key in cache:
+                    cached_result, timestamp = cache[key]
+                    if (time.time() - timestamp) < ttl:
+                        stats["hits"] += 1
+                        return cached_result
+                stats["misses"] += 1
 
-            # The _QBRAID_TEST_CACHE_CALLS environment variable is used internally to enable
-            # testing of function call counts with unittest. Since cached_func is an lru_cache
-            # object, calls to it don't affect the Mock object's call count. To test call counts
-            # accurately, we need to make a duplicate call the original function.
+            result = func(self, *args, **kwargs)
 
-            if os.getenv("_QBRAID_TEST_CACHE_CALLS") == "1":
-                _ = func(self, *args, **kwargs)
-            result = cached_func(self, *args, **kwargs)
-            cached_func.cache[key] = (result, time.time())
+            with lock:
+                _evict_if_needed()
+                cache[key] = (result, time.time())
             return result
 
-        cached_func.cache = {}
-        wrapper.cache_clear = cached_func.cache_clear
-        wrapper.cache_info = cached_func.cache_info
-        wrapper.cache = cached_func.cache
+        def cache_clear() -> None:
+            with lock:
+                cache.clear()
+                stats["hits"] = 0
+                stats["misses"] = 0
+
+        def cache_info() -> CacheInfo:
+            with lock:
+                return CacheInfo(
+                    hits=stats["hits"],
+                    misses=stats["misses"],
+                    maxsize=maxsize,
+                    currsize=len(cache),
+                )
+
+        wrapper.cache_clear = cache_clear
+        wrapper.cache_info = cache_info
+        wrapper.cache = cache
 
         _CACHE_REGISTRY.append(wrapper.cache_clear)
 
@@ -151,7 +210,7 @@ def cache_disabled(instance) -> Generator[None, None, None]:
 
 def clear_cache():
     """
-    Clear all least-recently-used (LRU) caches that have been registered with the
+    Clear all method-result caches that have been registered with the
     :py:func:`qbraid._caching.cached_method` decorator.
 
     Use this function to completely reset the cache state for all decorated methods, which
