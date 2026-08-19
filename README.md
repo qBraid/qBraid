@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_sdk_dark.svg">
-    <img src="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_sdk_light.svg" alt="qBraid" width="320">
+    <img src="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_sdk_light.svg" alt="qBraid | SDK" width="360">
   </picture>
 </p>
 
