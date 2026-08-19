@@ -124,6 +124,19 @@ def main():
     ap.add_argument("--out", default="docs/_static")
     ap.add_argument("--products", nargs="+", default=["SDK"])
     ap.add_argument("--width", type=int, default=1600)
+    ap.add_argument(
+        "--pad-y",
+        type=float,
+        default=0.0,
+        help="vertical clear space in viewBox units, added above and below. The brand "
+        "guide asks for at least half the mark height (12.5); the default 0 keeps "
+        "the tight lockup, which is what most placements want.",
+    )
+    ap.add_argument(
+        "--suffix",
+        default="",
+        help="appended to output filenames, e.g. _header for a padded README variant",
+    )
     args = ap.parse_args()
 
     out_dir = pathlib.Path(args.out)
@@ -135,7 +148,14 @@ def main():
 
     for product in args.products:
         for theme, svg in build(args.brand_svg, args.font, product).items():
-            stem = f"qbraid_{product.lower()}_{theme}"
+            if args.pad_y:
+                svg = re.sub(
+                    r'viewBox="0 0 ([\d.]+) 29"',
+                    lambda m: f'viewBox="0 {-args.pad_y} {m.group(1)} '
+                    f'{HEIGHT + 2 * args.pad_y}"',
+                    svg,
+                )
+            stem = f"qbraid_{product.lower()}_{theme}{args.suffix}"
             path = out_dir / f"{stem}.svg"
             path.write_text(svg, encoding="utf-8")
             print(f"wrote {path}")
