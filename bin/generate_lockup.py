@@ -49,12 +49,15 @@ from fontTools.varLib import instancer
 HEIGHT = 29
 MARK_LEFT, MARK_RIGHT = 1.54, 31.43
 BASELINE, CAP = 21.0, 14.0
-GAP_MARK = 4.82  # mark -> wordmark, preserved from the official lockup
+GAP_MARK = 4.97  # mark -> wordmark, measured from the official lockup
 GAP_PIPE_L = 7.8  # wordmark -> divider; "d" ends on a stem, so it needs more air
 GAP_PIPE_R = 5.2  # divider -> product; caps curve away from the rule
 PIPE_W = 0.9
 RIGHT_PAD = 1.54  # mirror the left inset
 
+# Nunito at 400 sets "qBraid" 1.6% narrower than the logo artwork at the same cap
+# height; this tracking closes that so the mark-to-wordmark proportions match.
+WORD_TRACK = 0.274
 WORD_WEIGHT, PRODUCT_WEIGHT = 400, 300
 THEMES = {"light": "#171717", "dark": "#FFFFFF"}
 
@@ -67,7 +70,7 @@ def _face(font_path, weight):
     return static, static.getGlyphSet(), static.getBestCmap(), CAP / static["OS/2"].sCapHeight
 
 
-def _typeset(font_path, text, weight, ink_left):
+def _typeset(font_path, text, weight, ink_left, track=0.0):
     """Lay out text as outlines, positioned by ink edge rather than advance origin."""
     static, glyphs, cmap, scale = _face(font_path, weight)
     glyf = static["glyf"]
@@ -83,7 +86,7 @@ def _typeset(font_path, text, weight, ink_left):
                 f'{BASELINE}) scale({scale:.6f} {-scale:.6f})" fill="INK"/>'
             )
             ink_right = pen_x + glyf[name].xMax * scale
-        pen_x += glyphs[name].width * scale
+        pen_x += glyphs[name].width * scale + track
     return out, ink_right
 
 
@@ -95,7 +98,7 @@ def build(brand_svg, font_path, product):
         'width="109" height="29" viewBox="0 0 109 29"', "VIEWBOX"
     )
 
-    word, word_right = _typeset(font_path, "qBraid", WORD_WEIGHT, MARK_RIGHT + GAP_MARK)
+    word, word_right = _typeset(font_path, "qBraid", WORD_WEIGHT, MARK_RIGHT + GAP_MARK, WORD_TRACK)
     pipe_x = word_right + GAP_PIPE_L
     name, name_right = _typeset(
         font_path, product.upper(), PRODUCT_WEIGHT, pipe_x + PIPE_W + GAP_PIPE_R
