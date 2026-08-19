@@ -23,7 +23,7 @@ from cirq import ops as cirq_ops
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, CZ, RX, RZ, RZZ, H, I, X, Y, Z
+    from pyquil.gates import CNOT, CZ, RESET, RX, RZ, RZZ, H, I, X, Y, Z
     from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
     from qbraid.interface import circuits_allclose
@@ -31,6 +31,7 @@ try:
     from qbraid.transpiler.conversions.cirq.cirq_to_pyquil import _merge_terminal_measurements
     from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
+    from qbraid.transpiler.converter import transpile
     from qbraid.transpiler.exceptions import ProgramConversionError
 
     pyquil_not_installed = False
@@ -307,3 +308,33 @@ def test_single_terminal_measurement_is_left_alone():
         cirq_ops.measure(*qubits, key="result"),
     )
     assert _merge_terminal_measurements(circuit) is circuit
+def test_cirq_reset_to_pyquil():
+    """A Cirq circuit containing ``cirq.reset`` converts directly to a pyQuil
+    program with a RESET on the same qubit, preserving operation order.
+
+    Regression test: ``cirq_to_pyquil`` previously raised
+    ``ProgramConversionError`` on any circuit containing ``cirq.ResetChannel``.
+    """
+    q0, q1 = LineQubit.range(2)
+    circuit = Circuit(cirq_ops.X(q0), cirq_ops.reset(q0), cirq_ops.CNOT(q0, q1))
+    p = Program()
+    p += X(0)
+    p += RESET(0)
+    p += CNOT(0, 1)
+    p_test = cirq_to_pyquil(circuit)
+    assert p_test.out() == p.out()
+
+
+def test_transpile_cirq_reset_to_pyquil_direct_path():
+    """``transpile`` converts a circuit containing a reset over the direct
+    ``cirq -> pyquil`` edge.
+
+    Regression test: with ``max_path_depth=1`` this previously raised
+    ``ProgramConversionError``, and the default search only succeeded by
+    silently falling back to the ``cirq -> qasm2 -> pyquil`` path.
+    """
+    q0, q1 = LineQubit.range(2)
+    circuit = Circuit(cirq_ops.X(q0), cirq_ops.reset(q0), cirq_ops.CNOT(q0, q1))
+    program = transpile(circuit, "pyquil", max_path_depth=1)
+    assert isinstance(program, Program)
+    assert program.out() == "X 0\nRESET 0\nCNOT 0 1\n"
