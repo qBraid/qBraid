@@ -156,6 +156,12 @@ __all__ = [
 ]
 
 _lazy = {
+    "aqt": [
+        "AQTSession",
+        "AQTProvider",
+        "AQTDevice",
+        "AQTJob",
+    ],
     "aws": [
         "BraketProvider",
         "BraketDevice",
@@ -204,6 +210,12 @@ _lazy = {
         "QuantinuumDevice",
         "QuantinuumJob",
     ],
+    "qudora": [
+        "QudoraSession",
+        "QudoraProvider",
+        "QudoraDevice",
+        "QudoraJob",
+    ],
     "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
@@ -222,6 +234,10 @@ _lazy = {
 }
 
 if TYPE_CHECKING:
+    from .aqt import AQTDevice as AQTDevice
+    from .aqt import AQTJob as AQTJob
+    from .aqt import AQTProvider as AQTProvider
+    from .aqt import AQTSession as AQTSession
     from .aws import BraketDevice as BraketDevice
     from .aws import BraketProvider as BraketProvider
     from .aws import BraketQuantumTask as BraketQuantumTask
@@ -260,6 +276,10 @@ if TYPE_CHECKING:
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .qudora import QudoraDevice as QudoraDevice
+    from .qudora import QudoraJob as QudoraJob
+    from .qudora import QudoraProvider as QudoraProvider
+    from .qudora import QudoraSession as QudoraSession
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider

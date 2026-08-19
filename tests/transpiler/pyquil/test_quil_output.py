@@ -21,6 +21,7 @@
 Module for testing qBraid QuilOutput.
 
 """
+
 import os
 
 import cirq
@@ -206,7 +207,7 @@ USERGATE2 0
 
 def test_quil_two_qubit_gate_output():
     """Test that a QuilTwoQubitGate can be correctly converted to Quil."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     output = QuilOutput((gate.on(q0, q1),), (q0, q1))
     assert (
@@ -432,7 +433,7 @@ def test_fails_on_big_unknowns():
 
 def test_pauli_interaction_gate():
     """Test that a PauliInteractionGate is correctly converted to Quil."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     output = QuilOutput(PauliInteractionGate.CZ.on(q0, q1), (q0, q1))
     assert (
         str(output)
@@ -566,7 +567,7 @@ def test_exponent_to_pi_string(input_exp, expected):
 
 def test_two_qubit_diagonal_gate_none():
     """ "Test that _twoqubitdiagonal_gate returns None for non-diagonal gates."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     gate = cirq.TwoQubitDiagonalGate(np.array([0, 0, 0, 0]))
     formatter = QuilFormatter({q0: "q0", q1: "q1"}, {})
     circuit = cirq.Circuit()
@@ -577,7 +578,7 @@ def test_two_qubit_diagonal_gate_none():
 
 def test_rzz_rads_0_to_identity():
     """ "Test that RZZ gate with rads=0 maps to pyquil Identity gate."""
-    (q0, q1) = _make_qubits(2)
+    q0, q1 = _make_qubits(2)
     gate = RZZGate(rads=0)
     formatter = QuilFormatter({q0: "0", q1: "1"}, {})
     circuit = cirq.Circuit()
@@ -612,3 +613,111 @@ def test_custom_u_gate_to_quil(gate_class, params, expected_quil, quil_converter
     circuit.append(gate.on(q0))
     instr = next(circuit.all_operations())
     assert quil_converter(instr, formatter).strip() == expected_quil
+
+
+@pytest.mark.parametrize(
+    "rads",
+    [
+        np.pi / 17,
+        -np.pi / 17,
+        np.pi / 25,
+        3 * np.pi / 13,
+        0.1234,
+        2.5,
+        1e-13,
+        -1e-13,
+        1e9 * np.pi + 0.01,
+        np.float64(0.1234),
+    ],
+)
+def test_exponent_to_pi_string_inexact_angle_full_precision(rads):
+    """Angles that are not exact fractions of pi must not be rounded."""
+    assert exponent_to_pi_string(rads) == repr(float(rads))
+
+
+@pytest.mark.parametrize("denominator", [17, 25])
+def test_cphase_inexact_angle_unitary(denominator):
+    """CPHASE angles that aren't tidy fractions of pi must survive exactly."""
+    pyquil = pytest.importorskip("pyquil")
+    pyquil_simulation_tools = pytest.importorskip("pyquil.simulation.tools")
+    q0, q1 = _make_qubits(2)
+    operations = [cirq.TwoQubitDiagonalGate([0, 0, 0, np.pi / denominator])(q0, q1)]
+    output = QuilOutput(operations, (q0, q1))
+    program = pyquil.Program(str(output))
+    pyquil_unitary = pyquil_simulation_tools.program_unitary(program, n_qubits=2)
+    cirq_unitary = cirq.Circuit(cirq.SWAP(q0, q1), operations, cirq.SWAP(q0, q1)).unitary()
+    assert np.allclose(pyquil_unitary, cirq_unitary)
+
+
+@pytest.mark.parametrize("rads", [1 / 17, 1 / 25, 0.3183])
+def test_rzz_inexact_angle_unitary(rads):
+    """RZZ angles that aren't tidy fractions of pi must survive exactly."""
+    pyquil = pytest.importorskip("pyquil")
+    pyquil_simulation_tools = pytest.importorskip("pyquil.simulation.tools")
+    q0, q1 = _make_qubits(2)
+    operations = [RZZGate(rads)(q0, q1)]
+    output = QuilOutput(operations, (q0, q1))
+    program = pyquil.Program(str(output))
+    pyquil_unitary = pyquil_simulation_tools.program_unitary(program, n_qubits=2)
+    cirq_unitary = cirq.Circuit(operations).unitary()
+    assert np.allclose(pyquil_unitary, cirq_unitary)
+
+
+def test_reset_channel_output():
+    """A Cirq reset renders as a Quil RESET on the target qubit. Reproduces the
+    bug where ``cirq.ResetChannel`` raised ``ValueError: Cannot output operation
+    as QUIL`` because it was missing from ``SUPPORTED_GATES``."""
+    (q0,) = _make_qubits(1)
+    output = QuilOutput([cirq.reset(q0)], (q0,))
+    assert (
+        str(output)
+        == """# Created using qBraid.
+
+RESET 0
+"""
+    )
+
+
+def test_reset_channel_target_qubit():
+    """RESET targets the correct qubit, checked on the parsed pyQuil program
+    rather than the Quil string."""
+    pyquil = pytest.importorskip("pyquil")
+    quilbase = pytest.importorskip("pyquil.quilbase")
+    quilatom = pytest.importorskip("pyquil.quilatom")
+    q0, q1, q2 = _make_qubits(3)
+    operations = [cirq.X(q0), cirq.reset(q1), cirq.X(q2)]
+    output = QuilOutput(operations, (q0, q1, q2))
+    program = pyquil.Program(str(output))
+    resets = [instr for instr in program.instructions if isinstance(instr, quilbase.ResetQubit)]
+    assert len(resets) == 1
+    assert resets[0].qubit == quilatom.Qubit(1)
+
+
+def test_reset_channel_preserves_operation_order():
+    """A circuit containing a reset keeps its operation ordering in the parsed
+    pyQuil program."""
+    pyquil = pytest.importorskip("pyquil")
+    quilbase = pytest.importorskip("pyquil.quilbase")
+    q0, q1 = _make_qubits(2)
+    operations = [cirq.X(q0), cirq.reset(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m")]
+    output = QuilOutput(operations, (q0, q1))
+    program = pyquil.Program(str(output))
+    executable = [
+        instr for instr in program.instructions if not isinstance(instr, quilbase.Declare)
+    ]
+    assert [type(instr) for instr in executable] == [
+        quilbase.Gate,
+        quilbase.ResetQubit,
+        quilbase.Gate,
+        quilbase.Measurement,
+    ]
+    assert executable[0].name == "X"
+    assert executable[2].name == "CNOT"
+
+
+def test_qudit_reset_unsupported():
+    """A qudit reset (dimension != 2) still fails loudly."""
+    q0 = cirq.LineQid(0, dimension=3)
+    output = QuilOutput([cirq.reset(q0)], (q0,))
+    with pytest.raises(ValueError, match="Cannot output operation as QUIL"):
+        _ = str(output)
