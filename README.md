@@ -116,6 +116,7 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'pyqpanda3': pyqpanda3.core.QProg,
  'autoqasm': autoqasm.program.program.Program,
  'qrisp': qrisp.circuit.quantum_circuit.QuantumCircuit,
+ 'aqt_connector': aqt_connector.models.circuits.QuantumCircuit,
  'qat': qat.core.wrappers.circuit.Circuit}
 ```
 
