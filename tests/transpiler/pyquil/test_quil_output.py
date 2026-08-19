@@ -661,3 +661,63 @@ def test_rzz_inexact_angle_unitary(rads):
     pyquil_unitary = pyquil_simulation_tools.program_unitary(program, n_qubits=2)
     cirq_unitary = cirq.Circuit(operations).unitary()
     assert np.allclose(pyquil_unitary, cirq_unitary)
+
+
+def test_reset_channel_output():
+    """A Cirq reset renders as a Quil RESET on the target qubit. Reproduces the
+    bug where ``cirq.ResetChannel`` raised ``ValueError: Cannot output operation
+    as QUIL`` because it was missing from ``SUPPORTED_GATES``."""
+    (q0,) = _make_qubits(1)
+    output = QuilOutput([cirq.reset(q0)], (q0,))
+    assert (
+        str(output)
+        == """# Created using qBraid.
+
+RESET 0
+"""
+    )
+
+
+def test_reset_channel_target_qubit():
+    """RESET targets the correct qubit, checked on the parsed pyQuil program
+    rather than the Quil string."""
+    pyquil = pytest.importorskip("pyquil")
+    quilbase = pytest.importorskip("pyquil.quilbase")
+    quilatom = pytest.importorskip("pyquil.quilatom")
+    q0, q1, q2 = _make_qubits(3)
+    operations = [cirq.X(q0), cirq.reset(q1), cirq.X(q2)]
+    output = QuilOutput(operations, (q0, q1, q2))
+    program = pyquil.Program(str(output))
+    resets = [instr for instr in program.instructions if isinstance(instr, quilbase.ResetQubit)]
+    assert len(resets) == 1
+    assert resets[0].qubit == quilatom.Qubit(1)
+
+
+def test_reset_channel_preserves_operation_order():
+    """A circuit containing a reset keeps its operation ordering in the parsed
+    pyQuil program."""
+    pyquil = pytest.importorskip("pyquil")
+    quilbase = pytest.importorskip("pyquil.quilbase")
+    q0, q1 = _make_qubits(2)
+    operations = [cirq.X(q0), cirq.reset(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m")]
+    output = QuilOutput(operations, (q0, q1))
+    program = pyquil.Program(str(output))
+    executable = [
+        instr for instr in program.instructions if not isinstance(instr, quilbase.Declare)
+    ]
+    assert [type(instr) for instr in executable] == [
+        quilbase.Gate,
+        quilbase.ResetQubit,
+        quilbase.Gate,
+        quilbase.Measurement,
+    ]
+    assert executable[0].name == "X"
+    assert executable[2].name == "CNOT"
+
+
+def test_qudit_reset_unsupported():
+    """A qudit reset (dimension != 2) still fails loudly."""
+    q0 = cirq.LineQid(0, dimension=3)
+    output = QuilOutput([cirq.reset(q0)], (q0,))
+    with pytest.raises(ValueError, match="Cannot output operation as QUIL"):
+        _ = str(output)
