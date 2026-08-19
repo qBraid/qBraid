@@ -16,7 +16,7 @@
 Pytest configuration and shared fixtures for the QPerfect (MIMIQ) runtime tests.
 
 The suite exercises real ``mimiqcircuits`` objects (``Circuit``, ``BitString``) and the
-``qiskit -> mimiq`` transpiler edge, both of which require the optional ``qperfect`` extra
+``qiskit -> mimiqcircuits`` transpiler edge, both of which require the optional ``qperfect`` extra
 (``mimiqcircuits`` + ``mimiq-qiskit``). Skip the whole directory when it is unavailable. When it is
 installed, the fixtures below provide a fully mocked MIMIQ connection (no network): the provider's
 ``connection`` is stubbed so ``connectToken`` is never called.

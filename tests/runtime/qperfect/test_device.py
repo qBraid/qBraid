@@ -59,7 +59,7 @@ def test_submit_forwards_shots_and_options(device, mock_connection):
 
 
 def test_submit_defaults_to_auto_algorithm(device, mock_connection):
-    """With no algorithm option, submission defaults to ``algorithm='auto'``."""
+    """With no algorithm option, a single-circuit submission defaults to ``algorithm='auto'``."""
     device.submit(mc.Circuit(), shots=100)
     _, kwargs = mock_connection.submit.call_args
     assert kwargs["algorithm"] == "auto"
@@ -76,6 +76,14 @@ def test_submit_rejects_unknown_option(device):
 def test_submit_batch(device, mock_connection):
     """A list of circuits is submitted as a single batch job."""
     circuits = [mc.Circuit(), mc.Circuit()]
-    device.submit(circuits, shots=100)
-    args, _ = mock_connection.submit.call_args
+    device.submit(circuits, shots=100, algorithm="statevector")
+    args, kwargs = mock_connection.submit.call_args
     assert args[0] is circuits
+    assert kwargs["algorithm"] == "statevector"
+
+
+def test_submit_batch_requires_explicit_algorithm(device, mock_connection):
+    """MIMIQ rejects algorithm='auto' for batches, so a batch must name one itself."""
+    with pytest.raises(ValueError, match="Batch submission requires an explicit algorithm"):
+        device.submit([mc.Circuit(), mc.Circuit()], shots=100)
+    mock_connection.submit.assert_not_called()
