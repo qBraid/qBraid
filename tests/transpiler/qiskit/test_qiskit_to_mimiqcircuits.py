@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Unit tests for the ``qiskit -> mimiq`` conversion and the ``mimiq`` transpiler node.
+Unit tests for the ``qiskit -> mimiqcircuits`` conversion and the ``mimiqcircuits`` node.
 
 Requires the optional ``qperfect`` extra (``mimiqcircuits`` + ``mimiq-qiskit``).
 """
@@ -48,15 +48,15 @@ def test_qiskit_to_mimiqcircuits_returns_native_circuit():
 
 
 def test_conversion_graph_has_qiskit_to_mimiqcircuits_edge():
-    """``mimiq`` is a registered node reachable from qiskit."""
+    """``mimiqcircuits`` is a registered node reachable from qiskit."""
     graph = ConversionGraph()
     assert graph.has_node("mimiqcircuits")
     assert graph.has_edge("qiskit", "mimiqcircuits")
     assert graph.has_path("qiskit", "mimiqcircuits")
 
 
-def test_native_mimiq_resolves_to_mimiq_alias():
-    """A native MIMIQ circuit is recognized as the ``mimiq`` program type."""
+def test_native_circuit_resolves_to_mimiqcircuits_alias():
+    """A native MIMIQ circuit is recognized as the ``mimiqcircuits`` program type."""
     assert get_program_type_alias(qiskit_to_mimiqcircuits(_bell())) == "mimiqcircuits"
 
 

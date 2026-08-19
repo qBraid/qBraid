@@ -91,8 +91,10 @@ class QPerfectJob(QuantumJob):
         """
         info = self._connection.connection.requestInfo(self.id)
         if info.status not in _STATUS_MAP:
+            # ``RequestInfo.status`` falls back to the literal string "Unknown" when the payload
+            # omits the field, so the message says "unrecognized" to keep that case readable.
             raise QPerfectJobError(
-                f"Unknown MIMIQ job status '{info.status}'. "
+                f"MIMIQ reported an unrecognized job status '{info.status}'. "
                 f"Expected one of: {', '.join(_STATUS_MAP)}"
             )
         return _STATUS_MAP[info.status]

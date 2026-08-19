@@ -51,7 +51,17 @@ def test_unknown_status_raises(mock_connection):
     live job to an indeterminate state.
     """
     mock_connection.connection.requestInfo.return_value.status = "SOMETHING_ELSE"
-    with pytest.raises(QPerfectJobError, match="Unknown MIMIQ job status 'SOMETHING_ELSE'"):
+    with pytest.raises(QPerfectJobError, match="unrecognized job status 'SOMETHING_ELSE'"):
+        _job(mock_connection).status()
+
+
+def test_missing_status_field_raises(mock_connection):
+    """mimiqlink returns the literal "Unknown" when the payload omits ``status``.
+
+    The error names that value rather than reading as a mapped-but-unknown state.
+    """
+    mock_connection.connection.requestInfo.return_value.status = "Unknown"
+    with pytest.raises(QPerfectJobError, match="unrecognized job status 'Unknown'"):
         _job(mock_connection).status()
 
 

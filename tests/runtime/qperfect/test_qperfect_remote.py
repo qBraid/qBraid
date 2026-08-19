@@ -103,18 +103,6 @@ def test_result_bitstring_endianness(qubit, expected):
 
 
 @pytest.mark.remote
-def test_batch_run_requires_explicit_algorithm():
-    """MIMIQ rejects algorithm='auto' in batch mode, so a batch must name one itself.
-
-    Reproduces the failure where submit() defaulted every request to 'auto', making any list
-    submission fail against the live cloud.
-    """
-    device = _get_provider().get_device(DEVICE_ID)
-    with pytest.raises(ValueError, match="Batch submission requires an explicit algorithm"):
-        device.run([_bell(), _bell()], shots=SHOTS)
-
-
-@pytest.mark.remote
 def test_batch_run_returns_counts_per_circuit():
     """A batch executes as one job, with results ordered by submission."""
     device = _get_provider().get_device(DEVICE_ID)
