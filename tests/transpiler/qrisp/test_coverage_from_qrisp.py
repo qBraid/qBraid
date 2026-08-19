@@ -150,7 +150,18 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.88), ("qiskit", 0.95)]
+ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.95), ("qiskit", 0.95)]
+
+# Conversions with wrong unitaries upstream, tracked in #1311: RGate
+# (eclipse-qrisp/Qrisp#629), CPGate (#630), U1Gate (#631), MCRXGate (#632).
+# MCRXGate's failure is context-dependent, so the raw failure count flips between 3 and 4
+# from run to run, and the pytket threshold sits exactly on that boundary — CI went red or
+# green on identical commits. Skipping these by name keeps the result deterministic while
+# the threshold still guards every other gate; lowering the threshold instead would buy the
+# same headroom for genuinely new regressions. Delete entries as upstream fixes land.
+KNOWN_UPSTREAM_FAILURES: dict[str, set[str]] = {
+    "pytket": {"CPGate", "MCRXGate", "RGate", "U1Gate"},
+}
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 
@@ -170,14 +181,17 @@ def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
     """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
+    known_broken = KNOWN_UPSTREAM_FAILURES.get(target, set()) & set(qrisp_circuits)
     failures = {}
     for gate_name in qrisp_circuits:
+        if gate_name in known_broken:
+            continue
         try:
             convert_from_qrisp_to_x(target, gate_name, qrisp_circuits, conversion_graph)
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
-    total_tests = len(qrisp_circuits)
+    total_tests = len(qrisp_circuits) - len(known_broken)
     nb_fails = len(failures)
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
