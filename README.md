@@ -1,7 +1,7 @@
 <p align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_sdk_dark_header.svg">
-    <img src="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_sdk_light_header.svg" alt="qBraid | SDK" width="360">
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_sdk_dark_header.svg">
+    <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_sdk_light_header.svg" alt="qBraid | SDK" width="360">
   </picture>
 </p>
 
@@ -38,8 +38,8 @@ By addressing the full scope of client-side software requirements necessary for 
 ---
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_runtime_dark.svg">
-  <img src="https://raw.githubusercontent.com/qBraid/qBraid/feat/readme-theme-aware-images/docs/_static/qbraid_runtime_light.svg" alt="qBraid-SDK runtime pipeline: transpile, transform, validate, submit">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_dark.svg">
+  <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_light.svg" alt="qBraid-SDK runtime pipeline: transpile, transform, validate, submit">
 </picture>
 
 ## Resources
