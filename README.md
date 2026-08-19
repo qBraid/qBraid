@@ -1,4 +1,9 @@
-<img width=full alt="qbraid-sdk-header" src="https://user-images.githubusercontent.com/46977852/224456452-605e51f2-193d-4789-863e-e51cdd4b0a54.png">
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_sdk_dark_header.svg">
+    <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_sdk_light_header.svg" alt="qBraid | SDK" width="360">
+  </picture>
+</p>
 
 <p align="center">
   <a href="https://github.com/qBraid/qBraid/actions/workflows/main.yml">
@@ -32,7 +37,10 @@ By addressing the full scope of client-side software requirements necessary for 
 
 ---
 
-![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_dark.svg">
+  <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_light.svg" alt="qBraid-SDK runtime pipeline: transpile, transform, validate, submit">
+</picture>
 
 ## Resources
 
