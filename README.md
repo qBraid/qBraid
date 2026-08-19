@@ -38,8 +38,8 @@ By addressing the full scope of client-side software requirements necessary for 
 ---
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://docs.qbraid.com/v2/sdk/_static/qbraid-runtime-sdk_dark.png">
-  <img src="https://docs.qbraid.com/v2/sdk/_static/qbraid-runtime-sdk.png" alt="Runtime Diagram">
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_dark.svg">
+  <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_light.svg" alt="qBraid-SDK runtime pipeline: transpile, transform, validate, submit">
 </picture>
 
 ## Resources
