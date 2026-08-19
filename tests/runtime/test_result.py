@@ -300,6 +300,16 @@ def test_batch_counts_preserve_each_circuit_width():
     assert batch_result.data.get_counts() == counts
     assert [result.data.get_counts() for result in batch_result.results] == counts
     assert batch_result.data.to_dict()["num_measured_qubits"] == [2, 3, 1]
+    assert normalize_data(counts, include_zero_values=True) == [
+        {"00": 18, "01": 24, "10": 24, "11": 34},
+        {"000": 14, "001": 0, "010": 0, "011": 0, "100": 0, "101": 0, "110": 0, "111": 15},
+        {"0": 3, "1": 97},
+    ]
+    assert normalize_data(counts, decimal=True) == [
+        {0: 18, 1: 24, 2: 24, 3: 34},
+        {0: 14, 7: 15},
+        {0: 3, 1: 97},
+    ]
 
 
 def test_decimal_get_counts():
