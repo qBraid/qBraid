@@ -65,7 +65,7 @@ def _order_cregs_by_key(qasm: str) -> str:
         return (0, match["register"], int(match["index"]), index)
 
     reordered = [lines[i] for i in sorted(positions, key=sort_key)]
-    for slot, line in zip(positions, reordered):
+    for slot, line in zip(positions, reordered, strict=True):
         lines[slot] = line
     return "".join(lines)
 
