@@ -15,10 +15,9 @@
 """
 Module defining QPerfect (MIMIQ) provider class.
 
-Authentication and all job I/O are driven through the vendor ``mimiqcircuits`` SDK: the provider
-holds an authenticated ``MimiqConnection`` (established from ``QPERFECT_API_TOKEN`` via
-``connectToken``) and hands it to each device/job. Circuit conversion to the MIMIQ native circuit is
-handled by the transpiler's ``qiskit -> mimiqcircuits`` edge (:func:`qiskit_to_mimiqcircuits`).
+The provider holds an authenticated ``MimiqConnection`` and hands it to each device and job.
+:mod:`~qbraid.runtime.qperfect.client` resolves the credentials. Circuit conversion runs on the
+transpiler's ``qiskit -> mimiqcircuits`` edge.
 
 """
 
@@ -33,16 +32,14 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
-from .client import build_connection, resolve_token
+from .client import build_connection
 from .device import QPerfectDevice
 
-# MIMIQ exposes a single cloud emulator; the simulation algorithm (auto / statevector / mps) is a
-# per-job runtime option, not a separate device.
+# The algorithm (auto / statevector / mps) is a per-job option, not a separate device.
 _DEVICE_ID = "mimiq-emulator"
 
-# Practical qubit reach per MIMIQ backend: state vector is memory-bound (2^N amplitudes); MPS scales
-# with entanglement. The emulator auto-selects a backend per job, so the device advertises the
-# largest. Approximate — the emulator errors if a run exceeds what its chosen backend can handle.
+# Approximate reach per backend: state vector is memory-bound (2^N amplitudes), MPS scales with
+# entanglement. The emulator errors if a run exceeds what its chosen backend can handle.
 _ALGORITHM_QUBITS: dict[str, int] = {
     "statevector": 32,
     "mps": 256,
@@ -52,16 +49,43 @@ _ALGORITHM_QUBITS: dict[str, int] = {
 class QPerfectProvider(QuantumProvider):
     """QPerfect (MIMIQ) provider class."""
 
-    def __init__(self, token: str | None = None, *, url: str | None = None):
-        self._token = resolve_token(token)
+    def __init__(
+        self,
+        token: str | None = None,
+        *,
+        url: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+    ):
+        """Build a QPerfect provider.
+
+        Credentials are resolved on first connection use, so constructing a provider never
+        raises for missing configuration. See
+        :func:`~qbraid.runtime.qperfect.client.build_connection` for the resolution order and
+        the environment variables behind each argument.
+
+        Args:
+            token: A MIMIQ refresh token.
+            url: The MIMIQ cloud URL.
+            username: MIMIQ account email.
+            password: MIMIQ account password.
+        """
+        self._token = token
         self._url = url
+        self._username = username
+        self._password = password
         self._connection: MimiqConnection | None = None
 
     @property
     def connection(self) -> MimiqConnection:
         """Return an authenticated MIMIQ connection, establishing it on first use."""
         if self._connection is None:
-            self._connection = build_connection(self._token, url=self._url)
+            self._connection = build_connection(
+                self._token,
+                url=self._url,
+                username=self._username,
+                password=self._password,
+            )
         return self._connection
 
     @staticmethod
@@ -71,12 +95,8 @@ class QPerfectProvider(QuantumProvider):
             device_id=_DEVICE_ID,
             simulator=True,
             experiment_type=ExperimentType.GATE_MODEL,
-            # The emulator auto-selects a state-vector or MPS backend per job; advertise the largest
-            # reach across backends (the algorithm is chosen at submit time via runtime options).
+            # The emulator picks a backend per job, so advertise the largest reach.
             num_qubits=max(_ALGORITHM_QUBITS.values()),
-            # Target the native "mimiqcircuits" program type: the transpiler routes any supported
-            # program to a qiskit circuit, then to the MIMIQ native circuit via the
-            # qiskit -> mimiqcircuits edge.
             program_spec=ProgramSpec(MimiqCircuit),
             provider_name="QPerfect",
         )
@@ -97,5 +117,5 @@ class QPerfectProvider(QuantumProvider):
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
-            object.__setattr__(self, "_hash", hash((self._token, self._url)))
+            object.__setattr__(self, "_hash", hash((self._token, self._url, self._username)))
         return self._hash  # pylint: disable=no-member

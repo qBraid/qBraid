@@ -27,7 +27,7 @@ from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData, MeasCount
 
-from .client import build_connection, resolve_token
+from .client import build_connection
 
 if TYPE_CHECKING:
     from mimiqcircuits import MimiqConnection
@@ -72,7 +72,7 @@ class QPerfectJob(QuantumJob):
     ):
         super().__init__(job_id=job_id, **kwargs)
         if connection is None:
-            connection = build_connection(resolve_token(None))
+            connection = build_connection()
         self._connection = connection
 
     @property

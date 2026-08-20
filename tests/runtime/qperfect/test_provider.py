@@ -23,17 +23,19 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.qperfect import QPerfectDevice, QPerfectProvider
 
 
-def test_requires_token(monkeypatch):
-    """Constructing a provider without a token (arg or env var) raises."""
-    monkeypatch.delenv("QPERFECT_API_TOKEN", raising=False)
-    with pytest.raises(ValueError):
-        QPerfectProvider()
+def test_construction_does_not_require_credentials(monkeypatch):
+    """Building a provider never authenticates, so it works with nothing configured."""
+    for var in ("QPERFECT_API_TOKEN", "QPERFECT_USERNAME", "QPERFECT_PASSWORD"):
+        monkeypatch.delenv(var, raising=False)
+    assert QPerfectProvider().get_device("mimiq-emulator") is not None
 
 
-def test_token_from_env(monkeypatch):
-    """The token falls back to the QPERFECT_API_TOKEN environment variable."""
-    monkeypatch.setenv("QPERFECT_API_TOKEN", "env-token")
-    assert QPerfectProvider()._token == "env-token"
+def test_connection_requires_credentials(monkeypatch):
+    """Credentials are resolved on first connection use, and their absence raises there."""
+    for var in ("QPERFECT_API_TOKEN", "QPERFECT_USERNAME", "QPERFECT_PASSWORD"):
+        monkeypatch.delenv(var, raising=False)
+    with pytest.raises(ValueError, match="QPERFECT_USERNAME"):
+        _ = QPerfectProvider().connection
 
 
 def test_get_devices(provider):
