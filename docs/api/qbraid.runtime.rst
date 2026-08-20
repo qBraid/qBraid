@@ -25,4 +25,5 @@ Submodules
    native
    rigetti
    pasqal
-   
+   qperfect
+

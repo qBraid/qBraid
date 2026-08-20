@@ -53,6 +53,8 @@ autodoc_mock_imports = [
     "braket",
     "cirq",
     "matplotlib",
+    "mimiqcircuits",
+    "mimiqlink",
     "pennylane",
     "pyqir",
     "pyquil",
