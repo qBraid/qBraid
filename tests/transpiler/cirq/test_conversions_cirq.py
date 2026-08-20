@@ -136,3 +136,28 @@ def test_cirq_to_pyquil_via_qasm2_keeps_readout_bit_order():
             _, qubit, register = line.split()
             bit_to_qubit[int(register.split("[")[1].rstrip("]"))] = int(qubit)
     assert bit_to_qubit == {0: 0, 1: 1, 2: 2}
+
+
+def test_cirq_to_qasm2_leaves_unindexed_creg_names_in_place():
+    """Keys without a trailing index keep their relative order and their own register.
+
+    Reordering only makes sense for keys that name a bit position (``c_0``, ``c_1``).
+    A key like ``alpha`` carries no index, so there is nothing to sort it by and the
+    declaration it produced is left where cirq put it -- each qubit still measures into
+    its own register, which is what the reorder must not disturb.
+    """
+    q = cirq.LineQubit.range(3)
+    keys = ["alpha", "beta", "gamma"]
+    circuit = cirq.Circuit(
+        cirq.ops.X(q[0]),
+        cirq.ops.X(q[1]),
+        [cirq.ops.measure(qb, key=key) for qb, key in zip(q, keys)],
+    )
+    qasm = cirq_to_qasm2(circuit)
+    cregs = [line for line in qasm.splitlines() if line.startswith("creg")]
+    assert sorted(cregs) == sorted(f"creg m_{key}[1];" for key in keys)
+
+    # every qubit still lands in its own register, one bit each
+    measures = [line for line in qasm.splitlines() if line.startswith("measure")]
+    assert len(measures) == len(keys)
+    assert len({line.split("->")[1].strip() for line in measures}) == len(keys)
