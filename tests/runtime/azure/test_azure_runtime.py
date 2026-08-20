@@ -972,6 +972,40 @@ def test_format_rigetti_results(azure_result_builder, mock_azure_job):
     assert result["probabilities"] == {"01": 0.5, "10": 0.5}
 
 
+def test_format_rigetti_results_non_ro_register(azure_result_builder, mock_azure_job):
+    """A lone register is the readout even when it is not named ``ro``.
+
+    Defensive: Azure rejects non-``ro`` programs outright, so its results always carry that
+    key. This keeps a result that did arrive from failing on a raw ``KeyError``.
+    """
+    mock_azure_job.get_results.return_value = {"m0": [[0, 1], [1, 0], [0, 1], [1, 0]]}
+
+    result = azure_result_builder._format_rigetti_results()
+
+    assert result["counts"] == {"01": 2, "10": 2}
+    assert result["probabilities"] == {"01": 0.5, "10": 0.5}
+
+
+def test_format_rigetti_results_prefers_ro_over_other_registers(
+    azure_result_builder, mock_azure_job
+):
+    """``ro`` wins when the program also declares scratch registers."""
+    mock_azure_job.get_results.return_value = {
+        "ro": [[0, 1], [1, 0]],
+        "aux": [[1, 1], [1, 1]],
+    }
+
+    assert azure_result_builder._format_rigetti_results()["counts"] == {"01": 1, "10": 1}
+
+
+def test_format_rigetti_results_ambiguous_registers_raises(azure_result_builder, mock_azure_job):
+    """Several registers and no ``ro``: any choice would silently permute the bitstrings."""
+    mock_azure_job.get_results.return_value = {"m0": [[0]], "m1": [[1]]}
+
+    with pytest.raises(ValueError, match="Cannot identify the Rigetti readout register"):
+        azure_result_builder._format_rigetti_results()
+
+
 def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
     """Test formatting Pasqal results."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")

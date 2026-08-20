@@ -46,6 +46,7 @@ DEFAULT_TIMEOUT = 120
 # Skip pyquil and/or pulser tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
 pulser_found = importlib.util.find_spec("pulser") is not None
+cirq_found = importlib.util.find_spec("cirq") is not None
 
 if TYPE_CHECKING:
     import pulser as pulser_
@@ -291,3 +292,40 @@ def test_workspace_from_connection_string():
 
         mock_from_connection_string.assert_called_once_with(mock_connection_string)
         assert provider.workspace == mock_workspace
+
+
+@pytest.mark.remote
+@pytest.mark.skipif(not cirq_found, reason="cirq not installed")
+def test_submit_cirq_to_rigetti(provider: AzureQuantumProvider):
+    """A Cirq circuit reaches the Rigetti simulator and comes back with counts.
+
+    Azure rejects any Rigetti program whose readout register is not named ``ro``, so before
+    the transpiler declared that name this failed with ``InvalidInputData`` at execution.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    import cirq
+
+    device = provider.get_device("rigetti.sim.qvm")
+    status = device.status()
+    if status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {status.value}")
+
+    qubits = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        cirq.H(qubits[0]),
+        cirq.CNOT(qubits[0], qubits[1]),
+        cirq.measure(qubits[0], key="c_0"),
+        cirq.measure(qubits[1], key="c_1"),
+    )
+
+    job = device.run(circuit, shots=100)
+    try:
+        job.wait_for_final_state(timeout=DEFAULT_TIMEOUT)
+    except TimeoutError:
+        pytest.skip(f"Rigetti QVM job did not complete within {DEFAULT_TIMEOUT} seconds")
+
+    assert job.status() == JobStatus.COMPLETED
+    counts = job.result().data.get_counts()
+    assert sum(counts.values()) == 100
+    # A Bell pair only ever reads out as 00 or 11.
+    assert set(counts) <= {"00", "11"}

@@ -501,16 +501,18 @@ class QuilOutput:
         return {qubit: str(i) for i, qubit in enumerate(self.qubits)}
 
     def _generate_measurement_ids(self) -> dict[str, str]:
-        index = 0
-        measurement_id_map: dict[str, str] = {}
+        keys: list[str] = []
         for op in self.operations:
             if isinstance(op.gate, ops.MeasurementGate):
                 key = protocols.measurement_key_name(op)
-                if key in measurement_id_map:
-                    continue
-                measurement_id_map[key] = f"m{index}"
-                index += 1
-        return measurement_id_map
+                if key not in keys:
+                    keys.append(key)
+        # ``ro`` is Quil's conventional readout register, and Azure's Rigetti targets reject
+        # any program declaring another name. Only a single-register program has an
+        # unambiguous readout, so circuits keeping several keys stay on positional names.
+        if len(keys) == 1:
+            return {keys[0]: "ro"}
+        return {key: f"m{index}" for index, key in enumerate(keys)}
 
     def save_to_file(self, path: Union[str, bytes, int]) -> None:
         """Write QUIL output to a file specified by path."""

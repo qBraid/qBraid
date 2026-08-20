@@ -588,16 +588,17 @@ def test_routing_is_independent_of_conversion_order():
 
 
 @pytest.mark.skipif(not pyquil_installed, reason="pyquil not installed")
-def test_cirq_to_pyquil_routes_around_the_low_weight_edge():
-    """cirq -> pyquil avoids the direct 0.74-weight conversion.
+def test_cirq_to_pyquil_takes_the_direct_edge():
+    """cirq -> pyquil is a single hop again.
 
-    That edge reorders instructions across measurement boundaries and splits the readout
-    register into one BIT[1] per measurement key, which failed 23 production Rigetti jobs
-    with "Misplaced or illegal instruction in ProtoQuil program". Its low weight recorded
-    that, but hop-count ranking picked it anyway because it is a single hop.
+    The edge was held at weight 0.74 because it split the readout register into one BIT[1]
+    per measurement key and named it ``m0``, which failed 23 production Rigetti jobs with
+    "Misplaced or illegal instruction in ProtoQuil program". Both defects are fixed --
+    ``_merge_terminal_measurements`` coalesces the registers and ``QuilOutput`` declares
+    ``ro`` -- so the weight now reflects gate coverage and the direct route wins on cost.
     """
     graph = ConversionGraph()
-    assert graph.shortest_path("cirq", "pyquil") != "cirq -> pyquil"
+    assert graph.shortest_path("cirq", "pyquil") == "cirq -> pyquil"
 
 
 def test_shortest_path_to_self_raises():
