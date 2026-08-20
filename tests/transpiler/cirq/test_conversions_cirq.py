@@ -26,7 +26,6 @@ from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.programs import NATIVE_REGISTRY, load_program
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.conversions.cirq import cirq_to_qasm2
-from qbraid.transpiler.conversions.qasm2 import qasm2_to_pyquil
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
 
@@ -117,12 +116,17 @@ def test_cirq_to_pyquil_via_qasm2_keeps_readout_bit_order():
     read back as (0,1,1) through this route, because the flattened register followed
     declaration order and cirq had declared the registers out of key order.
     """
+    pytest.importorskip("pyquil")  # capped below Python 3.13
     q = cirq.LineQubit.range(3)
     circuit = cirq.Circuit(
         cirq.ops.X(q[0]),
         cirq.ops.X(q[1]),
         [cirq.ops.measure(qb, key=f"c_{i}") for i, qb in enumerate(q)],
     )
+    from qbraid.transpiler.conversions.qasm2 import (  # pylint: disable=import-outside-toplevel
+        qasm2_to_pyquil,
+    )
+
     program = qasm2_to_pyquil(cirq_to_qasm2(circuit))
     # Statement order still follows the moments; what matters is which bit each qubit
     # lands in, so assert the mapping rather than the order the MEASUREs appear in.
