@@ -44,6 +44,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed measurement results coming back permuted when a Cirq circuit reaches pyQuil through `qasm2`. Cirq declares one `creg` per measurement key in scheduling order, so a measurement on an idle qubit was declared first; flattening those registers into one readout region then followed declaration order and moved qubit 2's result into bit 0. Registers are now declared in key order ([#1345](https://github.com/qBraid/qBraid/pull/1345))
 - Fixed Cirq → pyQuil conversion failing with `ProgramConversionError` for circuits containing `cirq.reset` / `cirq.ResetChannel`. Resets now convert directly to Quil `RESET` on the target qubit; qudit resets (dimension > 2) still raise, since Quil `RESET` is qubit-only ([#1333](https://github.com/qBraid/qBraid/pull/1333))
 - Fixed `test_qrisp_coverage[pytket]` flipping between pass and fail on identical commits. Four qrisp → pytket gate conversions are broken upstream and one of them fails only in certain contexts, leaving the threshold straddling the pass/fail line. Those four are now skipped by name, and the pytket baseline rises to 0.95 to match the other targets ([#1337](https://github.com/qBraid/qBraid/pull/1337))
 - Fixed batch result counts padding every circuit to the widest register. Each circuit now
