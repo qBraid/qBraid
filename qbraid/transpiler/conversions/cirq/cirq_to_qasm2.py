@@ -18,6 +18,7 @@ Module for conversions between Cirq Circuits and QASM strings
 """
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING, Optional
 
 import cirq
@@ -29,6 +30,44 @@ from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm2StringType
+
+
+_CREG = re.compile(r"^creg\s+(?P<name>\w+)\s*\[(?P<size>\d+)\]\s*;\s*$")
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
+
+
+def _order_cregs_by_key(qasm: str) -> str:
+    """Emit ``creg`` declarations in measurement-key order rather than moment order.
+
+    Cirq writes one ``creg`` per measurement key in the order the measurements are
+    scheduled, so an idle qubit whose measurement packs into an earlier moment gets its
+    register declared first. Nothing is wrong with the QASM -- each register is named and
+    its ``measure`` is correct -- but consumers that flatten the registers into one
+    readout region do so in declaration order (``openqasm3_to_pyquil``, matching how
+    ``RigettiJob`` reads them back, #1314). Declaration order therefore has to reflect the
+    keys, or the flattened bits come out permuted relative to the source.
+
+    Registers are sorted the way ``cirq_to_pyquil`` orders its merged measurements: by the
+    ``(register, index)`` parsed from the key, so ``m_c_0`` precedes ``m_c_2``. Names that
+    do not carry an index keep their relative order, and the declarations are rewritten in
+    place so surrounding statements are untouched.
+    """
+    lines = qasm.splitlines(keepends=True)
+    positions = [i for i, line in enumerate(lines) if _CREG.match(line)]
+    if len(positions) < 2:
+        return qasm
+
+    def sort_key(index: int) -> tuple:
+        name = _CREG.match(lines[index])["name"]
+        match = _BIT_INDEX.match(name)
+        if match is None:
+            return (1, "", 0, index)
+        return (0, match["register"], int(match["index"]), index)
+
+    reordered = [lines[i] for i in sorted(positions, key=sort_key)]
+    for slot, line in zip(positions, reordered):
+        lines[slot] = line
+    return "".join(lines)
 
 
 @value.value_equality
@@ -111,6 +150,6 @@ def cirq_to_qasm2(
         Qasm2StringType: QASM string equivalent to the input Cirq circuit.
     """
     circuit = map_zpow_and_unroll(circuit)
-    qasm = str(_to_qasm_output(circuit, header, precision, qubit_order))
+    qasm = _order_cregs_by_key(str(_to_qasm_output(circuit, header, precision, qubit_order)))
     # format the qasm before returning
     return pyqasm.dumps(pyqasm.loads(qasm))

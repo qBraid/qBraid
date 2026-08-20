@@ -25,6 +25,8 @@ import pytest
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.programs import NATIVE_REGISTRY, load_program
 from qbraid.transpiler.conversions import conversion_functions
+from qbraid.transpiler.conversions.cirq import cirq_to_qasm2
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_pyquil
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
 
@@ -88,3 +90,45 @@ def test_convert_circuit_with_global_phase_from_cirq(frontend):
         pytest.skip(f"Unitary calculation not implemented for {frontend}")
 
     assert circuits_allclose(cirq_circuit, test_circuit)
+
+
+def test_cirq_to_qasm2_declares_cregs_in_key_order():
+    """Classical registers follow the measurement keys, not the moments.
+
+    Cirq schedules a measurement on an idle qubit into an earlier moment and declares its
+    register first, so ``c_2`` preceded ``c_0``. Consumers that flatten the registers into
+    one readout region do so in declaration order, which then permutes the bits relative
+    to the keys.
+    """
+    q = cirq.LineQubit.range(3)
+    circuit = cirq.Circuit(
+        cirq.ops.X(q[0]),
+        cirq.ops.X(q[1]),  # q[2] is idle, so its measurement packs into moment 0
+        [cirq.ops.measure(qb, key=f"c_{i}") for i, qb in enumerate(q)],
+    )
+    cregs = [line for line in cirq_to_qasm2(circuit).splitlines() if line.startswith("creg")]
+    assert cregs == ["creg m_c_0[1];", "creg m_c_1[1];", "creg m_c_2[1];"]
+
+
+def test_cirq_to_pyquil_via_qasm2_keeps_readout_bit_order():
+    """The composed route lands qubit i in bit i, as the direct edge does.
+
+    Regression test for the readout permutation: preparing the asymmetric pattern (1,1,0)
+    read back as (0,1,1) through this route, because the flattened register followed
+    declaration order and cirq had declared the registers out of key order.
+    """
+    q = cirq.LineQubit.range(3)
+    circuit = cirq.Circuit(
+        cirq.ops.X(q[0]),
+        cirq.ops.X(q[1]),
+        [cirq.ops.measure(qb, key=f"c_{i}") for i, qb in enumerate(q)],
+    )
+    program = qasm2_to_pyquil(cirq_to_qasm2(circuit))
+    # Statement order still follows the moments; what matters is which bit each qubit
+    # lands in, so assert the mapping rather than the order the MEASUREs appear in.
+    bit_to_qubit = {}
+    for line in program.out().splitlines():
+        if line.startswith("MEASURE"):
+            _, qubit, register = line.split()
+            bit_to_qubit[int(register.split("[")[1].rstrip("]"))] = int(qubit)
+    assert bit_to_qubit == {0: 0, 1: 1, 2: 2}
