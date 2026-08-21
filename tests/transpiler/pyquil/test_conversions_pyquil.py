@@ -16,9 +16,11 @@
 Unt tests for conversions to/from pyQuil circuits.
 
 """
+import re
+
 import numpy as np
 import pytest
-from cirq import Circuit, LineQubit
+from cirq import Circuit, LineQubit, Moment, Simulator
 from cirq import ops as cirq_ops
 
 try:
@@ -27,9 +29,10 @@ try:
     from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
     from qbraid.interface import circuits_allclose
-    from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
+    from qbraid.transpiler.conversions.cirq import cirq_to_pyquil, cirq_to_qasm2
+    from qbraid.transpiler.conversions.cirq.cirq_to_pyquil import _merge_terminal_measurements
     from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
-    from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
+    from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq, qasm2_to_pyquil
     from qbraid.transpiler.converter import transpile
     from qbraid.transpiler.exceptions import ProgramConversionError
 
@@ -206,6 +209,109 @@ def test_cirq_to_pyquil_two_qubit_diagonal_roundtrip(instr):
     assert circuits_allclose(p, p_test)
 
 
+def test_multi_key_terminal_measurements_merge_to_single_register():
+    """Per-bit measurement keys (as produced by QASM import) coalesce into one
+    readout register instead of one BIT[1] register per key."""
+    qubits = LineQubit.range(3)
+    circuit = Circuit(
+        cirq_ops.H(qubits[0]),
+        cirq_ops.CNOT(qubits[0], qubits[1]),
+        cirq_ops.CNOT(qubits[1], qubits[2]),
+        [cirq_ops.measure(qb, key=f"c_{i}") for i, qb in enumerate(qubits)],
+    )
+    program = cirq_to_pyquil(circuit)
+    lines = program.out().splitlines()
+    assert [line for line in lines if line.startswith("DECLARE")] == ["DECLARE ro BIT[3]"]
+    assert [line for line in lines if line.startswith("MEASURE")] == [
+        f"MEASURE {i} ro[{i}]" for i in range(3)
+    ]
+
+
+def test_merged_readout_order_follows_keys_not_moments():
+    """Bit position comes from the measurement key, not the moment the measure sits in.
+
+    Merging into one register has to choose a bit order; taking it from operation order
+    silently transposes the readout whenever a later-indexed qubit is measured first.
+    """
+    qubits = LineQubit.range(3)
+    circuit = Circuit(
+        [cirq_ops.H(qubits[0]), cirq_ops.X(qubits[1]), cirq_ops.Y(qubits[2])],
+        Moment(cirq_ops.measure(qubits[2], key="c_2")),
+        Moment(cirq_ops.measure(qubits[0], key="c_0")),
+        Moment(cirq_ops.measure(qubits[1], key="c_1")),
+    )
+    measures = [
+        line for line in cirq_to_pyquil(circuit).out().splitlines() if line.startswith("MEASURE")
+    ]
+    assert measures == ["MEASURE 0 ro[0]", "MEASURE 1 ro[1]", "MEASURE 2 ro[2]"]
+
+
+def test_merged_readout_order_honors_permuted_qasm_registers():
+    """``measure q[2] -> c[0]`` must land q_2 in bit 0, whatever order the ops appear in."""
+    qasm = """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+creg c[3];
+h q[0];
+cx q[0],q[1];
+measure q[2] -> c[0];
+measure q[0] -> c[2];
+measure q[1] -> c[1];
+"""
+    measures = [
+        line
+        for line in cirq_to_pyquil(qasm2_to_cirq(qasm)).out().splitlines()
+        if line.startswith("MEASURE")
+    ]
+    assert measures == ["MEASURE 2 ro[0]", "MEASURE 1 ro[1]", "MEASURE 0 ro[2]"]
+
+
+def test_merged_measurement_key_avoids_collision():
+    """A mid-circuit measurement already keyed 'm' must not be duplicated by the merge."""
+    qubits = LineQubit.range(2)
+    circuit = Circuit(
+        cirq_ops.H(qubits[0]),
+        cirq_ops.measure(qubits[0], key="m"),
+        cirq_ops.X(qubits[0]),
+        cirq_ops.measure(qubits[0], key="c_0"),
+        cirq_ops.measure(qubits[1], key="c_1"),
+    )
+    merged = _merge_terminal_measurements(circuit)
+
+    keys = [
+        op.gate.key
+        for op in merged.all_operations()
+        if isinstance(op.gate, cirq_ops.MeasurementGate)
+    ]
+    assert len(keys) == len(set(keys))
+    Simulator().run(merged, repetitions=1)
+
+
+def test_confusion_map_raises_rather_than_being_dropped():
+    """A readout error matrix has no Quil equivalent, so merging it away would be silent."""
+    qubits = LineQubit.range(2)
+    circuit = Circuit(
+        [cirq_ops.H(qubits[0]), cirq_ops.X(qubits[1])],
+        cirq_ops.measure(
+            qubits[0], key="c_0", confusion_map={(0,): np.array([[0.9, 0.1], [0.1, 0.9]])}
+        ),
+        cirq_ops.measure(qubits[1], key="c_1"),
+    )
+    with pytest.raises(ProgramConversionError, match="confusion map"):
+        cirq_to_pyquil(circuit)
+
+
+def test_single_terminal_measurement_is_left_alone():
+    """Nothing to merge means the circuit is returned untouched, key included."""
+    qubits = LineQubit.range(2)
+    circuit = Circuit(
+        cirq_ops.H(qubits[0]),
+        cirq_ops.CNOT(qubits[0], qubits[1]),
+        cirq_ops.measure(*qubits, key="result"),
+    )
+    assert _merge_terminal_measurements(circuit) is circuit
+
+
 def test_cirq_reset_to_pyquil():
     """A Cirq circuit containing ``cirq.reset`` converts directly to a pyQuil
     program with a RESET on the same qubit, preserving operation order.
@@ -236,3 +342,55 @@ def test_transpile_cirq_reset_to_pyquil_direct_path():
     program = transpile(circuit, "pyquil", max_path_depth=1)
     assert isinstance(program, Program)
     assert program.out() == "X 0\nRESET 0\nCNOT 0 1\n"
+
+
+def test_single_measurement_key_declares_ro():
+    """A lone measurement key becomes ``ro``, Quil's conventional readout register.
+
+    Rigetti result parsers key on that name -- ``AzureResultBuilder`` looked up ``ro``
+    outright -- so a program declaring ``m0`` submitted and ran but failed at result time.
+    """
+    qubits = LineQubit.range(2)
+    circuit = Circuit(cirq_ops.H(qubits[0]), cirq_ops.measure(*qubits, key="result"))
+    assert "DECLARE ro BIT[2]" in cirq_to_pyquil(circuit).out()
+
+
+def test_multiple_measurement_keys_keep_positional_names():
+    """Mid-circuit measurements leave several keys, none of which is unambiguously readout."""
+    q0, q1 = LineQubit.range(2)
+    circuit = Circuit(
+        cirq_ops.measure(q0, key="mid"),
+        cirq_ops.CNOT(q0, q1),
+        cirq_ops.measure(q1, key="final"),
+    )
+    declares = [line for line in cirq_to_pyquil(circuit).out().splitlines() if "DECLARE" in line]
+    assert declares == ["DECLARE m0 BIT[1]", "DECLARE m1 BIT[1]"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "qreg q[3]; creg c[3]; h q[0]; cx q[0],q[1]; x q[2]; "
+        "measure q[0]->c[0]; measure q[1]->c[1]; measure q[2]->c[2];",
+        "qreg q[2]; creg z[1]; creg a[1]; x q[0]; measure q[0]->z[0]; measure q[1]->a[0];",
+        "qreg q[4]; creg z[2]; creg a[2]; x q[0]; x q[3]; measure q[0]->z[0]; "
+        "measure q[1]->z[1]; measure q[2]->a[0]; measure q[3]->a[1];",
+        "qreg q[3]; creg c[3]; x q[0]; measure q[2]->c[0]; measure q[1]->c[1]; "
+        "measure q[0]->c[2];",
+    ],
+)
+def test_direct_and_qasm2_routes_agree_on_readout(body):
+    """Both routes from cirq to pyquil map each qubit to the same readout bit.
+
+    The direct edge orders merged bits by measurement key and ``cirq -> qasm2`` sorts cregs
+    by the same key (#1345), so the routes agree. MEASURE lines may still be emitted in a
+    different order -- measurements on disjoint qubits commute -- so compare the mapping.
+    """
+
+    def readout_map(program):
+        return dict(re.findall(r"MEASURE (\d+) (\w+\[\d+\])", program.out()))
+
+    circuit = qasm2_to_cirq('OPENQASM 2.0;\ninclude "qelib1.inc";\n' + body)
+    assert readout_map(cirq_to_pyquil(circuit)) == readout_map(
+        qasm2_to_pyquil(cirq_to_qasm2(circuit))
+    )

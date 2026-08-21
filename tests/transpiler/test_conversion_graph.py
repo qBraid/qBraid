@@ -20,6 +20,10 @@ used to dictate transpiler conversions.
 
 """
 import importlib.util
+import itertools
+import random
+import time
+from itertools import pairwise
 from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
@@ -46,6 +50,7 @@ from qbraid.transpiler.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler.graph import ConversionGraph, _get_path_from_bound_methods
 
 qiskit_qir_installed = importlib.util.find_spec("qiskit_qir") is not None
+pyquil_installed = importlib.util.find_spec("pyquil") is not None
 
 
 @pytest.fixture
@@ -84,6 +89,13 @@ def bound_method_str(source, target):
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
+def _path_cost(graph: ConversionGraph, path: list) -> float:
+    """Total conversion cost of a path given as a list of bound Conversion.convert methods."""
+    aliases = _get_path_from_bound_methods(path).split(" -> ")
+    costs = {(conv.source, conv.target): conv.weight for conv in graph.conversions()}
+    return sum(costs[pair] for pair in pairwise(aliases))
+
+
 @pytest.mark.parametrize("func", sorted(conversion_functions))
 def test_conversion_functions_syntax(func):
     """Test that all conversion functions are named correctly."""
@@ -109,7 +121,9 @@ def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
             break
     assert intermediate is not None, f"Unexpected shortest path: {path_strs}"
     assert shortest_path == top_paths[0]
-    assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])
+    assert len(top_paths) == 3
+    costs = [_path_cost(native_conversion_graph, path) for path in top_paths]
+    assert costs == sorted(costs), f"top paths not ordered by conversion cost: {costs}"
 
 
 def test_add_conversion():
@@ -503,3 +517,398 @@ def test_custom_conversion_endpoints_allowed_as_nodes():
         conversions=[conversion], nodes=["custom_a", "custom_b"], include_isolated=True
     )
     assert set(graph.nodes()) == {"custom_a", "custom_b"}
+
+
+def _weighted_triangle(direct_weight: float) -> ConversionGraph:
+    """Two unit-weight hops a->b->c alongside a direct a->c of the given weight."""
+    conversions = [
+        Conversion(src, dst, lambda x: x, weight, bias=0.25)
+        for src, dst, weight in [("a", "b", 1.00), ("b", "c", 1.00), ("a", "c", direct_weight)]
+    ]
+    return ConversionGraph(conversions=conversions)
+
+
+@pytest.mark.parametrize(
+    "direct_weight, expected",
+    [(0.77, "a -> b -> c"), (0.78, "a -> c")],
+)
+def test_top_paths_respect_weights_not_just_hop_count(direct_weight, expected):
+    """The path ranking honors weights, so a cheap detour can beat a direct conversion.
+
+    Ranking by hop count alone returned 'a -> c' for both weights, which is how five
+    deliberately reduced weights in the codebase never influenced routing. The boundary is
+    where the bias prices them equal: at bias 0.25, one hop is preferred above e**-0.25.
+    """
+    graph = _weighted_triangle(direct_weight)
+    top = graph.find_top_shortest_conversion_paths("a", "c", top_n=3)
+    assert _get_path_from_bound_methods(top[0]) == expected
+
+
+@pytest.mark.parametrize("direct_weight", [0.5, 0.77, 0.78, 1.0])
+def test_shortest_path_agrees_with_top_paths(direct_weight):
+    """find_shortest_conversion_path and find_top_shortest_conversion_paths cannot diverge.
+
+    They were separate implementations -- Dijkstra vs hop count -- so shortest_path() could
+    report a route transpile() would never take.
+    """
+    graph = _weighted_triangle(direct_weight)
+    assert graph.find_shortest_conversion_path("a", "c") == (
+        graph.find_top_shortest_conversion_paths("a", "c", top_n=1)[0]
+    )
+
+
+def test_native_graph_shortest_path_agrees_with_top_paths():
+    """The two path finders agree for every reachable pair of the real conversion graph."""
+    graph = ConversionGraph()
+    disagreements = []
+    for source in graph.nodes():
+        for target in graph.nodes():
+            if source == target or not graph.has_path(source, target):
+                continue
+            top = graph.find_top_shortest_conversion_paths(source, target, top_n=1)[0]
+            if graph.shortest_path(source, target) != _get_path_from_bound_methods(top):
+                disagreements.append((source, target))
+    assert not disagreements, f"path finders disagree for: {disagreements}"
+
+
+def test_routing_is_independent_of_conversion_order():
+    """Equal-cost paths tie-break deterministically rather than on registration order.
+
+    Ranking previously fell back to the order rustworkx enumerated paths in, so adding an
+    unrelated conversion could silently reroute an existing pair.
+    """
+    specs = [("a", "b", 1.0), ("b", "d", 1.0), ("a", "c", 1.0), ("c", "d", 1.0)]
+    forward = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs]
+    )
+    reversed_ = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in reversed(specs)]
+    )
+    assert forward.shortest_path("a", "d") == reversed_.shortest_path("a", "d")
+
+
+@pytest.mark.skipif(not pyquil_installed, reason="pyquil not installed")
+def test_cirq_to_pyquil_takes_the_direct_edge():
+    """cirq -> pyquil is a single hop again.
+
+    The edge was held at weight 0.74 because it split the readout register into one BIT[1]
+    per measurement key and named it ``m0``, which failed 23 production Rigetti jobs with
+    "Misplaced or illegal instruction in ProtoQuil program". Both defects are fixed --
+    ``_merge_terminal_measurements`` coalesces the registers and ``QuilOutput`` declares
+    ``ro`` -- so the weight now reflects gate coverage and the direct route wins on cost.
+    """
+    graph = ConversionGraph()
+    assert graph.shortest_path("cirq", "pyquil") == "cirq -> pyquil"
+
+
+def test_shortest_path_to_self_raises():
+    """A node is not reachable from itself.
+
+    ``rx.all_simple_paths`` happily returns round trips (``qasm2 -> cirq -> qasm2``), so
+    ranking them would hand back a two-hop conversion where the answer is "no path".
+    """
+    graph = ConversionGraph()
+    with pytest.raises(ConversionPathNotFoundError):
+        graph.find_shortest_conversion_path("qasm2", "qasm2")
+
+
+def test_shortest_path_does_not_enumerate_all_simple_paths():
+    """Path finding stays polynomial as the graph gets denser.
+
+    Enumerating every simple path is factorial in density: a fully connected 11-node graph
+    has ~10^6 of them, which took seconds per call. Dijkstra over the same ranking key
+    settles it in well under the 2s allowed here, with margin for slow CI.
+    """
+    nodes = 14
+    conversions = [
+        Conversion(f"n{a}", f"n{b}", lambda x: x, 0.9, bias=0.25)
+        for a, b in itertools.permutations(range(nodes), 2)
+    ]
+    graph = ConversionGraph(conversions=conversions, require_native=False)
+
+    start = time.perf_counter()
+    path = graph.find_shortest_conversion_path("n0", f"n{nodes - 1}")
+    elapsed = time.perf_counter() - start
+
+    assert len(path) == 1
+    assert elapsed < 2.0, f"took {elapsed:.2f}s -- path enumeration has crept back in"
+
+
+def _brute_force_ranking(graph, source, target, top_n, max_depth=None):
+    """Rank by enumerating every simple path -- the definition the fast search must match."""
+    paths = rx.all_simple_paths(
+        graph, graph._node_alias_id_map[source], graph._node_alias_id_map[target]
+    )
+    alias_of = graph._alias_of()
+    ranked = sorted(paths, key=lambda path: graph._rank_key(path, alias_of))
+    if max_depth is not None:
+        ranked = [path for path in ranked if len(path) - 1 <= max_depth]
+    return ranked[:top_n]
+
+
+@pytest.mark.parametrize("top_n", [1, 2, 3, 5])
+@pytest.mark.parametrize("max_depth", [None, 1, 2, 3])
+def test_top_paths_match_full_enumeration(top_n, max_depth):
+    """Yen's search returns exactly what ranking every simple path would.
+
+    The fast path is only worth having if it is indistinguishable from the definition, so
+    this compares them for every reachable pair of the real graph.
+    """
+    graph = ConversionGraph()
+    aliases = sorted(graph._node_alias_id_map)
+
+    for source, target in itertools.permutations(aliases, 2):
+        if not graph.has_path(source, target):
+            continue
+        found = list(
+            graph._k_cheapest_paths(
+                graph._node_alias_id_map[source],
+                graph._node_alias_id_map[target],
+                top_n,
+                max_depth,
+            )
+        )
+        expected = _brute_force_ranking(graph, source, target, top_n, max_depth)
+        assert found == expected, f"{source} -> {target}"
+
+
+def test_top_paths_do_not_enumerate_all_simple_paths():
+    """top_n selection stays polynomial too, not just the single-path search.
+
+    This is the call `transpile()` makes. A fully connected 18-node graph has more simple
+    paths than can be enumerated in any reasonable time; Yen's needs a handful of Dijkstra
+    runs regardless of density.
+    """
+    nodes = 18
+    conversions = [
+        Conversion(f"n{a}", f"n{b}", lambda x: x, 0.9, bias=0.25)
+        for a, b in itertools.permutations(range(nodes), 2)
+    ]
+    graph = ConversionGraph(conversions=conversions, require_native=False)
+
+    start = time.perf_counter()
+    paths = graph.find_top_shortest_conversion_paths("n0", f"n{nodes - 1}", top_n=3)
+    elapsed = time.perf_counter() - start
+
+    assert len(paths) == 3
+    assert elapsed < 2.0, f"took {elapsed:.2f}s -- path enumeration has crept back in"
+
+
+def test_max_depth_finds_path_ranked_below_top_n():
+    """A depth cap must not hide a qualifying path that ranks below the k-th.
+
+    Filtering after truncating to top_n reported "no path" whenever the top few all exceeded
+    the limit. Here three 3-hop routes outrank the only 2-hop one.
+    """
+    specs = [
+        ("a", "x1", 1.0),
+        ("x1", "x2", 1.0),
+        ("x2", "d", 1.0),
+        ("a", "y1", 1.0),
+        ("y1", "y2", 1.0),
+        ("y2", "d", 1.0),
+        ("a", "z1", 1.0),
+        ("z1", "z2", 1.0),
+        ("z2", "d", 1.0),
+        ("a", "w", 0.3),
+        ("w", "d", 0.3),
+    ]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs],
+        require_native=False,
+    )
+
+    # the 2-hop route ranks 4th, below the top_n=3 cutoff
+    unrestricted = graph.find_top_shortest_conversion_paths("a", "d", top_n=3)
+    assert all(len(path) == 3 for path in unrestricted)
+
+    restricted = graph.find_top_shortest_conversion_paths("a", "d", top_n=3, max_depth=2)
+    assert len(restricted) == 1
+    assert len(restricted[0]) == 2
+
+
+def test_unsatisfiable_depth_cap_stays_polynomial():
+    """A depth cap must bound the search, not just filter its output.
+
+    When the cap was a post-filter, a query with no qualifying path kept Yen's hunting
+    through every simple path in the graph before concluding "no path" -- factorial in
+    density. The cap now lives inside each search, so this dense 12-node graph with no
+    direct edge answers immediately.
+    """
+    nodes = 12
+    conversions = [
+        Conversion(f"n{a}", f"n{b}", lambda x: x, 0.9, bias=0.25)
+        for a, b in itertools.permutations(range(nodes), 2)
+        if (a, b) != (0, nodes - 1)
+    ]
+    graph = ConversionGraph(conversions=conversions, require_native=False)
+
+    start = time.perf_counter()
+    with pytest.raises(ConversionPathNotFoundError):
+        graph.find_top_shortest_conversion_paths("n0", f"n{nodes - 1}", top_n=3, max_depth=1)
+    elapsed = time.perf_counter() - start
+
+    assert elapsed < 2.0, f"took {elapsed:.2f}s -- the depth cap is filtering, not bounding"
+
+
+def test_max_depth_with_no_qualifying_path_raises():
+    """An unsatisfiable depth cap still reports the limit it could not meet."""
+    graph = ConversionGraph(
+        conversions=[
+            Conversion("a", "b", lambda x: x, 1.0, bias=0.25),
+            Conversion("b", "c", lambda x: x, 1.0, bias=0.25),
+        ],
+        require_native=False,
+    )
+    with pytest.raises(ConversionPathNotFoundError, match="depth <= 1"):
+        graph.find_top_shortest_conversion_paths("a", "c", top_n=3, max_depth=1)
+
+
+def _assert_matches_enumeration(graph, top_n=3, max_depth=None):
+    """Every reachable pair ranks identically under Yen's and under full enumeration."""
+    aliases = sorted(graph._node_alias_id_map)
+    for source, target in itertools.permutations(aliases, 2):
+        if not graph.has_path(source, target):
+            continue
+        found = list(
+            graph._k_cheapest_paths(
+                graph._node_alias_id_map[source],
+                graph._node_alias_id_map[target],
+                top_n,
+                max_depth,
+            )
+        )
+        assert found == _brute_force_ranking(
+            graph, source, target, top_n, max_depth
+        ), f"{source} -> {target}"
+
+
+def test_ranking_holds_when_every_edge_costs_zero():
+    """With bias 0 and weight 1.0 every edge costs exactly 0, collapsing the cost term.
+
+    Dijkstra is exact only because appending an edge strictly increases the ranking key.
+    When cost contributes nothing that relies entirely on the hop count, so this is the
+    shape most likely to break the argument.
+    """
+    specs = [("a", "b"), ("b", "c"), ("a", "c"), ("c", "d"), ("b", "d"), ("a", "d")]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, 1.0, bias=0) for s, t in specs],
+        require_native=False,
+    )
+
+    assert graph._path_cost([graph._node_alias_id_map[n] for n in ("a", "b")]) == 0
+    _assert_matches_enumeration(graph, top_n=5)
+
+
+def test_ranking_holds_with_zero_weight_edges():
+    """A weight of 0 becomes a huge finite edge cost, which must not break comparisons.
+
+    ``Conversion`` maps weight 0 to a large finite cost rather than ``float("inf")``:
+    ``inf + x == inf`` breaks the order-preservation Dijkstra and Yen's rely on, so with
+    infinity even ``shortest_path`` returned provably wrong routes (see
+    ``test_zero_weight_ties_rank_by_fewest_zero_weight_edges`` for the shape).
+    """
+    specs = [("a", "b", 0.0), ("b", "c", 1.0), ("a", "x", 1.0), ("x", "c", 1.0)]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs],
+        require_native=False,
+    )
+
+    # the zero-weight-free route wins outright, even though both are two hops
+    assert graph.shortest_path("a", "c") == "a -> x -> c"
+    _assert_matches_enumeration(graph, top_n=5)
+
+
+def test_ranking_holds_when_only_route_has_zero_weight():
+    """A zero-weight edge is still a path when it is the only one."""
+    graph = ConversionGraph(
+        conversions=[Conversion("a", "b", lambda x: x, 0.0, bias=0.25)],
+        require_native=False,
+    )
+
+    assert graph.shortest_path("a", "b") == "a -> b"
+    _assert_matches_enumeration(graph, top_n=3)
+
+
+def test_zero_weight_ties_rank_by_fewest_zero_weight_edges():
+    """Routes sharing a zero-weight edge stay exactly ranked.
+
+    Under ``float("inf")`` costs this shape broke Dijkstra outright: ``m`` settled via
+    the finite ``a -> x -> m`` before the zero-weight ``a -> m`` was considered, and once
+    the shared ``m -> t`` edge pushed both to infinity the discarded label was the one
+    the ranking preferred. With a finite zero-weight cost the search matches enumeration,
+    and a route through one zero-weight edge beats a route through two.
+    """
+    specs = [("a", "x", 1.0), ("x", "m", 1.0), ("a", "m", 0.0), ("m", "t", 0.0)]
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.25) for s, t, w in specs],
+        require_native=False,
+    )
+
+    assert graph.shortest_path("a", "t") == "a -> x -> m -> t"
+    _assert_matches_enumeration(graph, top_n=3)
+
+
+def test_ranking_matches_enumeration_near_float_cost_ties():
+    """Two deviations with the same multiset of edge costs must rank consistently.
+
+    Distilled from a failing fuzz case: their exact costs are equal, but left-to-right
+    float summation from different start nodes rounds differently in the last ulp, so a
+    spur search accumulating from its spur node could disagree with the full-path ranking
+    about which deviation is cheaper -- emitting top-N paths out of order. Seeding the
+    spur search with its root's key makes every cost the same left fold.
+    """
+    specs = [
+        ("n0", "n1", 1.0), ("n0", "n3", 0.9), ("n0", "n6", 0.9), ("n1", "n0", 0.9),
+        ("n1", "n7", 0.9), ("n2", "n1", 1.0), ("n2", "n5", 1.0), ("n3", "n0", 0.25),
+        ("n3", "n2", 0.9), ("n3", "n6", 1.0), ("n4", "n0", 0.74), ("n4", "n2", 0.5),
+        ("n4", "n3", 1.0), ("n5", "n1", 0.9), ("n5", "n2", 0.74), ("n5", "n7", 1.0),
+        ("n6", "n0", 0.9), ("n6", "n1", 0.25), ("n6", "n2", 0.5), ("n6", "n4", 0.9),
+        ("n6", "n7", 1.0), ("n7", "n0", 1.0), ("n7", "n1", 1.0), ("n7", "n3", 0.9),
+        ("n7", "n5", 0.9), ("n7", "n6", 0.74),
+    ]  # fmt: skip
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=0.1) for s, t, w in specs],
+        require_native=False,
+    )
+
+    _assert_matches_enumeration(graph, top_n=8)
+
+
+def test_top_n_zero_finds_no_path():
+    """``top_n=0`` selects no paths, so the public API reports no path found."""
+    graph = ConversionGraph()
+    with pytest.raises(ConversionPathNotFoundError):
+        graph.find_top_shortest_conversion_paths("qasm2", "qiskit", top_n=0)
+
+
+@pytest.mark.parametrize("seed", range(12))
+def test_ranking_matches_enumeration_on_generated_graphs(seed):
+    """Fuzz the ranking against full enumeration over generated graphs.
+
+    The hand-written cases only cover shapes that were thought of. Seeded generation varies
+    node count, density, weights (including duplicates, which force the tie-breakers to
+    decide) and the bias, and checks every reachable pair against the definition.
+    """
+    rng = random.Random(seed)
+    node_count = rng.randint(3, 7)
+    # duplicate-heavy weight pool, so exact cost ties are common rather than incidental;
+    # 0.0 included so zero-weight (huge-cost) edges mix with finite ones
+    weights = [1.0, 1.0, 0.9, 0.9, 0.5, 0.25, 0.0]
+    specs = [
+        (f"n{a}", f"n{b}", rng.choice(weights))
+        for a, b in itertools.permutations(range(node_count), 2)
+        if rng.random() < 0.55
+    ]
+    if not specs:
+        pytest.skip("generated graph has no edges")
+
+    bias = rng.choice([0, 0.1, 0.25])
+    graph = ConversionGraph(
+        conversions=[Conversion(s, t, lambda x: x, w, bias=bias) for s, t, w in specs],
+        require_native=False,
+    )
+
+    for top_n in (1, 3, 8):
+        for max_depth in (None, 2):
+            _assert_matches_enumeration(graph, top_n=top_n, max_depth=max_depth)

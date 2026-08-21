@@ -492,14 +492,21 @@ class TestQudoraDevice:
         assert device.session.create_job.call_args.args[0]["language"] == expected
 
     def test_run_qiskit_transpiles_to_qasm(self, device):
-        """run() transpiles a Qiskit circuit down to an OpenQASM3 string before submission."""
+        """run() transpiles a Qiskit circuit to OpenQASM, labelled with its own version.
+
+        Which QASM version the transpiler routes to follows the conversion weights, and
+        QUDORA registers specs for both. Pinning one made this fail when weighted path
+        selection began preferring qasm2; what must hold is that the declared language
+        matches the program actually submitted.
+        """
         circuit = qiskit.QuantumCircuit(2)
         circuit.x(0)
         circuit.measure_all()
         device.run(circuit, shots=100)
         body = device.session.create_job.call_args.args[0]
-        assert body["language"] == "OpenQASM3"
-        assert body["input_data"][0].lstrip().startswith("OPENQASM 3")
+        program = body["input_data"][0].lstrip()
+        assert body["language"] in {"OpenQASM2", "OpenQASM3"}
+        assert program.startswith("OPENQASM 2" if body["language"] == "OpenQASM2" else "OPENQASM 3")
 
     def test_run_rejects_invalid_qasm(self, device):
         """Invalid QASM is rejected during run() validation before anything is submitted."""

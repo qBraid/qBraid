@@ -32,7 +32,11 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 1.0), ("pyquil", 0.84), ("pytket", 1.0), ("qiskit", 1.0)]
+# Floors sit a couple points below accuracy measured 2026-08 (see #1226 for the pattern):
+# pyquil measured 0.947 (36/38, MS skipped) via braket -> cirq -> pyquil. The shortfall is
+# GPi/GPi2, which convert to correct DEFGATEs that pyquil's own ``program_unitary`` cannot
+# simulate -- unverifiable here, not wrong. Routing via qasm2 measured 38/38.
+ALL_TARGETS = [("cirq", 1.0), ("pyquil", 0.95), ("pytket", 1.0), ("qiskit", 1.0)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 braket_gates = get_braket_gates(seed=0)
