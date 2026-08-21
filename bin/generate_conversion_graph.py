@@ -237,9 +237,9 @@ def layout(graph: rx.PyDiGraph, seed: int) -> dict[int, tuple[float, float]]:
 
 
 def search_seeds(graph: rx.PyDiGraph, limit: int) -> None:
-    """Print the best-scoring seeds in ``range(limit)``."""
+    """Print the best-scoring seeds in ``0..limit`` inclusive, as ``--search`` advertises."""
     ranked = sorted(
-        ((score_layout(layout(graph, s), graph), s) for s in range(limit)), reverse=True
+        ((score_layout(layout(graph, s), graph), s) for s in range(limit + 1)), reverse=True
     )
     print(f"top seeds over 0..{limit}:")
     for score, seed in ranked[:12]:
@@ -418,7 +418,9 @@ def main() -> None:
     edges = parse_conversions(aliases)
     graph, names = build_graph(edges)
 
-    if args.search:
+    # `is not None`, not truthiness: `--search 0` is a request to score seed 0, not an
+    # absent flag.
+    if args.search is not None:
         search_seeds(graph, args.search)
         return
 

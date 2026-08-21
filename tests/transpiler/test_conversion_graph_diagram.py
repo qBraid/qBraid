@@ -18,6 +18,7 @@ Tests that the README conversion-graph diagram still describes the real graph.
 """
 from __future__ import annotations
 
+import ast
 import importlib.util
 import pathlib
 
@@ -27,6 +28,15 @@ from qbraid.transpiler import ConversionGraph
 
 SCRIPT = pathlib.Path(__file__).parents[2] / "bin" / "generate_conversion_graph.py"
 
+# Module-level functions matching ``*_to_*`` that convert nothing. Every other such function
+# in the conversions tree must be an edge the diagram draws.
+KNOWN_HELPERS = {
+    "braket_gate_to_matrix",
+    "matrix_to_cirq_gate",
+    "exponent_to_pi_string",
+    "transpile_to_aqt",
+}
+
 
 @pytest.fixture(scope="module")
 def diagram():
@@ -35,6 +45,24 @@ def diagram():
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+@pytest.fixture(scope="module")
+def declared_function_names(diagram):
+    """Every public module-level ``*_to_*`` function under ``conversions/``, unfiltered.
+
+    Deliberately does not consult the alias sets, so it can be compared against the parsed
+    edges to find conversions the alias filter dropped.
+    """
+    names = set()
+    for path in diagram.CONVERSIONS.rglob("*.py"):
+        if path.name == "__init__.py" or "__pycache__" in str(path):
+            continue
+        for node in ast.parse(path.read_text()).body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                if not node.name.startswith("_") and "_to_" in node.name:
+                    names.add(node.name)
+    return names
 
 
 @pytest.fixture(scope="module")
@@ -68,8 +96,26 @@ def test_diagram_agrees_on_which_conversions_are_native(parsed_edges):
 
 def test_diagram_helpers_are_not_mistaken_for_conversions(parsed_edges):
     """``braket_gate_to_matrix`` and friends match ``*_to_*`` but convert nothing."""
-    for helper in [("braket_gate", "matrix"), ("matrix", "cirq_gate"), ("exponent", "pi_string")]:
-        assert helper not in parsed_edges
+    drawn = {f"{src}_to_{tgt}" for src, tgt in parsed_edges}
+    assert drawn & KNOWN_HELPERS == set()
+
+
+def test_every_declared_conversion_is_accounted_for(declared_function_names, parsed_edges):
+    """No ``*_to_*`` function is silently dropped by the alias filter.
+
+    ``parse_conversions`` keeps a function only when both halves of its name are known
+    aliases, so a conversion to a program type missing from ``EXTERNAL_ALIASES`` disappears
+    from the diagram. The live-graph test cannot catch that: the same missing alias means the
+    package is not installed, so the conversion is absent from that graph too, and both sides
+    agree on an edge that should have been drawn. Comparing against an unfiltered scan is what
+    makes the omission visible.
+    """
+    drawn = {f"{src}_to_{tgt}" for src, tgt in parsed_edges}
+    unaccounted = declared_function_names - drawn - KNOWN_HELPERS
+    assert unaccounted == set(), (
+        f"{sorted(unaccounted)} look like conversions but are not drawn. Add the program type "
+        f"to EXTERNAL_ALIASES in {SCRIPT.name}, or to KNOWN_HELPERS here if it converts nothing."
+    )
 
 
 def test_committed_svgs_match_the_current_graph(diagram, parsed_edges):
