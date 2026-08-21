@@ -117,4 +117,7 @@ def test_qasm2_creg_bit_lands_at_the_matching_bitstring_position(
         if mapped == bit
     )
     assert expected == "01011"
-    assert result.measurement_counts == {expected: 1}
+    # ``expected`` is in flat bit order (position k = the qubit measured into bit k).
+    # qBraid reports qubit 0 last, so the emitted key is that string reversed. Pinning
+    # both keeps the mapping assertion independent of the reporting convention.
+    assert result.measurement_counts == {expected[::-1]: 1}
