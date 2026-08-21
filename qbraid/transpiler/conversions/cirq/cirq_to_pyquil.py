@@ -54,9 +54,8 @@ def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Op
     matching the readout convention the Braket converters document.
 
     A circuit measuring into multiple registers merges them in register-name order, since
-    cirq keys do not record declaration order. ``qasm2 -> pyquil`` concatenates registers
-    in DECLARE order instead (#1314), so the two routes can disagree on multi-register
-    circuits; ``transpile()`` normally routes around this edge.
+    cirq keys do not record declaration order. ``cirq -> qasm2`` sorts cregs by the same key
+    (#1345), so both routes from cirq to pyquil agree on the qubit-to-bit mapping.
     """
     indexed = []
     for op in terminal:
@@ -132,12 +131,13 @@ def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuit
     return Circuit([*remaining, Moment(merged)])
 
 
-# Deliberately below e**-0.25 ~= 0.7788, the break-even at which a single conversion loses
-# to two weight-1.0 hops: gate-only fidelity of this edge measures ~0.88, while routing
-# through qasm2 measures ~0.95, so multi-hop routes should keep avoiding it. (Its readout
-# fragmentation -- the original reason for the down-weight -- is fixed by
-# ``_merge_terminal_measurements``.) See tests/transpiler/test_measurement_coverage.py.
-@weight(0.74)
+# Both readout defects that forced this edge below the break-even are fixed: fragmented
+# BIT[1] registers by ``_merge_terminal_measurements``, and the non-``ro`` register name by
+# ``QuilOutput``, which Azure's Rigetti targets reject outright. What is left is gate
+# coverage -- 36/38 on the braket gate set against 38/38 via qasm2, the shortfall being
+# GPi/GPi2, which convert correctly but as DEFGATEs that quilc has to decompose.
+# See tests/transpiler/test_measurement_coverage.py.
+@weight(0.95)
 def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
