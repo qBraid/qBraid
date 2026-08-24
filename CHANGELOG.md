@@ -44,6 +44,7 @@ Writing an entry:
 
 ### Fixed
 - Fixed AWS and IBM jobs silently returning `UNKNOWN` when a vendor reports an unrecognized status ([#1351](https://github.com/qBraid/qBraid/pull/1351)).
+- Fixed `load_provider()` and `load_job()` returning only base types to static type checkers for AQT, Pasqal, Quantinuum, QUDORA, and Rigetti ([#1350](https://github.com/qBraid/qBraid/pull/1350)).
 - Fixed Open Quantum provider and job discovery through `get_providers()`, `load_provider()`, and `load_job()` ([#1347](https://github.com/qBraid/qBraid/pull/1347))
 - Fixed measurement results coming back permuted when a Cirq circuit reaches pyQuil through `qasm2`. Cirq declares one `creg` per measurement key in scheduling order, so a measurement on an idle qubit was declared first; flattening those registers into one readout region then followed declaration order and moved qubit 2's result into bit 0. Registers are now declared in key order ([#1345](https://github.com/qBraid/qBraid/pull/1345))
 - Fixed Cirq → pyQuil conversion failing with `ProgramConversionError` for circuits containing `cirq.reset` / `cirq.ResetChannel`. Resets now convert directly to Quil `RESET` on the target qubit; qudit resets (dimension > 2) still raise, since Quil `RESET` is qubit-only ([#1333](https://github.com/qBraid/qBraid/pull/1333))
