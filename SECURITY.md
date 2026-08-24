@@ -6,7 +6,7 @@ qBraid is committed to the security of our software and actively supports securi
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 0.7.x   | :white_check_mark: |
+| >=0.7.x | :white_check_mark: |
 | < 0.7   | :x:                |
 
 ## Reporting a Vulnerability
