@@ -32,6 +32,7 @@ Writing an entry:
 
 ### Improved / Modified
 - PyPI releases now authenticate with trusted publishing (OIDC) instead of a long-lived API token. `publish.yml` and `pre-release.yml` request `id-token: write` and let `pypa/gh-action-pypi-publish` mint a short-lived credential, so no publishing secret is stored in the repository ([#1346](https://github.com/qBraid/qBraid/pull/1346))
+- The README conversion graph is redrawn as theme-aware vector art covering all 25 program types and 61 conversions the SDK ships, replacing a raster image generated at v0.9.7 ([#1349](https://github.com/qBraid/qBraid/pull/1349))
 - README header and runtime diagram now follow the reader's GitHub theme, as vector. The header is a `qBraid | SDK` lockup built on the brand mark, and the diagram is redrawn to name the pipeline stages `QuantumDevice` actually runs — the previous one omitted `validate` ([#1338](https://github.com/qBraid/qBraid/pull/1338))
 - Raised the `pyqasm` floor from 1.0.1 to 1.0.2. On 1.0.1 a multi-qubit OpenQASM `barrier` lowers to one single-qubit `FENCE` per qubit rather than a single `FENCE q0 q1 q2`, so the instruction a barrier produces differed across versions the range allowed ([#1300](https://github.com/qBraid/qBraid/pull/1300))
 - Unit tests now run in parallel (`pytest-xdist -n auto`), test collection is made deterministic so xdist workers agree (set-derived `parametrize` inputs are sorted), and CI collects coverage only on the job that uploads to Codecov — roughly halving PR CI wall time with no checks removed
@@ -43,6 +44,9 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed `load_provider()` and `load_job()` returning only base types to static type checkers for AQT, Pasqal, Quantinuum, QUDORA, and Rigetti ([#1350](https://github.com/qBraid/qBraid/pull/1350)).
+- Fixed Open Quantum provider and job discovery through `get_providers()`, `load_provider()`, and `load_job()` ([#1347](https://github.com/qBraid/qBraid/pull/1347))
+- Fixed measurement results coming back permuted when a Cirq circuit reaches pyQuil through `qasm2`. Cirq declares one `creg` per measurement key in scheduling order, so a measurement on an idle qubit was declared first; flattening those registers into one readout region then followed declaration order and moved qubit 2's result into bit 0. Registers are now declared in key order ([#1345](https://github.com/qBraid/qBraid/pull/1345))
 - Fixed Cirq → pyQuil conversion failing with `ProgramConversionError` for circuits containing `cirq.reset` / `cirq.ResetChannel`. Resets now convert directly to Quil `RESET` on the target qubit; qudit resets (dimension > 2) still raise, since Quil `RESET` is qubit-only ([#1333](https://github.com/qBraid/qBraid/pull/1333))
 - Fixed `test_qrisp_coverage[pytket]` flipping between pass and fail on identical commits. Four qrisp → pytket gate conversions are broken upstream and one of them fails only in certain contexts, leaving the threshold straddling the pass/fail line. Those four are now skipped by name, and the pytket baseline rises to 0.95 to match the other targets ([#1337](https://github.com/qBraid/qBraid/pull/1337))
 - Fixed batch result counts padding every circuit to the widest register. Each circuit now

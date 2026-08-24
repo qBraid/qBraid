@@ -159,7 +159,14 @@ graph = ConversionGraph()
 graph.plot(legend=True)
 ```
 
-<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.7.png" style="width: 65%;">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_conversion_graph_dark.svg">
+  <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_conversion_graph_light.svg" alt="qBraid-SDK conversion graph: every supported program type and the conversions between them">
+</picture>
+
+Above is every program type and conversion the SDK ships. `graph.plot()` draws the subset
+available in your environment, since a conversion is only registered once both of its
+program types are installed.
 
 You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/v2/sdk/user-guide/transpiler#conversion-graph):
 
