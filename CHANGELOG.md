@@ -33,6 +33,8 @@ Writing an entry:
 
 ### Improved / Modified
 - `cirq -> pyquil` is a single hop again now that its readout defects are fixed, and its weight rises from 0.74 to 0.95. Circuits using Braket's `GPi`/`GPi2` now reach Quil as `DEFGATE`s for quilc to decompose ([#1348](https://github.com/qBraid/qBraid/pull/1348))
+- PyPI releases now authenticate with trusted publishing (OIDC) instead of a long-lived API token. `publish.yml` and `pre-release.yml` request `id-token: write` and let `pypa/gh-action-pypi-publish` mint a short-lived credential, so no publishing secret is stored in the repository ([#1346](https://github.com/qBraid/qBraid/pull/1346))
+- The README conversion graph is redrawn as theme-aware vector art covering all 25 program types and 61 conversions the SDK ships, replacing a raster image generated at v0.9.7 ([#1349](https://github.com/qBraid/qBraid/pull/1349))
 - README header and runtime diagram now follow the reader's GitHub theme, as vector. The header is a `qBraid | SDK` lockup built on the brand mark, and the diagram is redrawn to name the pipeline stages `QuantumDevice` actually runs — the previous one omitted `validate` ([#1338](https://github.com/qBraid/qBraid/pull/1338))
 - `transpile()` now selects conversion paths by declared conversion weight rather than hop count, so the reduced weights five conversions carry finally influence routing. Path search is also no longer factorial in graph density ([#1312](https://github.com/qBraid/qBraid/pull/1312))
 - Raised the `pyqasm` floor from 1.0.1 to 1.0.2. On 1.0.1 a multi-qubit OpenQASM `barrier` lowers to one single-qubit `FENCE` per qubit rather than a single `FENCE q0 q1 q2`, so the instruction a barrier produces differed across versions the range allowed ([#1300](https://github.com/qBraid/qBraid/pull/1300))
@@ -46,6 +48,8 @@ Writing an entry:
 
 ### Fixed
 - Fixed every Cirq circuit submitted to an Azure Rigetti target failing with `InvalidInputData`. Azure requires the readout register to be named `ro`, and `cirq -> pyquil` declared `m0`, so the job was rejected at execution. That edge now declares `ro` ([#1348](https://github.com/qBraid/qBraid/pull/1348))
+- Fixed AWS and IBM jobs silently returning `UNKNOWN` when a vendor reports an unrecognized status ([#1351](https://github.com/qBraid/qBraid/pull/1351)).
+- Fixed `load_provider()` and `load_job()` returning only base types to static type checkers for AQT, Pasqal, Quantinuum, QUDORA, and Rigetti ([#1350](https://github.com/qBraid/qBraid/pull/1350)).
 - Fixed Open Quantum provider and job discovery through `get_providers()`, `load_provider()`, and `load_job()` ([#1347](https://github.com/qBraid/qBraid/pull/1347))
 - Fixed measurement results coming back permuted when a Cirq circuit reaches pyQuil through `qasm2`. Cirq declares one `creg` per measurement key in scheduling order, so a measurement on an idle qubit was declared first; flattening those registers into one readout region then followed declaration order and moved qubit 2's result into bit 0. Registers are now declared in key order ([#1345](https://github.com/qBraid/qBraid/pull/1345))
 - Fixed Cirq → pyQuil conversion failing with `ProgramConversionError` for circuits containing `cirq.reset` / `cirq.ResetChannel`. Resets now convert directly to Quil `RESET` on the target qubit; qudit resets (dimension > 2) still raise, since Quil `RESET` is qubit-only ([#1333](https://github.com/qBraid/qBraid/pull/1333))
