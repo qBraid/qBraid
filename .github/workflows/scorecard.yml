@@ -27,11 +27,9 @@ jobs:
     permissions:
       security-events: write   # upload SARIF to code scanning
       id-token: write          # publish results to the public Scorecard API
-      contents: read
-      # Lets Scorecard read workflow definitions and run history. Documented by the
-      # upstream starter workflow as required for private repositories; this repo is
-      # public, so it is retained only as a safeguard should that ever change.
-      actions: read
+      # `contents: read` and `actions: read` are deliberately absent. Upstream ships both
+      # commented out, needed only for private repositories, and OSSF runs Scorecard on its
+      # own public repos with exactly the two permissions above.
 
     # Actions are pinned to full commit SHAs: a tag is mutable and can be repointed at
     # other code, which is what Scorecard's own Pinned-Dependencies check looks for.
