@@ -696,6 +696,24 @@ def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):
     assert data.measurements is not None
 
 
+def test_job_status_rejects_unknown_state():
+    """Test that an unrecognized Braket task state raises a clear error."""
+    task = Mock()
+    task.state.return_value = "PAUSED"
+    job = BraketQuantumTask("task_arn", task)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unknown AWS task status 'PAUSED'. Expected one of: "
+            "CREATED, QUEUED, RUNNING, CANCELLING, CANCELLED, COMPLETED, FAILED"
+        ),
+    ):
+        job.status()
+
+    assert "status" not in job._cache_metadata
+
+
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])
 @patch("qbraid.runtime.aws.job.AwsQuantumTask")
 def test_job_queue_position(mock_aws_quantum_task, position, expected):

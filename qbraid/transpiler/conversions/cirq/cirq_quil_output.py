@@ -267,6 +267,14 @@ def _quiltwoqubit_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
+def _reset_channel(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
+    gate = cast(ops.ResetChannel, op.gate)
+    if gate.dimension != 2:
+        # Quil's RESET is defined for qubits only; let qudit resets fail loudly.
+        return None
+    return formatter.format("RESET {0}\n", op.qubits[0])
+
+
 def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.SwapPowGate, op.gate)
     if gate._exponent % 2 == 1:
@@ -438,6 +446,7 @@ SUPPORTED_GATES = {
     ops.MeasurementGate: _measurement_gate,
     QuilOneQubitGate: _quilonequbit_gate,
     QuilTwoQubitGate: _quiltwoqubit_gate,
+    ops.ResetChannel: _reset_channel,
     ops.SwapPowGate: _swappow_gate,
     ops.TwoQubitDiagonalGate: _twoqubitdiagonal_gate,
     ops.WaitGate: _wait_gate,
