@@ -16,8 +16,11 @@
 Unt tests for conversions to/from pyQuil circuits.
 
 """
+
+import cirq
 import numpy as np
 import pytest
+import sympy
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
 
@@ -236,3 +239,108 @@ def test_transpile_cirq_reset_to_pyquil_direct_path():
     program = transpile(circuit, "pyquil", max_path_depth=1)
     assert isinstance(program, Program)
     assert program.out() == "X 0\nRESET 0\nCNOT 0 1\n"
+
+
+def test_declared_parameter_becomes_sympy_symbol():
+    """A ``DECLARE``d gate angle survives conversion as a sympy symbol.
+
+    Regression test for a parameterized pyQuil program converting into a Cirq gate whose
+    exponent was a ``pyquil.quilatom.Div`` rather than a sympy expression. Cirq gate
+    parameters must be numbers or ``sympy.Expr``; holding a pyQuil object made the free
+    parameter invisible to ``cirq.is_parameterized`` and broke ``str()`` and ``unitary()``.
+    """
+    program = Program()
+    theta = program.declare("theta", "REAL")
+    program += RX(theta, 0)
+
+    circuit = pyquil_to_cirq(program)
+    exponent = next(iter(circuit.all_operations())).gate.exponent
+
+    assert isinstance(exponent, sympy.Expr)
+    assert exponent.free_symbols == {sympy.Symbol("theta")}
+    assert cirq.is_parameterized(circuit)
+
+
+def test_declared_parameter_circuit_is_diagrammable():
+    """``str()`` on a converted parameterized circuit does not raise.
+
+    Regression test: diagramming previously raised
+    ``TypeError: int() argument must be ... not 'Div'`` from Cirq's angle formatter, because
+    the exponent was a pyQuil expression object.
+    """
+    program = Program()
+    theta = program.declare("theta", "REAL")
+    program += RX(theta, 0)
+
+    assert "theta" in str(pyquil_to_cirq(program))
+
+
+def test_declared_parameter_resolves_to_correct_unitary():
+    """Resolving the symbol reproduces the unitary of the same concrete rotation.
+
+    This is the end-to-end property that matters: the symbol must carry the angle through
+    with pyQuil's ``RX(theta) = exp(-i theta X / 2)`` convention, not merely be present.
+    Previously ``unitary()`` raised ``ValueError`` from pyQuil because the parameter could
+    not be evaluated.
+    """
+    program = Program()
+    theta = program.declare("theta", "REAL")
+    program += RX(theta, 0)
+    circuit = pyquil_to_cirq(program)
+
+    for angle in (0.0, 0.25, 1.0, np.pi / 2, np.pi):
+        resolved = cirq.resolve_parameters(circuit, {"theta": angle})
+        expected = Circuit(cirq_ops.rx(angle).on(LineQubit(0)))
+        assert np.allclose(resolved.unitary(), expected.unitary(), atol=1e-12)
+
+
+def test_multi_slot_declared_register_keeps_distinct_symbols():
+    """Separate slots of one declared register map to separate symbols.
+
+    ``DECLARE thetas REAL[2]`` used on two gates must not collapse into a single parameter,
+    which would silently tie two independent angles together.
+    """
+    program = Program()
+    thetas = program.declare("thetas", "REAL", 2)
+    program += RX(thetas[0], 0)
+    program += RZ(thetas[1], 0)
+
+    circuit = pyquil_to_cirq(program)
+    symbols = set()
+    for op in circuit.all_operations():
+        symbols |= sympy.sympify(op.gate.exponent).free_symbols
+
+    assert len(symbols) == 2
+
+
+def test_concrete_angles_are_unchanged_by_parameter_handling():
+    """Non-parameterized programs keep converting exactly as before.
+
+    Guards against the symbol handling altering the common numeric path: the round trip must
+    still reproduce the original Quil verbatim.
+    """
+    program = Program()
+    program += RX(np.pi / 4, 0)
+    program += RZ(2 * np.pi, 1)
+
+    assert cirq_to_pyquil(pyquil_to_cirq(program)).out() == program.out()
+
+
+def test_declared_parameter_survives_round_trip_numerically():
+    """A parameterized program still evaluates correctly after a cirq -> pyQuil round trip.
+
+    The emitted Quil is not textually identical to the input (``cirq_to_pyquil`` re-expands the
+    angle as ``(3.14159...*theta[0])/pi``), so this asserts the property that matters -- the
+    resolved unitary -- rather than string equality, which would be a self-reinforcing test of
+    the current formatting.
+    """
+    program = Program()
+    theta = program.declare("theta", "REAL")
+    program += RX(theta, 0)
+
+    round_tripped = pyquil_to_cirq(cirq_to_pyquil(pyquil_to_cirq(program)))
+
+    for angle in (0.0, 0.3, 1.0, np.pi / 2):
+        resolved = cirq.resolve_parameters(round_tripped, {"theta": angle})
+        expected = Circuit(cirq_ops.rx(angle).on(LineQubit(0)))
+        assert np.allclose(resolved.unitary(), expected.unitary(), atol=1e-9)

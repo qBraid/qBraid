@@ -25,6 +25,7 @@ Module for conversions from Quil to Cirq.
 from typing import Callable, Union, cast
 
 import numpy as np
+import sympy
 from cirq import Circuit, LineQubit
 from cirq.ops import (
     CCNOT,
@@ -55,6 +56,7 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
+from pyquil.quilatom import Add, Div, Mul, MemoryReference, Parameter, Pow, Sub
 from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
@@ -263,6 +265,65 @@ SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
+def _quil_param_to_sympy(param):
+    """Converts a pyQuil gate parameter into something Cirq can hold.
+
+    Cirq gate parameters must be real numbers or ``sympy`` expressions. pyQuil represents the
+    angle of a parameterized gate with its own expression objects — a ``MemoryReference`` for a
+    bare ``DECLARE``d parameter, or a ``quilatom`` arithmetic node such as ``Div`` or ``Mul``
+    wrapping one. Passing those through unchanged puts a foreign object inside the Cirq gate,
+    where it is invisible to ``cirq.is_parameterized`` and breaks ``str()``, diagramming and
+    ``unitary()``.
+
+    A ``MemoryReference`` becomes ``sympy.Symbol("name")`` for index 0 and
+    ``sympy.Symbol("name[i]")`` otherwise, so distinct slots of one declared register stay
+    distinct. Arithmetic nodes are rebuilt with sympy operands. Concrete numbers are returned
+    unchanged, which keeps the common non-parameterized path allocation-free and bit-identical.
+
+    Args:
+        param: A pyQuil gate parameter: a number, a ``MemoryReference``, a ``Parameter``, or a
+            ``quilatom`` arithmetic expression over those.
+
+    Returns:
+        A ``float``/``complex`` when the parameter is already concrete, otherwise a
+        ``sympy.Expr``. Anything unrecognized is returned unchanged so that existing behaviour
+        is preserved rather than replaced by an exception.
+    """
+    # Already concrete: leave it alone. Cirq handles Python/NumPy numbers natively, and
+    # returning early keeps the non-parameterized path byte-for-byte as it was.
+    if isinstance(param, (int, float, complex, np.number)):
+        return param
+
+    if isinstance(param, sympy.Expr):
+        return param
+
+    if isinstance(param, MemoryReference):
+        # `theta[0]` is the single-slot case pyQuil produces for `declare("theta", "REAL")`;
+        # name it `theta` so `resolve_parameters({"theta": ...})` reads naturally. Multi-slot
+        # registers keep the index to stay unambiguous.
+        if param.offset == 0 and param.declared_size in (None, 1):
+            return sympy.Symbol(param.name)
+        return sympy.Symbol(f"{param.name}[{param.offset}]")
+
+    if isinstance(param, Parameter):
+        return sympy.Symbol(param.name)
+
+    # quilatom arithmetic nodes: rebuild with sympy operands so the whole expression tree
+    # becomes sympy rather than a sympy leaf wrapped in a pyQuil node.
+    if isinstance(param, Add):
+        return _quil_param_to_sympy(param.op1) + _quil_param_to_sympy(param.op2)
+    if isinstance(param, Sub):
+        return _quil_param_to_sympy(param.op1) - _quil_param_to_sympy(param.op2)
+    if isinstance(param, Mul):
+        return _quil_param_to_sympy(param.op1) * _quil_param_to_sympy(param.op2)
+    if isinstance(param, Div):
+        return _quil_param_to_sympy(param.op1) / _quil_param_to_sympy(param.op2)
+    if isinstance(param, Pow):
+        return _quil_param_to_sympy(param.op1) ** _quil_param_to_sympy(param.op2)
+
+    return param
+
+
 def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
     """
     Parses non-parameterized DEFGATE definitions from a Quil program string.
@@ -350,7 +411,8 @@ def circuit_from_quil(quil: str) -> Circuit:
                 raise UndefinedQuilGate(f"Quil gate {quil_gate_name} not supported in Cirq.")
             cirq_gate_fn = defined_gates[quil_gate_name]
             if quil_gate_params:
-                circuit += cast(Callable[..., Gate], cirq_gate_fn)(*quil_gate_params)(*line_qubits)
+                cirq_params = [_quil_param_to_sympy(p) for p in quil_gate_params]
+                circuit += cast(Callable[..., Gate], cirq_gate_fn)(*cirq_params)(*line_qubits)
             else:
                 circuit += cirq_gate_fn(*line_qubits)
 
