@@ -56,7 +56,7 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
-from pyquil.quilatom import Add, Div, MemoryReference, Mul, Parameter, Pow, Sub
+from pyquil.quilatom import Add, Div, Function, MemoryReference, Mul, Parameter, Pow, Sub
 from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
@@ -265,6 +265,17 @@ SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
+# Quil's built-in functions, mapped to their sympy equivalents by Quil name. CIS(x) is
+# Quil's cos(x) + i*sin(x), i.e. exp(i*x).
+_QUIL_FUNCTIONS = {
+    "SIN": sympy.sin,
+    "COS": sympy.cos,
+    "SQRT": sympy.sqrt,
+    "EXP": sympy.exp,
+    "CIS": lambda x: sympy.exp(sympy.I * x),
+}
+
+
 def _quil_param_to_sympy(param: Any, declared_sizes: Union[dict[str, int], None] = None) -> Any:
     """Converts a pyQuil gate parameter into something Cirq can hold.
 
@@ -315,6 +326,14 @@ def _quil_param_to_sympy(param: Any, declared_sizes: Union[dict[str, int], None]
 
     if isinstance(param, Parameter):
         return sympy.Symbol(param.name)
+
+    # quilatom function nodes: SIN(theta) and friends. Mapped by Quil name rather than by the
+    # wrapped numpy ufunc, because the ufunc rejects a sympy argument.
+    if isinstance(param, Function):
+        sympy_fn = _QUIL_FUNCTIONS.get(param.name)
+        if sympy_fn is not None:
+            return sympy_fn(_quil_param_to_sympy(param.expression, declared_sizes))
+        return param
 
     # quilatom arithmetic nodes: rebuild with sympy operands so the whole expression tree
     # becomes sympy rather than a sympy leaf wrapped in a pyQuil node.

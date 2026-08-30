@@ -28,6 +28,7 @@ try:
     from pyquil import Program
     from pyquil.gates import CNOT, CZ, RESET, RX, RZ, RZZ, H, I, X, Y, Z
     from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
+    from pyquil.quilatom import quil_cis, quil_cos, quil_exp, quil_sin, quil_sqrt
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
@@ -378,3 +379,57 @@ def test_declared_parameter_survives_round_trip_numerically():
         resolved = cirq.resolve_parameters(round_tripped, {"theta": angle})
         expected = Circuit(cirq_ops.rx(angle).on(LineQubit(0)))
         assert np.allclose(resolved.unitary(), expected.unitary(), atol=1e-9)
+
+
+@pytest.mark.parametrize(
+    "quil_fn, numpy_fn",
+    [
+        (quil_sin, np.sin),
+        (quil_cos, np.cos),
+        (quil_sqrt, np.sqrt),
+        (quil_exp, np.exp),
+    ],
+)
+def test_declared_parameter_inside_quil_function(quil_fn, numpy_fn):
+    """A Quil function applied to a declared parameter becomes sympy.
+
+    ``RX(SIN(theta)) 0`` wraps the ``MemoryReference`` in a
+    ``pyquil.quilatom.Function``. Left unconverted it reaches the Cirq gate as a
+    foreign object, so ``cirq.is_parameterized`` reports ``False`` and ``str()``
+    raises ``TypeError`` -- the same failure this module fixes for a bare
+    reference. Resolving the symbol must reproduce the circuit built from the
+    concrete value.
+    """
+    program = Program()
+    theta = program.declare("theta", "REAL")
+    program += RX(quil_fn(theta), 0)
+
+    circuit = pyquil_to_cirq(program)
+
+    exponent = list(circuit.all_operations())[0].gate.exponent
+    assert isinstance(exponent, sympy.Expr)
+    assert cirq.is_parameterized(circuit)
+    assert "theta" in str(circuit)
+
+    value = 0.7
+    resolved = cirq.resolve_parameters(circuit, {"theta": value})
+    concrete = pyquil_to_cirq(Program() + RX(float(numpy_fn(value)), 0))
+    assert np.allclose(cirq.unitary(resolved), cirq.unitary(concrete), atol=1e-9)
+
+
+def test_declared_parameter_inside_quil_cis():
+    """``CIS(x)`` is ``cos(x) + i sin(x)``, i.e. ``exp(i x)``."""
+    program = Program()
+    theta = program.declare("theta", "REAL")
+    program += RX(quil_cis(theta), 0)
+
+    circuit = pyquil_to_cirq(program)
+
+    exponent = list(circuit.all_operations())[0].gate.exponent
+    assert isinstance(exponent, sympy.Expr)
+    assert cirq.is_parameterized(circuit)
+    # The conversion divides by ``np.pi`` (a float), so compare numerically
+    # after substituting a value rather than against a symbolic ``sympy.pi``.
+    value = 0.7
+    substituted = complex(exponent.subs(sympy.Symbol("theta"), value))
+    assert np.isclose(substituted, np.exp(1j * value) / np.pi)
