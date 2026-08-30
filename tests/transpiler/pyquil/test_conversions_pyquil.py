@@ -295,10 +295,14 @@ def test_declared_parameter_resolves_to_correct_unitary():
 
 
 def test_multi_slot_declared_register_keeps_distinct_symbols():
-    """Separate slots of one declared register map to separate symbols.
+    """Every slot of one declared register keeps its index, slot 0 included.
 
     ``DECLARE thetas REAL[2]`` used on two gates must not collapse into a single parameter,
-    which would silently tie two independent angles together.
+    which would silently tie two independent angles together. The names are asserted exactly,
+    not just counted: ``MemoryReference.declared_size`` is ``None`` on parsed references, so a
+    naive check yields ``thetas`` for slot 0 and ``thetas[1]`` for slot 1 — two symbols, the
+    right count, but one register under two naming conventions, and a caller resolving
+    ``thetas[0]`` would silently miss it.
     """
     program = Program()
     thetas = program.declare("thetas", "REAL", 2)
@@ -310,7 +314,37 @@ def test_multi_slot_declared_register_keeps_distinct_symbols():
     for op in circuit.all_operations():
         symbols |= sympy.sympify(op.gate.exponent).free_symbols
 
-    assert len(symbols) == 2
+    assert {str(symbol) for symbol in symbols} == {"thetas[0]", "thetas[1]"}
+
+    # Both slots resolve under their indexed names, leaving nothing free.
+    resolved = cirq.resolve_parameters(circuit, {"thetas[0]": 0.3, "thetas[1]": 0.7})
+    assert not cirq.is_parameterized(resolved)
+
+
+def test_single_slot_declared_register_has_no_index():
+    """A one-slot register resolves under its bare name.
+
+    ``DECLARE theta REAL`` and ``DECLARE theta REAL[1]`` describe a single angle, so the
+    symbol is ``theta`` rather than ``theta[0]`` and ``resolve_parameters({"theta": ...})``
+    reads the way the Quil source does. This is the other half of the size lookup above: the
+    register size decides whether the index is kept, so both sizes need pinning.
+    """
+    bare = Program()
+    theta = bare.declare("theta", "REAL")
+    bare += RX(theta, 0)
+
+    sized = Program()
+    theta_sized = sized.declare("theta", "REAL", 1)
+    sized += RX(theta_sized[0], 0)
+
+    for program in (bare, sized):
+        circuit = pyquil_to_cirq(program)
+        symbols = set()
+        for op in circuit.all_operations():
+            symbols |= sympy.sympify(op.gate.exponent).free_symbols
+
+        assert {str(symbol) for symbol in symbols} == {"theta"}
+        assert not cirq.is_parameterized(cirq.resolve_parameters(circuit, {"theta": 0.5}))
 
 
 def test_concrete_angles_are_unchanged_by_parameter_handling():

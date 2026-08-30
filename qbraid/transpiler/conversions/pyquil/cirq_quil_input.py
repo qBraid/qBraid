@@ -22,7 +22,7 @@ Module for conversions from Quil to Cirq.
 
 """
 
-from typing import Callable, Union, cast
+from typing import Any, Callable, Union, cast
 
 import numpy as np
 import sympy
@@ -56,7 +56,7 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
-from pyquil.quilatom import Add, Div, Mul, MemoryReference, Parameter, Pow, Sub
+from pyquil.quilatom import Add, Div, MemoryReference, Mul, Parameter, Pow, Sub
 from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
@@ -265,7 +265,7 @@ SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
-def _quil_param_to_sympy(param):
+def _quil_param_to_sympy(param: Any, declared_sizes: Union[dict[str, int], None] = None) -> Any:
     """Converts a pyQuil gate parameter into something Cirq can hold.
 
     Cirq gate parameters must be real numbers or ``sympy`` expressions. pyQuil represents the
@@ -275,14 +275,20 @@ def _quil_param_to_sympy(param):
     where it is invisible to ``cirq.is_parameterized`` and breaks ``str()``, diagramming and
     ``unitary()``.
 
-    A ``MemoryReference`` becomes ``sympy.Symbol("name")`` for index 0 and
-    ``sympy.Symbol("name[i]")`` otherwise, so distinct slots of one declared register stay
-    distinct. Arithmetic nodes are rebuilt with sympy operands. Concrete numbers are returned
+    A ``MemoryReference`` into a single-slot register becomes ``sympy.Symbol("name")``, so
+    ``resolve_parameters({"theta": ...})`` reads naturally. Every slot of a multi-slot register
+    keeps its index — including slot 0 — so that one register never yields two naming
+    conventions. Arithmetic nodes are rebuilt with sympy operands. Concrete numbers are returned
     unchanged, which keeps the common non-parameterized path allocation-free and bit-identical.
 
     Args:
         param: A pyQuil gate parameter: a number, a ``MemoryReference``, a ``Parameter``, or a
             ``quilatom`` arithmetic expression over those.
+        declared_sizes: Maps register name to the size given by its ``DECLARE``. Needed because
+            ``MemoryReference.declared_size`` is ``None`` on references parsed out of a program,
+            so the reference alone cannot say whether its register has one slot or many. When a
+            name is absent the reference is treated as single-slot, which is the shape a bare
+            ``DECLARE theta REAL`` produces.
 
     Returns:
         A ``float``/``complex`` when the parameter is already concrete, otherwise a
@@ -298,10 +304,12 @@ def _quil_param_to_sympy(param):
         return param
 
     if isinstance(param, MemoryReference):
-        # `theta[0]` is the single-slot case pyQuil produces for `declare("theta", "REAL")`;
-        # name it `theta` so `resolve_parameters({"theta": ...})` reads naturally. Multi-slot
-        # registers keep the index to stay unambiguous.
-        if param.offset == 0 and param.declared_size in (None, 1):
+        # Prefer the size from the program's DECLARE over `param.declared_size`, which pyQuil
+        # leaves as None on parsed references. Without it a `REAL[2]` register would yield
+        # `thetas` for slot 0 but `thetas[1]` for slot 1 — the same register under two names,
+        # so resolving `{"thetas[0]": ..., "thetas[1]": ...}` would silently miss slot 0.
+        size = (declared_sizes or {}).get(param.name, param.declared_size)
+        if param.offset == 0 and size in (None, 1):
             return sympy.Symbol(param.name)
         return sympy.Symbol(f"{param.name}[{param.offset}]")
 
@@ -311,15 +319,25 @@ def _quil_param_to_sympy(param):
     # quilatom arithmetic nodes: rebuild with sympy operands so the whole expression tree
     # becomes sympy rather than a sympy leaf wrapped in a pyQuil node.
     if isinstance(param, Add):
-        return _quil_param_to_sympy(param.op1) + _quil_param_to_sympy(param.op2)
+        return _quil_param_to_sympy(param.op1, declared_sizes) + _quil_param_to_sympy(
+            param.op2, declared_sizes
+        )
     if isinstance(param, Sub):
-        return _quil_param_to_sympy(param.op1) - _quil_param_to_sympy(param.op2)
+        return _quil_param_to_sympy(param.op1, declared_sizes) - _quil_param_to_sympy(
+            param.op2, declared_sizes
+        )
     if isinstance(param, Mul):
-        return _quil_param_to_sympy(param.op1) * _quil_param_to_sympy(param.op2)
+        return _quil_param_to_sympy(param.op1, declared_sizes) * _quil_param_to_sympy(
+            param.op2, declared_sizes
+        )
     if isinstance(param, Div):
-        return _quil_param_to_sympy(param.op1) / _quil_param_to_sympy(param.op2)
+        return _quil_param_to_sympy(param.op1, declared_sizes) / _quil_param_to_sympy(
+            param.op2, declared_sizes
+        )
     if isinstance(param, Pow):
-        return _quil_param_to_sympy(param.op1) ** _quil_param_to_sympy(param.op2)
+        return _quil_param_to_sympy(param.op1, declared_sizes) ** _quil_param_to_sympy(
+            param.op2, declared_sizes
+        )
 
     return param
 
@@ -397,6 +415,13 @@ def circuit_from_quil(quil: str) -> Circuit:
     for gate_name, matrix in defgates.items():
         defined_gates[gate_name] = MatrixGate(matrix)
 
+    # A MemoryReference parsed out of a program reports `declared_size is None`, so the
+    # register sizes have to come from the DECLARE instructions themselves. Collected up
+    # front because a gate may reference a register declared later in the program.
+    declared_sizes: dict[str, int] = {
+        inst.name: inst.memory_size for inst in instructions if isinstance(inst, Declare)
+    }
+
     for inst in instructions:
         # Pass when encountering a DECLARE.
         if isinstance(inst, Declare):
@@ -411,7 +436,7 @@ def circuit_from_quil(quil: str) -> Circuit:
                 raise UndefinedQuilGate(f"Quil gate {quil_gate_name} not supported in Cirq.")
             cirq_gate_fn = defined_gates[quil_gate_name]
             if quil_gate_params:
-                cirq_params = [_quil_param_to_sympy(p) for p in quil_gate_params]
+                cirq_params = [_quil_param_to_sympy(p, declared_sizes) for p in quil_gate_params]
                 circuit += cast(Callable[..., Gate], cirq_gate_fn)(*cirq_params)(*line_qubits)
             else:
                 circuit += cirq_gate_fn(*line_qubits)
