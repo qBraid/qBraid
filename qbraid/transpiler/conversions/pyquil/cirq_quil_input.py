@@ -22,7 +22,7 @@ Module for conversions from Quil to Cirq.
 
 """
 
-from typing import Any, Callable, Union, cast
+from typing import Callable, Union, cast
 
 import numpy as np
 import sympy
@@ -56,7 +56,17 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
-from pyquil.quilatom import Add, Div, Function, MemoryReference, Mul, Parameter, Pow, Sub
+from pyquil.quilatom import (
+    Add,
+    Div,
+    Function,
+    MemoryReference,
+    Mul,
+    Parameter,
+    ParameterDesignator,
+    Pow,
+    Sub,
+)
 from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
@@ -276,7 +286,9 @@ _QUIL_FUNCTIONS = {
 }
 
 
-def _quil_param_to_sympy(param: Any, declared_sizes: Union[dict[str, int], None] = None) -> Any:
+def _quil_param_to_sympy(
+    param: ParameterDesignator, declared_sizes: Union[dict[str, int], None] = None
+) -> Union[ParameterDesignator, sympy.Expr]:
     """Converts a pyQuil gate parameter into something Cirq can hold.
 
     Cirq gate parameters must be real numbers or ``sympy`` expressions. pyQuil represents the
