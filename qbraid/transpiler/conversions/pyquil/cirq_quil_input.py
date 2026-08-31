@@ -286,6 +286,19 @@ _QUIL_FUNCTIONS = {
 }
 
 
+# The arithmetic branches below combine two converted operands. ``ParameterDesignator``
+# includes pyQuil's abstract ``Expression``, which defines no operators, so mypy rejects
+# ``a + b`` on the recursive results even though every value reaching those lines is a
+# number or a ``sympy.Expr``. ``_operable`` states that invariant in one place instead of
+# repeating a cast at each of the five sites.
+_Operable = Union[int, float, complex, np.number, sympy.Expr]
+
+
+def _operable(value: Union[ParameterDesignator, sympy.Expr]) -> _Operable:
+    """Narrows a converted parameter to the types the arithmetic branches combine."""
+    return cast(_Operable, value)
+
+
 def _quil_param_to_sympy(
     param: ParameterDesignator, declared_sizes: Union[dict[str, int], None] = None
 ) -> Union[ParameterDesignator, sympy.Expr]:
@@ -350,24 +363,24 @@ def _quil_param_to_sympy(
     # quilatom arithmetic nodes: rebuild with sympy operands so the whole expression tree
     # becomes sympy rather than a sympy leaf wrapped in a pyQuil node.
     if isinstance(param, Add):
-        return _quil_param_to_sympy(param.op1, declared_sizes) + _quil_param_to_sympy(
-            param.op2, declared_sizes
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) + _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
         )
     if isinstance(param, Sub):
-        return _quil_param_to_sympy(param.op1, declared_sizes) - _quil_param_to_sympy(
-            param.op2, declared_sizes
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) - _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
         )
     if isinstance(param, Mul):
-        return _quil_param_to_sympy(param.op1, declared_sizes) * _quil_param_to_sympy(
-            param.op2, declared_sizes
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) * _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
         )
     if isinstance(param, Div):
-        return _quil_param_to_sympy(param.op1, declared_sizes) / _quil_param_to_sympy(
-            param.op2, declared_sizes
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) / _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
         )
     if isinstance(param, Pow):
-        return _quil_param_to_sympy(param.op1, declared_sizes) ** _quil_param_to_sympy(
-            param.op2, declared_sizes
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) ** _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
         )
 
     return param
