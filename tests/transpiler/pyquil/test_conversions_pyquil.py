@@ -40,6 +40,10 @@ try:
     pyquil_not_installed = False
 except ImportError:
     pyquil_not_installed = True
+    # ``pytestmark`` skips the tests, but a @parametrize list is built while the module is
+    # imported, before any skip can apply. These four are referenced there, so they need to
+    # exist as names on 3.13+, where pyquil is not installed at all.
+    quil_sin = quil_cos = quil_sqrt = quil_exp = quil_cis = None
 
 pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 

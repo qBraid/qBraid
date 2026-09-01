@@ -22,6 +22,8 @@ Module for conversions from Quil to Cirq.
 
 """
 
+from __future__ import annotations
+
 from typing import Callable, TypeAlias, Union, cast
 
 import numpy as np
@@ -297,7 +299,15 @@ _QUIL_FUNCTIONS = {
 # the annotation mypy reads this as a variable ("not valid as a type") and every arithmetic
 # branch below goes back to reporting an unsupported operand. ``typing.Union`` keeps its alias
 # status implicitly; PEP 604 needs it said out loud.
-_Operable: TypeAlias = int | float | complex | np.number | sympy.Expr
+#
+# The quotes are load-bearing too, and for a different reason: ``docs/conf.py`` lists ``sympy``
+# in ``autodoc_mock_imports``, so while autosummary imports this package ``sympy.Expr`` is a
+# Sphinx mock *instance*. ``from __future__ import annotations`` defers the two signatures below
+# but never the right-hand side of an assignment, and evaluating ``... | <mock>`` raises
+# ``TypeError: unsupported operand type(s) for |: 'types.UnionType' and 'Expr'``, breaking the
+# docs build. Quoting leaves the alias unevaluated at runtime; mypy reads it either way, and
+# ``cast`` ignores its first argument. Do not un-quote this.
+_Operable: TypeAlias = "int | float | complex | np.number | sympy.Expr"
 
 
 def _operable(value: ParameterDesignator | sympy.Expr) -> _Operable:
