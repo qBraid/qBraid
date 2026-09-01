@@ -458,6 +458,50 @@ def test_declared_parameter_survives_round_trip_numerically():
 
 
 @pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("DECLARE theta REAL\nRX(theta) 0\n", {"theta"}),
+        ("DECLARE theta REAL[1]\nRX(theta[0]) 0\n", {"theta"}),
+        ("DECLARE thetas REAL[2]\nRX(thetas[0]) 0\nRY(thetas[1]) 1\n", {"thetas[0]", "thetas[1]"}),
+        ("DECLARE t REAL[4]\nRX(t[3]) 0\n", {"t[3]"}),
+        ("DECLARE theta REAL\nRX(2*theta + 0.5) 0\n", {"theta"}),
+        ("DECLARE a REAL\nDECLARE b REAL[2]\nRX(a) 0\nRY(b[1]) 1\n", {"a", "b[1]"}),
+        ("RX(1.5) 0\n", set()),
+    ],
+    ids=[
+        "bare",
+        "size-1",
+        "multi-slot",
+        "sparse-index",
+        "arithmetic",
+        "two-registers",
+        "no-params",
+    ],
+)
+def test_round_trip_preserves_every_parameter_name(source, expected):
+    """A round trip names each register the same way the forward conversion did.
+
+    ``cirq_to_pyquil`` emits the gate lines but has to emit the ``DECLARE``s too, because
+    the size lookup on the way back reads an *undeclared* register's slot 0 as the bare
+    register name. Without them ``thetas[0]`` returns as ``thetas`` while ``thetas[1]``
+    keeps its index -- one register named two ways, which is the shape this module's
+    forward direction exists to prevent.
+
+    Only ``multi-slot`` fails without the fix, and that is the point: the corruption needs
+    a register that has both slot 0 *and* another slot, because a non-zero offset is kept
+    regardless (``sparse-index`` and ``two-registers`` round trip even unfixed). The other
+    six cases pin behaviour that already held, so a future change to the size inference
+    cannot quietly break them -- e.g. ``t[3]`` alone must declare ``REAL[4]``, and a
+    parameterless circuit must emit no ``DECLARE`` at all.
+    """
+    circuit = pyquil_to_cirq(Program(source))
+    assert {str(symbol) for symbol in cirq.parameter_names(circuit)} == expected
+
+    round_tripped = pyquil_to_cirq(Program(str(cirq_to_pyquil(circuit))))
+    assert {str(symbol) for symbol in cirq.parameter_names(round_tripped)} == expected
+
+
+@pytest.mark.parametrize(
     "quil_fn, numpy_fn",
     [
         (quil_sin, np.sin),
