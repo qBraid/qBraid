@@ -322,6 +322,26 @@ def test_multi_slot_declared_register_keeps_distinct_symbols():
     assert not cirq.is_parameterized(resolved)
 
 
+@pytest.mark.parametrize(
+    "declare_line",
+    ["", "DECLARE t REAL\n", "DECLARE t REAL[1]\n"],
+    ids=["undeclared", "declared-no-size", "declared-size-1"],
+)
+def test_indexed_slot_keeps_its_index_whatever_the_declaration(declare_line):
+    """A slot with a non-zero offset is always ``name[offset]``.
+
+    The size lookup falls back to ``MemoryReference.declared_size``, which pyQuil leaves as
+    ``None`` on parsed references, so "register absent from the DECLAREs" and "register with
+    exactly one slot" reach the same branch. That is safe only because the branch also requires
+    ``offset == 0``: an indexed slot keeps its index regardless of what was declared, so two
+    slots can never collapse onto one symbol and no register is ever named two ways.
+    """
+    program = Program(declare_line + "RX(t[1]) 0\n")
+    circuit = pyquil_to_cirq(program)
+
+    assert {str(symbol) for symbol in cirq.parameter_names(circuit)} == {"t[1]"}
+
+
 def test_single_slot_declared_register_has_no_index():
     """A one-slot register resolves under its bare name.
 
