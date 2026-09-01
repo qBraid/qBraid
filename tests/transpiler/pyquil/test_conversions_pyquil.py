@@ -342,6 +342,62 @@ def test_indexed_slot_keeps_its_index_whatever_the_declaration(declare_line):
     assert {str(symbol) for symbol in cirq.parameter_names(circuit)} == {"t[1]"}
 
 
+def test_arithmetic_around_a_declared_parameter():
+    """``Add``, ``Sub`` and ``Pow`` carry a declared parameter through as sympy.
+
+    ``Mul`` and ``Div`` are exercised elsewhere, but only incidentally, so the other three
+    arithmetic nodes had no test pinning them. Each is recursive on both operands, so a
+    parameter can sit on either side of the operator and still has to survive.
+
+    Note the Quil spelling: exponentiation is ``^``. ``**`` is a Python operator and does not
+    parse, so a Quil-source test of ``Pow`` must be written ``theta^2``.
+    """
+    program = Program(
+        "DECLARE theta REAL\n"
+        "RX(2*theta + 0.5) 0\n"  # Add
+        "RY(theta - 0.25) 1\n"  # Sub
+        "RZ(theta^2) 2\n"  # Pow
+    )
+    circuit = pyquil_to_cirq(program)
+
+    assert cirq.is_parameterized(circuit)
+    assert {str(symbol) for symbol in cirq.parameter_names(circuit)} == {"theta"}
+    for operation in circuit.all_operations():
+        assert isinstance(operation.gate.exponent, sympy.Expr)
+
+    # Resolving must reproduce the circuit built from the concrete angles, which is what
+    # makes this a test of the arithmetic rather than of the symbol surviving.
+    value = 0.7
+    resolved = cirq.resolve_parameters(circuit, {"theta": value})
+    concrete = Circuit(
+        [
+            cirq_ops.rx(2 * value + 0.5).on(LineQubit(0)),
+            cirq_ops.ry(value - 0.25).on(LineQubit(1)),
+            cirq_ops.rz(value**2).on(LineQubit(2)),
+        ]
+    )
+    assert np.allclose(cirq.unitary(resolved), cirq.unitary(concrete), atol=1e-9)
+
+
+def test_percent_parameter_in_a_top_level_gate():
+    """A ``%``-parameter reaches the conversion as a bare ``Parameter``.
+
+    ``DECLARE``d angles arrive as a ``MemoryReference``; pyQuil's parser also accepts the
+    older ``%name`` spelling in a top-level gate application, which arrives as a
+    ``quilatom.Parameter`` instead. That is a separate branch, and without this it is the one
+    path in the conversion that nothing exercises.
+    """
+    circuit = pyquil_to_cirq(Program("RX(%theta) 0\n"))
+
+    assert cirq.is_parameterized(circuit)
+    assert {str(symbol) for symbol in cirq.parameter_names(circuit)} == {"theta"}
+
+    value = 0.7
+    resolved = cirq.resolve_parameters(circuit, {"theta": value})
+    concrete = Circuit(cirq_ops.rx(value).on(LineQubit(0)))
+    assert np.allclose(cirq.unitary(resolved), cirq.unitary(concrete), atol=1e-12)
+
+
 def test_single_slot_declared_register_has_no_index():
     """A one-slot register resolves under its bare name.
 

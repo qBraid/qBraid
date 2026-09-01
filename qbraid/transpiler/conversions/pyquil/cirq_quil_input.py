@@ -22,7 +22,7 @@ Module for conversions from Quil to Cirq.
 
 """
 
-from typing import Callable, Union, cast
+from typing import Callable, TypeAlias, Union, cast
 
 import numpy as np
 import sympy
@@ -291,17 +291,23 @@ _QUIL_FUNCTIONS = {
 # ``a + b`` on the recursive results even though every value reaching those lines is a
 # number or a ``sympy.Expr``. ``_operable`` states that invariant in one place instead of
 # repeating a cast at each of the five sites.
-_Operable = Union[int, float, complex, np.number, sympy.Expr]
+#
+# The ``TypeAlias`` annotation is load-bearing. ``sympy`` ships no stubs, so ``sympy.Expr`` is
+# ``Any`` to mypy, and ``X | Any`` evaluates to a plain value rather than a type form -- without
+# the annotation mypy reads this as a variable ("not valid as a type") and every arithmetic
+# branch below goes back to reporting an unsupported operand. ``typing.Union`` keeps its alias
+# status implicitly; PEP 604 needs it said out loud.
+_Operable: TypeAlias = int | float | complex | np.number | sympy.Expr
 
 
-def _operable(value: Union[ParameterDesignator, sympy.Expr]) -> _Operable:
+def _operable(value: ParameterDesignator | sympy.Expr) -> _Operable:
     """Narrows a converted parameter to the types the arithmetic branches combine."""
     return cast(_Operable, value)
 
 
 def _quil_param_to_sympy(
-    param: ParameterDesignator, declared_sizes: Union[dict[str, int], None] = None
-) -> Union[ParameterDesignator, sympy.Expr]:
+    param: ParameterDesignator, declared_sizes: dict[str, int] | None = None
+) -> ParameterDesignator | sympy.Expr:
     """Converts a pyQuil gate parameter into something Cirq can hold.
 
     Cirq gate parameters must be real numbers or ``sympy`` expressions. pyQuil represents the
