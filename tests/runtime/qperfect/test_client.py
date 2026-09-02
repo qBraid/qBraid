@@ -42,10 +42,22 @@ _ENV_VARS = (TOKEN_ENV_VAR, USERNAME_ENV_VAR, PASSWORD_ENV_VAR, URL_ENV_VAR)
 
 
 @pytest.fixture(autouse=True)
-def clean_env(monkeypatch):
-    """Start every test from an unconfigured environment, whatever the developer has set."""
+def clean_env():
+    """Start every test from an unconfigured environment, and leave none of it behind.
+
+    ``build_connection`` publishes the refresh token to ``os.environ`` by design, and
+    ``monkeypatch`` cannot undo a write to a variable that was absent when the test began,
+    so this snapshots and restores the variables itself. Without the restore, the fake
+    token minted here leaks into the remote tests' credential guard.
+    """
+    saved = {var: os.environ.pop(var, None) for var in _ENV_VARS}
+    yield
     for var in _ENV_VARS:
-        monkeypatch.delenv(var, raising=False)
+        value = saved[var]
+        if value is None:
+            os.environ.pop(var, None)
+        else:
+            os.environ[var] = value
 
 
 @pytest.fixture
