@@ -570,11 +570,18 @@ def test_declared_parameter_inside_quil_cis():
 
 
 def test_arithmetic_operand_that_is_already_sympy_is_not_rewrapped():
-    """A ``quilatom`` node whose operand is already a ``sympy`` expression converts cleanly.
+    """An operand that is already ``sympy`` is handed back unchanged rather than rebuilt.
 
-    The conversion recurses into both operands of an arithmetic node, so an operand that is
-    already ``sympy`` reaches the function a second time. Returning it unchanged is what keeps
-    the recursion idempotent; rebuilding it would wrap a ``sympy`` expression in another layer.
+    This is a defensive branch, not one the parser can reach: instrumenting the recursion over
+    ``RX(2*theta + 0.5)``, ``RY(theta - 0.25)``, ``RZ(theta^2)``, ``RX(SIN(theta))``,
+    ``RX(thetas[0])`` and ``RX(%theta)`` shows the inbound types are only
+    ``Add``/``Sub``/``Mul``/``Div``/``Pow``/``Function``/``MemoryReference``/``Parameter``/
+    ``complex`` — never a ``sympy.Expr``, because the recursion descends into ``param.op1`` and
+    ``param.op2``, which are always ``quilatom`` nodes. The public route is closed too:
+    ``RX(sympy.Symbol("theta"))`` is rejected by pyQuil as not a valid ``ParameterDesignator``.
+
+    So the input has to be constructed by hand. What the branch guarantees is idempotence — a
+    caller may pass a converted expression back in, and doing so must not wrap it another layer.
     """
     node = Mul(sympy.Symbol("theta"), 2.0)
 
@@ -593,6 +600,12 @@ def test_unmapped_quil_function_is_returned_unchanged():
     ``_QUIL_FUNCTIONS`` maps the five Quil functions by *name*. An unmapped name must not raise
     or return ``None`` — the documented contract is to hand the parameter back unchanged so
     behaviour matches the pre-conversion code rather than becoming an error.
+
+    Also unreachable through the parser, so the node is built directly: pyQuil 5.0.0rc3 accepts
+    only those five names, and ``RX(TAN(theta))``, ``RX(LOG(theta))`` and
+    ``RX(NOT_A_QUIL_FUNCTION(theta))`` all raise ``ProgramError`` at parse time, while
+    ``RX(SIN(theta))`` and ``RX(CIS(theta))`` parse. The branch therefore guards against a
+    future pyQuil growing a sixth function name, not against any program writable today.
     """
     unmapped = Function("NOT_A_QUIL_FUNCTION", MemoryReference("theta"), np.sin)
 
@@ -602,9 +615,12 @@ def test_unmapped_quil_function_is_returned_unchanged():
 def test_unrecognized_parameter_type_is_returned_unchanged():
     """An object that is none of the handled kinds is returned as-is.
 
-    This is the final fallback. It matters because pyQuil can grow new parameter node types:
-    the conversion must degrade to the old passthrough behaviour instead of raising on a shape
-    it has never seen.
+    This is the final fallback, and it is currently unreachable by construction: every member of
+    ``ParameterDesignator`` (``int``, ``float``, ``complex``, ``numpy.number``, and every
+    ``Expression`` subclass — ``Add``, ``Sub``, ``Mul``, ``Div``, ``Pow``, ``Function``,
+    ``MemoryReference``, ``Parameter``) is handled by a branch above it. It matters because
+    pyQuil can grow new parameter node types: the conversion should degrade to the old
+    passthrough behaviour instead of raising on a shape it has never seen.
     """
 
     class UnknownParameter:
