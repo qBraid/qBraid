@@ -45,6 +45,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed `pyquil_to_cirq` on programs whose gate angles come from a `DECLARE`, including multi-slot registers and Quil functions such as `SIN(theta)`. Such angles now arrive as sympy symbols, so the circuit can be printed, resolved, and simulated; previously all three failed. `cirq_to_pyquil` now emits the matching `DECLARE`s, so a parameterized program survives a round trip with every register named as before ([#1358](https://github.com/qBraid/qBraid/pull/1358)).
 - Fixed AWS and IBM jobs silently returning `UNKNOWN` when a vendor reports an unrecognized status ([#1351](https://github.com/qBraid/qBraid/pull/1351)).
 - Fixed `load_provider()` and `load_job()` returning only base types to static type checkers for AQT, Pasqal, Quantinuum, QUDORA, and Rigetti ([#1350](https://github.com/qBraid/qBraid/pull/1350)).
 - Fixed Open Quantum provider and job discovery through `get_providers()`, `load_provider()`, and `load_job()` ([#1347](https://github.com/qBraid/qBraid/pull/1347))
