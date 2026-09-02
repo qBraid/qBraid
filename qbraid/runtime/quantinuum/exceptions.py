@@ -1,4 +1,4 @@
-# Copyright 2025 qBraid
+# Copyright 2026 qBraid
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,10 +13,19 @@
 # limitations under the License.
 
 """
-Module containing version information
+Exceptions raised by the Quantinuum runtime provider.
 
-Version number (major.minor.patch[-label])
+Defined in their own module so they carry a public, importable path in
+tracebacks and docs, and so ``_transport`` can use them without a circular
+import through ``device``.
 
 """
+from qbraid.runtime.exceptions import QbraidRuntimeError
 
-__version__ = "0.13.0.dev"
+
+class QuantinuumDeviceError(QbraidRuntimeError):
+    """Exception raised by QuantinuumDevice."""
+
+
+class QuantinuumJobError(QbraidRuntimeError):
+    """Class for errors raised while processing a Quantinuum job."""

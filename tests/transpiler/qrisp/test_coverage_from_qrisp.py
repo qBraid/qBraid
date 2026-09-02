@@ -150,17 +150,25 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.95), ("qiskit", 0.95)]
+ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.88), ("qiskit", 0.95)]
 
-# Conversions with wrong unitaries upstream, tracked in #1311: RGate
-# (eclipse-qrisp/Qrisp#629), CPGate (#630), U1Gate (#631), MCRXGate (#632).
-# MCRXGate's failure is context-dependent, so the raw failure count flips between 3 and 4
-# from run to run, and the pytket threshold sits exactly on that boundary — CI went red or
-# green on identical commits. Skipping these by name keeps the result deterministic while
-# the threshold still guards every other gate; lowering the threshold instead would buy the
-# same headroom for genuinely new regressions. Delete entries as upstream fixes land.
-KNOWN_UPSTREAM_FAILURES: dict[str, set[str]] = {
+#: Gates whose qrisp -> target conversion is known to be wrong, keyed by target.
+#:
+#: These are asserted as an upper bound rather than folded into an accuracy ratio. The
+#: ratio could not distinguish "the known-bad gates failed" from "a different gate broke",
+#: and with 25 gates one failure moves accuracy by 0.04 while ALLOWANCE was 0.01 -- so the
+#: pytket case sat exactly on its 0.88 baseline with three failures and went red the moment
+#: a fourth appeared, regardless of which. That is what made it flake in CI.
+#:
+#: MCRXGate is listed for pytket because it fails only on some conversion paths: the direct
+#: qrisp -> pytket edge produces a circuit that is not equivalent, while a route through an
+#: intermediate does not, and which one the graph picks depends on what else is imported.
+#: Listing it keeps the suite green either way; the underlying conversion is still wrong and
+#: is tracked separately.
+KNOWN_BAD_CONVERSIONS = {
+    "cirq": {"RGate"},
     "pytket": {"CPGate", "MCRXGate", "RGate", "U1Gate"},
+    "qiskit": {"RGate"},
 }
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
@@ -176,30 +184,38 @@ def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
 
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
-    """Test converting Qrisp circuits to supported target program type over
-    all Qrisp gates and check against baseline expected accuracy.
+    """Every Qrisp gate converts to ``target``, except the known-bad ones.
+
+    ``baseline`` is retained for the parametrize id and as documentation of the coverage
+    this target is expected to reach; the assertion is on the failing gate NAMES, which
+    says which conversion regressed instead of only that the rate moved.
     """
-    ACCURACY_BASELINE = baseline
-    ALLOWANCE = 0.01
-    known_broken = KNOWN_UPSTREAM_FAILURES.get(target, set()) & set(qrisp_circuits)
     failures = {}
     for gate_name in qrisp_circuits:
-        if gate_name in known_broken:
-            continue
         try:
             convert_from_qrisp_to_x(target, gate_name, qrisp_circuits, conversion_graph)
         except Exception as e:  # pylint: disable=broad-exception-caught
-            failures[f"{target}-{gate_name}"] = e
+            failures[gate_name] = e
 
-    total_tests = len(qrisp_circuits) - len(known_broken)
-    nb_fails = len(failures)
-    nb_passes = total_tests - nb_fails
-    accuracy = float(nb_passes) / float(total_tests)
+    known_bad = KNOWN_BAD_CONVERSIONS.get(target, set())
+    unexpected = sorted(set(failures) - known_bad)
+    coverage = (len(qrisp_circuits) - len(failures)) / len(qrisp_circuits)
 
-    assert accuracy >= ACCURACY_BASELINE - ALLOWANCE, (
-        f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed "
-        f"({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed "
-        f"(expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    assert not unexpected, (
+        f"{len(unexpected)} qrisp -> {target} conversion(s) newly failing: {unexpected}\n"
+        f"Coverage is now {coverage:.2%}, against a documented baseline of {baseline:.0%}.\n"
+        f"Known-bad for this target: {sorted(known_bad)}\n"
+        f"Errors: { {k: repr(failures[k]) for k in unexpected} }\n\n"
+        f"If one of these is expected to fail, add it to KNOWN_BAD_CONVERSIONS with the "
+        f"reason; otherwise it is a regression in the conversion itself."
+    )
+
+    # A known-bad gate that starts passing is not a failure, but the list must not rot:
+    # left unchecked it grows into a permanent allowance that hides the next regression.
+    fixed = sorted(known_bad - set(failures) - {"MCRXGate"})
+    assert not fixed, (
+        f"qrisp -> {target} now converts {fixed} correctly. Remove from "
+        f"KNOWN_BAD_CONVERSIONS so a future regression is caught."
     )
 
 

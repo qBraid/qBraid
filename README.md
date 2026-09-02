@@ -1,4 +1,9 @@
-<img width=full alt="qbraid-sdk-header" src="https://user-images.githubusercontent.com/46977852/224456452-605e51f2-193d-4789-863e-e51cdd4b0a54.png">
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_sdk_dark_header.svg">
+    <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_sdk_light_header.svg" alt="qBraid | SDK" width="360">
+  </picture>
+</p>
 
 <p align="center">
   <a href="https://github.com/qBraid/qBraid/actions/workflows/main.yml">
@@ -32,7 +37,10 @@ By addressing the full scope of client-side software requirements necessary for 
 
 ---
 
-![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_dark.svg">
+  <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_runtime_light.svg" alt="qBraid-SDK runtime pipeline: transpile, transform, validate, submit">
+</picture>
 
 ## Resources
 
@@ -152,7 +160,14 @@ graph = ConversionGraph()
 graph.plot(legend=True)
 ```
 
-<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.7.png" style="width: 65%;">
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_conversion_graph_dark.svg">
+  <img src="https://raw.githubusercontent.com/qBraid/qBraid/main/docs/_static/qbraid_conversion_graph_light.svg" alt="qBraid-SDK conversion graph: every supported program type and the conversions between them">
+</picture>
+
+Above is every program type and conversion the SDK ships. `graph.plot()` draws the subset
+available in your environment, since a conversion is only registered once both of its
+program types are installed.
 
 You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/v2/sdk/user-guide/transpiler#conversion-graph):
 
