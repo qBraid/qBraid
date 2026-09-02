@@ -28,11 +28,21 @@ try:
     from pyquil import Program
     from pyquil.gates import CNOT, CZ, RESET, RX, RZ, RZZ, H, I, X, Y, Z
     from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
-    from pyquil.quilatom import quil_cis, quil_cos, quil_exp, quil_sin, quil_sqrt
+    from pyquil.quilatom import (
+        Function,
+        MemoryReference,
+        Mul,
+        quil_cis,
+        quil_cos,
+        quil_exp,
+        quil_sin,
+        quil_sqrt,
+    )
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
     from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
+    from qbraid.transpiler.conversions.pyquil.cirq_quil_input import _quil_param_to_sympy
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
     from qbraid.transpiler.converter import transpile
     from qbraid.transpiler.exceptions import ProgramConversionError
@@ -557,3 +567,49 @@ def test_declared_parameter_inside_quil_cis():
     value = 0.7
     substituted = complex(exponent.subs(sympy.Symbol("theta"), value))
     assert np.isclose(substituted, np.exp(1j * value) / np.pi)
+
+
+def test_arithmetic_operand_that_is_already_sympy_is_not_rewrapped():
+    """A ``quilatom`` node whose operand is already a ``sympy`` expression converts cleanly.
+
+    The conversion recurses into both operands of an arithmetic node, so an operand that is
+    already ``sympy`` reaches the function a second time. Returning it unchanged is what keeps
+    the recursion idempotent; rebuilding it would wrap a ``sympy`` expression in another layer.
+    """
+    node = Mul(sympy.Symbol("theta"), 2.0)
+
+    converted = _quil_param_to_sympy(node)
+
+    assert isinstance(converted, sympy.Expr)
+    assert converted.free_symbols == {sympy.Symbol("theta")}
+    assert float(converted.subs(sympy.Symbol("theta"), 3.0)) == pytest.approx(6.0)
+    # Idempotent: feeding the result back in must be a no-op, not another rebuild.
+    assert _quil_param_to_sympy(converted) is converted
+
+
+def test_unmapped_quil_function_is_returned_unchanged():
+    """A Quil ``Function`` whose name has no ``sympy`` counterpart passes through untouched.
+
+    ``_QUIL_FUNCTIONS`` maps the five Quil functions by *name*. An unmapped name must not raise
+    or return ``None`` — the documented contract is to hand the parameter back unchanged so
+    behaviour matches the pre-conversion code rather than becoming an error.
+    """
+    unmapped = Function("NOT_A_QUIL_FUNCTION", MemoryReference("theta"), np.sin)
+
+    assert _quil_param_to_sympy(unmapped) is unmapped
+
+
+def test_unrecognized_parameter_type_is_returned_unchanged():
+    """An object that is none of the handled kinds is returned as-is.
+
+    This is the final fallback. It matters because pyQuil can grow new parameter node types:
+    the conversion must degrade to the old passthrough behaviour instead of raising on a shape
+    it has never seen.
+    """
+
+    class UnknownParameter:
+        """Not a number, sympy, MemoryReference, Parameter, or arithmetic node."""
+
+    unknown = UnknownParameter()
+
+    assert _quil_param_to_sympy(unknown) is unknown
