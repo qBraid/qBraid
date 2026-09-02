@@ -87,3 +87,8 @@ def test_submit_batch_requires_explicit_algorithm(device, mock_connection):
     with pytest.raises(ValueError, match="Batch submission requires an explicit algorithm"):
         device.submit([mc.Circuit(), mc.Circuit()], shots=100)
     mock_connection.submit.assert_not_called()
+
+
+def test_str_names_the_device(device):
+    """``str()`` shows the class and device id."""
+    assert str(device) == "QPerfectDevice('mimiq-emulator')"

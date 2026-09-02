@@ -28,6 +28,7 @@ import mimiqcircuits as mc
 from qiskit import QuantumCircuit
 
 from qbraid.programs import get_program_type_alias, load_program
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.mimiqcircuits import MimiqProgram
 from qbraid.transpiler import ConversionGraph
 from qbraid.transpiler.conversions.qiskit.qiskit_to_mimiqcircuits import qiskit_to_mimiqcircuits
@@ -65,3 +66,15 @@ def test_load_program_wraps_mimiq_circuit():
     program = load_program(qiskit_to_mimiqcircuits(_bell()))
     assert isinstance(program, MimiqProgram)
     assert program.num_qubits == 2
+
+
+def test_mimiq_program_rejects_a_foreign_program_type():
+    """Wrapping anything but a native MIMIQ circuit raises ``ProgramTypeError``."""
+    with pytest.raises(ProgramTypeError):
+        MimiqProgram(_bell())
+
+
+def test_mimiq_program_counts_classical_bits():
+    """``num_clbits`` reads the classical register off the native circuit."""
+    program = load_program(qiskit_to_mimiqcircuits(_bell()))
+    assert program.num_clbits == 2

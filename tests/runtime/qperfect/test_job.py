@@ -17,6 +17,8 @@ Unit tests for the QPerfect (MIMIQ) job.
 
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from qbraid.runtime.enums import JobStatus
@@ -100,3 +102,20 @@ def test_result_incomplete_raises(mock_connection):
     mock_connection.connection.requestInfo.return_value.status = "ERROR"
     with pytest.raises(QPerfectJobError):
         _job(mock_connection).result()
+
+
+def test_default_connection_is_built_lazily(mock_connection):
+    """Omitting the connection builds one via ``build_connection``."""
+    with patch(
+        "qbraid.runtime.qperfect.job.build_connection", return_value=mock_connection
+    ) as built:
+        job = QPerfectJob("exec-1")
+    built.assert_called_once_with()
+    assert job.connection is mock_connection
+
+
+def test_result_normalizes_a_single_unlisted_result(mock_connection, fake_result, device):
+    """A bare (non-list) ``get_results`` payload still parses to counts."""
+    mock_connection.get_results.return_value = fake_result
+    result = _job(mock_connection, device=device).result()
+    assert result.data.get_counts() == {"01": 60, "00": 40}
