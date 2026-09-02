@@ -88,6 +88,8 @@ Writing an entry:
 
 ### Dependencies
 - Constrained `qnexus` to `>=0.39.0,<0.48` in the `quantinuum` extra. Every 0.48.x release so far (0.48.0 through 0.48.2) imports `selene_core` without declaring it as a dependency, so `import qnexus` raises `ModuleNotFoundError` on a clean install; the Quantinuum tests now fail loudly in that state instead of silently skipping ([#1297](https://github.com/qBraid/qBraid/pull/1297))
+- Bumped the `amazon-braket-sdk` upper bound from `<1.121.0` to `<1.127.0` so environments resolve `1.126.1`+, which handles IPython 9.17's lazy `get_ipython`. On older releases, importing `braket.aws` with IPython ≥9.17.0 already loaded raises `KeyError: 'get_ipython'` ([#1362](https://github.com/qBraid/qBraid/pull/1362))
+- Capped `oqc-qcaas-client` below `3.23` in the `oqc` extra (previously unbounded) and `requirements-dev.txt`. 3.23.0 removes `TketOptimizations.GlobalisePhasedX`, which the OQC device references at import, so `import qbraid.runtime.oqc` raises `AttributeError` ([#1362](https://github.com/qBraid/qBraid/pull/1362))
 - CUDA-Q support moves to `cudaq>=0.14.0,<0.15.0`, and the `cudaq` extra now installs only on Python 3.11+. Kernels are compiled before translation, which 0.14 requires: without it `cudaq.translate` fails with `has multiple entrypoints` once a process holds more than one kernel, so conversions broke as soon as a second one ran ([#1143](https://github.com/qBraid/qBraid/pull/1143))
 
 ## [0.12.2] - 2026-07-11
