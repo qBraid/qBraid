@@ -31,7 +31,7 @@ if (
     importlib.util.find_spec("mimiqcircuits") is None
     or importlib.util.find_spec("mimiq_qiskit") is None
 ):
-    collect_ignore = ["test_provider.py", "test_device.py", "test_job.py"]
+    collect_ignore = ["test_client.py", "test_provider.py", "test_device.py", "test_job.py"]
 else:
     from unittest.mock import MagicMock
 
