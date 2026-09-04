@@ -23,6 +23,40 @@ from math import isclose
 from typing import Any, Union
 
 
+def reverse_bit_order(
+    data: Union[dict[str, Any], list[dict[str, Any]]],
+) -> Union[dict[str, Any], list[dict[str, Any]]]:
+    """
+    Reverses each bitstring key, moving qubit 0 from the leftmost to the rightmost position.
+
+    Used by providers whose vendor reports qubit 0 first, to reach qBraid's convention of
+    qubit 0 **last** — the little-endian order Qiskit and IonQ already use, where a key
+    reads ``c[n-1]…c[1]c[0]``. Space-separated keys are reversed whole, so the register
+    order flips along with the bits.
+
+    Reversal is its own inverse, so applying this to a provider that is already
+    qubit-0-last silently undoes the convention rather than failing. Each call site is
+    justified against a verified provider order for that reason.
+
+    Args:
+        data: A counts or probabilities dictionary, or a list of them for batch results.
+
+    Returns:
+        The same mapping with each key reversed.
+
+    Examples:
+        >>> reverse_bit_order({"100": 90, "110": 10})
+        {'001': 90, '011': 10}
+
+        >>> reverse_bit_order({"1 01": 100})
+        {'10 1': 100}
+    """
+    if isinstance(data, list):
+        return [reverse_bit_order(datum) for datum in data]
+
+    return {key[::-1]: value for key, value in data.items()}
+
+
 def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
     """
     Normalizes the bit lengths of binary keys in measurement count dictionaries

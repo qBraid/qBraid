@@ -32,9 +32,6 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from requests import ReadTimeout
 
-from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import ResourceNotFoundError
-
 try:
     from qbraid_core.decimal import USD
     from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
@@ -272,7 +269,7 @@ class MockOQCClient:
                 new_windows = [current_window] + exec_est["qpu_wait_times"][0]["windows"]
                 exec_est["qpu_wait_times"][0]["windows"] = new_windows
             return exec_est
-        raise Exception("QPU execution estimates not available")
+        raise RuntimeError("QPU execution estimates not available")
 
     def get_task_status(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task status."""
@@ -638,7 +635,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     except TimeoutError:
         try:
             job.cancel()
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             pass
         pytest.skip(f"OQC job did not complete within {timeout} seconds")
     assert job.qpu_id == LUCY_SIM_ID
@@ -785,6 +782,7 @@ def test_oqc_provider_raises_for_no_token(monkeypatch):
 @patch("qbraid.runtime.oqc.device.logger")
 @patch("qbraid.runtime.oqc.device.OQCDevice.get_next_window")
 def test_device_status_online(mock_get_next_window, mock_logger):
+    """A device with an upcoming window reports ONLINE."""
     mock_get_next_window.return_value = datetime.datetime(2023, 10, 31, 12, 0, 0)
     device = OQCDevice(profile=Mock(), client=Mock())
     result = device.status()
@@ -806,7 +804,7 @@ def test_build_compiler_config_invalid_value():
 
 @patch("qbraid.runtime.oqc.device.logger")
 def test_device_get_next_window_raises_resource_not_found(mock_logger, target_profile):
-    """Test that the get_next_window method raises a ResourceNotFoundError when the window is not found."""
+    """Test that get_next_window raises ResourceNotFoundError when the window is not found."""
     client = Mock()
     client.get_next_window.side_effect = ReadTimeout
     client.get_qpu_execution_estimates.side_effect = Exception
@@ -831,3 +829,22 @@ def test_catch_device_status_resource_not_found(mock_logger, lucy_sim_data, tosh
             status = device.status()
             assert status == DeviceStatus.UNAVAILABLE
             mock_logger.info.assert_called_once()
+
+
+def test_oqc_result_reports_qubit_zero_last(oqc_job):
+    """OQC reports qubit 0 first; the emitted key must be reversed to qBraid's order.
+
+    Asserted at ``result()`` rather than on ``_get_counts``: the vendor parsing is
+    deliberately left in OQC's order, and the conversion is the step that was missing.
+    An asymmetric key is used so a no-op would fail.
+    """
+    vendor_counts = {"100": 90, "110": 10}
+
+    with (
+        patch.object(OQCJob, "status", return_value=JobStatus.COMPLETED),
+        patch.object(OQCJob, "_get_counts", return_value=vendor_counts),
+        patch.object(oqc_job._client, "get_task_results", return_value=MagicMock(result={"x": 1})),
+    ):
+        result = oqc_job.result()
+
+    assert result.data.measurement_counts == {"001": 90, "011": 10}
