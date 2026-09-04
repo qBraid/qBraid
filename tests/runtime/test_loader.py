@@ -18,6 +18,7 @@ Unit tests for loading jobs using entrypoints
 """
 
 import ast
+import re
 from pathlib import Path
 
 import pytest
@@ -108,6 +109,66 @@ def test_runtime_modules_have_provider_and_job_entrypoints():
 
     assert expected_entrypoints <= set(get_entrypoints("providers"))
     assert expected_entrypoints <= set(get_entrypoints("jobs"))
+
+
+def _runtime_subpackages() -> set[str]:
+    """Return every provider package under ``qbraid/runtime/``."""
+    runtime_path = Path(qbraid.runtime.__file__).parent
+    return {
+        path.name
+        for path in runtime_path.iterdir()
+        if path.is_dir() and (path / "__init__.py").is_file()
+    }
+
+
+def test_runtime_modules_are_lazily_importable():
+    """Every provider package is reachable as ``qbraid.runtime.<name>``.
+
+    The ``_lazy`` dict is what makes that attribute access work; a package missing from it
+    imports fine by full path and fails only through the public surface.
+    """
+    lazy_keys = set(qbraid.runtime._lazy)  # pylint: disable=protected-access
+    assert _runtime_subpackages() <= lazy_keys
+
+
+def test_runtime_modules_are_listed_in_the_api_docs():
+    """Every provider package appears in the runtime autosummary.
+
+    Missing entries are invisible locally: the docs build succeeds and simply omits the
+    provider's page.
+    """
+    # Anchored on the test file: tox installs the package non-editable, so the docs tree is
+    # not reachable from qbraid.runtime.__file__.
+    docs_rst = Path(__file__).parents[2] / "docs" / "api" / "qbraid.runtime.rst"
+    if not docs_rst.is_file():
+        pytest.skip("docs tree not available")
+    listed = set(docs_rst.read_text(encoding="utf-8").split())
+    assert _runtime_subpackages() <= listed
+
+
+def test_registered_providers_are_listed_in_the_readme():
+    """Every registered provider appears in the README's linked provider list.
+
+    The list is what a reader installs from, and it has trailed the provider set before —
+    aqt, openquantum, qperfect and qudora were all missing while shipping. Matching on the
+    class name keeps this independent of how the sentence around it is worded.
+    """
+    repo_root = Path(__file__).parents[2]
+    pyproject = repo_root / "pyproject.toml"
+    readme = repo_root / "README.md"
+    if not (pyproject.is_file() and readme.is_file()):
+        pytest.skip("repo root not available")
+
+    entry_points = (
+        pyproject.read_text(encoding="utf-8")
+        .split('[project.entry-points."qbraid.providers"]')[1]
+        .split("[project.entry-points")[0]
+    )
+    provider_classes = set(re.findall(r":(\w+Provider)", entry_points))
+    listed = readme.read_text(encoding="utf-8")
+
+    assert provider_classes, "no provider entry points found"
+    assert sorted(cls for cls in provider_classes if cls not in listed) == []
 
 
 def _literal_overload_names(function_name: str, parameter_name: str) -> set[str]:
