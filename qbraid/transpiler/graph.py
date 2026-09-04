@@ -127,7 +127,11 @@ class ConversionGraph(rx.PyDiGraph):
         super().__init__()
         self.require_native = require_native
         self.edge_bias = edge_bias if edge_bias is not None else 0.25
-        self._conversions = conversions or self.load_default_conversions(bias=self.edge_bias)
+        self._conversions = (
+            conversions
+            if conversions is not None
+            else self.load_default_conversions(bias=self.edge_bias)
+        )
         self._node_alias_id_map: dict[str, int] = {}
         self._include_isolated = include_isolated
         self._init_nodes = set(nodes) if nodes is not None else set()
@@ -601,11 +605,18 @@ class ConversionGraph(rx.PyDiGraph):
         """
         Reset the graph to its default state.
 
+        Args:
+            conversions (list[Conversion], optional): Conversions to rebuild the graph from.
+                ``None`` restores the default conversions; an empty list leaves the graph
+                with no conversion edges.
+
         Returns:
             None
         """
         self.clear()
-        self._conversions = conversions or self.load_default_conversions()
+        self._conversions = (
+            conversions if conversions is not None else self.load_default_conversions()
+        )
         self._node_alias_id_map = {}
         self.create_conversion_graph()
 

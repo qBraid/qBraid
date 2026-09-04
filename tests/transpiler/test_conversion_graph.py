@@ -196,6 +196,38 @@ def test_remove_conversion():
     assert num_conversions_start - num_conversions_end == 1
 
 
+def test_empty_conversions_list_builds_an_edgeless_graph():
+    """An empty list means no conversions, not "fall back to the defaults".
+
+    The distinction matters when the list is computed: a filter that matches nothing
+    would otherwise hand back every registered conversion.
+    """
+    graph = ConversionGraph(conversions=[])
+    assert graph.conversions() == []
+    assert graph.num_edges() == 0
+    assert graph.num_edges() != ConversionGraph().num_edges()
+
+
+def test_reset_to_empty_conversions():
+    """reset([]) empties the graph; reset() still restores the defaults."""
+    graph = ConversionGraph()
+    graph.reset(conversions=[])
+    assert graph.num_edges() == 0
+
+    graph.reset()
+    assert graph.num_edges() == ConversionGraph().num_edges()
+
+
+def test_copy_preserves_an_emptied_graph():
+    """Copying a graph whose last conversion was removed must not resurrect the defaults."""
+    graph = ConversionGraph(conversions=[Conversion("qasm2", "qasm3", lambda x: x)])
+    graph.remove_conversion("qasm2", "qasm3")
+    assert graph.conversions() == []
+
+    assert graph.copy().conversions() == []
+    assert graph.copy().num_edges() == 0
+
+
 def test_copy_conversion_graph():
     """Test copying a ConversionGraph."""
     graph = ConversionGraph(include_isolated=False)
