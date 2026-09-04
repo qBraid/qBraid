@@ -91,10 +91,9 @@ _TRANSLATION_OPTION_KEYS = frozenset(
 )
 # runtime_options keys that map onto qcs_sdk's ``CompilerOpts``.
 _COMPILER_OPTS_KEYS = frozenset({"compiler_timeout", "protoquil"})
-# Every runtime_options key consumed during quilc compilation. ``initial_rewiring``
-# is applied to the program text rather than to ``CompilerOpts``, so it is tracked
-# separately: including it here is what makes run() publish it and stops
-# _warn_unknown_runtime_options from reporting it as unrecognised.
+# Every runtime_options key consumed during quilc compilation; membership is what makes
+# run() publish a key and keeps _warn_unknown_runtime_options quiet about it.
+# ``initial_rewiring`` is applied to the program text rather than to ``CompilerOpts``.
 _COMPILER_OPTION_KEYS = _COMPILER_OPTS_KEYS | frozenset({"initial_rewiring"})
 
 # Quil-T instruction names that a gate-model program can acquire by accident: OpenQASM
@@ -103,9 +102,8 @@ _COMPILER_OPTION_KEYS = _COMPILER_OPTS_KEYS | frozenset({"initial_rewiring"})
 # information that quilc would destroy.
 _FENCE_INSTRUCTION_NAMES = frozenset({"FENCE"})
 
-# quilc maps a program's logical qubits onto physical qubits using its
-# INITIAL_REWIRING strategy. That strategy is a Quil PRAGMA, not a quilc server
-# flag, so the only way to select one is to rewrite the program being compiled.
+# quilc's INITIAL_REWIRING strategy is a Quil PRAGMA, not a quilc server flag, so
+# the only way to select one is to rewrite the program being compiled.
 _INITIAL_REWIRING_PRAGMA = "INITIAL_REWIRING"
 _INITIAL_REWIRING_STRATEGIES = frozenset({"NAIVE", "PARTIAL", "GREEDY", "RANDOM"})
 
@@ -117,13 +115,10 @@ _QUILC_TIMEOUT_MARKERS = ("time limit", "timed out", "timeout")
 class _ResolvedCompilerOptions(NamedTuple):
     """quilc options for one ``run()``, plus the timeout they encode.
 
-    ``CompilerOpts`` is a Rust binding with no attribute getters, so the timeout
-    cannot be read back off the object. It is carried alongside purely so that a
-    compilation timeout can name the deadline it exceeded.
-
-    ``initial_rewiring`` rides here too because it is resolved from the same
-    ``runtime_options`` at the same moment, even though it is applied to the program
-    rather than passed to quilc as an option.
+    ``CompilerOpts`` is a Rust binding with no attribute getters, so the timeout is
+    carried alongside purely so a compilation timeout can name the deadline exceeded.
+    ``initial_rewiring`` rides here because it resolves from the same runtime_options,
+    though it is applied to the program text rather than passed to quilc.
     """
 
     options: CompilerOpts | None
@@ -465,11 +460,10 @@ class RigettiDevice(QuantumDevice):
         """Log a warning when quilc keys are handed to ``submit()`` directly.
 
         Compilation happens in :meth:`transform`, which :meth:`run` invokes before it
-        reaches ``submit()``. A bare ``submit()`` never compiles, so ``compiler_timeout``,
-        ``protoquil`` and ``initial_rewiring`` have nothing to act on -- and dropping
-        them in silence is the failure this whole path exists to remove. ``run()``
-        publishes its resolution on :data:`_COMPILER_OPTIONS` first, which is how the
-        two callers are told apart.
+        reaches ``submit()``. A bare ``submit()`` never compiles, so the quilc keys have
+        nothing to act on -- and dropping them in silence is the failure this whole path
+        exists to remove. ``run()`` publishes its resolution on :data:`_COMPILER_OPTIONS`
+        first, which is how the two callers are told apart.
         """
         if not runtime_options or _COMPILER_OPTIONS.get() is not None:
             return
@@ -513,12 +507,10 @@ class RigettiDevice(QuantumDevice):
         """Extract known quilc compiler keys from a runtime_options dict.
 
         Recognized keys are ``compiler_timeout`` (seconds, or ``None`` for no limit)
-        and ``protoquil``. ``initial_rewiring`` is deliberately not read here: it is
-        not a ``CompilerOpts`` field, and treating it as one would build a
-        ``CompilerOpts`` that overrides a device-level ``_compiler_options`` for a
-        caller who only asked to change the rewiring. Unrecognized keys are ignored,
-        with a warning naming each one (emitted once per submission by
-        :meth:`_parse_runtime_options`).
+        and ``protoquil``. ``initial_rewiring`` is deliberately not read here: building
+        a ``CompilerOpts`` from it would override a device-level ``_compiler_options``
+        for a caller who only asked to change the rewiring. Unrecognized keys are
+        ignored, with a warning naming each one.
 
         Returns:
             A ``CompilerOpts`` instance, or ``None`` when no recognised compiler keys
@@ -541,19 +533,13 @@ class RigettiDevice(QuantumDevice):
     def _parse_initial_rewiring(runtime_options: dict[str, Any] | None) -> str | None:
         """Return the validated quilc ``INITIAL_REWIRING`` strategy, or ``None``.
 
-        ``None`` means "leave the program alone", which preserves quilc's own default
-        (``PARTIAL``) and any pragma the submitted program already carries.
-
-        Args:
-            runtime_options: The options passed to :meth:`run`.
-
-        Returns:
-            The upper-cased strategy name, or ``None`` when the key is absent.
+        ``None`` means "leave the program alone": quilc's own default (``PARTIAL``)
+        and any pragma the program already carries both survive.
 
         Raises:
-            ValueError: If the strategy is not one quilc recognises. Failing here is
-                deliberate: an unrecognised pragma value makes quilc reject the whole
-                program, and a parse-time error names the supported set instead.
+            ValueError: If the strategy is not one quilc recognises -- an unrecognised
+                pragma value makes quilc reject the whole program opaquely, so failing
+                at parse time with the supported set named is deliberate.
         """
         if not runtime_options:
             return None
@@ -574,22 +560,13 @@ class RigettiDevice(QuantumDevice):
     def _apply_initial_rewiring(program: pyquil.Program, strategy: str | None) -> pyquil.Program:
         """Prepend an ``INITIAL_REWIRING`` pragma to ``program``.
 
-        A program that already declares the pragma is returned untouched: the value
-        written by the author is more specific than a device-wide runtime option, and
-        quilc applies the pragma positionally (it accepts more than one, verified on
-        1.26.0), so prepending a second ahead of the author's would silently change
-        which strategy governs their program.
+        A program that already declares the pragma is returned untouched: the author's
+        value is more specific than a device-wide option, and quilc applies the pragma
+        positionally (it accepts more than one, verified on 1.26.0), so prepending a
+        second would silently change which strategy governs their program.
 
-        The pragma does not have to be the literal first line. pyquil's ``out()``
-        emits ``DECLARE`` before it, and quilc honours it there.
-
-        Args:
-            program: The gate-model program about to be compiled.
-            strategy: A validated strategy name, or ``None`` to leave the program as is.
-
-        Returns:
-            The program to compile, rewritten only when a strategy was requested and
-            the program did not already set one.
+        The pragma need not be the literal first line: pyquil's ``out()`` emits
+        ``DECLARE`` before it, and quilc honours it there.
         """
         if strategy is None:
             return program
@@ -622,10 +599,9 @@ class RigettiDevice(QuantumDevice):
         ``runtime_options``), then a ``_compiler_options`` attribute set directly on
         the device, then :data:`DEFAULT_COMPILER_TIMEOUT_S`.
 
-        ``initial_rewiring`` is carried across every branch rather than only the first.
-        It is not a ``CompilerOpts`` field, so ``run()`` publishes it with
-        ``options=None`` whenever it is the only quilc key given -- which is the common
-        case. Returning early on ``options`` alone would drop it exactly then.
+        ``initial_rewiring`` is carried across every branch, not only the first: it is
+        not a ``CompilerOpts`` field, so ``run()`` publishes it with ``options=None``
+        in the common case, and an early return on ``options`` alone would drop it.
         """
         resolved = _COMPILER_OPTIONS.get()
         initial_rewiring = resolved.initial_rewiring if resolved is not None else None
@@ -961,10 +937,9 @@ class RigettiDevice(QuantumDevice):
 
         Identical to :meth:`QuantumDevice.run`, except that the quilc keys in
         ``runtime_options`` (``compiler_timeout``, ``protoquil``, ``initial_rewiring``)
-        are published for
-        :meth:`transform` for the duration of the call. ``run()`` compiles before it
-        submits, so options consumed by quilc cannot be forwarded through
-        :meth:`submit` the way the translation options are.
+        are published for :meth:`transform` for the duration of the call. ``run()``
+        compiles before it submits, so options consumed by quilc cannot be forwarded
+        through :meth:`submit` the way the translation options are.
 
         Args:
             run_input: A program, or list of programs, to run on the device. This is

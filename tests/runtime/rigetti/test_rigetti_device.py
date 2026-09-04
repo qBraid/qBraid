@@ -2335,7 +2335,7 @@ class TestTransformWithInitialRewiring:
         assert 'PRAGMA INITIAL_REWIRING "NAIVE"' in mock_compile.call_args.kwargs["quil"]
         assert mock_compile.call_args.kwargs["options"] is rigetti_device._compiler_options
 
-    def test_run_publishes_the_strategy(self, rigetti_device: RigettiDevice) -> None:
+    def test_run_publishes_the_strategy(self) -> None:
         """run() must resolve the key so transform() sees it, mirroring compiler_timeout."""
         resolved = _ResolvedCompilerOptions(
             RigettiDevice._parse_compiler_options({"initial_rewiring": "GREEDY"}),
