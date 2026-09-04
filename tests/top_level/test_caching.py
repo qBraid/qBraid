@@ -17,6 +17,10 @@ Unit tests for caching module.
 
 """
 
+# ``cached_method`` attaches ``cache_info``/``cache_clear`` at runtime, which pylint's
+# static inference cannot see through the decorator.
+# pylint: disable=no-member
+
 import math
 import time
 
@@ -44,6 +48,7 @@ class TestClass:
 
 @pytest.fixture
 def test_instance():
+    """Return a TestClass instance for key-generation tests."""
     return TestClass(1, 2)
 
 
@@ -52,6 +57,30 @@ def test_generate_cache_key(test_instance):
     key = _generate_cache_key(test_instance, "get_data", (1,), {})
     assert isinstance(key, str)
     assert len(key) == 64  # SHA-256 hash length
+
+
+def test_generate_cache_key_rejects_unserializable_args(test_instance):
+    """Key generation is strict: unserializable arguments raise instead of guessing.
+
+    Any fallback encoding (``repr``, identity, ...) risks two distinct arguments
+    mapping to one key and a call receiving another call's cached result, so the
+    key must simply not exist for these values.
+    """
+    with pytest.raises(TypeError):
+        _generate_cache_key(test_instance, "get_data", (object(),), {})
+
+    # ``default=`` only ever applied to values, so dict keys crashed regardless.
+    with pytest.raises(TypeError):
+        _generate_cache_key(test_instance, "get_data", ({(1, 2): "a"},), {})
+
+    # ``json.dumps`` also fails with ``ValueError`` on circular references. (Its
+    # third failure mode, ``RecursionError`` on deep nesting, is interpreter-dependent:
+    # CPython >= 3.12's C encoder no longer consults the recursion limit, so depth is
+    # not asserted here -- the wrapper still treats it as unkeyable if it ever fires.)
+    circular: list = []
+    circular.append(circular)
+    with pytest.raises(ValueError):
+        _generate_cache_key(test_instance, "get_data", (circular,), {})
 
 
 def test_clear_cache(test_instance, monkeypatch):
@@ -109,6 +138,47 @@ def test_cached_method_accepts_unhashable_args(monkeypatch):
 
     obj.total.cache_clear()
     assert obj.total.cache_info().currsize == 0
+
+
+def test_cached_method_bypasses_cache_for_non_json_serializable_args(monkeypatch):
+    """Unkeyable arguments bypass the cache instead of being stored under a guessed key.
+
+    The reported crash (#1266) is gone -- the call succeeds -- but nothing is cached,
+    so a later object can never be served the earlier object's result.
+    """
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+
+    class ObjectArgClass:
+        """Counts calls to a cached method taking an arbitrary object."""
+
+        def __init__(self):
+            self.call_count = 0
+
+        @cached_method
+        def passthrough(self, argument: object) -> object:
+            """Return the argument unchanged, counting invocations."""
+            self.call_count += 1
+            return argument
+
+    obj = ObjectArgClass()
+    value = object()
+
+    assert obj.passthrough(value) is value
+    assert obj.passthrough(value) is value
+    assert obj.call_count == 2
+    assert obj.passthrough.cache_info().currsize == 0
+
+    # A dict with non-string keys is unserializable too, and must not raise.
+    assert obj.passthrough({(1, 2): "a"}) == {(1, 2): "a"}
+    assert obj.call_count == 3
+
+    # Circular arguments fail json.dumps with ValueError rather than TypeError;
+    # they must bypass the cache too.
+    circular: list = []
+    circular.append(circular)
+    assert obj.passthrough(circular) is circular
+    assert obj.call_count == 4
+    assert obj.passthrough.cache_info().currsize == 0
 
 
 class BoundedClass:
@@ -294,6 +364,8 @@ def test_cached_method_concurrent_calls_are_safe(monkeypatch):
     monkeypatch.setenv("DISABLE_CACHE", "0")
 
     class Hammer:
+        """Holds one bounded cached method for threads to hammer."""
+
         @cached_method(maxsize=4)
         def square(self, n: int) -> int:
             """Return ``n`` squared."""
@@ -302,7 +374,7 @@ def test_cached_method_concurrent_calls_are_safe(monkeypatch):
         def __hash__(self):
             return 7  # all instances share the cache, maximizing contention
 
-    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import ThreadPoolExecutor  # pylint: disable=import-outside-toplevel
 
     obj = Hammer()
     obj.square.cache_clear()
