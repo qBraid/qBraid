@@ -1082,6 +1082,78 @@ def test_coupling_map_cached_per_device(mock_profile):
     client.get_device_calibrations.assert_called_once()
 
 
+class TestSupportedRunInputs:
+    """Tests for QuantumDevice.supported_run_inputs."""
+
+    @staticmethod
+    def _device(program_spec, scheme=None):
+        profile = TargetProfile(device_id="fake", simulator=True, program_spec=program_spec)
+        return MockDevice(profile=profile, scheme=scheme)
+
+    def test_single_spec_matches_graph_reachability(self):
+        """Every alias with a path to the target is returned, sorted, target included."""
+        device = self._device(ProgramSpec(str, alias="qasm2"))
+        supported = device.supported_run_inputs()
+
+        graph = device.scheme.conversion_graph
+        expected = sorted(n for n in graph.nodes() if graph.has_path(n, "qasm2"))
+        assert supported == expected
+        assert "qasm2" in supported
+
+    def test_multi_spec_unions_reachable_aliases(self):
+        """A device with several target specs accepts an alias reachable to any of them.
+
+        Regression test: the IonQ, Open Quantum, QUDORA and native devices carry a
+        ``list[ProgramSpec]``, on which this method raised ``AttributeError``.
+        """
+        device = self._device([ProgramSpec(str, alias="qasm2"), ProgramSpec(str, alias="qasm3")])
+        supported = device.supported_run_inputs()
+
+        graph = device.scheme.conversion_graph
+        expected = sorted(
+            n for n in graph.nodes() if graph.has_path(n, "qasm2") or graph.has_path(n, "qasm3")
+        )
+        assert supported == expected
+        assert {"qasm2", "qasm3"} <= set(supported)
+
+    def test_no_target_spec_returns_empty(self):
+        """Without a target spec there is nothing run() could convert to."""
+        device = self._device(None)
+        assert device.supported_run_inputs() == []
+
+    def test_respects_scheme_max_path_depth(self):
+        """An alias whose shortest conversion path exceeds the scheme's depth is excluded.
+
+        Regression test: run() enforces ``max_path_depth``, so an alias listed here but
+        rejected by run() would break the method's contract.
+        """
+        device = self._device(
+            ProgramSpec(str, alias="qasm2"), scheme=ConversionScheme(max_path_depth=1)
+        )
+        supported = device.supported_run_inputs()
+
+        graph = device.scheme.conversion_graph
+        for alias in supported:
+            if alias == "qasm2":
+                continue
+            shortest = graph.find_top_shortest_conversion_paths(alias, "qasm2", top_n=1)
+            assert len(shortest[0]) <= 1, f"{alias} needs {len(shortest[0])} hops"
+
+        deeper = sorted(n for n in graph.nodes() if graph.has_path(n, "qasm2"))
+        assert set(supported) < set(deeper), "the depth limit should exclude something"
+
+    def test_transpile_disabled_advertises_only_native_aliases(self):
+        """With the transpile option off, run() converts nothing, so only spec aliases apply.
+
+        Regression test: apply_runtime_profile transpiles only when the option is True,
+        so advertising graph-reachable aliases here would sell inputs run() rejects.
+        """
+        device = self._device([ProgramSpec(str, alias="qasm2"), ProgramSpec(str, alias="qasm3")])
+        device.set_options(transpile=False)
+
+        assert device.supported_run_inputs() == ["qasm2", "qasm3"]
+
+
 # ===========================================================================
 # Device best qubits selection
 # ===========================================================================

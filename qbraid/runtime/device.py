@@ -480,6 +480,43 @@ class QuantumDevice(ABC):
         run_input = run_input[0] if is_single_output else run_input
         return run_input
 
+    def supported_run_inputs(self) -> list[str]:
+        """Return the sorted program type aliases accepted as ``run_input`` by :meth:`run`.
+
+        Reachability is judged under this device's own :class:`ConversionScheme`: a
+        ``max_path_depth`` that :meth:`run` would enforce is enforced here too, so
+        every alias returned is one the run pipeline can actually convert. A device
+        with multiple target specs accepts an alias reachable to any of them, and a
+        device whose ``transpile`` option is off advertises only its native aliases,
+        since :meth:`apply_runtime_profile` will not convert anything else.
+        """
+        target_spec = self._target_spec
+        if target_spec is None:
+            return []
+        specs = target_spec if isinstance(target_spec, list) else [target_spec]
+
+        if self._options.get("transpile") is not True:
+            return sorted({spec.alias for spec in specs})
+
+        graph = self.scheme.conversion_graph
+        max_depth = self.scheme.max_path_depth
+
+        def reachable(source: str, target: str) -> bool:
+            if source == target:
+                return True
+            if not graph.has_path(source, target):
+                return False
+            if max_depth is None:
+                return True
+            shortest = graph.find_top_shortest_conversion_paths(source, target, top_n=1)
+            return len(shortest[0]) <= max_depth
+
+        return sorted(
+            program_type
+            for program_type in graph.nodes()
+            if any(reachable(program_type, spec.alias) for spec in specs)
+        )
+
     @abstractmethod
     def submit(
         self,
