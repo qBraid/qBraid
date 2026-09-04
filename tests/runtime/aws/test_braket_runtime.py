@@ -524,6 +524,40 @@ def test_device_ionq_transform(mock_aws_device):
     assert circuits_allclose(transformed_circuit, toffoli_circuit)
 
 
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_ionq_transform_hints_when_tket_edge_missing(mock_aws_device, caplog):
+    """Without the pytket <-> braket edges, the IonQ transform skips with a logged hint.
+
+    ``pytket-braket`` is no longer part of the ``braket`` extra, so this is the
+    default experience for extra-only installs: the circuit must pass through
+    unrebased, and the log must name the package that restores the transform.
+    """
+    import logging
+
+    from qbraid.transpiler import Conversion, ConversionGraph
+
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        simulator=False,
+        num_qubits=11,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="IonQ",
+        device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Harmony",
+        experiment_type=ExperimentType.GATE_MODEL,
+    )
+    device = BraketDevice(profile)
+    # one unrelated edge: an empty conversions list falls back to the default graph
+    edgeless = ConversionGraph(conversions=[Conversion("qasm2", "qasm3", lambda p: p)])
+    device.update_scheme(conversion_graph=edgeless)
+
+    toffoli_circuit = Circuit().ccnot(0, 1, 2)
+    with caplog.at_level(logging.INFO):
+        transformed_circuit = device.transform(toffoli_circuit)
+
+    assert "pytket-braket" in caplog.text
+    assert transformed_circuit.depth == 1  # untouched: no rebase happened
+
+
 @pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 @patch("qbraid.runtime.aws.device.AwsDevice")
 def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
