@@ -69,6 +69,7 @@ gates_param_map = {
     "SGate": {"qubits": [0]},
     "TGate": {"qubits": [0]},
     "RXXGate": {"qubits": [0, 1], "phi": np.random.rand() * 2 * np.pi},
+    "RYYGate": {"qubits": [0, 1], "phi": np.random.rand() * 2 * np.pi},
     "RZZGate": {"qubits": [0, 1], "phi": np.random.rand() * 2 * np.pi},
     "SXGate": {"qubits": [0]},
     "SXDGGate": {"qubits": [0]},
@@ -178,6 +179,12 @@ def convert_from_qrisp_to_x(target, circuit_name, circuits, graph):
     target program type, and check equivalence.
     """
     source_circuit = circuits[circuit_name]
+    # A gate enumerated from qrisp but absent from gates_param_map (or whose entry no
+    # longer matches its constructor) never got a circuit built. Name that directly
+    # instead of letting transpile(None) surface as an opaque NoneType error.
+    assert (
+        source_circuit is not None
+    ), f"no circuit was built for {circuit_name}; add or update its gates_param_map entry"
     target_circuit = transpile(source_circuit, target, conversion_graph=graph)
     assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
