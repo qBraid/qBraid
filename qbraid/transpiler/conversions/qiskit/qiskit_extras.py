@@ -87,35 +87,43 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
 
     instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
 
-    # After transpilation against a backend, qiskit may map a small circuit onto a
-    # large physical topology (e.g. 1 logical qubit -> physical qubit 12 on a 29-qubit
-    # device). We need to: (1) compute the set of actually-used qubit indices, and
-    # (2) remap them to a compact 0-based range so the IonQ API receives the minimal
-    # qubit count and correctly indexed targets.
-    used_indices: set[int] = set()
-    for gate in instrs:
-        for key in ("target", "targets", "control", "controls"):
-            val = gate.get(key)
-            if val is not None:
-                if isinstance(val, list):
-                    used_indices.update(val)
-                else:
-                    used_indices.add(val)
+    # qiskit>=2 transpiled against a backend maps a small circuit onto the full physical
+    # topology (a 1-qubit circuit becomes 29 qubits with its gate on, say, physical
+    # qubit 12). Such a circuit carries a TranspileLayout, whose final_index_layout()
+    # is the exact virtual->physical map -- inverting it recovers both the original
+    # register width and each gate's original index, including layouts that permute
+    # qubit order, which a sorted compaction of the used indices would silently swap.
+    # A circuit with no layout was never transpiled: its declared register is the
+    # user's own, so idle qubits are kept and indices pass through untouched.
+    num_qubits = circuit.num_qubits
+    layout = getattr(circuit, "layout", None)
+    if layout is not None:
+        physical_to_virtual = {
+            physical: virtual for virtual, physical in enumerate(layout.final_index_layout())
+        }
+        num_qubits = len(physical_to_virtual)
 
-    if used_indices:
-        compact_map = {old: new for new, old in enumerate(sorted(used_indices))}
+        def remap(physical: int) -> int:
+            try:
+                return physical_to_virtual[physical]
+            except KeyError as err:
+                raise ValueError(
+                    f"Gate on physical qubit {physical} has no source qubit in the "
+                    "transpile layout; cannot map the circuit back to its original "
+                    "register."
+                ) from err
 
         for gate in instrs:
             for key in ("target", "control"):
                 if key in gate:
-                    gate[key] = compact_map[gate[key]]
+                    gate[key] = remap(gate[key])
             for key in ("targets", "controls"):
                 if key in gate:
-                    gate[key] = [compact_map[idx] for idx in gate[key]]
+                    gate[key] = [remap(idx) for idx in gate[key]]
 
     return {
         "format": InputFormat.CIRCUIT.value,
         "gateset": kwargs.get("gateset", GateSet.QIS.value),
-        "qubits": len(used_indices),
+        "qubits": num_qubits,
         "circuit": instrs,
     }
