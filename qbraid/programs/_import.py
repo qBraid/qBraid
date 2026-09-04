@@ -84,6 +84,8 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable
 def _get_class(module: str):
+    if module == "aqt_connector.models.circuits":
+        return aqt_connector.models.circuits.QuantumCircuit  # type: ignore # noqa: F821
     if module == "bloqade.analog.builder.assign":
         return bloqade.analog.builder.assign.BatchAssign  # type: ignore # noqa: F821
     if module == "cirq":
@@ -122,6 +124,8 @@ def _get_class(module: str):
         return qrisp.QuantumCircuit  # type: ignore # noqa: F821
     if module == "qat.core.wrappers.circuit":  # pragma: no cover
         return qat.core.wrappers.circuit.Circuit  # type: ignore # noqa: F821
+    if module == "mimiqcircuits":
+        return mimiqcircuits.Circuit  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -141,6 +145,8 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "cpp_pyqubo",
         "cudaq",
         "qrisp",
+        "mimiqcircuits",
+        "aqt_connector.models.circuits",
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(

@@ -26,6 +26,7 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
+from ._transport import ensure_bounded_client
 from .device import QuantinuumDevice
 
 if TYPE_CHECKING:
@@ -37,11 +38,18 @@ def _fetch_quantinuum_devices_df():
     # pylint: disable-next=import-outside-toplevel
     import qnexus as qnx
 
+    # Device enumeration is often the first qnexus call a process makes, so it
+    # must apply the client bound itself rather than rely on a device or job
+    # call having run first.
+    ensure_bounded_client()
     return qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
 
 
-def _get_backend_info(device_name: str) -> BackendInfo:
-    """Fetch the pytket BackendInfo for a specific Quantinuum device."""
+def _get_device_entry(device_name: str):
+    """Fetch a device's entry (name, backend info, hosting) from the NEXUS device list.
+
+    Returns the matching row of the qnexus devices dataframe.
+    """
     df = _fetch_quantinuum_devices_df()
     matching_rows = df.loc[df["device_name"] == device_name]
 
@@ -52,24 +60,45 @@ def _get_backend_info(device_name: str) -> BackendInfo:
             f"Available devices: {available_devices}"
         )
 
-    return matching_rows.iloc[0]["backend_info"]
+    return matching_rows.iloc[0]
 
 
-def _build_profile(device_id: str, backend_info: BackendInfo) -> TargetProfile:
+def _is_simulator(device_name: str, nexus_hosted: bool) -> bool:
+    """Return whether a Quantinuum device name refers to a simulator.
+
+    Quantinuum names hardware as ``<family>-<n>`` (``H1-1``, ``H2-1``,
+    ``Helios-1``) and derives the non-hardware targets from it with a suffix:
+    ``E`` for the device-hosted emulator, ``LE`` for the Nexus-hosted one, and
+    ``SC`` for the syntax checker. Everything Nexus hosts itself is a simulator
+    by definition.
+
+    The suffix has to be matched at the end, not anywhere in the name: a
+    substring test for "E" also matches ``Helios-1``, silently billing a QPU
+    as a simulator and letting it past simulator-only guards.
+    """
+    if nexus_hosted:
+        return True
+    name = device_name.upper()
+    return name.endswith(("E", "SC")) or "EMULATOR" in name
+
+
+def _build_profile(device_id: str, backend_info: BackendInfo, nexus_hosted: bool) -> TargetProfile:
     """Build a TargetProfile from a Quantinuum device name and backend info."""
     # pylint: disable-next=import-outside-toplevel
     from pytket import Circuit
 
     return TargetProfile(
         device_id=device_id,
-        # Quantinuum emulator/simulator device names contain "E" (e.g. "H1-1E").
-        simulator="E" in device_id.upper(),
+        simulator=_is_simulator(device_id, nexus_hosted),
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=len(backend_info.architecture.nodes),
         program_spec=ProgramSpec(Circuit, alias="pytket"),
         provider_name="quantinuum",
-        # Extras: accessible via ``device.profile.backend_info``.
+        # Extras: accessible via ``device.profile.backend_info`` etc.
         backend_info=backend_info,
+        # Cloud-hosted (Nexus-hosted) devices have no machine status endpoint
+        # and are assumed always online.
+        nexus_hosted=nexus_hosted,
     )
 
 
@@ -86,8 +115,10 @@ class QuantinuumProvider(QuantumProvider):
     def get_device(self, device_id: str) -> QuantinuumDevice:
         """Get a specific Quantinuum device."""
         device_id = device_id.strip()
-        backend_info = _get_backend_info(device_id)
-        return QuantinuumDevice(profile=_build_profile(device_id, backend_info))
+        entry = _get_device_entry(device_id)
+        return QuantinuumDevice(
+            profile=_build_profile(device_id, entry["backend_info"], bool(entry["nexus_hosted"]))
+        )
 
     @cached_method
     def get_devices(self) -> list[QuantinuumDevice]:  # pylint: disable=arguments-differ
@@ -101,7 +132,9 @@ class QuantinuumProvider(QuantumProvider):
         df = _fetch_quantinuum_devices_df()
         return [
             QuantinuumDevice(
-                profile=_build_profile(row["device_name"], row["backend_info"]),
+                profile=_build_profile(
+                    row["device_name"], row["backend_info"], bool(row["nexus_hosted"])
+                ),
             )
             for _, row in df.iterrows()
         ]

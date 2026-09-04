@@ -18,6 +18,8 @@ Module defining Quantinuum device class.
 """
 from __future__ import annotations
 
+import asyncio
+import functools
 import os
 import uuid
 from datetime import datetime, timezone
@@ -26,8 +28,15 @@ from typing import TYPE_CHECKING
 from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
 
+from ._transport import (
+    RETRYABLE_STATUS_CODES,
+    bounded_int_env,
+    ensure_bounded_client,
+    positive_float_env,
+    retry_transient,
+)
+from .exceptions import QuantinuumDeviceError
 from .job import QuantinuumJob
 
 if TYPE_CHECKING:
@@ -36,8 +45,12 @@ if TYPE_CHECKING:
     from qbraid.runtime.profile import TargetProfile
 
 
-class QuantinuumDeviceError(QbraidRuntimeError):
-    """Exception raised by QuantinuumDevice."""
+DEFAULT_COMPILE_TIMEOUT_SECONDS = 900.0
+
+DEFAULT_OPT_LEVEL = 1
+
+#: Highest pytket optimisation level NEXUS accepts.
+MAX_OPT_LEVEL = 2
 
 
 class QuantinuumDevice(QuantumDevice):
@@ -57,12 +70,18 @@ class QuantinuumDevice(QuantumDevice):
 
     def status(self) -> DeviceStatus:
         """Return the current status of the Quantinuum device."""
+        # The NEXUS machine status endpoint only supports hardware-hosted
+        # devices; cloud-hosted (Nexus-hosted) emulators are always online.
+        if getattr(self.profile, "nexus_hosted", False):
+            return DeviceStatus.ONLINE
+
         # pylint: disable=import-outside-toplevel
         import qnexus as qnx
         from qnexus.client.devices import DeviceStateEnum
 
         # pylint: enable=import-outside-toplevel
 
+        ensure_bounded_client()
         cfg = qnx.models.QuantinuumConfig(device_name=self.id)
         status = qnx.devices.status(cfg)
         if status in (DeviceStateEnum.ONLINE, DeviceStateEnum.RESERVED_ONLINE):
@@ -100,9 +119,17 @@ class QuantinuumDevice(QuantumDevice):
                 NEXUS compile stage. Falls back to the
                 ``QUANTINUUM_NEXUS_OPT_LEVEL`` environment variable, and
                 ultimately to ``1``.
+
+        Every NEXUS request made here is bounded by a per-request HTTP timeout
+        (``QUANTINUUM_NEXUS_HTTP_TIMEOUT``, seconds, default ``60``), and the
+        blocking compilation wait is bounded by
+        ``QUANTINUUM_NEXUS_COMPILE_TIMEOUT`` (seconds, default ``900``);
+        exceeding either raises :class:`QuantinuumDeviceError`.
         """
         # pylint: disable=import-outside-toplevel
+        import httpx
         import qnexus as qnx
+        import qnexus.exceptions as qnx_exc
         from qnexus.models.language import Language
 
         # pylint: enable=import-outside-toplevel
@@ -117,39 +144,108 @@ class QuantinuumDevice(QuantumDevice):
         resolved_opt_level = (
             optimisation_level
             if optimisation_level is not None
-            else int(os.getenv("QUANTINUUM_NEXUS_OPT_LEVEL", "1"))
+            else bounded_int_env("QUANTINUUM_NEXUS_OPT_LEVEL", DEFAULT_OPT_LEVEL, 0, MAX_OPT_LEVEL)
+        )
+        compile_timeout = positive_float_env(
+            "QUANTINUUM_NEXUS_COMPILE_TIMEOUT", DEFAULT_COMPILE_TIMEOUT_SECONDS
         )
 
-        project = qnx.projects.get_or_create(name=resolved_project_name)
+        # Bound every qnexus socket before the first call: the shared client is
+        # built with ``timeout=None``, so without this any one of the requests
+        # below can pin the calling thread forever.
+        ensure_bounded_client()
+
+        project = retry_transient(lambda: qnx.projects.get_or_create(name=resolved_project_name))
         backend_config = qnx.QuantinuumConfig(device_name=self.id)
 
         def unique(label: str) -> str:
             ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
             return f"qbraid {label} {ts}-{uuid.uuid4().hex[:6]}"
 
+        def upload_circuit(index: int, circuit: Circuit):
+            return qnx.circuits.upload(
+                name=unique(f"circuit-{index}"), circuit=circuit, project=project
+            )
+
+        # Pre-execute stages are retried on transient connection errors; a repeat
+        # at worst orphans an upload or compile job, with no execution cost.
         circuit_refs = [
-            qnx.circuits.upload(name=unique(f"circuit-{i}"), circuit=c, project=project)
-            for i, c in enumerate(circuits)
+            retry_transient(functools.partial(upload_circuit, i, c)) for i, c in enumerate(circuits)
         ]
 
-        compile_job = qnx.start_compile_job(
-            programs=circuit_refs,
-            name=unique("compile"),
-            optimisation_level=resolved_opt_level,
-            backend_config=backend_config,
-            project=project,
+        compile_job = retry_transient(
+            lambda: qnx.start_compile_job(
+                programs=circuit_refs,
+                name=unique("compile"),
+                optimisation_level=resolved_opt_level,
+                backend_config=backend_config,
+                project=project,
+            )
         )
-        # NOTE: blocking wait during dispatch; compilation time depends on queue and program size.
+        # NOTE: blocking wait during dispatch; compilation time depends on queue and program
+        # size. The wait is bounded: an unbounded wait_for leaks the calling thread forever
+        # if the NEXUS compile job hangs, which starves thread pools in server deployments.
+        # qnexus <=0.42 defaulted this argument to 900s and later releases silently dropped
+        # the bound to None, which is what made the leak reachable.
         logger.info("Waiting for Quantinuum compilation job %s to complete...", compile_job.id)
-        qnx.jobs.wait_for(compile_job)
-        compiled_refs = [item.get_output() for item in qnx.jobs.results(compile_job)]
+        try:
+            qnx.jobs.wait_for(compile_job, timeout=compile_timeout)
+        except asyncio.TimeoutError as err:
+            raise QuantinuumDeviceError(
+                f"Quantinuum compilation job did not complete within {compile_timeout:g} "
+                "seconds. The compile may still be queued on NEXUS; set "
+                "QUANTINUUM_NEXUS_COMPILE_TIMEOUT (seconds) to wait longer."
+            ) from err
+        except qnx_exc.JobError as err:
+            # wait_for raises this when the compile errors, is cancelled, or is
+            # terminated. Left unwrapped it escapes submit() as a bare qnexus
+            # exception, which callers cannot reasonably be asked to catch.
+            raise QuantinuumDeviceError(
+                f"Quantinuum compilation job {compile_job.id} did not succeed: {err}"
+            ) from err
 
-        execute_job = qnx.start_execute_job(
-            programs=compiled_refs,
-            name=unique("execute"),
-            n_shots=[shots] * len(compiled_refs),
-            backend_config=backend_config,
-            project=project,
-            language=Language.QIR,
+        # ``get_output`` is lazy and issues its own NEXUS request, so the whole
+        # fetch stage goes inside the retry, not just the results listing.
+        compiled_refs = retry_transient(
+            lambda: [item.get_output() for item in qnx.jobs.results(compile_job)]
         )
+
+        # Deliberately NOT retried: a disconnect after the server accepted this
+        # request would double-submit (and double-bill) the execution. But it
+        # must not go unwrapped either: since the shared client now carries a
+        # read timeout, a slow NEXUS response here raises after the server may
+        # already have accepted a billable job, and a bare httpx exception gives
+        # the caller no way to find it. Name the job first so the error can say
+        # exactly what to look for. The same ambiguity applies to a gateway
+        # 502/503/504: qnexus reports those as ``ResourceCreateFailed`` rather
+        # than an httpx error, and a gateway can fail after forwarding the
+        # request, so they get the same guidance. Other status codes mean NEXUS
+        # itself rejected the dispatch, and those propagate untouched.
+        execute_name = unique("execute")
+        try:
+            execute_job = qnx.start_execute_job(
+                programs=compiled_refs,
+                name=execute_name,
+                n_shots=[shots] * len(compiled_refs),
+                backend_config=backend_config,
+                project=project,
+                language=Language.QIR,
+            )
+        except (httpx.TransportError, ConnectionError) as err:
+            raise QuantinuumDeviceError(
+                f"No response received for the execute dispatch ({err}). NEXUS may still "
+                f"have accepted the job: check project {resolved_project_name!r} for a job "
+                f"named {execute_name!r} and cancel it if it is running, or its shots will "
+                "be billed with no local handle to poll."
+            ) from err
+        except qnx_exc.ResourceCreateFailed as err:
+            if err.status_code not in RETRYABLE_STATUS_CODES:
+                raise
+            raise QuantinuumDeviceError(
+                f"Gateway error on the execute dispatch ({err}). NEXUS may still have "
+                f"accepted the job behind the gateway: check project "
+                f"{resolved_project_name!r} for a job named {execute_name!r} and cancel "
+                "it if it is running, or its shots will be billed with no local handle "
+                "to poll."
+            ) from err
         return QuantinuumJob(job_id=str(execute_job.id), device=self, job=execute_job)

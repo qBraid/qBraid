@@ -20,7 +20,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from qbraid_core.services.runtime import QuantumRuntimeClient
+from qbraid_core.services.runtime import (
+    QuantumRuntimeClient,
+    QuantumRuntimeServiceRequestError,
+)
 from qbraid_core.services.runtime.schemas.result import BatchResult as CoreBatchResult
 from qbraid_core.services.runtime.schemas.result import Result as CoreResult
 
@@ -33,6 +36,7 @@ from qbraid.runtime.result_data import ResultData
 
 if TYPE_CHECKING:
     import qbraid_core.services.runtime
+    from qbraid_core.services.runtime.schemas.job import Program
 
     import qbraid.runtime
 
@@ -50,6 +54,7 @@ class QbraidJob(QuantumJob):
         super().__init__(job_id, device, **kwargs)
         self._device = device
         self._client = client
+        self._compiled_program: Program | list[Program] | None = None
 
     @property
     def client(self) -> qbraid_core.services.runtime.QuantumRuntimeClient:
@@ -81,12 +86,53 @@ class QbraidJob(QuantumJob):
             self._cache_metadata.update({**job_data, "status": status})
         return self._cache_metadata["status"]
 
+    def program(self) -> Program | list[Program]:
+        """Return the program submitted with the job.
+
+        For a batch job, returns one ``Program`` per circuit, positionally aligned
+        with the circuits. Single-circuit jobs return a bare ``Program``.
+
+        This is the same object ``metadata()["program"]`` holds, exposed with the
+        schema type ``qbraid_core`` already returns rather than only through the
+        untyped metadata dict.
+        """
+        if self._cache_metadata.get("program") is None:
+            self._cache_metadata["program"] = self.client.get_job_program(self.id)
+        return self._cache_metadata["program"]
+
     def metadata(self) -> dict[str, Any]:
         """Return the metadata regarding the job."""
         self._cache_metadata.pop("job_id", None)
-        if self._cache_metadata.get("program") is None:
-            self._cache_metadata["program"] = self.client.get_job_program(self.id)
+        self.program()
         return super().metadata()
+
+    def compiled_program(self) -> Program | list[Program] | None:
+        """Return the vendor-compiled program that executed on the QPU.
+
+        Reveals the physical qubits selected and the logical-to-physical mapping
+        chosen by the vendor's compiler — information not recoverable from
+        measurement counts. ``format`` is ``"qasm3"`` for IQM and ``"quil"`` for
+        Rigetti.
+
+        A batch job compiles one program per circuit, so this returns a list
+        positionally aligned with the circuits, matching :meth:`program`.
+
+        Returns ``None`` when the job has no compiled program: the device does
+        not report one (simulators), the job has not completed, or it predates
+        compiled-program capture. Other request failures propagate.
+
+        The result is cached once found, since a compiled program never changes.
+        Absence is not cached — a job polled before it completed will pick one up
+        on a later call.
+        """
+        if self._compiled_program is None:
+            try:
+                self._compiled_program = self.client.get_job_compiled_program(self.id)
+            except QuantumRuntimeServiceRequestError as err:
+                if err.status_code == 404:
+                    return None
+                raise
+        return self._compiled_program
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""

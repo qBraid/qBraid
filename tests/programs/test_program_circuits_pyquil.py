@@ -21,7 +21,8 @@ import pytest
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, MEASURE, H
+    from pyquil.gates import CNOT, CZ, MEASURE, H
+    from pyquil.quilbase import Declare
     from qbraid_core.services.runtime.schemas import Program as RuntimeProgram
 
     from qbraid.programs.exceptions import ProgramTypeError
@@ -80,6 +81,24 @@ def test_remove_idle_qubits_noop_when_contiguous():
     program = PyQuilProgram(Program(H(0), CNOT(0, 1)))
     program.remove_idle_qubits()
     assert sorted(program.program.get_qubits()) == [0, 1]
+
+
+def test_sparse_qubit_unitary_error_is_actionable():
+    """Sparse qubit indices raise an error that explains how to compact them."""
+    program = PyQuilProgram(Program(H(0), CNOT(0, 2)))
+
+    with pytest.raises(ValueError, match=r"got \[0, 2\].*index_contig=True"):
+        program.unitary()
+
+
+def test_unitary_allows_measured_only_qubits():
+    """A qubit that is measured but never gated still counts toward num_qubits."""
+    quil = Program(Declare("ro", "BIT", 3), H(0), CZ(0, 2))
+    for qubit in range(3):
+        quil += MEASURE(qubit, ("ro", qubit))
+    program = PyQuilProgram(quil)
+
+    assert program.unitary().shape == (8, 8)
 
 
 def test_reverse_qubit_order():

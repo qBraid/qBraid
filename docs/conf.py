@@ -46,12 +46,15 @@ extensions = [
 autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = [
+    "aqt_connector",
     "autoqasm",
     "qat",
     "boto3",
     "braket",
     "cirq",
     "matplotlib",
+    "mimiqcircuits",
+    "mimiqlink",
     "pennylane",
     "pyqir",
     "pyquil",

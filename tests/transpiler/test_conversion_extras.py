@@ -43,6 +43,7 @@ from qbraid.transpiler.conversions.pytket import pytket_to_pyqir
 from qbraid.transpiler.conversions.qasm3 import autoqasm_to_qasm3
 from qbraid.transpiler.conversions.qiskit import (
     qiskit_to_braket,
+    qiskit_to_ionq,
     qiskit_to_pennylane,
     qiskit_to_pyqir,
 )
@@ -202,6 +203,95 @@ def test_autoqasm_shared15_to_qasm3_extra():
 
     assert isinstance(program, str)
     assert program == normalize_qasm_gate_params(qasm3_shared15_reference())
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_preserves_declared_registers():
+    """A circuit that was never transpiled keeps its register exactly.
+
+    Idle qubits are part of the user's declared register -- IonQ measures every
+    qubit, so narrowing to the used indices would change the width (and therefore
+    the bitstring keys) of the results.
+    """
+    # pylint: disable=import-outside-toplevel
+    from qiskit import QuantumCircuit
+
+    qc = QuantumCircuit(3)
+    qc.x(2)
+
+    result = qiskit_to_ionq(qc, gateset="qis")
+
+    assert result["qubits"] == 3
+    assert result["circuit"][0]["targets"] == [2]
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_recovers_original_indices_from_layout():
+    """A transpiled circuit is mapped back through its TranspileLayout.
+
+    qiskit>=2 transpiled against a backend places a small circuit on the full
+    physical topology. ``final_index_layout()`` is the exact inverse. The layout
+    here maps virtual 0 -> physical 12 and virtual 1 -> physical 5: because
+    12 > 5, compacting the *sorted* used indices would swap the two qubits, so
+    this also pins that the mapping follows the layout rather than index order.
+    """
+    # pylint: disable=import-outside-toplevel
+    from qiskit import QuantumCircuit
+    from qiskit import transpile as qiskit_transpile
+    from qiskit.transpiler import CouplingMap
+
+    qc = QuantumCircuit(2)
+    qc.h(0)
+    qc.cx(0, 1)
+
+    transpiled = qiskit_transpile(
+        qc,
+        coupling_map=CouplingMap.from_full(20),
+        initial_layout=[12, 5],
+        optimization_level=0,
+    )
+    assert transpiled.num_qubits == 20 and transpiled.layout is not None
+
+    result = qiskit_to_ionq(transpiled, gateset="qis")
+
+    assert result["qubits"] == 2
+    assert result["circuit"][0] == {"gate": "h", "targets": [0]}
+    assert result["circuit"][1]["controls"] == [0]
+    assert result["circuit"][1]["targets"] == [1]
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_idle_circuit_keeps_width():
+    """A register with no gates still submits its declared width, not zero."""
+    # pylint: disable=import-outside-toplevel
+    from qiskit import QuantumCircuit
+
+    result = qiskit_to_ionq(QuantumCircuit(2), gateset="qis")
+
+    assert result["qubits"] == 2
+    assert result["circuit"] == []
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_small_circuit_unchanged():
+    """Test that qiskit_to_ionq produces correct output for a simple circuit
+    that doesn't need remapping."""
+    # pylint: disable=import-outside-toplevel
+    import math
+
+    from qiskit import QuantumCircuit
+
+    qc = QuantumCircuit(1)
+    qc.rx(-math.pi / 2, 0)
+
+    result = qiskit_to_ionq(qc, gateset="qis")
+
+    assert result["qubits"] == 1
+    assert result["format"] == "ionq.circuit.v0"
+    assert result["gateset"] == "qis"
+    assert len(result["circuit"]) == 1
+    assert result["circuit"][0]["gate"] == "rx"
+    assert result["circuit"][0]["targets"] == [0]
 
 
 def pennylane_bell_tape():

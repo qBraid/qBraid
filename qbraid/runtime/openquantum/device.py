@@ -94,7 +94,10 @@ class OpenQuantumDevice(QuantumDevice):
         if organization_id is None:
             orgs = self.session.get_user_organizations()
             if not orgs:
-                raise QbraidRuntimeError("Failed to connect to Open Quantum.")
+                raise QbraidRuntimeError(
+                    "No organization found. Please accept the Open Quantum "
+                    "terms of use to continue."
+                )
             organization_id = orgs[0]["id"]
 
         # Encode QASM
@@ -110,6 +113,7 @@ class OpenQuantumDevice(QuantumDevice):
             "upload_endpoint_id": upload_id,
             "shots": shots,
             "configuration_data": kwargs.get("configuration_data", {}),
+            "submitted_with": "qbraid",
         }
         if subcategory is not None:
             prep_payload["job_subcategory_id"] = subcategory

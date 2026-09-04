@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-lines
 
 """
 Unit tests for BraketProvider class
@@ -331,6 +331,41 @@ def test_provider_get_devices(mock_sv1):
         devices = provider.get_devices()
         assert len(devices) == 1
         assert devices[0].id == SV1_ARN
+
+
+def test_provider_get_devices_skips_unbuildable_profiles(mock_sv1):
+    """Devices without a buildable runtime profile are skipped, not fatal.
+
+    Retired/legacy devices (surfaced e.g. when ``statuses`` includes ``"RETIRED"``)
+    may expose no qBraid-supported program type, so ``_build_runtime_profile`` raises
+    ``QbraidError``. ``get_devices`` should skip those and still return the rest rather
+    than aborting the whole call.
+    """
+    unsupported = TestAwsDevice("arn:aws:braket:::device/qpu/d-wave/Advantage_system1")
+    original_build = BraketProvider._build_runtime_profile
+
+    def build_or_raise(self, device, *args, **kwargs):
+        if "d-wave" in device.arn:
+            raise QbraidError("Device exposes no supported program type")
+        return original_build(self, device, *args, **kwargs)
+
+    provider = BraketProvider()
+    provider.get_devices.cache_clear()
+    with (
+        patch(
+            "qbraid.runtime.aws.provider.AwsDevice.get_devices",
+            return_value=[unsupported, mock_sv1],
+        ),
+        patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device_2,
+        patch.object(BraketProvider, "_build_runtime_profile", build_or_raise),
+    ):
+        mock_aws_device_2.return_value = mock_sv1
+        devices = provider.get_devices(statuses=["ONLINE", "OFFLINE", "RETIRED"])
+
+    # Only the SV1 device comes back; the unsupported device is silently skipped.
+    assert len(devices) == 1
+    assert devices[0].id == SV1_ARN
+    provider.get_devices.cache_clear()
 
 
 @patch("qbraid.runtime.aws.device.AwsDevice")
@@ -659,6 +694,24 @@ def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):
     res = job.result()
     data: GateModelResultData = res.data
     assert data.measurements is not None
+
+
+def test_job_status_rejects_unknown_state():
+    """Test that an unrecognized Braket task state raises a clear error."""
+    task = Mock()
+    task.state.return_value = "PAUSED"
+    job = BraketQuantumTask("task_arn", task)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unknown AWS task status 'PAUSED'. Expected one of: "
+            "CREATED, QUEUED, RUNNING, CANCELLING, CANCELLED, COMPLETED, FAILED"
+        ),
+    ):
+        job.status()
+
+    assert "status" not in job._cache_metadata
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])

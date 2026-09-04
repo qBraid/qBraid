@@ -24,9 +24,10 @@ import pytest
 try:
     from openqasm3 import ast
     from pyquil import Program
-    from pyquil.gates import CNOT, CPHASE, RX, RZ, H, I, S, T, U, X
+    from pyquil.gates import CNOT, CPHASE, CZ, RX, RZ, H, I, S, T, U, X
 
     from qbraid.interface import circuits_allclose
+    from qbraid.transpiler import transpile
     from qbraid.transpiler.conversions.openqasm3.openqasm3_to_pyquil import (
         _branch_target,
         _duration_seconds,
@@ -152,6 +153,28 @@ def test_openqasm3_to_pyquil_idle_qubits_padded():
     # 4-qubit reference operator.
     expected = Program(X(0), X(2), X(3), I(1))
     assert circuits_allclose(result, expected, strict_gphase=True)
+
+
+def test_openqasm3_to_pyquil_padding_precedes_measurement():
+    """Identity padding is emitted ahead of the body, not appended after it.
+
+    ProtoQuil rejects a gate that follows a MEASURE, so padding appended at the end
+    produced a program Rigetti refuses to run. ``circuits_allclose`` cannot catch
+    this, since the unitary is unchanged by where the identity sits.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[3] q;
+    bit[2] c;
+    x q[0];
+    x q[2];
+    c[0] = measure q[0];
+    c[1] = measure q[2];
+    """
+    instructions = [str(instruction) for instruction in openqasm3_to_pyquil(qasm).instructions]
+    first_measure = next(i for i, text in enumerate(instructions) if text.startswith("MEASURE"))
+    assert instructions.index("I 1") < first_measure
 
 
 def test_openqasm3_to_pyquil_reset():
@@ -294,6 +317,78 @@ def test_openqasm3_to_pyquil_two_qubit_registers():
     assert circuits_allclose(result, Program(X(0), X(1)), strict_gphase=True)
 
 
+def test_openqasm3_to_pyquil_physical_qubits():
+    """Physical qubits (``$n``) map straight onto the matching pyQuil index."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    x $0;
+    cz $0, $1;
+    """
+    result = openqasm3_to_pyquil(qasm)
+    assert circuits_allclose(result, Program(X(0), CZ(0, 1)), strict_gphase=True)
+
+
+def test_openqasm3_to_pyquil_physical_qubits_not_renumbered():
+    """Physical qubit indices are preserved verbatim, not compacted or padded.
+
+    A hardware-mapped program names the qubits it wants; rewriting ``$13`` to a
+    dense index would silently retarget the circuit onto different hardware.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    bit[2] c;
+    x $4;
+    cz $4, $13;
+    delay[8ns] $4;
+    c[0] = measure $4;
+    c[1] = measure $13;
+    """
+    out = openqasm3_to_pyquil(qasm).out()
+    assert "X 4" in out
+    assert "CZ 4 13" in out
+    assert "DELAY 4 8e-9" in out
+    assert "MEASURE 4 ro[0]" in out
+    assert "MEASURE 13 ro[1]" in out
+    # no identity padding across the unused 0..12 range
+    assert " I " not in out
+    assert not any(line.startswith("I ") for line in out.splitlines())
+
+
+def test_transpile_physical_qubits_to_pyquil():
+    """The public ``transpile()`` entry point carries physical qubits through intact.
+
+    Guards route selection as much as the conversion itself: neither the
+    ``qasm3 -> cirq`` nor the ``qasm3 -> braket`` route can represent ``$n``, so
+    this fails if the graph stops preferring ``qasm3 -> openqasm3 -> pyquil``, and
+    covers the qasm3 input normalization that the direct-conversion test bypasses.
+    """
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    bit[2] c;
+    x $4;
+    cz $4, $13;
+    delay[8ns] $4;
+    c[0] = measure $4;
+    c[1] = measure $13;
+    """
+    # compared as emitted Quil rather than via circuits_allclose, because a unitary
+    # comparison is blind to the absolute indices this test exists to pin. On sparse
+    # indices it errors outright, and with index_contig=True it compacts both sides
+    # first -- which passes against a renumbered Program(X(0), CZ(0, 1)) and so cannot
+    # catch a regression that silently retargets the circuit.
+    assert transpile(qasm, "pyquil").out().splitlines() == [
+        "DECLARE ro BIT[2]",
+        "X 4",
+        "CZ 4 13",
+        "DELAY 4 8e-9",
+        "MEASURE 4 ro[0]",
+        "MEASURE 13 ro[1]",
+    ]
+
+
 def test_openqasm3_to_pyquil_measure_without_target():
     """A bare ``measure q;`` (no classical target) emits MEASURE with no readout slot."""
     qasm = """
@@ -399,3 +494,42 @@ def test_openqasm3_to_pyquil_unsupported_condition_raises():
     """
     with pytest.raises(ProgramConversionError):
         openqasm3_to_pyquil(qasm)
+
+
+@pytest.mark.parametrize(
+    "declared,used,expected_span",
+    [
+        # interior gap is padded, so the program still spans 0..max(used)
+        (5, [0, 2], {0, 1, 2}),
+        # idle qubits above the last one in use are dropped, not padded
+        (5, [0, 1], {0, 1}),
+        (20, [0], {0}),
+        # ...but a gap between the endpoints is still padded: declaring 20 qubits and
+        # using only the two ends spans all 20. Trimming is a tail trim, nothing more.
+        (20, [0, 19], set(range(20))),
+        # leading idle qubits are padded too, since the span starts at 0
+        (5, [4], {0, 1, 2, 3, 4}),
+    ],
+)
+def test_openqasm3_to_pyquil_pads_only_up_to_the_highest_qubit_in_use(
+    declared, used, expected_span
+):
+    """The converted program spans 0..max(used), padding idle qubits below that with I.
+
+    Asserts the set of qubits the program touches rather than the exact instruction
+    list: the padding order is an implementation detail, but the span is what decides
+    how much of the QPU quilc is asked to rewire.
+    """
+    gates = "\n".join(f"x q[{index}];" for index in used)
+    qasm = f"""
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[{declared}] q;
+    {gates}
+    """
+    program = openqasm3_to_pyquil(qasm)
+    assert program.get_qubit_indices() == expected_span
+    # padding must never disturb the gates the source asked for
+    assert [line for line in program.out().splitlines() if not line.startswith("I ")] == [
+        f"X {index}" for index in used
+    ]

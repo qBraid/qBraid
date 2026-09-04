@@ -20,7 +20,6 @@ Unit tests for the Azure Quantum runtime module.
 """
 
 import json
-import re
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -1483,7 +1482,14 @@ def test_get_gate_model_job_result(mock_job_id, mock_workspace, mock_azure_ionq_
 
 
 def test_serialize_pulser_input():
-    """Test the serialization of a pulser input."""
+    """Test the serialization of a pulser input.
+
+    ``serialize_pulser_input`` only wraps pulser's own ``to_abstract_repr()`` under a
+    ``sequence_builder`` key, so that envelope is what this asserts. Pinning the full
+    serialized device spec instead would re-test pulser's schema, which changes on its
+    own release schedule -- pulser 1.9 altered ``AnalogDevice`` and broke this test
+    without anything in qBraid changing.
+    """
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
     import pulser  # pylint: disable=import-outside-toplevel
 
@@ -1494,60 +1500,14 @@ def test_serialize_pulser_input():
 
     pulser_input = serialize_pulser_input(sequence)
 
-    # Long JSON string broken across lines for readability.
-    expected_input = (
-        '{"sequence_builder": {"version": "1", "name": "pulser-exported", '
-        '"register": [{"name": "q0", "x": 0.0, "y": 0.0}], "channels": {}, '
-        '"variables": {}, "operations": [], "measurement": null, '
-        '"pulser_version": "1.4.0", "device": {"name": "AnalogDevice", '
-        '"dimensions": 2, "rydberg_level": 60, "min_atom_distance": 5, '
-        '"max_atom_num": 80, "max_radial_distance": 38, '
-        '"interaction_coeff_xy": null, "supports_slm_mask": false, '
-        '"max_layout_filling": 0.5, "optimal_layout_filling": 0.45, '
-        '"max_sequence_duration": 6000, "max_runs": 2000, '
-        '"reusable_channels": false, "pre_calibrated_layouts": '
-        '[{"coordinates": [[-20.0, 0.0], [-17.5, -4.330127], '
-        "[-17.5, 4.330127], [-15.0, -8.660254], [-15.0, 0.0], "
-        "[-15.0, 8.660254], [-12.5, -12.990381], [-12.5, -4.330127], "
-        "[-12.5, 4.330127], [-12.5, 12.990381], [-10.0, -17.320508], "
-        "[-10.0, -8.660254], [-10.0, 0.0], [-10.0, 8.660254], "
-        "[-10.0, 17.320508], [-7.5, -12.990381], [-7.5, -4.330127], "
-        "[-7.5, 4.330127], [-7.5, 12.990381], [-5.0, -17.320508], "
-        "[-5.0, -8.660254], [-5.0, 0.0], [-5.0, 8.660254], "
-        "[-5.0, 17.320508], [-2.5, -12.990381], [-2.5, -4.330127], "
-        "[-2.5, 4.330127], [-2.5, 12.990381], [0.0, -17.320508], "
-        "[0.0, -8.660254], [0.0, 0.0], [0.0, 8.660254], "
-        "[0.0, 17.320508], [2.5, -12.990381], [2.5, -4.330127], "
-        "[2.5, 4.330127], [2.5, 12.990381], [5.0, -17.320508], "
-        "[5.0, -8.660254], [5.0, 0.0], [5.0, 8.660254], "
-        "[5.0, 17.320508], [7.5, -12.990381], [7.5, -4.330127], "
-        "[7.5, 4.330127], [7.5, 12.990381], [10.0, -17.320508], "
-        "[10.0, -8.660254], [10.0, 0.0], [10.0, 8.660254], "
-        "[10.0, 17.320508], [12.5, -12.990381], [12.5, -4.330127], "
-        "[12.5, 4.330127], [12.5, 12.990381], [15.0, -8.660254], "
-        "[15.0, 0.0], [15.0, 8.660254], [17.5, -4.330127], "
-        "[17.5, 4.330127], [20.0, 0.0]], "
-        '"slug": "TriangularLatticeLayout(61, 5.0\\u00b5m)"}], "version": "1", '
-        '"pulser_version": "1.4.0", "channels": [{"id": "rydberg_global", '
-        '"basis": "ground-rydberg", "addressing": "Global", '
-        '"max_abs_detuning": 125.66370614359172, '
-        '"max_amp": 12.566370614359172, "min_retarget_interval": null, '
-        '"fixed_retarget_t": null, "max_targets": null, "clock_period": 4, '
-        '"min_duration": 16, "max_duration": 100000000, "mod_bandwidth": 8, '
-        '"eom_config": {"limiting_beam": "RED", '
-        '"max_limiting_amp": 188.49555921538757, '
-        '"intermediate_detuning": 2827.4333882308138, '
-        '"controlled_beams": ["BLUE"], "mod_bandwidth": 40, '
-        '"custom_buffer_time": 240}}], "is_virtual": false}}}'
-    )
+    payload = json.loads(pulser_input)
+    assert set(payload) == {"sequence_builder"}
 
-    expected_input = re.sub(
-        r'"pulser_version"\s*:\s*"\d+\.\d+\.\d+"',
-        f'"pulser_version": "{pulser.__version__}"',
-        expected_input,
-    )
-
-    assert pulser_input == expected_input
+    builder = payload["sequence_builder"]
+    assert builder == json.loads(sequence.to_abstract_repr())
+    assert builder["register"] == [{"name": "q0", "x": 0.0, "y": 0.0}]
+    assert builder["device"]["name"] == "AnalogDevice"
+    assert builder["pulser_version"] == pulser.__version__
 
 
 def test_get_pasqal_program_spec():

@@ -87,10 +87,45 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
     from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 
     instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
+
+    # qiskit>=2 transpiled against a backend maps a small circuit onto the full physical
+    # topology (a 1-qubit circuit becomes 29 qubits with its gate on, say, physical
+    # qubit 12). Such a circuit carries a TranspileLayout, whose final_index_layout()
+    # is the exact virtual->physical map -- inverting it recovers both the original
+    # register width and each gate's original index, including layouts that permute
+    # qubit order, which a sorted compaction of the used indices would silently swap.
+    # A circuit with no layout was never transpiled: its declared register is the
+    # user's own, so idle qubits are kept and indices pass through untouched.
+    num_qubits = circuit.num_qubits
+    layout = getattr(circuit, "layout", None)
+    if layout is not None:
+        physical_to_virtual = {
+            physical: virtual for virtual, physical in enumerate(layout.final_index_layout())
+        }
+        num_qubits = len(physical_to_virtual)
+
+        def remap(physical: int) -> int:
+            try:
+                return physical_to_virtual[physical]
+            except KeyError as err:
+                raise ValueError(
+                    f"Gate on physical qubit {physical} has no source qubit in the "
+                    "transpile layout; cannot map the circuit back to its original "
+                    "register."
+                ) from err
+
+        for gate in instrs:
+            for key in ("target", "control"):
+                if key in gate:
+                    gate[key] = remap(gate[key])
+            for key in ("targets", "controls"):
+                if key in gate:
+                    gate[key] = [remap(idx) for idx in gate[key]]
+
     return {
         "format": InputFormat.CIRCUIT.value,
         "gateset": kwargs.get("gateset", GateSet.QIS.value),
-        "qubits": circuit.num_qubits,
+        "qubits": num_qubits,
         "circuit": instrs,
     }
 
