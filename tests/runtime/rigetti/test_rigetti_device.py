@@ -2256,7 +2256,8 @@ class TestApplyInitialRewiring:
         assert "already declares" in caplog.text
 
     def test_existing_pragma_is_not_duplicated(self) -> None:
-        """Two INITIAL_REWIRING pragmas in one program are rejected by quilc."""
+        """quilc accepts stacked pragmas and applies them positionally, so a prepended
+        second pragma would silently override the author's rather than fail."""
         program = pyquil.Program('PRAGMA INITIAL_REWIRING "NAIVE"') + pyquil.Program(
             pyquil.gates.H(0)
         )

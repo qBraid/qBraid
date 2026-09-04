@@ -576,7 +576,9 @@ class RigettiDevice(QuantumDevice):
 
         A program that already declares the pragma is returned untouched: the value
         written by the author is more specific than a device-wide runtime option, and
-        two ``INITIAL_REWIRING`` pragmas in one program are rejected by quilc.
+        quilc applies the pragma positionally (it accepts more than one, verified on
+        1.26.0), so prepending a second ahead of the author's would silently change
+        which strategy governs their program.
 
         The pragma does not have to be the literal first line. pyquil's ``out()``
         emits ``DECLARE`` before it, and quilc honours it there.
