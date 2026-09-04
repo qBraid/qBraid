@@ -411,6 +411,8 @@ def test_direct_and_qasm2_routes_agree_on_readout(body):
     assert readout_map(cirq_to_pyquil(circuit)) == readout_map(
         qasm2_to_pyquil(cirq_to_qasm2(circuit))
     )
+
+
 def test_declared_parameter_becomes_sympy_symbol():
     """A ``DECLARE``d gate angle survives conversion as a sympy symbol.
 
