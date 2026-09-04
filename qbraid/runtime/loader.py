@@ -36,6 +36,7 @@ if TYPE_CHECKING:
     from qbraid.runtime.oqc import OQCJob, OQCProvider
     from qbraid.runtime.origin import OriginJob, OriginProvider
     from qbraid.runtime.pasqal import PasqalJob, PasqalProvider
+    from qbraid.runtime.qperfect import QPerfectJob, QPerfectProvider
     from qbraid.runtime.quantinuum import QuantinuumJob, QuantinuumProvider
     from qbraid.runtime.qudora import QudoraJob, QudoraProvider
     from qbraid.runtime.rigetti import RigettiJob, RigettiProvider
@@ -87,6 +88,10 @@ def load_job(job_id: str, provider: Literal["origin"], **kwargs) -> OriginJob: .
 
 @overload
 def load_job(job_id: str, provider: Literal["pasqal"], **kwargs) -> PasqalJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["qperfect"], **kwargs) -> QPerfectJob: ...
 
 
 @overload
@@ -182,6 +187,10 @@ def load_provider(provider_name: Literal["origin"], **kwargs) -> OriginProvider:
 
 @overload
 def load_provider(provider_name: Literal["pasqal"], **kwargs) -> PasqalProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["qperfect"], **kwargs) -> QPerfectProvider: ...
 
 
 @overload

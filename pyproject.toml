@@ -45,22 +45,23 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 aqt = ["aqt-connector>=0.3,<0.4", "qiskit>=1.0,<3.0"]
 azure = ["azure-quantum>=3.6.0,<4.0"]
 bloqade = ["bloqade-analog>=0.16.1,<0.17.0"]
-braket = ["amazon-braket-sdk>=1.83.0,<1.121.0", "pytket-braket>=0.30,<0.47"]
+braket = ["amazon-braket-sdk>=1.83.0,<1.127.0"]
 cirq = ["cirq-core>=1.3,<1.7", "cirq-ionq>=1.3,<1.7", "ply>=3.6", "sympy", "attrs>=21.3.0"]
 cudaq = ["cudaq>=0.14.0,<0.15.0; python_version >= '3.11'"]
 ionq = ["qiskit-ionq>=0.5.12"]
-oqc = ["oqc-qcaas-client>=3.11.0"]
+oqc = ["oqc-qcaas-client>=3.11.0,<3.23"]
 origin = ["pyqpanda3"]
 pasqal = ["pasqal-cloud>=0.20.3", "pulser-core>=1.4.0,<2.0"]
 qat = ["myqlm-interop>=2.0"]
-quantinuum = ["qnexus>=0.39.0", "pytket>=1.31"]
+quantinuum = ["qnexus>=0.39.0,<0.48", "pytket>=1.31"]
 pennylane = ["pennylane>=0.43"]
 pulser = ["pulser-core>=1.4.0,<2.0", "pulser-simulation>=1.4.0,<2.0"]
 pyqubo = ["pyqubo>=1.4.0; python_version < '3.14'"]
-pyquil = ["pyquil>=5.0.0rc3", "qcs-sdk-python>=0.26.1"]
+pyquil = ["pyquil>=5.0.0rc3"]
 pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2.0,<=0.5.1"]
 qiskit = ["qiskit>=1.0,<3.0", "qiskit-ibm-runtime>=0.39.0,<0.42", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
+qperfect = ["mimiq-qiskit>=0.1.1", "mimiqcircuits>=0.24"]
 qrisp = ["qrisp>=0.8; python_version >= '3.11'"]
 rigetti = ["pyquil>=5.0.0rc3; python_version < '3.13'", "qcs-sdk-python>=0.26.1; python_version < '3.13'", "icalendar>=6.0; python_version < '3.13'", "recurring-ical-events>=3.0; python_version < '3.13'"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
@@ -81,6 +82,7 @@ qasm2 = "qbraid.programs.gate_model.qasm2:OpenQasm2Program"
 qasm3 = "qbraid.programs.gate_model.qasm3:OpenQasm3Program"
 cudaq = "qbraid.programs.gate_model.cudaq:CudaQKernel"
 qrisp = "qbraid.programs.gate_model.qrisp:QrispCircuit"
+mimiqcircuits = "qbraid.programs.gate_model.mimiqcircuits:MimiqProgram"
 
 [project.entry-points."qbraid.providers"]
 aqt = "qbraid.runtime.aqt.provider:AQTProvider"
@@ -96,6 +98,7 @@ qudora = "qbraid.runtime.qudora.provider:QudoraProvider"
 qbraid = "qbraid.runtime.native.provider:QbraidProvider"
 oqc = "qbraid.runtime.oqc.provider:OQCProvider"
 rigetti = "qbraid.runtime.rigetti.provider:RigettiProvider"
+qperfect = "qbraid.runtime.qperfect.provider:QPerfectProvider"
 
 [project.entry-points."qbraid.jobs"]
 aqt = "qbraid.runtime.aqt.job:AQTJob"
@@ -111,6 +114,7 @@ qudora = "qbraid.runtime.qudora.job:QudoraJob"
 qbraid = "qbraid.runtime.native.job:QbraidJob"
 oqc = "qbraid.runtime.oqc.job:OQCJob"
 rigetti = "qbraid.runtime.rigetti.job:RigettiJob"
+qperfect = "qbraid.runtime.qperfect.job:QPerfectJob"
 
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}
@@ -155,12 +159,6 @@ omit = [
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/transpiler/conversions/*/*_extras.py",
   "**/qbraid/programs/circuits/*",
-  # aqt-connector requires auth0-python>=4, pasqal-cloud requires auth0-python<4, so the aqt
-  # extra cannot be installed alongside requirements-dev.txt and tests/runtime/aqt is skipped
-  # here. Those tests cover the modules below fully in an env built from `pip install .[aqt]`.
-  "**/qbraid/runtime/aqt/*",
-  "**/qbraid/programs/gate_model/aqt_connector.py",
-  "**/qbraid/transpiler/conversions/qiskit/qiskit_to_aqt_connector.py",
 ]
 
 [tool.coverage.paths]
@@ -230,4 +228,4 @@ disable_error_code = [
     "valid-type",
     "import-untyped"
 ]
-exclude = "^(qbraid/(programs/(gate_model/|ahs/|annealing/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|ibm/|aws/)))"
+exclude = "^(qbraid/(programs/(gate_model/|ahs/|annealing/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|ibm/|aws/|qperfect/)))"

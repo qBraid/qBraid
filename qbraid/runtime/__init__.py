@@ -190,6 +190,11 @@ _lazy = {
         "RigettiDevice",
         "RigettiJob",
     ],
+    "qperfect": [
+        "QPerfectProvider",
+        "QPerfectDevice",
+        "QPerfectJob",
+    ],
     "origin": [
         "OriginProvider",
         "OriginDevice",
@@ -265,6 +270,9 @@ if TYPE_CHECKING:
     from .pasqal import PasqalDevice as PasqalDevice
     from .pasqal import PasqalJob as PasqalJob
     from .pasqal import PasqalProvider as PasqalProvider
+    from .qperfect import QPerfectDevice as QPerfectDevice
+    from .qperfect import QPerfectJob as QPerfectJob
+    from .qperfect import QPerfectProvider as QPerfectProvider
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
