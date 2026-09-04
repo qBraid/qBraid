@@ -218,6 +218,15 @@ status quietly reads `UNKNOWN` because the vendor added an enum member.
 - The same applies to lookup tables keyed on vendor data: index directly (`_STATUS_MAP[status]`)
   so an unmapped value raises, rather than `.get(status, SOME_DEFAULT)`, which hides it.
 
+### Transpiler Changes
+
+Before modifying `qbraid/transpiler/graph.py`, `qbraid/transpiler/edge.py`, or anything under
+`qbraid/transpiler/conversions/`, read [`docs/transpiler.md`](docs/transpiler.md). It states the
+routing model, the invariants the path-selection algorithms depend on (with the test enforcing
+each one), the converter fail-loud contract, and the weight governance rules. Several of those
+invariants are invisible from a local diff, and changes that look like harmless cleanups have
+each produced provably wrong routing. PRs that change routing semantics must update that file.
+
 ## Integration checklists
 
 Adding a provider or a program type touches registration surfaces spread across the whole

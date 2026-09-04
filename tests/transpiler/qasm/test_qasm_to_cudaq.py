@@ -357,14 +357,14 @@ def test_openqasm3_to_cuda_error(qasm_code, error_message):
 
 
 def test_cudaq_to_qasm2_translation_failure():
-    """Test that cudaq_to_qasm2 raises ValueError when translation fails."""
+    """Test that cudaq_to_qasm2 raises ProgramConversionError when translation fails."""
     kernel = cudaq.make_kernel()
     q = kernel.qalloc(1)
     kernel.h(q[0])
 
     with patch("qbraid.transpiler.conversions.cudaq.cudaq_to_qasm2.cudaq") as mock_cudaq:
         mock_cudaq.translate.return_value = "{translation failed}"
-        with pytest.raises(ValueError, match="translation to OpenQASM 2.0 failed"):
+        with pytest.raises(ProgramConversionError, match="failed to produce QASM2"):
             cudaq_to_qasm2(kernel)
 
 

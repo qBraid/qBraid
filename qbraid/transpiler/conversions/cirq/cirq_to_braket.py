@@ -21,19 +21,22 @@ Module for converting Braket circuits to Cirq circuits
 """
 from __future__ import annotations
 
+import itertools
 from copy import deepcopy
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Iterator, Optional, Union
 
 import numpy as np
 
 try:
     from braket.circuits import Circuit as BKCircuit
     from braket.circuits import Instruction as BKInstruction
+    from braket.circuits import Measure as BKMeasure
     from braket.circuits import gates as braket_gates
     from braket.circuits import noises as braket_noise_gate
 except ImportError:  # pragma: no cover
     BKCircuit = None
     BKInstruction = None
+    BKMeasure = None
     braket_gates = None
     braket_noise_gate = None
 
@@ -76,20 +79,34 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
     ]
     braket_int_qubits = deepcopy(cirq_int_qubits)
     qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
-    return BKCircuit(
-        _to_braket_instruction(operation, qubit_mapping) for operation in circuit.all_operations()
-    )
+    # A running count of measured qubits, so each Measure gets its own classical bit.
+    # Braket defaults Measure's index to 0, which would collapse every readout onto b[0].
+    measured = itertools.count()
+    try:
+        return BKCircuit(
+            _to_braket_instruction(operation, qubit_mapping, measured)
+            for operation in circuit.all_operations()
+        )
+    except ValueError as err:
+        if "measured qubits" not in str(err):
+            raise
+        raise ProgramConversionError(
+            "Braket circuits do not support mid-circuit measurement: a gate acts on a "
+            "qubit after it has been measured."
+        ) from err
 
 
 def _to_braket_instruction(
     operation: cirq_ops.Operation,
     qubit_mapping: dict[int, int],
+    measured: Iterator[int],
 ) -> list[braket.circuits.Instruction]:
     """Converts Cirq operation to equivalent Braket instruction(s).
 
     Args:
         operation: Cirq operation to convert.
         qubit_mapping: Mappings of input / output qubit indicies
+        measured: Counter supplying the next free classical bit index.
 
     Raises:
         ProgramConversionError: If the operation cannot be converted to Braket.
@@ -97,7 +114,7 @@ def _to_braket_instruction(
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
     ) and qbraid.programs.gate_model.cirq.CirqCircuit.is_measurement_gate(operation):
-        return []
+        return _to_braket_measure_instructions(operation, qubit_mapping, measured)
 
     if isinstance(operation, cirq_ops.ClassicallyControlledOperation):
         raise ProgramConversionError(
@@ -145,6 +162,37 @@ def _to_braket_instruction(
 
     # Unsupported gates.
     raise ProgramConversionError(f"Unable to convert {operation} to Braket")
+
+
+def _to_braket_measure_instructions(
+    operation: cirq_ops.Operation,
+    qubit_mapping: dict[int, int],
+    measured: Iterator[int],
+) -> list[braket.circuits.Instruction]:
+    """Converts a Cirq measurement operation to Braket Measure instruction(s).
+
+    Cirq measurement keys have no Braket equivalent; readout order follows the order the
+    qubits are measured in. Inverted bits (``invert_mask``) are realized as an X before
+    the measure.
+
+    Each ``Measure`` is given its own classical bit index from ``measured``. Braket
+    defaults that index to 0, which silently collapses every readout onto ``b[0]`` --
+    ``Circuit.measure()`` assigns them, but constructing ``Instruction``s directly does not.
+    """
+    gate = operation.gate
+    if getattr(gate, "confusion_map", None):
+        raise ProgramConversionError(
+            "Cirq measurement confusion maps (readout error matrices) cannot be "
+            "represented in Amazon Braket circuits."
+        )
+    instructions = []
+    invert_mask = gate.invert_mask + (False,) * (len(operation.qubits) - len(gate.invert_mask))
+    for qubit, inverted in zip(operation.qubits, invert_mask, strict=True):
+        target = qubit_mapping[qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(qubit)]
+        if inverted:
+            instructions.append(BKInstruction(braket_gates.X(), target))
+        instructions.append(BKInstruction(BKMeasure(index=next(measured)), target))
+    return instructions
 
 
 def _to_one_qubit_braket_instruction(

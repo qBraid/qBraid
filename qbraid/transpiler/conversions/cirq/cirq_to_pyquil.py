@@ -22,7 +22,9 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING
 
-from cirq import LineQubit, QubitOrder, parameter_names
+from cirq import Circuit, LineQubit, Moment, QubitOrder
+from cirq import ops as cirq_ops
+from cirq import parameter_names
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import weight
@@ -55,7 +57,103 @@ def _declared_registers(circuit: cirq.circuits.Circuit) -> dict[str, int]:
     return sizes
 
 
-@weight(0.74)
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
+
+
+def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Operation]:
+    """Order terminal measurements by the classical bit their key names.
+
+    QASM-derived circuits key single-qubit measurements ``c_0``, ``c_1``, ..., and that
+    suffix -- not the moment the operation happens to sit in -- is the bit position the
+    result belongs at: ``measure q[2] -> c[0]`` must land q_2 in bit 0 even though a
+    measurement on q_0 may appear earlier. Keys without an index fall back to qubit order,
+    matching the readout convention the Braket converters document.
+
+    A circuit measuring into multiple registers merges them in register-name order, since
+    cirq keys do not record declaration order. ``cirq -> qasm2`` sorts cregs by the same key
+    (#1345), so both routes from cirq to pyquil agree on the qubit-to-bit mapping.
+    """
+    indexed = []
+    for op in terminal:
+        match = _BIT_INDEX.match(op.gate.key)
+        if match is None or len(op.qubits) != 1:
+            return sorted(terminal, key=lambda op: min(op.qubits))
+        indexed.append(((match["register"], int(match["index"])), op))
+    return [op for _, op in sorted(indexed, key=lambda pair: pair[0])]
+
+
+def _unused_key(existing: set[str], preferred: str = "m") -> str:
+    """Return ``preferred``, or a suffixed variant when the circuit already uses it."""
+    if preferred not in existing:
+        return preferred
+    index = 0
+    while f"{preferred}_{index}" in existing:
+        index += 1
+    return f"{preferred}_{index}"
+
+
+def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuits.Circuit:
+    """Merge terminal measurements into one keyed measurement operation.
+
+    QASM-derived circuits measure into per-bit keys (``c_0``, ``c_1``, ...), which the
+    Quil output would otherwise declare as one ``BIT[1]`` register each -- a fragmented
+    form QCS rejects for hardware execution. Mid-circuit measurements are left untouched.
+
+    Moving a terminal measurement past later operations on other qubits is safe: disjoint
+    operations commute, and classically controlled operations (the only construct that
+    could observe the order) are rejected by ``QuilOutput``.
+
+    Raises:
+        ProgramConversionError: If a confusion map is present on a terminal measurement
+            that would be merged. A circuit with a single terminal measurement is returned
+            unchanged and is never checked.
+    """
+    operations = list(circuit.all_operations())
+    last_op_on_qubit = {}
+    for op in operations:
+        for qubit in op.qubits:
+            last_op_on_qubit[qubit] = op
+    terminal = [
+        op
+        for op in operations
+        if isinstance(op.gate, cirq_ops.MeasurementGate)
+        and all(last_op_on_qubit[q] is op for q in op.qubits)
+    ]
+    if len(terminal) <= 1:
+        return circuit
+
+    for op in terminal:
+        if op.gate.confusion_map:
+            raise ProgramConversionError(
+                "Cirq measurement confusion maps (readout error matrices) have no Quil "
+                "equivalent and cannot be merged into a single readout register."
+            )
+
+    qubits, invert_mask = [], []
+    for op in _classical_bit_order(terminal):
+        mask = op.gate.invert_mask + (False,) * (len(op.qubits) - len(op.gate.invert_mask))
+        qubits.extend(op.qubits)
+        invert_mask.extend(mask)
+
+    remaining = [op for op in operations if not any(op is t for t in terminal)]
+    # A mid-circuit measurement may already hold the preferred key; reusing it would emit a
+    # circuit with duplicate measurement keys, which cirq rejects on simulation.
+    key = _unused_key(
+        {op.gate.key for op in remaining if isinstance(op.gate, cirq_ops.MeasurementGate)}
+    )
+    merged = cirq_ops.MeasurementGate(
+        num_qubits=len(qubits), key=key, invert_mask=tuple(invert_mask)
+    ).on(*qubits)
+    return Circuit([*remaining, Moment(merged)])
+
+
+# Both readout defects that forced this edge below the break-even are fixed: fragmented
+# BIT[1] registers by ``_merge_terminal_measurements``, and the non-``ro`` register name by
+# ``QuilOutput``, which Azure's Rigetti targets reject outright. What is left is gate
+# coverage -- 36/38 on the braket gate set against 38/38 via qasm2, the shortfall being
+# GPi/GPi2, which convert correctly but as DEFGATEs that quilc has to decompose.
+# See tests/transpiler/test_measurement_coverage.py.
+@weight(0.95)
 def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
@@ -65,6 +163,7 @@ def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> Program:
     Returns:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
+    circuit = _merge_terminal_measurements(circuit)
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
