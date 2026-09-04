@@ -37,7 +37,7 @@ jobs:
           - '3.14'
 
     steps:
-    - uses: actions/checkout@v7
+    - uses: actions/checkout@v7.0.1
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v7
       with:
@@ -61,4 +61,36 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
         files: ./build/coverage/coverage.xml
+        verbose: true
+
+  test-qperfect:
+    # mimiqcircuits pins protobuf>=6.30 while cirq-google pins protobuf<6, so
+    # the qperfect extra cannot coexist with the main test environment. This
+    # job runs the QPerfect suite against only its own extra; Codecov merges
+    # this upload with the matrix job's report for the same commit.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7.0.1
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+        cache: pip
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip setuptools
+        python3 -m pip install tox tox-uv
+    - name: QPerfect tests
+      run: |
+        tox -e unit-tests-qperfect
+      env:
+        QBRAID_RUN_REMOTE_TESTS: False
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v6.0.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        files: ./build/coverage/coverage.xml
+        flags: qperfect
         verbose: true
