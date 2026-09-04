@@ -42,6 +42,7 @@ Submodules
    qiskit
    ionq
    cudaq
+   aqt_connector
 
 """
 import importlib

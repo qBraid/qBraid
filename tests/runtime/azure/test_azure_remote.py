@@ -26,9 +26,13 @@ from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
-from azure.quantum import Workspace
 
-from qbraid.runtime import (
+pytest.importorskip("azure.quantum", reason="azure-quantum not installed")
+
+# pylint: disable=wrong-import-position
+from azure.quantum import Workspace  # noqa: E402
+
+from qbraid.runtime import (  # noqa: E402
     AnalogResultData,
     AzureQuantumProvider,
     DeviceStatus,
@@ -125,9 +129,10 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 
 
 @pytest.fixture
-@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
+    if not pyquil_found:
+        pytest.skip("pyquil not installed")
     # pylint: disable=import-outside-toplevel
     import pyquil
     import pyquil.gates
@@ -145,9 +150,10 @@ def pyquil_program() -> pyquil_.Program:
 
 
 @pytest.fixture
-@pytest.mark.skipif(not pulser_found, reason="pulser not installed")
 def pulser_sequence() -> pulser_.Sequence:
     """Fixture for a Pulser sequence."""
+    if not pulser_found:
+        pytest.skip("pulser not installed")
     # pylint: disable=import-outside-toplevel
     import numpy as np
     import pulser
@@ -178,7 +184,6 @@ def pulser_sequence() -> pulser_.Sequence:
 
 
 @pytest.fixture
-@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def quil_string(pyquil_program: pyquil_.Program) -> str:
     """Fixture for a Quil string."""
     return pyquil_program.out()

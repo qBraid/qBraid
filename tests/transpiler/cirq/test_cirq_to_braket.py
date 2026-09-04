@@ -24,6 +24,7 @@ from unittest.mock import patch
 import cirq
 import numpy as np
 import pytest
+import sympy
 from braket.circuits import Gate, Instruction, QubitSet
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
@@ -394,3 +395,16 @@ def test_braket_custom_gate():
     custom_gate = C(sub_gate=Gate(1, "a"), targets=QubitSet([0, 1]))
     instr = custom_gate.c(QubitSet([0, 1]), sub_gate=Gate(1, "a"))
     assert isinstance(instr, Instruction)
+
+
+def test_classically_controlled_operation_raises_error():
+    """Test that classically controlled operations raise a clear error."""
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
+    circuit = Circuit(
+        cirq.measure(q0, key="c_0"),
+        cirq.X.on(q1).with_classical_controls(sympy.Eq(sympy.Symbol("c_0"), 1)),
+    )
+
+    with pytest.raises(ProgramConversionError, match="classical control flow"):
+        cirq_to_braket(circuit)

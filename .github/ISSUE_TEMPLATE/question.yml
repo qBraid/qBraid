@@ -1,0 +1,37 @@
+name: Question / Discussion ❓
+description: Ask a technical or conceptual question where you'd like a public, searchable answer
+title: "[QUESTION] "
+labels: ["question❓"]
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        > **Need help with your qBraid account, credits, or urgent support?** Please reach the team via the [qBraid contact page](https://www.qbraid.com/contact) — we respond faster there than on GitHub.
+        >
+        > GitHub Issues is the right place for **technical or conceptual questions** where a public, searchable answer is useful to the wider community. For open-ended discussion, consider opening a thread in [GitHub Discussions](https://github.com/qBraid/qBraid/discussions) instead.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: What's your question?
+      description: Be as specific as you can — link to code, docs, or other issues if relevant.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried? (optional)
+      description: What documentation did you read, what code did you try, what error did you hit?
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Relevant code or context (optional)
+      description: A minimal example helps a lot.
+      render: python
+    validations:
+      required: false

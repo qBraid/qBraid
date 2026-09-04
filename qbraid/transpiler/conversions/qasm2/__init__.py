@@ -25,6 +25,7 @@ Functions
 
     qasm2_to_cirq
     qasm2_to_pytket
+    qasm2_to_pyquil
     qasm2_to_qiskit
     qasm2_to_qasm3
     qasm2_to_ionq
@@ -32,18 +33,27 @@ Functions
     qibo_to_qasm2
     qasm2_to_pyqpanda3
     pyqpanda3_to_qasm2
+    qasm2_to_qat
 
 """
 
-from .qasm2_extras import pyqpanda3_to_qasm2, qasm2_to_pyqpanda3, qasm2_to_qibo, qibo_to_qasm2
+from .qasm2_extras import (
+    pyqpanda3_to_qasm2,
+    qasm2_to_pyqpanda3,
+    qasm2_to_qat,
+    qasm2_to_qibo,
+    qibo_to_qasm2,
+)
 from .qasm2_to_cirq import qasm2_to_cirq
 from .qasm2_to_ionq import qasm2_to_ionq
+from .qasm2_to_pyquil import qasm2_to_pyquil
 from .qasm2_to_pytket import qasm2_to_pytket
 from .qasm2_to_qasm3 import qasm2_to_qasm3
 from .qasm2_to_qiskit import qasm2_to_qiskit
 
 __all__ = [
     "qasm2_to_cirq",
+    "qasm2_to_pyquil",
     "qasm2_to_pytket",
     "qasm2_to_qasm3",
     "qasm2_to_qiskit",
@@ -52,4 +62,5 @@ __all__ = [
     "qibo_to_qasm2",
     "qasm2_to_pyqpanda3",
     "pyqpanda3_to_qasm2",
+    "qasm2_to_qat",
 ]

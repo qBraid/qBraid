@@ -30,11 +30,9 @@ Classes
     QbraidProvider
     QbraidDevice
     QbraidJob
-    QirRunner
 
 """
 from qbraid_core import QbraidClientV1, QbraidSessionV1, Session
-from qbraid_core.services.quantum.runner import QirRunner
 
 from .device import QbraidDevice
 from .job import QbraidJob
@@ -47,5 +45,4 @@ __all__ = [
     "QbraidProvider",
     "QbraidDevice",
     "QbraidJob",
-    "QirRunner",
 ]

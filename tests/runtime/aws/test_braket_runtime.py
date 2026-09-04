@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-lines
 
 """
 Unit tests for BraketProvider class
@@ -21,6 +21,7 @@ Unit tests for BraketProvider class
 import datetime
 import importlib.util
 import json
+import logging
 import warnings
 from unittest.mock import MagicMock, Mock, patch
 
@@ -276,8 +277,30 @@ def test_provider_get_tasks_by_tag(mock_boto_client, region_names, key, values, 
 
     # Assert the results
     mock_boto_client.assert_called_with("resourcegroupstaggingapi", region_name="us-west-1")
-    mock_client.get_resources.assert_called_once_with(TagFilters=[{"Key": key, "Values": values}])
+    mock_client.get_resources.assert_called_once_with(
+        TagFilters=[{"Key": key, "Values": values}], PaginationToken=""
+    )
     assert result == expected
+
+
+@patch("boto3.client")
+def test_provider_get_tasks_by_tag_paginates(mock_boto_client):
+    """Resources spanning multiple pages are all returned by following PaginationToken."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_resources.side_effect = [
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:1"}], "PaginationToken": "tok"},
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:2"}], "PaginationToken": ""},
+    ]
+
+    provider = BraketProvider()
+    result = provider.get_tasks_by_tag("Project", ["X"], ["us-west-1"])
+
+    assert result == ["arn:1", "arn:2"]
+    assert mock_client.get_resources.call_count == 2
+    mock_client.get_resources.assert_any_call(
+        TagFilters=[{"Key": "Project", "Values": ["X"]}], PaginationToken="tok"
+    )
 
 
 def test_provider_get_device(mock_sv1):
@@ -308,6 +331,41 @@ def test_provider_get_devices(mock_sv1):
         devices = provider.get_devices()
         assert len(devices) == 1
         assert devices[0].id == SV1_ARN
+
+
+def test_provider_get_devices_skips_unbuildable_profiles(mock_sv1):
+    """Devices without a buildable runtime profile are skipped, not fatal.
+
+    Retired/legacy devices (surfaced e.g. when ``statuses`` includes ``"RETIRED"``)
+    may expose no qBraid-supported program type, so ``_build_runtime_profile`` raises
+    ``QbraidError``. ``get_devices`` should skip those and still return the rest rather
+    than aborting the whole call.
+    """
+    unsupported = TestAwsDevice("arn:aws:braket:::device/qpu/d-wave/Advantage_system1")
+    original_build = BraketProvider._build_runtime_profile
+
+    def build_or_raise(self, device, *args, **kwargs):
+        if "d-wave" in device.arn:
+            raise QbraidError("Device exposes no supported program type")
+        return original_build(self, device, *args, **kwargs)
+
+    provider = BraketProvider()
+    provider.get_devices.cache_clear()
+    with (
+        patch(
+            "qbraid.runtime.aws.provider.AwsDevice.get_devices",
+            return_value=[unsupported, mock_sv1],
+        ),
+        patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device_2,
+        patch.object(BraketProvider, "_build_runtime_profile", build_or_raise),
+    ):
+        mock_aws_device_2.return_value = mock_sv1
+        devices = provider.get_devices(statuses=["ONLINE", "OFFLINE", "RETIRED"])
+
+    # Only the SV1 device comes back; the unsupported device is silently skipped.
+    assert len(devices) == 1
+    assert devices[0].id == SV1_ARN
+    provider.get_devices.cache_clear()
 
 
 @patch("qbraid.runtime.aws.device.AwsDevice")
@@ -638,6 +696,24 @@ def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):
     assert data.measurements is not None
 
 
+def test_job_status_rejects_unknown_state():
+    """Test that an unrecognized Braket task state raises a clear error."""
+    task = Mock()
+    task.state.return_value = "PAUSED"
+    job = BraketQuantumTask("task_arn", task)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unknown AWS task status 'PAUSED'. Expected one of: "
+            "CREATED, QUEUED, RUNNING, CANCELLING, CANCELLED, COMPLETED, FAILED"
+        ),
+    ):
+        job.status()
+
+    assert "status" not in job._cache_metadata
+
+
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])
 @patch("qbraid.runtime.aws.job.AwsQuantumTask")
 def test_job_queue_position(mock_aws_quantum_task, position, expected):
@@ -867,6 +943,56 @@ def test_get_partial_measurement_qubits_from_tags_without_partial_measurements(m
     assert result is None
 
     mock_client.get_quantum_task.assert_called_once_with(quantumTaskArn="task1")
+
+
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_mismatch_returns_none(mock_boto_client, caplog):
+    """If the tag's qubits are not all present in the result's measured qubits, the method
+    must log a warning and return ``None`` instead of crashing with ``ValueError``. This
+    degraded-but-inspectable path lets users still load results from tasks whose submitted
+    QASM dropped measurements upstream (e.g. the multi-register collision bug in
+    ``pad_measurements``)."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {
+        "tags": {"partial_measurement_qubits": "0/1/2/3/4/5/6/7/8/9"}
+    }
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    # Mimics the corrupted task the bug was reported on: tag says 0..9 are partial,
+    # but Braket's ``measured_qubits`` only contains the qubits that survived submission.
+    all_measurement_qubits = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+    with caplog.at_level(logging.WARNING, logger="qbraid"):
+        result = braket_task._get_partial_measurement_qubits_from_tags(all_measurement_qubits)
+
+    assert result is None
+    assert any("partial measurement" in record.message.lower() for record in caplog.records)
+
+
+@pytest.mark.parametrize(
+    "tag_value",
+    ["", "/", "//"],
+    ids=["empty_string", "single_separator", "double_separator"],
+)
+@patch("boto3.client")
+def test_get_partial_measurement_qubits_from_tags_empty_tag_returns_none(
+    mock_boto_client, tag_value
+):
+    """An empty or separator-only ``partial_measurement_qubits`` tag must be treated as
+    absent rather than crashing with ``ValueError`` from ``int("")``."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_quantum_task.return_value = {"tags": {"partial_measurement_qubits": tag_value}}
+
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+
+    result = braket_task._get_partial_measurement_qubits_from_tags([0, 1, 2])
+
+    assert result is None
 
 
 @patch("boto3.client")

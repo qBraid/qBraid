@@ -24,6 +24,7 @@ import pyqasm
 from qbraid_core._import import LazyLoader
 
 from qbraid._logging import logger
+from qbraid.passes.qasm.compat import normalize_if_blocks
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
 
@@ -60,6 +61,7 @@ def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
             qasm_module.remove_barriers()
         parser: QasmParser = cirq_qasm_parser.QasmParser()
         qasm_compat = pyqasm.dumps(qasm_module)
+        qasm_compat = normalize_if_blocks(qasm_compat)
         qasm_parsed = parser.parse(qasm_compat)
         return qasm_parsed.circuit
     except cirq_qasm_import.QasmException as err:

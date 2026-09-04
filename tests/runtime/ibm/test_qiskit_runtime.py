@@ -31,7 +31,7 @@ from qiskit.exceptions import QiskitError
 from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
+from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
@@ -65,7 +65,12 @@ class FakeDevice(GenericBackendV2):
         status_msg="active",
         **kwargs,
     ):
-        super().__init__(num_qubits)
+        # Seed GenericBackendV2 so its coupling map (and thus transpilation) is
+        # deterministic. An unseeded map is random per instantiation and
+        # occasionally routes into extra single-qubit gates, which made
+        # count-based assertions (e.g. test_transform_run_input) flaky on
+        # qiskit >= 2.5.
+        super().__init__(num_qubits, seed=42)
         self._num_qubits = num_qubits
         self._operational = operational
         self._status_msg = status_msg
@@ -126,7 +131,7 @@ class FakeService:
 
     def job(self, job_id):  # pylint: disable=unused-argument
         """Return fake job."""
-        return MagicMock(spec=RuntimeJob)
+        return MagicMock(spec=RuntimeJobV2)
 
 
 def _create_backend_fixture(service: FakeService, local: bool, simulator: bool) -> QiskitBackend:
@@ -291,7 +296,7 @@ def test_device_run_batch(fake_device, run_inputs):
 def mock_service():
     """Fixture to create a mock QiskitRuntimeService."""
     service = MagicMock(spec=QiskitRuntimeService)
-    service.job.return_value = MagicMock(spec=RuntimeJob)
+    service.job.return_value = MagicMock(spec=RuntimeJobV2)
     return service
 
 
@@ -326,7 +331,7 @@ def test_job_service_initialization():
     """Test job retrieval when initializing a new service."""
     with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_service_class:
         mock_service = MagicMock(spec=QiskitRuntimeService)
-        mock_service.job.return_value = MagicMock(spec=RuntimeJob)
+        mock_service.job.return_value = MagicMock(spec=RuntimeJobV2)
         mock_service_class.return_value = mock_service
         job_id = "test_job_id"
         job = QiskitJob(job_id)
@@ -357,16 +362,33 @@ def test_job_retrieval_failure(mock_service):
 @pytest.fixture
 def mock_runtime_job():
     """Fixture to create a mock QiskitRuntimeJob object."""
-    return MagicMock()
+    job = MagicMock()
+    job.status.return_value = "DONE"
+    return job
 
 
 def test_job_queue_position(mock_runtime_job):
-    """Test that the queue position of the job is correctly returned."""
-    queue_position = 5
-    mock_runtime_job.queue_position.return_value = queue_position
-
+    """Test that queue_position raises NotImplementedError for RuntimeJobV2."""
     job = QiskitJob(job_id="123", job=mock_runtime_job)
-    assert job.queue_position() == queue_position
+    with pytest.raises(NotImplementedError):
+        job.queue_position()
+
+
+def test_job_status_rejects_unknown_state(mock_runtime_job):
+    """Test that an unrecognized IBM job state raises a clear error."""
+    mock_runtime_job.status.return_value = "PAUSED"
+    job = QiskitJob(job_id="123", job=mock_runtime_job)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unknown IBM job status 'PAUSED'. Expected one of: "
+            "INITIALIZING, QUEUED, VALIDATING, RUNNING, CANCELLED, DONE, ERROR"
+        ),
+    ):
+        job.status()
+
+    assert "status" not in job._cache_metadata
 
 
 def test_cancel_job_in_terminal_state(mock_runtime_job):

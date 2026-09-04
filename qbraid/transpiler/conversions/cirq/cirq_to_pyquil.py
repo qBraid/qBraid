@@ -19,9 +19,10 @@ representation to pyQuil's circuit representation (Quil programs).
 """
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
-from cirq import LineQubit, QubitOrder
+from cirq import LineQubit, QubitOrder, parameter_names
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import weight
@@ -37,6 +38,21 @@ pyquil = LazyLoader("pyquil", globals(), "pyquil")
 if TYPE_CHECKING:
     import cirq.circuits
     from pyquil import Program
+
+# ``pyquil_to_cirq`` names a slot of a declared register ``name[offset]``, and the bare
+# ``name`` when the register holds exactly one value. This recovers the register sizes
+# from those symbol names.
+_SLOT = re.compile(r"([A-Za-z_]\w*)\[(\d+)\]")
+
+
+def _declared_registers(circuit: cirq.circuits.Circuit) -> dict[str, int]:
+    """Maps each free parameter's register name to the size needed to declare it."""
+    sizes: dict[str, int] = {}
+    for symbol in sorted(str(name) for name in parameter_names(circuit)):
+        match = _SLOT.fullmatch(symbol)
+        name, size = (match.group(1), int(match.group(2)) + 1) if match else (symbol, 1)
+        sizes[name] = max(sizes.get(name, 0), size)
+    return sizes
 
 
 @weight(0.74)
@@ -62,8 +78,18 @@ def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> Program:
     operations = circuit.all_operations()
     try:
         quil_str = str(QuilOutput(operations, qubits))
-        return pyquil.Program(quil_str)
+        program = pyquil.Program(quil_str)
     except ValueError as err:
         raise ProgramConversionError(
             f"Cirq qasm converter doesn't yet support {err.args[0][32:]}."
         ) from err
+
+    # A free parameter appears in the gate lines but has no ``DECLARE``, so the emitted
+    # program is not valid Quil on its own and does not survive a round trip: re-parsing
+    # leaves the register undeclared, and ``pyquil_to_cirq``'s size lookup then reads
+    # slot 0 as the bare register name -- so ``thetas[0]`` comes back as ``thetas`` while
+    # ``thetas[1]`` keeps its index, naming one register two ways.
+    declarations = pyquil.Program()
+    for name, size in _declared_registers(circuit).items():
+        declarations.declare(name, "REAL", size)
+    return declarations + program if declarations else program

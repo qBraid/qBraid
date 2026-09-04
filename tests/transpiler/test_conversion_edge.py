@@ -18,7 +18,7 @@
 Unit tests for defining custom conversions
 
 """
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import cirq
 import numpy as np
@@ -230,3 +230,61 @@ def test_conversion_weight_bias(conversions, start, end, expected_path):
     graph = ConversionGraph(conversions=conversions)
     shortest_path = graph.shortest_path(start, end)
     assert shortest_path == expected_path
+
+
+def conversion_requiring(*extras: str) -> Conversion:
+    """Build a Conversion whose function declares the given extras."""
+
+    @requires_extras(*extras)
+    def cirq_to_qasm2(program):
+        return program
+
+    return Conversion("cirq", "qasm2", cirq_to_qasm2)
+
+
+@pytest.mark.parametrize(
+    "extras",
+    [
+        # leaf module missing, parent importable
+        ("qbraid.no_such_module",),
+        # intermediate package missing, e.g. plain pytket with no extensions installed
+        ("qbraid.no_such_package.no_such_module",),
+        # top-level package missing
+        ("no_such_package.no_such_module",),
+        ("no_such_package.no_such_subpackage.no_such_module",),
+        # one available extra is not enough if another is missing
+        ("numpy", "no_such_package.no_such_module"),
+    ],
+)
+def test_conversion_unsupported_when_extras_not_installed(extras):
+    """Uninstalled extras mark a conversion unsupported, regardless of where
+    along the dotted path the missing package sits."""
+    assert conversion_requiring(*extras).supported is False
+
+
+@pytest.mark.parametrize("extras", [("numpy",), ("qbraid.transpiler",), ("numpy", "cirq")])
+def test_conversion_supported_when_extras_installed(extras):
+    """Installed extras mark a conversion supported."""
+    assert conversion_requiring(*extras).supported is True
+
+
+def test_conversion_unsupported_when_extras_spec_lookup_fails():
+    """A module registered without a spec (find_spec raises ValueError) is not available."""
+    with patch("importlib.util.find_spec", side_effect=ValueError("no __spec__")):
+        assert conversion_requiring("weird_module").supported is False
+
+
+def test_conversion_extras_import_errors_are_not_swallowed():
+    """A broken install (parent package raises on import) surfaces rather than
+    silently downgrading the conversion to unsupported."""
+    with patch("importlib.util.find_spec", side_effect=RuntimeError("broken package")):
+        with pytest.raises(RuntimeError, match="broken package"):
+            conversion_requiring("broken_package.submodule")
+
+
+def test_conversion_graph_builds_with_missing_extras_parent():
+    """Building a graph that contains a conversion whose extras have a missing
+    parent package must not raise, and must exclude the unsupported edge."""
+    conversion = conversion_requiring("qbraid.no_such_package.no_such_module")
+    graph = ConversionGraph(conversions=[conversion])
+    assert graph.has_edge("cirq", "qasm2") is False
