@@ -31,6 +31,7 @@ Writing an entry:
 - Added `QbraidDevice.get_calibrations()` and `QbraidDevice.coupling_map`, exposing device calibration data (per-edge two-qubit gate errors, per-qubit metrics, timestamps) and the physical connectivity graph derived from it. Useful for hand-placing circuits on paths that bypass quilc. Both return `None`-equivalents for devices without published calibration data ([#1281](https://github.com/qBraid/qBraid/pull/1281))
 
 ### Improved / Modified
+- CONTRIBUTING.md gained integration checklists for adding a runtime provider or a program type — every registration surface with the guard test that enforces it, compiled from auditing the merged provider and program-type PRs ([#1366](https://github.com/qBraid/qBraid/pull/1366))
 - `QuantinuumDeviceError` and `QuantinuumJobError` now live in a public `qbraid.runtime.quantinuum.exceptions` module and are exported from the package; the old import paths still work ([#1297](https://github.com/qBraid/qBraid/pull/1297))
 - PyPI releases now authenticate with trusted publishing (OIDC) instead of a long-lived API token. `publish.yml` and `pre-release.yml` request `id-token: write` and let `pypa/gh-action-pypi-publish` mint a short-lived credential, so no publishing secret is stored in the repository ([#1346](https://github.com/qBraid/qBraid/pull/1346))
 - The README conversion graph is redrawn as theme-aware vector art covering all 25 program types and 61 conversions the SDK ships, replacing a raster image generated at v0.9.7 ([#1349](https://github.com/qBraid/qBraid/pull/1349))
