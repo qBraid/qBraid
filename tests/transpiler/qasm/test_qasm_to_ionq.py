@@ -306,6 +306,34 @@ def test_qasm3_to_ionq_zz_native_gate():
     assert qasm3_to_ionq(qasm_program) == expectd_ionq
 
 
+def test_openqasm3_to_ionq_bare_register_expands_to_all_qubits():
+    """A gate applied to a whole register (no index) fans out across the register.
+
+    Regression test for #864: the bare-register branch of ``openqasm3_to_ionq`` reads
+    the register width from ``program_qubits``, which is empty until pyqasm populates
+    ``_qubit_registers``. Every other test here indexes its qubits and so exercises the
+    else-branch instead, leaving this expansion path uncovered even after the underlying
+    defect was fixed. ``h q`` on a 3-qubit register must emit one gate per qubit.
+    """
+    qasm_program = """
+    OPENQASM 3.0;
+    qubit[3] q;
+    h q;
+    """
+    expected_ionq = {
+        "format": InputFormat.CIRCUIT.value,
+        "gateset": GateSet.QIS.value,
+        "qubits": 3,
+        "circuit": [
+            {"gate": "h", "target": 0},
+            {"gate": "h", "target": 1},
+            {"gate": "h", "target": 2},
+        ],
+    }
+
+    assert openqasm3_to_ionq(parse(qasm_program)) == expected_ionq
+
+
 @pytest.mark.parametrize(
     "qasm_code, error_message",
     [
