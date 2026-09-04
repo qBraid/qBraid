@@ -49,8 +49,10 @@ if rigetti_deps_found:
 
     from qbraid.runtime.rigetti import RigettiDevice, RigettiJob
     from qbraid.runtime.rigetti.device import (
+        _COMPILER_OPTIONS,
         DEFAULT_COMPILER_TIMEOUT_S,
         RigettiDeviceError,
+        _ResolvedCompilerOptions,
         non_native_gate_counts,
         quil_t_instruction_counts,
     )
@@ -2159,3 +2161,188 @@ measure q -> c;
         # transform() still saw a Program: transpilation happened in between.
         mock_compile.assert_called_once()
         assert isinstance(mock_compile.call_args.kwargs["quil"], str)
+
+
+# ===========================================================================
+# Device – initial_rewiring
+# ===========================================================================
+
+
+class TestParseInitialRewiring:
+    """Tests for RigettiDevice._parse_initial_rewiring."""
+
+    @pytest.mark.parametrize(
+        "runtime_options",
+        [None, {}, {"compiler_timeout": 300}, {"initial_rewiring": None}],
+        ids=["none", "empty", "other_compiler_key", "explicit_none"],
+    )
+    def test_absent_key_returns_none(self, runtime_options) -> None:
+        """Without a usable key the program must be left alone, preserving quilc's default."""
+        assert RigettiDevice._parse_initial_rewiring(runtime_options) is None
+
+    @pytest.mark.parametrize("strategy", ["NAIVE", "PARTIAL", "GREEDY", "RANDOM"])
+    def test_every_quilc_strategy_is_accepted(self, strategy: str) -> None:
+        """All four strategies quilc recognises must pass validation unchanged."""
+        assert RigettiDevice._parse_initial_rewiring({"initial_rewiring": strategy}) == strategy
+
+    @pytest.mark.parametrize("given", ["greedy", "  greedy  ", "Greedy"])
+    def test_case_and_whitespace_are_normalized(self, given: str) -> None:
+        """The pragma is case-sensitive in Quil, so callers must not have to shout."""
+        assert RigettiDevice._parse_initial_rewiring({"initial_rewiring": given}) == "GREEDY"
+
+    def test_unknown_strategy_raises_naming_the_supported_set(self) -> None:
+        """A bad value must fail here, not as an opaque quilc rejection of the program."""
+        with pytest.raises(ValueError, match="Unsupported initial_rewiring") as exc_info:
+            RigettiDevice._parse_initial_rewiring({"initial_rewiring": "OPTIMAL"})
+
+        message = str(exc_info.value)
+        for strategy in ("NAIVE", "PARTIAL", "GREEDY", "RANDOM"):
+            assert strategy in message
+
+    def test_is_not_reported_as_an_unrecognized_key(self, caplog) -> None:
+        """initial_rewiring is a real key; the unknown-key warning must stay quiet."""
+        with caplog.at_level(logging.WARNING):
+            RigettiDevice._warn_unknown_runtime_options({"initial_rewiring": "GREEDY"})
+
+        assert "Ignoring unrecognized" not in caplog.text
+
+    def test_does_not_build_compiler_opts_on_its_own(self) -> None:
+        """It is not a CompilerOpts field.
+
+        Building one here would override a device-level _compiler_options for a caller
+        who only asked to change the rewiring.
+        """
+        assert RigettiDevice._parse_compiler_options({"initial_rewiring": "GREEDY"}) is None
+
+
+class TestApplyInitialRewiring:
+    """Tests for RigettiDevice._apply_initial_rewiring."""
+
+    def test_none_returns_the_program_unchanged(self) -> None:
+        """No strategy means no rewrite at all, not an empty pragma."""
+        program = pyquil.Program(pyquil.gates.H(0))
+        assert RigettiDevice._apply_initial_rewiring(program, None) is program
+
+    def test_pragma_is_prepended(self) -> None:
+        """The requested strategy must reach the Quil handed to quilc."""
+        program = pyquil.Program(pyquil.gates.H(0))
+
+        result = RigettiDevice._apply_initial_rewiring(program, "GREEDY")
+
+        assert 'PRAGMA INITIAL_REWIRING "GREEDY"' in result.out()
+        assert "H 0" in result.out()
+
+    def test_pragma_precedes_the_gates(self) -> None:
+        """quilc reads the rewiring before it addresses any gate."""
+        program = pyquil.Program(pyquil.gates.H(0))
+
+        lines = RigettiDevice._apply_initial_rewiring(program, "NAIVE").out().splitlines()
+
+        pragma_index = next(i for i, line in enumerate(lines) if "INITIAL_REWIRING" in line)
+        gate_index = next(i for i, line in enumerate(lines) if line.startswith("H "))
+        assert pragma_index < gate_index
+
+    def test_existing_pragma_wins(self, caplog) -> None:
+        """An author who set the pragma is more specific than a device-wide option."""
+        program = pyquil.Program('PRAGMA INITIAL_REWIRING "NAIVE"') + pyquil.Program(
+            pyquil.gates.H(0)
+        )
+
+        with caplog.at_level(logging.WARNING):
+            result = RigettiDevice._apply_initial_rewiring(program, "GREEDY")
+
+        assert 'PRAGMA INITIAL_REWIRING "NAIVE"' in result.out()
+        assert "GREEDY" not in result.out()
+        assert "already declares" in caplog.text
+
+    def test_existing_pragma_is_not_duplicated(self) -> None:
+        """quilc accepts stacked pragmas and applies them positionally, so a prepended
+        second pragma would silently override the author's rather than fail."""
+        program = pyquil.Program('PRAGMA INITIAL_REWIRING "NAIVE"') + pyquil.Program(
+            pyquil.gates.H(0)
+        )
+
+        result = RigettiDevice._apply_initial_rewiring(program, "GREEDY")
+
+        assert result.out().count("INITIAL_REWIRING") == 1
+
+
+class TestTransformWithInitialRewiring:
+    """Tests for initial_rewiring reaching compile_program through transform()."""
+
+    @staticmethod
+    def _transform_and_capture(device: RigettiDevice, program: pyquil.Program):
+        """Run transform() with quilc stubbed out and return the compile_program mock."""
+        with (
+            patch.object(device, "_probe_quilc_reachable"),
+            patch(
+                "qbraid.runtime.rigetti.device.get_instruction_set_architecture",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.TargetDevice.from_isa",
+                return_value=MagicMock(),
+            ),
+            patch(
+                "qbraid.runtime.rigetti.device.compile_program",
+                return_value=_mock_compile_pipeline(),
+            ) as mock_compile,
+        ):
+            device.transform(program)
+        return mock_compile
+
+    def test_opt_out_leaves_the_program_untouched(self, rigetti_device: RigettiDevice) -> None:
+        """Without the key, no pragma may appear: quilc's own default must still apply."""
+        mock_compile = self._transform_and_capture(
+            rigetti_device, pyquil.Program(pyquil.gates.H(0))
+        )
+
+        assert "INITIAL_REWIRING" not in mock_compile.call_args.kwargs["quil"]
+
+    def test_strategy_alone_reaches_quilc(self, rigetti_device: RigettiDevice) -> None:
+        """The opt-in path: initial_rewiring is the only quilc key, so options is None.
+
+        Regression guard -- resolving on ``options`` alone dropped the strategy exactly
+        here, which is the common case.
+        """
+        token = _COMPILER_OPTIONS.set(
+            _ResolvedCompilerOptions(None, DEFAULT_COMPILER_TIMEOUT_S, "GREEDY")
+        )
+        try:
+            mock_compile = self._transform_and_capture(
+                rigetti_device, pyquil.Program(pyquil.gates.H(0))
+            )
+        finally:
+            _COMPILER_OPTIONS.reset(token)
+
+        assert 'PRAGMA INITIAL_REWIRING "GREEDY"' in mock_compile.call_args.kwargs["quil"]
+
+    def test_strategy_survives_a_device_level_compiler_options(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A device-wide CompilerOpts must not shadow the per-run strategy."""
+        rigetti_device._compiler_options = CompilerOpts(timeout=60.0)
+        token = _COMPILER_OPTIONS.set(
+            _ResolvedCompilerOptions(None, DEFAULT_COMPILER_TIMEOUT_S, "NAIVE")
+        )
+        try:
+            mock_compile = self._transform_and_capture(
+                rigetti_device, pyquil.Program(pyquil.gates.H(0))
+            )
+        finally:
+            _COMPILER_OPTIONS.reset(token)
+
+        assert 'PRAGMA INITIAL_REWIRING "NAIVE"' in mock_compile.call_args.kwargs["quil"]
+        assert mock_compile.call_args.kwargs["options"] is rigetti_device._compiler_options
+
+    def test_run_publishes_the_strategy(self) -> None:
+        """run() must resolve the key so transform() sees it, mirroring compiler_timeout."""
+        resolved = _ResolvedCompilerOptions(
+            RigettiDevice._parse_compiler_options({"initial_rewiring": "GREEDY"}),
+            RigettiDevice._compiler_timeout({"initial_rewiring": "GREEDY"}),
+            RigettiDevice._parse_initial_rewiring({"initial_rewiring": "GREEDY"}),
+        )
+
+        assert resolved.initial_rewiring == "GREEDY"
+        assert resolved.options is None
+        assert resolved.timeout == DEFAULT_COMPILER_TIMEOUT_S

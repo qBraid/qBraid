@@ -23,9 +23,12 @@ jobs:
   pypi-publish:
     name: Build dist & upload to PyPI
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write  # mint the OIDC token PyPI trusted publishing verifies
+      contents: read  # actions/checkout
     if: ${{ github.actor == 'github-actions[bot]' || github.actor == 'ryanhill1' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 1
 
@@ -41,6 +44,3 @@ jobs:
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
