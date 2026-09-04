@@ -362,7 +362,9 @@ def test_job_retrieval_failure(mock_service):
 @pytest.fixture
 def mock_runtime_job():
     """Fixture to create a mock QiskitRuntimeJob object."""
-    return MagicMock()
+    job = MagicMock()
+    job.status.return_value = "DONE"
+    return job
 
 
 def test_job_queue_position(mock_runtime_job):
@@ -370,6 +372,23 @@ def test_job_queue_position(mock_runtime_job):
     job = QiskitJob(job_id="123", job=mock_runtime_job)
     with pytest.raises(NotImplementedError):
         job.queue_position()
+
+
+def test_job_status_rejects_unknown_state(mock_runtime_job):
+    """Test that an unrecognized IBM job state raises a clear error."""
+    mock_runtime_job.status.return_value = "PAUSED"
+    job = QiskitJob(job_id="123", job=mock_runtime_job)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unknown IBM job status 'PAUSED'. Expected one of: "
+            "INITIALIZING, QUEUED, VALIDATING, RUNNING, CANCELLED, DONE, ERROR"
+        ),
+    ):
+        job.status()
+
+    assert "status" not in job._cache_metadata
 
 
 def test_cancel_job_in_terminal_state(mock_runtime_job):

@@ -1,0 +1,59 @@
+name: OpenSSF Scorecard
+
+on:
+  branch_protection_rule:
+  schedule:
+    - cron: '31 5 * * 1'
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+# Four triggers can overlap, and Scorecard reports current repository state, so a
+# superseded run has nothing to contribute. Cancelling keeps the published SARIF and the
+# public API entry in trigger order.
+concurrency:
+  group: scorecard
+  cancel-in-progress: true
+
+# Least privilege by default: `analysis` names everything it needs below, and a job added
+# later gets nothing until it does the same. Job-level permissions replace this block
+# rather than adding to it.
+permissions: {}
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write   # upload SARIF to code scanning
+      id-token: write          # publish results to the public Scorecard API
+      # `contents: read` and `actions: read` are deliberately absent. Upstream ships both
+      # commented out, needed only for private repositories, and OSSF runs Scorecard on its
+      # own public repos with exactly the two permissions above.
+
+    # Actions are pinned to full commit SHAs: a tag is mutable and can be repointed at
+    # other code, which is what Scorecard's own Pinned-Dependencies check looks for.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Run analysis
+        uses: ossf/scorecard-action@2d1146689b8cda280b9bc96326124645441f03bc # v2.4.4
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          publish_results: true
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: SARIF file
+          path: results.sarif
+          retention-days: 5
+
+      - name: Upload to code scanning
+        uses: github/codeql-action/upload-sarif@42947a340483f03ba47bb1a039b2c519aab3df85 # v3.37.8
+        with:
+          sarif_file: results.sarif
