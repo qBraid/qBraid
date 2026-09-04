@@ -110,6 +110,41 @@ def test_runtime_modules_have_provider_and_job_entrypoints():
     assert expected_entrypoints <= set(get_entrypoints("jobs"))
 
 
+def _runtime_subpackages() -> set[str]:
+    """Return every provider package under ``qbraid/runtime/``."""
+    runtime_path = Path(qbraid.runtime.__file__).parent
+    return {
+        path.name
+        for path in runtime_path.iterdir()
+        if path.is_dir() and (path / "__init__.py").is_file()
+    }
+
+
+def test_runtime_modules_are_lazily_importable():
+    """Every provider package is reachable as ``qbraid.runtime.<name>``.
+
+    The ``_lazy`` dict is what makes that attribute access work; a package missing from it
+    imports fine by full path and fails only through the public surface.
+    """
+    lazy_keys = set(qbraid.runtime._lazy)  # pylint: disable=protected-access
+    assert _runtime_subpackages() <= lazy_keys
+
+
+def test_runtime_modules_are_listed_in_the_api_docs():
+    """Every provider package appears in the runtime autosummary.
+
+    Missing entries are invisible locally: the docs build succeeds and simply omits the
+    provider's page.
+    """
+    # Anchored on the test file: tox installs the package non-editable, so the docs tree is
+    # not reachable from qbraid.runtime.__file__.
+    docs_rst = Path(__file__).parents[2] / "docs" / "api" / "qbraid.runtime.rst"
+    if not docs_rst.is_file():
+        pytest.skip("docs tree not available")
+    listed = set(docs_rst.read_text(encoding="utf-8").split())
+    assert _runtime_subpackages() <= listed
+
+
 def _literal_overload_names(function_name: str, parameter_name: str) -> set[str]:
     """Return the string literals accepted by a loader's overloads."""
     loader_tree = ast.parse(Path(runtime_loader.__file__).read_text(encoding="utf-8"))
