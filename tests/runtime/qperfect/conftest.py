@@ -47,12 +47,17 @@ else:
         ``submit`` returns a fixed execution id; the nested ``.connection`` (the ``mimiqlink``
         layer) stubs ``isOpen`` (device health), ``requestInfo`` (job status, ``.status`` string),
         and cancel. Defaults describe an open connection and a completed (``DONE``) job.
+
+        ``requestInfo().get`` follows ``RequestInfo.get`` in returning the caller's default for an
+        absent key; a bare ``MagicMock`` would hand back a truthy mock for every field instead.
         """
         conn = MagicMock()
         conn.submit.return_value = "exec-1"
         conn.connection = MagicMock()
         conn.connection.isOpen.return_value = True
-        conn.connection.requestInfo.return_value = MagicMock(status="DONE")
+        info = MagicMock(status="DONE")
+        info.get.side_effect = lambda key, default: default
+        conn.connection.requestInfo.return_value = info
         return conn
 
     @pytest.fixture

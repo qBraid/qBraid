@@ -22,7 +22,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData, MeasCount
@@ -80,6 +80,20 @@ class QPerfectJob(QuantumJob):
         """Return the MIMIQ connection used by this job."""
         return self._connection
 
+    def _request_info(self) -> Any:
+        """Return MIMIQ's execution record for this job.
+
+        Raises:
+            ResourceNotFoundError: If MIMIQ cannot return the record. An unknown job id surfaces
+                here as a server error rather than a 404, so the vendor error is not inspected.
+        """
+        try:
+            return self._connection.connection.requestInfo(self.id)
+        except Exception as err:  # pylint: disable=broad-except
+            raise ResourceNotFoundError(
+                f"Could not retrieve execution details for job {self.id}: {err}"
+            ) from err
+
     def status(self) -> JobStatus:
         """Return the current status of the QPerfect job.
 
@@ -88,8 +102,9 @@ class QPerfectJob(QuantumJob):
 
         Raises:
             QPerfectJobError: If MIMIQ reports a status outside the known mapping.
+            ResourceNotFoundError: If MIMIQ has no execution record for this job id.
         """
-        info = self._connection.connection.requestInfo(self.id)
+        info = self._request_info()
         if info.status not in _STATUS_MAP:
             # ``RequestInfo.status`` falls back to the literal string "Unknown" when the payload
             # omits the field, so the message says "unrecognized" to keep that case readable.
@@ -112,13 +127,25 @@ class QPerfectJob(QuantumJob):
             raise QPerfectJobError(f"Failed to cancel job {self.id}: {err}") from err
 
     def result(self) -> Result:
-        """Wait for the QPerfect job to finish and return its result."""
+        """Wait for the QPerfect job to finish and return its result.
+
+        A circuit carrying no measurement instructions still returns counts: the emulator samples
+        the final state over every qubit rather than rejecting the job.
+
+        Raises:
+            QPerfectJobError: If the job reached a terminal state other than ``COMPLETED``. MIMIQ's
+                own explanation (e.g. a backend that ran out of memory) is included when it gives
+                one, since it usually names the fix.
+        """
         self.wait_for_final_state()
         status = self.status()
         if status != JobStatus.COMPLETED:
-            raise QPerfectJobError(
-                f"Job {self.id} did not complete successfully (status={status.name})."
-            )
+            # Only FAILED and CANCELLED reach here: wait_for_final_state polls status(), which
+            # rejects any state outside _STATUS_MAP before this point.
+            outcome = "was cancelled" if status == JobStatus.CANCELLED else "failed"
+            reason = self._request_info().get("errorMessage", None)
+            detail = f": {reason}" if reason else "."
+            raise QPerfectJobError(f"Job {self.id} {outcome}{detail}")
 
         results = self._connection.get_results(self.id)
         if not isinstance(results, list):

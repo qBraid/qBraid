@@ -22,6 +22,7 @@ from unittest.mock import patch
 import pytest
 
 from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.qperfect import QPerfectJob, QPerfectJobError
 
 
@@ -102,6 +103,44 @@ def test_result_incomplete_raises(mock_connection):
     mock_connection.connection.requestInfo.return_value.status = "ERROR"
     with pytest.raises(QPerfectJobError):
         _job(mock_connection).result()
+
+
+def test_result_failure_includes_mimiq_error_message(mock_connection):
+    """MIMIQ's own explanation reaches the caller; it usually names the fix."""
+    info = mock_connection.connection.requestInfo.return_value
+    info.status = "ERROR"
+    info.get.side_effect = lambda key, default: (
+        "SVS: Not enough memory to execute circuit 1." if key == "errorMessage" else default
+    )
+    with pytest.raises(QPerfectJobError, match=r"^Job exec-1 failed: SVS: Not enough memory"):
+        _job(mock_connection).result()
+
+
+def test_result_cancelled_names_the_state_once(mock_connection):
+    """A cancelled job says so in one clause, with no redundant status= suffix."""
+    mock_connection.connection.requestInfo.return_value.status = "CANCELED"
+    with pytest.raises(QPerfectJobError, match=r"^Job exec-1 was cancelled\.$"):
+        _job(mock_connection).result()
+
+
+def test_result_propagates_unrecognized_status(mock_connection):
+    """An unmapped status surfaces from the status() poll, not from the failure branch."""
+    mock_connection.connection.requestInfo.return_value.status = "SOMETHING_ELSE"
+    with pytest.raises(QPerfectJobError, match="unrecognized job status 'SOMETHING_ELSE'"):
+        _job(mock_connection).result()
+
+
+def test_unknown_job_id_raises_resource_not_found(mock_connection):
+    """An unknown job id surfaces as a qBraid error, not a raw mimiqlink ConnectionError.
+
+    MIMIQ answers a lookup for a nonexistent execution with a 500, so there is no 404 to
+    distinguish; any lookup failure becomes ResourceNotFoundError.
+    """
+    mock_connection.connection.requestInfo.side_effect = ConnectionError(
+        "Failed to retrieve execution details for exec-1. Server responded with 500"
+    )
+    with pytest.raises(ResourceNotFoundError, match="Could not retrieve execution details"):
+        _job(mock_connection).status()
 
 
 def test_default_connection_is_built_lazily(mock_connection):
