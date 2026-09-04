@@ -17881,6 +17881,69 @@ def test_compiled_program_returns_program():
     assert "MEASURE 81 ro[0]" in compiled.data
 
 
+def test_compiled_program_batch_returns_one_per_circuit():
+    """A batch job compiles one program per circuit, so a list comes back intact."""
+    programs = [Program(format="qasm2", data=f"OPENQASM 2.0; // circuit {i}") for i in range(3)]
+    client = MockClientCompiledProgram(result=programs)
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    compiled = job.compiled_program()
+
+    assert isinstance(compiled, list)
+    assert [p.data for p in compiled] == [p.data for p in programs]
+
+
+def test_compiled_program_single_is_not_wrapped_in_a_list():
+    """Widening the return type must not make single jobs return a one-element list."""
+    program = Program(format="quil", data=COMPILED_QUIL)
+    client = MockClientCompiledProgram(result=program)
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    assert not isinstance(job.compiled_program(), list)
+
+
+def test_program_accessor_returns_schema_object():
+    """`program()` exposes what the client returned, not a raw dict."""
+    program = Program(format="qasm2", data="OPENQASM 2.0;")
+    client = MockClientCompiledProgram(result=None)
+    client.get_job_program = lambda job_qrn: program  # type: ignore[method-assign]
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    assert job.program() is program
+    assert job.metadata()["program"] is program
+
+
+def test_program_accessor_returns_list_for_batch():
+    """A batch job's submitted programs come back as a list, matching compiled_program()."""
+    programs = [Program(format="qasm2", data=f"OPENQASM 2.0; // circuit {i}") for i in range(2)]
+    client = MockClientCompiledProgram(result=None)
+    client.get_job_program = lambda job_qrn: programs  # type: ignore[method-assign]
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    assert job.program() == programs
+    assert job.metadata()["program"] == programs
+
+
+def test_program_is_fetched_once():
+    """`program()` and `metadata()` share one cache slot, so the call is not repeated."""
+    calls = []
+    program = Program(format="qasm2", data="OPENQASM 2.0;")
+    client = MockClientCompiledProgram(result=None)
+
+    def _get(job_qrn):
+        calls.append(job_qrn)
+        return program
+
+    client.get_job_program = _get  # type: ignore[method-assign]
+    job = QbraidJob(job_id=RIGETTI_GET_JOB.jobQrn, client=client)
+
+    job.program()
+    job.metadata()
+    job.program()
+
+    assert len(calls) == 1
+
+
 def test_compiled_program_none_when_absent():
     """A 404 means no compiled program exists, which is not an error."""
     client = MockClientCompiledProgram(error=_service_error(404))

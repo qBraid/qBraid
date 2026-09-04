@@ -13,9 +13,9 @@
 # limitations under the License.
 
 """
-Module for submitting and managing jobs through the Quantinuum NEXUS API.
+Module providing QPerfect (MIMIQ) provider, device, and job classes for qBraid runtime.
 
-.. currentmodule:: qbraid.runtime.quantinuum
+.. currentmodule:: qbraid.runtime.qperfect
 
 Classes
 --------
@@ -23,29 +23,19 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-    QuantinuumProvider
-    QuantinuumDevice
-    QuantinuumJob
-
-Exceptions
-------------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-    QuantinuumDeviceError
-    QuantinuumJobError
+   QPerfectProvider
+   QPerfectDevice
+   QPerfectJob
+   QPerfectJobError
 
 """
-from .device import QuantinuumDevice
-from .exceptions import QuantinuumDeviceError, QuantinuumJobError
-from .job import QuantinuumJob
-from .provider import QuantinuumProvider
+from .device import QPerfectDevice
+from .job import QPerfectJob, QPerfectJobError
+from .provider import QPerfectProvider
 
 __all__ = [
-    "QuantinuumDevice",
-    "QuantinuumDeviceError",
-    "QuantinuumJob",
-    "QuantinuumJobError",
-    "QuantinuumProvider",
+    "QPerfectProvider",
+    "QPerfectDevice",
+    "QPerfectJob",
+    "QPerfectJobError",
 ]
