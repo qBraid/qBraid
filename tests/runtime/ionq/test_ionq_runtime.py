@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-lines
 
 """
 Unit tests for IonQProvider class
@@ -201,7 +201,7 @@ def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any
     return None
 
 
-def mock_get_device_response(url, **kwargs):
+def mock_get_device_response(url, **_kwargs):
     """Mock Session.get to return appropriate device data based on URL."""
     mock_resp = Mock()
     if "/backends/" in url:
@@ -664,6 +664,69 @@ def test_get_counts_raises_value_error_for_missing_data(result):
     with pytest.raises(ValueError) as excinfo:
         IonQJob._get_counts(result)
     assert "Missing shots or probabilities in result data." in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "state,expected",
+    [
+        (1, "000001"),  # x q[0]
+        (32, "100000"),  # x q[5]
+        (5, "000101"),  # x q[0]; x q[2]
+        (0, "000000"),
+    ],
+)
+def test_get_counts_pads_keys_to_register_width(state, expected):
+    """Keys are the full register width, with qubit 0 rightmost."""
+    result = {"shots": 100, "probabilities": {str(state): 1.0}, "stats": {"qubits": 6}}
+    assert IonQJob._get_counts(result) == {expected: 100}
+
+
+def test_get_counts_key_width_independent_of_outcomes():
+    """A noisy run and a clean one on the same register return keys of the same width."""
+    stats = {"qubits": 6}
+    clean = IonQJob._get_counts({"shots": 100, "probabilities": {"1": 1.0}, "stats": stats})
+    noisy = IonQJob._get_counts(
+        {"shots": 100, "probabilities": {"1": 0.9, "33": 0.1}, "stats": stats}
+    )
+    assert {len(key) for key in clean} == {len(key) for key in noisy} == {6}
+
+
+def test_get_counts_falls_back_to_widest_outcome_without_stats():
+    """Without a qubit count in the job stats, the pre-existing width is kept."""
+    result = {"shots": 100, "probabilities": {"1": 0.5, "5": 0.5}}
+    assert IonQJob._get_counts(result) == {"001": 50, "101": 50}
+
+
+@pytest.mark.parametrize("qubits", [0, -1, 10_001, True, "6", None, 1.5])
+def test_num_qubits_rejects_implausible_widths(qubits):
+    """The width sizes every formatted key, so a bad value falls back rather than being trusted."""
+    assert IonQJob._num_qubits({"stats": {"qubits": qubits}}) is None
+
+
+def test_num_qubits_accepts_a_sane_width():
+    """A plausible reported register width is used as given."""
+    assert IonQJob._num_qubits({"stats": {"qubits": 6}}) == 6
+
+
+def test_get_counts_uses_one_width_across_a_batch():
+    """Without stats, circuits that sampled narrower outcomes still match their siblings."""
+    result = {
+        "shots": 100,
+        "probabilities": {"c0": {"5": 1.0}, "c1": {"1": 1.0}},
+    }
+    assert IonQJob._get_counts(result) == [{"101": 100}, {"001": 100}]
+
+
+def test_get_counts_falls_back_when_width_is_absurd():
+    """An out-of-range width is ignored in favour of the observed outcomes."""
+    result = {"shots": 100, "probabilities": {"1": 1.0}, "stats": {"qubits": 10**9}}
+    assert IonQJob._get_counts(result) == {"1": 100}
+
+
+def test_transform_measurement_probabilities_pads_keys():
+    """Probabilities carry the same keys as the counts they are derived from."""
+    probabilities = IonQJob._transform_measurement_probabilities({"1": 1.0}, 6)
+    assert probabilities == {"000001": 1.0}
 
 
 @pytest.fixture

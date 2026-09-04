@@ -45,6 +45,7 @@ from qbraid.runtime import JobStateError
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.postprocess import reverse_bit_order
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
 
@@ -302,7 +303,10 @@ class RigettiJob(QuantumJob):
             measurements.append("".join(str(b) for b in row))
 
         counts = {m: measurements.count(m) for m in set(measurements)}
-        return GateModelResultData(measurement_counts=counts)
+        # The registers are stacked in declaration order, so a row reads qubit 0 first.
+        # qBraid's convention is qubit 0 last (little-endian, as Qiskit and IonQ already
+        # use), so the key is reversed here.
+        return GateModelResultData(measurement_counts=reverse_bit_order(counts))
 
     def result(self, timeout: int | None = None) -> Result[GateModelResultData]:
         """Return the result of the Rigetti job.

@@ -28,7 +28,7 @@ jobs:
       contents: read  # actions/checkout
     if: ${{ github.actor == 'github-actions[bot]' || github.actor == 'ryanhill1' }}
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 1
 
