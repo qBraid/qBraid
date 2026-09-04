@@ -283,7 +283,8 @@ integrations. Where a guard test exists, it is named — run it before pushing.
   `X | Y` annotations over mocked names crash the build, so either add
   `from __future__ import annotations` or quote the alias.
 - [ ] `README.md`: add the provider to the linked provider list in the qBraid Runtime
-  install section.
+  install section. `tests/runtime/test_loader.py::test_registered_providers_are_listed_in_the_readme`
+  fails if you forget; link the docs page even if it is not published yet.
 - [ ] Provider guide on [docs.qbraid.com](https://docs.qbraid.com/v2/sdk/user-guide/runtime)
   (separate repo) — the README links resolve there.
 

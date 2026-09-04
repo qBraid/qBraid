@@ -18,6 +18,7 @@ Unit tests for loading jobs using entrypoints
 """
 
 import ast
+import re
 from pathlib import Path
 
 import pytest
@@ -143,6 +144,31 @@ def test_runtime_modules_are_listed_in_the_api_docs():
         pytest.skip("docs tree not available")
     listed = set(docs_rst.read_text(encoding="utf-8").split())
     assert _runtime_subpackages() <= listed
+
+
+def test_registered_providers_are_listed_in_the_readme():
+    """Every registered provider appears in the README's linked provider list.
+
+    The list is what a reader installs from, and it has trailed the provider set before —
+    aqt, openquantum, qperfect and qudora were all missing while shipping. Matching on the
+    class name keeps this independent of how the sentence around it is worded.
+    """
+    repo_root = Path(__file__).parents[2]
+    pyproject = repo_root / "pyproject.toml"
+    readme = repo_root / "README.md"
+    if not (pyproject.is_file() and readme.is_file()):
+        pytest.skip("repo root not available")
+
+    entry_points = (
+        pyproject.read_text(encoding="utf-8")
+        .split('[project.entry-points."qbraid.providers"]')[1]
+        .split("[project.entry-points")[0]
+    )
+    provider_classes = set(re.findall(r":(\w+Provider)", entry_points))
+    listed = readme.read_text(encoding="utf-8")
+
+    assert provider_classes, "no provider entry points found"
+    assert sorted(cls for cls in provider_classes if cls not in listed) == []
 
 
 def _literal_overload_names(function_name: str, parameter_name: str) -> set[str]:
