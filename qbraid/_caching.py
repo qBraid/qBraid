@@ -50,8 +50,9 @@ def _generate_cache_key(instance: Any, func_name: str, args: tuple, kwargs: dict
     ``id(instance)``, degrading to per-instance caching rather than raising.
 
     Serialization is strict: any argument JSON cannot encode (including dicts with
-    non-string keys) raises ``TypeError``; circular references raise ``ValueError``
-    and structures nested past the interpreter limit raise ``RecursionError``.
+    non-string keys) raises ``TypeError``, and circular references raise
+    ``ValueError``. Deeply nested structures may raise ``RecursionError`` on
+    interpreters whose json encoder enforces the recursion limit (CPython <= 3.11).
     Callers are expected to treat all three as "unkeyable" and bypass the cache
     rather than substitute a guessed key.
     """
