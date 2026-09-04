@@ -1199,6 +1199,31 @@ def test_best_qubits_unknown_gate_raises(mock_profile):
         device.best_qubits(2, gate="xy")
 
 
+def test_best_qubits_more_qubits_than_calibrated_raises(mock_profile):
+    """Requesting more qubits than the device calibrates raises rather than truncating."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.01, 0.001)}, [])
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="2 calibrated qubits; 3 requested"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_chain_returned_lowest_id_first(mock_profile):
+    """A chain comes back lowest-id-first, whichever direction the search recorded it.
+
+    A path and its reverse cost the same in exact arithmetic, so which orientation the search
+    keeps comes down to summation order in floating point. On this star — cheap arm to qubit 1,
+    equal expensive arms to 0 and 2 — the winning chain is recorded as 2-3-1 and normalized.
+    """
+    calibration = _calibration(
+        {0: (0.02, 0.02), 1: (0.002, 0.002), 2: (0.002, 0.02), 3: (0.02, 0.002)},
+        [(0, 3, 0.05), (1, 3, 0.002), (2, 3, 0.05)],
+    )
+    device = _device_with(calibration, mock_profile)
+    chain = device.best_qubits(3)
+    assert chain == (1, 3, 2)
+    assert chain[0] < chain[-1]
+
+
 def test_best_qubits_all_to_all_ranks_qubits(mock_profile):
     """Devices with qubit metrics but no edges return the n best qubits."""
     calibration = _calibration(

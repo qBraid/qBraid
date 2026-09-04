@@ -61,8 +61,6 @@ def edge_costs(
             if gate is not None and gate_name != gate:
                 continue
             for entry in entries:
-                if entry.value is None:
-                    continue
                 pair = (min(entry.source, entry.target), max(entry.source, entry.target))
                 if pair not in errors or entry.value < errors[pair]:
                     errors[pair] = entry.value
