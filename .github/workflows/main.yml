@@ -63,6 +63,39 @@ jobs:
         files: ./build/coverage/coverage.xml
         verbose: true
 
+  test-aqt:
+    # aqt-connector requires auth0-python>=4 while pasqal-cloud requires
+    # auth0-python<4, so the aqt extra cannot coexist with the main test
+    # environment. This job runs the AQT suite against only its own extra;
+    # Codecov merges this upload with the matrix job's report for the same
+    # commit.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+        cache: pip
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip setuptools
+        python3 -m pip install tox tox-uv
+    - name: AQT tests
+      run: |
+        tox -e unit-tests-aqt
+      env:
+        QBRAID_RUN_REMOTE_TESTS: False
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v6.0.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        files: ./build/coverage/coverage.xml
+        flags: aqt
+        verbose: true
+
   test-qperfect:
     # mimiqcircuits pins protobuf>=6.30 while cirq-google pins protobuf<6, so
     # the qperfect extra cannot coexist with the main test environment. This
