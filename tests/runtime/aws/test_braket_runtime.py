@@ -49,6 +49,7 @@ from qbraid.runtime.aws.job import AmazonBraketVersionError, BraketQuantumTask
 from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.result_builder import BraketGateModelResultBuilder
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
+from qbraid.transpiler import Conversion, ConversionGraph
 
 from ...fixtures.braket.gates import get_braket_gates
 
@@ -532,10 +533,6 @@ def test_device_ionq_transform_hints_when_tket_edge_missing(mock_aws_device, cap
     default experience for extra-only installs: the circuit must pass through
     unrebased, and the log must name the package that restores the transform.
     """
-    import logging
-
-    from qbraid.transpiler import Conversion, ConversionGraph
-
     mock_aws_device.return_value = Mock()
     profile = TargetProfile(
         simulator=False,
