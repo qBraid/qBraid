@@ -486,12 +486,17 @@ class QuantumDevice(ABC):
         Reachability is judged under this device's own :class:`ConversionScheme`: a
         ``max_path_depth`` that :meth:`run` would enforce is enforced here too, so
         every alias returned is one the run pipeline can actually convert. A device
-        with multiple target specs accepts an alias reachable to any of them.
+        with multiple target specs accepts an alias reachable to any of them, and a
+        device whose ``transpile`` option is off advertises only its native aliases,
+        since :meth:`apply_runtime_profile` will not convert anything else.
         """
         target_spec = self._target_spec
         if target_spec is None:
             return []
         specs = target_spec if isinstance(target_spec, list) else [target_spec]
+
+        if self._options.get("transpile") is not True:
+            return sorted({spec.alias for spec in specs})
 
         graph = self.scheme.conversion_graph
         max_depth = self.scheme.max_path_depth

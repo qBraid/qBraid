@@ -1142,6 +1142,17 @@ class TestSupportedRunInputs:
         deeper = sorted(n for n in graph.nodes() if graph.has_path(n, "qasm2"))
         assert set(supported) < set(deeper), "the depth limit should exclude something"
 
+    def test_transpile_disabled_advertises_only_native_aliases(self):
+        """With the transpile option off, run() converts nothing, so only spec aliases apply.
+
+        Regression test: apply_runtime_profile transpiles only when the option is True,
+        so advertising graph-reachable aliases here would sell inputs run() rejects.
+        """
+        device = self._device([ProgramSpec(str, alias="qasm2"), ProgramSpec(str, alias="qasm3")])
+        device.set_options(transpile=False)
+
+        assert device.supported_run_inputs() == ["qasm2", "qasm3"]
+
 
 # ===========================================================================
 # Device best qubits selection
