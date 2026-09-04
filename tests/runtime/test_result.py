@@ -32,7 +32,7 @@ from qbraid.runtime.postprocess import (
     normalize_bit_lengths,
     normalize_data,
 )
-from qbraid.runtime.result import Result
+from qbraid.runtime.result import BatchResult, Result
 from qbraid.runtime.result_data import (
     AnalogResultData,
     AnalogShotResult,
@@ -282,6 +282,34 @@ def test_batch_normalized_counts():
     counts = normalize_data(raw_counts, include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
+
+
+def test_batch_counts_preserve_each_circuit_width():
+    """Batch counts do not pad every circuit to the widest register."""
+    counts = [
+        {"00": 18, "01": 24, "10": 24, "11": 34},
+        {"000": 14, "111": 15},
+        {"0": 3, "1": 97},
+    ]
+    results = [
+        Result("device_id", f"job_id_{index}", True, GateModelResultData(measurement_counts=item))
+        for index, item in enumerate(counts)
+    ]
+    batch_result = BatchResult("device_id", "batch_job_id", True, results)
+
+    assert batch_result.data.get_counts() == counts
+    assert [result.data.get_counts() for result in batch_result.results] == counts
+    assert batch_result.data.to_dict()["num_measured_qubits"] == [2, 3, 1]
+    assert normalize_data(counts, include_zero_values=True) == [
+        {"00": 18, "01": 24, "10": 24, "11": 34},
+        {"000": 14, "001": 0, "010": 0, "011": 0, "100": 0, "101": 0, "110": 0, "111": 15},
+        {"0": 3, "1": 97},
+    ]
+    assert normalize_data(counts, decimal=True) == [
+        {0: 18, 1: 24, 2: 24, 3: 34},
+        {0: 14, 7: 15},
+        {0: 3, 1: 97},
+    ]
 
 
 def test_decimal_get_counts():
@@ -639,10 +667,10 @@ def test_format_value_list_with_depth(result_instance):
     assert result_instance._format_value(test_list, depth=2) == "[...]"
 
 
-def test_format_value_dict_with_openqasm(result_instance):
-    """Test _format_value with a dict with openQasm key."""
-    test_dict = {"openQasm": "OPENQASM 2.0;"}
-    assert result_instance._format_value(test_dict) == "{openQasm: '...'}"
+def test_format_value_dict_with_compiled_output(result_instance):
+    """Test _format_value with a dict with compiledOutput key."""
+    test_dict = {"compiledOutput": "base64encodeddata"}
+    assert result_instance._format_value(test_dict) == "{compiledOutput: '...'}"
 
 
 def test_format_value_catch_all(result_instance):

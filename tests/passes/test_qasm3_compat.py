@@ -28,6 +28,7 @@ from qbraid.passes.qasm.compat import (
     convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
     insert_gate_def,
+    normalize_if_blocks,
     normalize_qasm_gate_params,
     remove_stdgates_include,
     replace_gate_names,
@@ -470,3 +471,67 @@ def test_normalize_case_insensitive_map_raises_error():
     test_map = {"a": 1, "A": 2}
     with pytest.raises(ValueError):
         _normalize_case_insensitive_map(test_map)
+
+
+def test_replace_gate_names_inside_if_block():
+    """Test that gate names inside if blocks are replaced."""
+    qasm = textwrap.dedent(
+        """\
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[2] q;
+        bit[1] c;
+        c[0] = measure q[0];
+        if (c == 1) cnot q[0], q[1];
+    """
+    )
+    result = replace_gate_names(qasm, {"cnot": "cx"})
+    assert "cx q[0], q[1];" in result
+    assert "cnot" not in result
+
+
+def test_replace_gate_names_inside_if_else_block():
+    """Test that gate names inside if and else blocks are replaced."""
+    qasm = textwrap.dedent(
+        """\
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[2] q;
+        bit[1] c;
+        c[0] = measure q[0];
+        if (c == 1) cnot q[0], q[1]; else cnot q[1], q[0];
+    """
+    )
+    result = replace_gate_names(qasm, {"cnot": "cx"})
+    assert "cnot" not in result
+    assert result.count("cx") == 2
+
+
+def test_normalize_if_blocks_true():
+    """Test normalizing if blocks with true value."""
+    qasm = "if (c0[0] == true) {\n  z q[2];\n}"
+    assert normalize_if_blocks(qasm) == "if(c0==1) z q[2];"
+
+
+def test_normalize_if_blocks_false():
+    """Test normalizing if blocks with false value."""
+    qasm = "if (c0[0] == false) {\n  x q[1];\n}"
+    assert normalize_if_blocks(qasm) == "if(c0==0) x q[1];"
+
+
+def test_normalize_if_blocks_no_index():
+    """Test normalizing if blocks without bit index."""
+    qasm = "if (c == true) {\n  h q[0];\n}"
+    assert normalize_if_blocks(qasm) == "if(c==1) h q[0];"
+
+
+def test_normalize_if_blocks_higher_bit_index():
+    """Test normalizing if blocks with higher bit index shifts value."""
+    qasm = "if (c[1] == true) {\n  x q[0];\n}"
+    assert normalize_if_blocks(qasm) == "if(c==2) x q[0];"
+
+
+def test_normalize_if_blocks_no_change():
+    """Test that QASM without if blocks is unchanged."""
+    qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\n'
+    assert normalize_if_blocks(qasm) == qasm

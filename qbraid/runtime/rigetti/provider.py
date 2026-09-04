@@ -26,7 +26,6 @@ Module defining Rigetti provider class
 from __future__ import annotations
 
 import atexit
-import logging
 import os
 import signal
 from subprocess import DEVNULL, Popen, TimeoutExpired
@@ -37,6 +36,7 @@ from qcs_sdk.qpu import list_quantum_processors
 from qcs_sdk.qpu.api import ConnectionStrategy, ExecutionOptionsBuilder
 from qcs_sdk.qpu.isa import get_instruction_set_architecture
 
+from qbraid._logging import logger
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime import QuantumProvider, TargetProfile
@@ -55,8 +55,6 @@ from .setup import (
     is_port_in_use,
     wait_for_port,
 )
-
-logger = logging.getLogger(__name__)
 
 
 class RigettiProvider(QuantumProvider):

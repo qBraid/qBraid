@@ -22,7 +22,7 @@ import re
 from functools import reduce
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Program, QuantumGate, Statement
+from openqasm3.ast import BranchingStatement, Program, QuantumGate, Statement
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -130,13 +130,22 @@ def _normalize_case_insensitive_map(gate_mappings: dict[str, str]) -> dict[str, 
 
 def _replace_gate_in_statement(
     statement: Statement, gate_mappings: dict[str, str], case_sensitive: bool
-) -> QuantumGate:
+) -> Statement:
     """Replace gate names in a single statement if applicable."""
     if isinstance(statement, QuantumGate):
         gate_name = statement.name.name
         lookup_name = gate_name if case_sensitive else gate_name.lower()
         if lookup_name in gate_mappings:
             statement.name.name = gate_mappings[lookup_name]
+    elif isinstance(statement, BranchingStatement):
+        statement.if_block = [
+            _replace_gate_in_statement(s, gate_mappings, case_sensitive) for s in statement.if_block
+        ]
+        if statement.else_block:
+            statement.else_block = [
+                _replace_gate_in_statement(s, gate_mappings, case_sensitive)
+                for s in statement.else_block
+            ]
     return statement
 
 
@@ -183,6 +192,50 @@ def replace_gate_names(
         qasm_out = declarations_to_qasm2(qasm_out)
 
     return qasm_out
+
+
+def normalize_if_blocks(qasm: str) -> str:
+    """Convert QASM 3-style if blocks to QASM 2 single-line if syntax.
+
+    Transforms patterns like::
+
+        if (c0[0] == true) {
+          z q[2];
+        }
+
+    into::
+
+        if(c0==1) z q[2];
+
+    This is needed because pyqasm's ``dumps()`` emits QASM 3-style if blocks,
+    but Cirq's QASM parser only understands QASM 2 single-line ``if()`` syntax.
+
+    Args:
+        qasm: QASM program string potentially containing QASM 3-style if blocks.
+
+    Returns:
+        QASM string with if blocks normalized to QASM 2 single-line syntax.
+    """
+
+    def _replace_if_block(match: re.Match) -> str:
+        reg = match.group(1)
+        idx = match.group(2)
+        val_str = match.group(3)
+        body = match.group(4).strip().rstrip(";")
+
+        val = 1 if val_str == "true" else (0 if val_str == "false" else int(val_str))
+
+        if idx is not None:
+            bit_index = int(idx)
+            val = val << bit_index
+
+        return f"if({reg}=={val}) {body};"
+
+    pattern = re.compile(
+        r"if\s*\(\s*(\w+)(?:\[(\d+)\])?\s*==\s*(\w+)\s*\)\s*\{\s*\n\s*(.+?)\n\s*\}",
+        re.DOTALL,
+    )
+    return pattern.sub(_replace_if_block, qasm)
 
 
 def add_stdgates_include(qasm_str: str) -> str:

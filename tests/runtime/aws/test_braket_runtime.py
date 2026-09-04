@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,too-many-lines
 
 """
 Unit tests for BraketProvider class
@@ -277,8 +277,30 @@ def test_provider_get_tasks_by_tag(mock_boto_client, region_names, key, values, 
 
     # Assert the results
     mock_boto_client.assert_called_with("resourcegroupstaggingapi", region_name="us-west-1")
-    mock_client.get_resources.assert_called_once_with(TagFilters=[{"Key": key, "Values": values}])
+    mock_client.get_resources.assert_called_once_with(
+        TagFilters=[{"Key": key, "Values": values}], PaginationToken=""
+    )
     assert result == expected
+
+
+@patch("boto3.client")
+def test_provider_get_tasks_by_tag_paginates(mock_boto_client):
+    """Resources spanning multiple pages are all returned by following PaginationToken."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_resources.side_effect = [
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:1"}], "PaginationToken": "tok"},
+        {"ResourceTagMappingList": [{"ResourceARN": "arn:2"}], "PaginationToken": ""},
+    ]
+
+    provider = BraketProvider()
+    result = provider.get_tasks_by_tag("Project", ["X"], ["us-west-1"])
+
+    assert result == ["arn:1", "arn:2"]
+    assert mock_client.get_resources.call_count == 2
+    mock_client.get_resources.assert_any_call(
+        TagFilters=[{"Key": "Project", "Values": ["X"]}], PaginationToken="tok"
+    )
 
 
 def test_provider_get_device(mock_sv1):
@@ -309,6 +331,41 @@ def test_provider_get_devices(mock_sv1):
         devices = provider.get_devices()
         assert len(devices) == 1
         assert devices[0].id == SV1_ARN
+
+
+def test_provider_get_devices_skips_unbuildable_profiles(mock_sv1):
+    """Devices without a buildable runtime profile are skipped, not fatal.
+
+    Retired/legacy devices (surfaced e.g. when ``statuses`` includes ``"RETIRED"``)
+    may expose no qBraid-supported program type, so ``_build_runtime_profile`` raises
+    ``QbraidError``. ``get_devices`` should skip those and still return the rest rather
+    than aborting the whole call.
+    """
+    unsupported = TestAwsDevice("arn:aws:braket:::device/qpu/d-wave/Advantage_system1")
+    original_build = BraketProvider._build_runtime_profile
+
+    def build_or_raise(self, device, *args, **kwargs):
+        if "d-wave" in device.arn:
+            raise QbraidError("Device exposes no supported program type")
+        return original_build(self, device, *args, **kwargs)
+
+    provider = BraketProvider()
+    provider.get_devices.cache_clear()
+    with (
+        patch(
+            "qbraid.runtime.aws.provider.AwsDevice.get_devices",
+            return_value=[unsupported, mock_sv1],
+        ),
+        patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device_2,
+        patch.object(BraketProvider, "_build_runtime_profile", build_or_raise),
+    ):
+        mock_aws_device_2.return_value = mock_sv1
+        devices = provider.get_devices(statuses=["ONLINE", "OFFLINE", "RETIRED"])
+
+    # Only the SV1 device comes back; the unsupported device is silently skipped.
+    assert len(devices) == 1
+    assert devices[0].id == SV1_ARN
+    provider.get_devices.cache_clear()
 
 
 @patch("qbraid.runtime.aws.device.AwsDevice")
@@ -637,6 +694,24 @@ def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):
     res = job.result()
     data: GateModelResultData = res.data
     assert data.measurements is not None
+
+
+def test_job_status_rejects_unknown_state():
+    """Test that an unrecognized Braket task state raises a clear error."""
+    task = Mock()
+    task.state.return_value = "PAUSED"
+    job = BraketQuantumTask("task_arn", task)
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Unknown AWS task status 'PAUSED'. Expected one of: "
+            "CREATED, QUEUED, RUNNING, CANCELLING, CANCELLED, COMPLETED, FAILED"
+        ),
+    ):
+        job.status()
+
+    assert "status" not in job._cache_metadata
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])

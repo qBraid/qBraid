@@ -22,6 +22,10 @@ on:
     branches: ['main']
   workflow_dispatch:
 
+# No job here pushes or calls the API; checkout only needs to read the repo.
+permissions:
+  contents: read
+
 jobs:
   test:
     if: github.event.pull_request.draft == false
@@ -34,28 +38,102 @@ jobs:
           - '3.11'
           - '3.12'
           - '3.13'
+          - '3.14'
 
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6
+      uses: actions/setup-python@v7
       with:
         python-version: ${{ matrix.python-version }}
         cache: pip
     - name: Install dependencies
       run: |
         python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox
+        python3 -m pip install tox tox-uv
     - name: Tests
+      # Coverage is only uploaded from the 3.11 job, so only that job pays the
+      # instrumentation overhead; the rest run with --no-cov.
       run: |
-        tox -e unit-tests
+        tox -e unit-tests ${{ matrix.python-version != '3.11' && '-- --no-cov' || '' }}
       env:
         QBRAID_RUN_REMOTE_TESTS: False
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.11'
-      uses: codecov/codecov-action@v6.0.0
+      uses: codecov/codecov-action@v7.0.0
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         fail_ci_if_error: false
         files: ./build/coverage/coverage.xml
+        verbose: true
+
+  test-aqt:
+    # aqt-connector requires auth0-python>=4 while pasqal-cloud requires
+    # auth0-python<4, so the aqt extra cannot coexist with the main test
+    # environment. This job runs the AQT suite against only its own extra;
+    # Codecov merges this upload with the matrix job's report for the same
+    # commit.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+        cache: pip
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip setuptools
+        python3 -m pip install tox tox-uv
+    - name: AQT tests
+      run: |
+        tox -e unit-tests-aqt
+      env:
+        QBRAID_RUN_REMOTE_TESTS: False
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v7.0.0
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        files: ./build/coverage/coverage.xml
+        flags: aqt
+        verbose: true
+
+  test-qperfect:
+    # mimiqcircuits pins protobuf>=6.30 while cirq-google pins protobuf<6, so
+    # the qperfect extra cannot coexist with the main test environment. This
+    # job runs the QPerfect suite against only its own extra; Codecov merges
+    # this upload with the matrix job's report for the same commit.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v7.0.1
+      with:
+        persist-credentials: false
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v7
+      with:
+        python-version: '3.11'
+        cache: pip
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip setuptools
+        python3 -m pip install tox tox-uv
+    - name: QPerfect tests
+      run: |
+        tox -e unit-tests-qperfect
+      env:
+        QBRAID_RUN_REMOTE_TESTS: False
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v7.0.0
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        files: ./build/coverage/coverage.xml
+        flags: qperfect
         verbose: true

@@ -26,13 +26,20 @@ from qbraid.exceptions import QbraidError
 
 if TYPE_CHECKING:
     from qbraid.runtime import QuantumJob, QuantumProvider
+    from qbraid.runtime.aqt import AQTJob, AQTProvider
     from qbraid.runtime.aws import BraketProvider, BraketQuantumTask
     from qbraid.runtime.azure import AzureQuantumJob, AzureQuantumProvider
     from qbraid.runtime.ibm import QiskitJob, QiskitRuntimeProvider
     from qbraid.runtime.ionq import IonQJob, IonQProvider
     from qbraid.runtime.native import QbraidJob, QbraidProvider
+    from qbraid.runtime.openquantum import OpenQuantumJob, OpenQuantumProvider
     from qbraid.runtime.oqc import OQCJob, OQCProvider
     from qbraid.runtime.origin import OriginJob, OriginProvider
+    from qbraid.runtime.pasqal import PasqalJob, PasqalProvider
+    from qbraid.runtime.qperfect import QPerfectJob, QPerfectProvider
+    from qbraid.runtime.quantinuum import QuantinuumJob, QuantinuumProvider
+    from qbraid.runtime.qudora import QudoraJob, QudoraProvider
+    from qbraid.runtime.rigetti import RigettiJob, RigettiProvider
 
 
 class JobLoaderError(QbraidError):
@@ -41,6 +48,10 @@ class JobLoaderError(QbraidError):
 
 class ProviderLoaderError(QbraidError):
     """Raised when an error occurs while loading a quantum provider."""
+
+
+@overload
+def load_job(job_id: str, provider: Literal["aqt"], **kwargs) -> AQTJob: ...
 
 
 @overload
@@ -64,11 +75,35 @@ def load_job(job_id: str, provider: Literal["ionq"], **kwargs) -> IonQJob: ...
 
 
 @overload
+def load_job(job_id: str, provider: Literal["openquantum"], **kwargs) -> OpenQuantumJob: ...
+
+
+@overload
 def load_job(job_id: str, provider: Literal["oqc"], **kwargs) -> OQCJob: ...
 
 
 @overload
 def load_job(job_id: str, provider: Literal["origin"], **kwargs) -> OriginJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["pasqal"], **kwargs) -> PasqalJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["qperfect"], **kwargs) -> QPerfectJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["quantinuum"], **kwargs) -> QuantinuumJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["qudora"], **kwargs) -> QudoraJob: ...
+
+
+@overload
+def load_job(job_id: str, provider: Literal["rigetti"], **kwargs) -> RigettiJob: ...
 
 
 @overload
@@ -115,6 +150,10 @@ def get_providers() -> list[str]:
 
 
 @overload
+def load_provider(provider_name: Literal["aqt"], **kwargs) -> AQTProvider: ...
+
+
+@overload
 def load_provider(provider_name: Literal["native", "qbraid"], **kwargs) -> QbraidProvider: ...
 
 
@@ -135,11 +174,35 @@ def load_provider(provider_name: Literal["ionq"], **kwargs) -> IonQProvider: ...
 
 
 @overload
+def load_provider(provider_name: Literal["openquantum"], **kwargs) -> OpenQuantumProvider: ...
+
+
+@overload
 def load_provider(provider_name: Literal["oqc"], **kwargs) -> OQCProvider: ...
 
 
 @overload
 def load_provider(provider_name: Literal["origin"], **kwargs) -> OriginProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["pasqal"], **kwargs) -> PasqalProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["qperfect"], **kwargs) -> QPerfectProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["quantinuum"], **kwargs) -> QuantinuumProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["qudora"], **kwargs) -> QudoraProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["rigetti"], **kwargs) -> RigettiProvider: ...
 
 
 @overload

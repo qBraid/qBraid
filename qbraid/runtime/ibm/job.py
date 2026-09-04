@@ -22,7 +22,6 @@ from typing import TYPE_CHECKING, Optional
 
 from qbraid_core._import import LazyLoader
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
-from qiskit_ibm_runtime import RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid._logging import logger
@@ -55,16 +54,12 @@ IBM_JOB_STATUS_MAP = {
 
 
 class QiskitJob(QuantumJob):
-    """Class for interfacing with a Qiskit IBM ``RuntimeJob``."""
+    """Class for interfacing with a Qiskit IBM ``RuntimeJobV2``."""
 
     def __init__(
         self,
         job_id: str,
-        job: Optional[
-            qiskit_ibm_runtime.RuntimeJob
-            | qiskit_ibm_runtime.RuntimeJobV2
-            | qiskit.primitives.PrimitiveJob
-        ] = None,
+        job: Optional[qiskit_ibm_runtime.RuntimeJobV2 | qiskit.primitives.PrimitiveJob] = None,
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
         **kwargs,
     ):
@@ -74,8 +69,8 @@ class QiskitJob(QuantumJob):
 
     def _get_job(
         self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None
-    ) -> qiskit_ibm_runtime.RuntimeJob | qiskit_ibm_runtime.RuntimeJobV2:
-        """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
+    ) -> qiskit_ibm_runtime.RuntimeJobV2:
+        """Return the qiskit_ibm_runtime.RuntimeJobV2 associated with instance id attribute.
 
         Attempts to retrieve a job using a specified or default service. Handles
         service initialization with error management for authentication issues.
@@ -101,15 +96,18 @@ class QiskitJob(QuantumJob):
         """Returns status from Qiskit Job object."""
         job_status = self._job.status()
         job_status = job_status if isinstance(job_status, str) else job_status.name
-        status = IBM_JOB_STATUS_MAP.get(job_status, JobStatus.UNKNOWN)
+        if job_status not in IBM_JOB_STATUS_MAP:
+            raise ValueError(
+                f"Unknown IBM job status '{job_status}'. "
+                f"Expected one of: {', '.join(IBM_JOB_STATUS_MAP)}"
+            )
+        status = IBM_JOB_STATUS_MAP[job_status]
         self._cache_metadata["status"] = status
         return status
 
     def queue_position(self) -> Optional[int]:
         """Returns the position of the job in the server queue."""
-        if isinstance(self._job, RuntimeJobV2):
-            raise NotImplementedError("Queue position is not supported for RuntimeJobV2.")
-        return self._job.queue_position(refresh=True)
+        raise NotImplementedError("Queue position is not supported for RuntimeJobV2.")
 
     def result(self):
         """Return the results of the job."""

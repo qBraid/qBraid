@@ -28,7 +28,7 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
-from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
+from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
@@ -301,7 +301,6 @@ def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
 def test_provider_get_devices_post_cache_expiry(mock_client, device_data_qir, monkeypatch):
     """Test that the cache entry is invalidated when the cache is too old."""
     monkeypatch.setenv("DISABLE_CACHE", "0")
-    monkeypatch.setenv("_QBRAID_TEST_CACHE_CALLS", "1")
 
     data = device_data_qir.copy()
 
@@ -323,7 +322,6 @@ def test_provider_get_devices_post_cache_expiry(mock_client, device_data_qir, mo
 def test_provider_get_devices_bypass_cache(mock_client, device_data_qir, monkeypatch):
     """Test that the cache is bypassed when the bypass_cache flag is set."""
     monkeypatch.setenv("DISABLE_CACHE", "0")
-    monkeypatch.setenv("_QBRAID_TEST_CACHE_CALLS", "1")
 
     data = device_data_qir.copy()
 
@@ -607,18 +605,16 @@ def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
     assert "Invalid type for noise model" in str(excinfo)
 
 
-def test_get_program_spec_not_registered_warning():
-    """Test that a warning is emitted when the program type is not registered."""
+def test_get_program_spec_not_registered_warning(caplog):
+    """Test that a warning is logged when the program type is not registered."""
     run_package = "not_registered"
     device_id = "fake_device"
-    with pytest.warns(
-        RuntimeWarning,
-        match=(
-            f"The default runtime configuration for device '{device_id}' includes "
-            f"transpilation to program type '{run_package}', which is not registered."
-        ),
-    ):
+    with caplog.at_level(logging.INFO, logger="qbraid"):
         QbraidProvider._get_program_spec(run_package, device_id)
+    assert any(
+        f"device '{device_id}'" in record.message and f"'{run_package}'" in record.message
+        for record in caplog.records
+    )
 
 
 def test_get_program_spec_lambdas_validate_qasm_to_ionq():
@@ -999,3 +995,262 @@ def test_validate_qasm_no_measurements_without_measurements():
     device_id = "quera_device"
     # Should not raise
     validate_qasm_no_measurements(qasm_no_measurements, device_id)
+
+
+# ===========================================================================
+# Device calibrations / coupling map
+# ===========================================================================
+
+CEPHEUS_QRN = "rigetti:rigetti:qpu:cepheus-1-108q"
+
+
+def _cepheus_calibration() -> DeviceCalibration:
+    """Calibration payload mirroring the production API response for Cepheus-1-108Q."""
+    return DeviceCalibration.model_validate(
+        {
+            "physicalDeviceId": "rigetti:Cepheus-1-108Q",
+            "deviceQRNs": [CEPHEUS_QRN, "aws:rigetti:qpu:cepheus-1-108q"],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-07-21T18:55:46+00:00",
+            "fetchedAt": "2026-07-21T19:00:18.386133+00:00",
+            "qubits": {
+                "0": {"readoutError": 0.04, "gateError": {"rb": 0.001863846742939046}},
+                "1": {"readoutError": 0.083, "gateError": {"rb": 0.0021}},
+            },
+            "edges": {
+                "gateError": {
+                    "cz": [
+                        {"source": 3, "target": 12, "value": 0.008527328396328415},
+                        {"source": 0, "target": 1, "value": 0.024671627793689366},
+                    ],
+                    # Same physical pair under a second gate: must not duplicate the edge.
+                    "iswap": [{"source": 0, "target": 1, "value": 0.031}],
+                }
+            },
+        }
+    )
+
+
+def test_get_calibrations_delegates_to_client(mock_profile):
+    """get_calibrations returns the client's DeviceCalibration for this device."""
+    client = Mock()
+    calibration = _cepheus_calibration()
+    client.get_device_calibrations.return_value = calibration
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.get_calibrations() is calibration
+    client.get_device_calibrations.assert_called_once_with(device.id)
+
+
+def test_get_calibrations_none_when_unavailable(mock_profile):
+    """Devices without published calibration data return None."""
+    client = Mock()
+    client.get_device_calibrations.return_value = None
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.get_calibrations() is None
+
+
+def test_coupling_map_derived_deduped_and_sorted(mock_profile):
+    """coupling_map is the sorted, deduplicated set of calibrated qubit pairs."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.coupling_map == ((0, 1), (3, 12))
+
+
+def test_coupling_map_none_without_calibration(mock_profile):
+    """coupling_map is None when the device has no calibration data."""
+    client = Mock()
+    client.get_device_calibrations.return_value = None
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    assert device.coupling_map is None
+
+
+def test_coupling_map_cached_per_device(mock_profile):
+    """coupling_map fetches calibration once and caches the result."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    first = device.coupling_map
+    second = device.coupling_map
+
+    assert first == second
+    client.get_device_calibrations.assert_called_once()
+
+
+# ===========================================================================
+# Device best qubits selection
+# ===========================================================================
+
+
+def _calibration(qubits: dict, cz_edges: list, **extra_gates) -> DeviceCalibration:
+    """Compact builder: qubits maps id -> (readout_error, rb_error), edges are
+    (source, target, error) triples keyed by gate name."""
+    gate_error = {"cz": [{"source": s, "target": t, "value": v} for s, t, v in cz_edges]}
+    for gate_name, edges in extra_gates.items():
+        gate_error[gate_name] = [{"source": s, "target": t, "value": v} for s, t, v in edges]
+    return DeviceCalibration.model_validate(
+        {
+            "physicalDeviceId": "rigetti:Cepheus-1-108Q",
+            "deviceQRNs": [CEPHEUS_QRN],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-07-21T18:55:46+00:00",
+            "fetchedAt": "2026-07-21T19:00:18.386133+00:00",
+            "qubits": {
+                str(q): {"readoutError": ro, "gateError": {"rb": rb}}
+                for q, (ro, rb) in qubits.items()
+            },
+            "edges": {"gateError": gate_error},
+        }
+    )
+
+
+def _device_with(calibration: DeviceCalibration | None, mock_profile) -> QbraidDevice:
+    client = Mock()
+    client.get_device_calibrations.return_value = calibration
+    return QbraidDevice(profile=mock_profile, client=client)
+
+
+def test_best_qubits_none_without_calibration(mock_profile):
+    """best_qubits is None when the device has no calibration data."""
+    device = _device_with(None, mock_profile)
+    assert device.best_qubits(2) is None
+
+
+def test_best_qubits_rejects_non_gate_model_devices():
+    """Analog devices have no fixed qubit lattice: the question is ill-posed."""
+    profile = TargetProfile(
+        device_id="aws:quera:qpu:aquila",
+        simulator=False,
+        experiment_type=ExperimentType.ANALOG,
+    )
+    device = QbraidDevice(profile=profile, client=Mock())
+    with pytest.raises(ValueError, match="gate-model devices.*ANALOG"):
+        device.best_qubits(2)
+
+
+def test_best_qubits_rejects_non_positive(mock_profile):
+    """num_qubits must be a positive integer."""
+    device = _device_with(_cepheus_calibration(), mock_profile)
+    with pytest.raises(ValueError, match="positive integer"):
+        device.best_qubits(0)
+
+
+def test_best_qubits_single_by_combined_qubit_metrics(mock_profile):
+    """n=1 picks the qubit with the best combined readout and gate fidelity."""
+    calibration = _calibration(
+        {0: (0.04, 0.002), 1: (0.01, 0.001), 2: (0.02, 0.001)},
+        [(0, 1, 0.01), (1, 2, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(1) == (1,)
+
+
+def test_best_qubits_pair_prefers_lowest_edge_error(mock_profile):
+    """With equal qubit metrics, the pair with the lowest edge error wins."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.03), (2, 3, 0.008)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+def test_best_qubits_folds_readout_into_edge_choice(mock_profile):
+    """With equal edge errors, the pair whose qubits read out better wins."""
+    calibration = _calibration(
+        {0: (0.05, 0.001), 1: (0.05, 0.001), 2: (0.01, 0.001), 3: (0.01, 0.001)},
+        [(0, 1, 0.01), (2, 3, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+def test_best_qubits_chain_avoids_bad_edge(mock_profile):
+    """Chain search routes around a high-error edge."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.005), (1, 2, 0.1), (1, 3, 0.005)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(3) == (0, 1, 3)
+
+
+def test_best_qubits_edge_uses_best_gate_by_default(mock_profile):
+    """Each edge takes its lowest error across calibrated gates unless pinned."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.05), (2, 3, 0.02)],
+        iswap=[(0, 1, 0.005)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (0, 1)
+    assert device.best_qubits(2, gate="cz") == (2, 3)
+
+
+def test_best_qubits_unknown_gate_raises(mock_profile):
+    """Requesting a gate with no calibrated edges raises with the options."""
+    device = _device_with(_cepheus_calibration(), mock_profile)
+    with pytest.raises(ValueError, match="Available gates.*cz.*iswap"):
+        device.best_qubits(2, gate="xy")
+
+
+def test_best_qubits_more_qubits_than_calibrated_raises(mock_profile):
+    """Requesting more qubits than the device calibrates raises rather than truncating."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.01, 0.001)}, [])
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="2 calibrated qubits; 3 requested"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_chain_returned_lowest_id_first(mock_profile):
+    """A chain comes back lowest-id-first, whichever direction the search recorded it.
+
+    A path and its reverse cost the same in exact arithmetic, so which orientation the search
+    keeps comes down to summation order in floating point. On this star — cheap arm to qubit 1,
+    equal expensive arms to 0 and 2 — the winning chain is recorded as 2-3-1 and normalized.
+    """
+    calibration = _calibration(
+        {0: (0.02, 0.02), 1: (0.002, 0.002), 2: (0.002, 0.02), 3: (0.02, 0.002)},
+        [(0, 3, 0.05), (1, 3, 0.002), (2, 3, 0.05)],
+    )
+    device = _device_with(calibration, mock_profile)
+    chain = device.best_qubits(3)
+    assert chain == (1, 3, 2)
+    assert chain[0] < chain[-1]
+
+
+def test_best_qubits_all_to_all_ranks_qubits(mock_profile):
+    """Devices with qubit metrics but no edges return the n best qubits."""
+    calibration = _calibration(
+        {0: (0.05, 0.002), 1: (0.01, 0.001), 2: (0.02, 0.001)},
+        [],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (1, 2)
+
+
+def test_best_qubits_no_chain_long_enough_raises(mock_profile):
+    """Disconnected coupling graph with no path of the requested length raises."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.01), (2, 3, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="No connected chain of 3 qubits"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_excludes_dead_edges(mock_profile):
+    """Edges at 100% error are unusable and never selected."""
+    calibration = _calibration(
+        {0: (0.02, 0.001), 1: (0.02, 0.001)},
+        [(0, 1, 1.0)],
+    )
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+        device.best_qubits(2)
