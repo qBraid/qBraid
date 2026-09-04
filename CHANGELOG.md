@@ -47,6 +47,7 @@ Writing an entry:
 ### Deprecated
 
 ### Removed
+- Removed `pytket-braket` from the `braket` extra. It served only the optional IonQ-via-Braket gateset transform, which now logs a hint and is skipped when the package is absent — `pip install pytket-braket` restores it. Decouples the extra from pytket-braket's own `amazon-braket-sdk` pin ([#1176](https://github.com/qBraid/qBraid/pull/1176))
 
 ### Fixed
 - Fixed `cached_method` raising `TypeError` before entering decorated methods when an argument was not JSON serializable; such calls now bypass the cache entirely (the method runs, the result is not stored) rather than being keyed by a guessed encoding, which could serve one argument's cached result to a different argument ([#1284](https://github.com/qBraid/qBraid/pull/1284))
