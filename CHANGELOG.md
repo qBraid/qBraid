@@ -34,6 +34,7 @@ Writing an entry:
 - Added `QPerfectProvider`, giving access to QPerfect's MIMIQ cloud emulator through the new `qperfect` extra. Authenticate with `QPERFECT_USERNAME` and `QPERFECT_PASSWORD`, or with a `QPERFECT_API_TOKEN` refresh token — MIMIQ tokens expire after about a day, so credentials are the durable option. Batch submissions must name an `algorithm` (`"statevector"` or `"mps"`) — MIMIQ's default `"auto"` works only for a single circuit ([#1299](https://github.com/qBraid/qBraid/pull/1299), [#1332](https://github.com/qBraid/qBraid/pull/1332))
 
 ### Improved / Modified
+- The AQT test suite now runs in CI. `aqt-connector` and `pasqal-cloud` pin incompatible `auth0-python` ranges, so the `aqt` extra never installed in the main test environment and its 75 tests skipped silently; they now run in a dedicated `unit-tests-aqt` job whose coverage merges on Codecov ([#1368](https://github.com/qBraid/qBraid/pull/1368))
 - `QuantinuumDeviceError` and `QuantinuumJobError` now live in a public `qbraid.runtime.quantinuum.exceptions` module and are exported from the package; the old import paths still work ([#1297](https://github.com/qBraid/qBraid/pull/1297))
 - PyPI releases now authenticate with trusted publishing (OIDC) instead of a long-lived API token. `publish.yml` and `pre-release.yml` request `id-token: write` and let `pypa/gh-action-pypi-publish` mint a short-lived credential, so no publishing secret is stored in the repository ([#1346](https://github.com/qBraid/qBraid/pull/1346))
 - The README conversion graph is redrawn as theme-aware vector art covering all 25 program types and 61 conversions the SDK ships, replacing a raster image generated at v0.9.7 ([#1349](https://github.com/qBraid/qBraid/pull/1349))
@@ -48,6 +49,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed `qiskit_to_ionq` submitting inflated registers for circuits transpiled with `qiskit>=2`, which places a circuit onto the backend's full topology — a 1-qubit circuit became 29 qubits with relabeled gates, failing or timing out on the simulator. Gates are now mapped back to the original register through the circuit's `TranspileLayout` ([#1142](https://github.com/qBraid/qBraid/pull/1142))
 - Fixed `pyquil_to_cirq` on programs whose gate angles come from a `DECLARE`, including multi-slot registers and Quil functions such as `SIN(theta)`. Such angles now arrive as sympy symbols, so the circuit can be printed, resolved, and simulated; previously all three failed. `cirq_to_pyquil` now emits the matching `DECLARE`s, so a parameterized program survives a round trip with every register named as before ([#1358](https://github.com/qBraid/qBraid/pull/1358)).
 - Fixed AWS and IBM jobs silently returning `UNKNOWN` when a vendor reports an unrecognized status ([#1351](https://github.com/qBraid/qBraid/pull/1351)).
 - Fixed `load_provider()` and `load_job()` returning only base types to static type checkers for AQT, Pasqal, Quantinuum, QUDORA, and Rigetti ([#1350](https://github.com/qBraid/qBraid/pull/1350)).

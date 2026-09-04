@@ -159,12 +159,6 @@ omit = [
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/transpiler/conversions/*/*_extras.py",
   "**/qbraid/programs/circuits/*",
-  # aqt-connector requires auth0-python>=4, pasqal-cloud requires auth0-python<4, so the aqt
-  # extra cannot be installed alongside requirements-dev.txt and tests/runtime/aqt is skipped
-  # here. Those tests cover the modules below fully in an env built from `pip install .[aqt]`.
-  "**/qbraid/runtime/aqt/*",
-  "**/qbraid/programs/gate_model/aqt_connector.py",
-  "**/qbraid/transpiler/conversions/qiskit/qiskit_to_aqt_connector.py",
 ]
 
 [tool.coverage.paths]
