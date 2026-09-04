@@ -17,6 +17,7 @@ Remote integration tests for the QPerfect (MIMIQ) provider, device, and job clas
 
 These submit real jobs to the MIMIQ cloud emulator and verify end-to-end result flow.
 """
+
 from __future__ import annotations
 
 import os
@@ -30,7 +31,13 @@ pytest.importorskip("mimiq_qiskit")
 from qiskit import QuantumCircuit  # noqa: E402
 
 from qbraid.runtime.enums import DeviceStatus, JobStatus  # noqa: E402
-from qbraid.runtime.qperfect import QPerfectDevice, QPerfectJob, QPerfectProvider  # noqa: E402
+from qbraid.runtime.exceptions import ResourceNotFoundError  # noqa: E402
+from qbraid.runtime.qperfect import (  # noqa: E402
+    QPerfectDevice,
+    QPerfectJob,
+    QPerfectJobError,
+    QPerfectProvider,
+)
 from qbraid.runtime.result import Result  # noqa: E402
 
 DEVICE_ID = "mimiq-emulator"
@@ -116,3 +123,84 @@ def test_batch_run_returns_counts_per_circuit():
     assert isinstance(counts, list)
     assert len(counts) == 2
     assert set(counts[0]) <= {"00", "11"}
+
+
+@pytest.mark.remote
+def test_result_retrieved_from_job_id_alone():
+    """A job rebuilt from its id — no run() handle — returns the same counts."""
+    provider = _get_provider()
+    device = provider.get_device(DEVICE_ID)
+    circuit = QuantumCircuit(3, 3)
+    circuit.x(1)
+    circuit.measure([0, 1, 2], [0, 1, 2])
+    submitted = device.run(circuit, shots=SHOTS)
+    submitted.result()
+
+    rebuilt = QPerfectJob(
+        job_id=submitted.id, connection=provider.connection, device=device, shots=SHOTS
+    )
+    assert rebuilt.status() == JobStatus.COMPLETED
+    assert rebuilt.result().data.get_counts() == {"010": SHOTS}
+
+
+@pytest.mark.remote
+def test_cancel_running_job():
+    """A cancelled job reports CANCELLED, and result() refuses to invent data for it.
+
+    The circuit is sized so it is still queued or running when the cancel lands; MIMIQ rejects a
+    cancel once the job is terminal.
+    """
+    device = _get_provider().get_device(DEVICE_ID)
+    circuit = QuantumCircuit(30, 30)
+    for _ in range(40):
+        for qubit in range(30):
+            circuit.h(qubit)
+        for qubit in range(29):
+            circuit.cx(qubit, qubit + 1)
+    circuit.measure(range(30), range(30))
+
+    job = device.run(circuit, shots=1000, algorithm="statevector")
+    job.cancel()
+
+    with pytest.raises(QPerfectJobError, match="was cancelled"):
+        job.result()
+    assert job.status() == JobStatus.CANCELLED
+
+
+@pytest.mark.remote
+def test_cancel_completed_job_raises():
+    """MIMIQ rejects cancelling a terminal job, and the vendor 400 is wrapped."""
+    device = _get_provider().get_device(DEVICE_ID)
+    job = device.run(_bell(), shots=SHOTS)
+    job.result()
+
+    with pytest.raises(QPerfectJobError, match="Failed to cancel job"):
+        job.cancel()
+
+
+@pytest.mark.remote
+def test_failed_job_reports_mimiq_reason():
+    """A job the backend cannot run fails with MIMIQ's explanation, not a bare status.
+
+    40 qubits exceeds the state vector backend's memory, which is the cheapest reproducible
+    server-side failure: it errors within a second of starting.
+    """
+    device = _get_provider().get_device(DEVICE_ID)
+    circuit = QuantumCircuit(40, 40)
+    circuit.h(range(40))
+    circuit.measure(range(40), range(40))
+
+    job = device.run(circuit, shots=SHOTS, algorithm="statevector")
+    with pytest.raises(QPerfectJobError, match=r"failed: .*memory"):
+        job.result()
+    assert job.status() == JobStatus.FAILED
+
+
+@pytest.mark.remote
+def test_unknown_job_id_raises_resource_not_found():
+    """An id MIMIQ has no record of raises a qBraid error, not a mimiqlink ConnectionError."""
+    provider = _get_provider()
+    job = QPerfectJob(job_id="not-a-real-job-id", connection=provider.connection)
+
+    with pytest.raises(ResourceNotFoundError, match="Could not retrieve execution details"):
+        job.status()
