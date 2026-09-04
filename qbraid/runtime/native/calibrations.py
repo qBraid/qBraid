@@ -83,7 +83,9 @@ def best_chain(
 
     Exhaustive depth-first search with branch-and-bound pruning. On sparse
     hardware lattices this is fast for the chain lengths circuits use in
-    practice; it is not intended for lengths approaching the full device.
+    practice; it is not intended for lengths approaching the full device. On a
+    107-qubit lattice, ``length`` 20 returns in about a second and 24 in under
+    ten, while 30 does not finish in a minute.
     """
     adjacency: dict[int, list[tuple[int, float]]] = defaultdict(list)
     for (node_a, node_b), cost in edge_costs_map.items():
