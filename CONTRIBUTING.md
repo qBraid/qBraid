@@ -218,6 +218,123 @@ status quietly reads `UNKNOWN` because the vendor added an enum member.
 - The same applies to lookup tables keyed on vendor data: index directly (`_STATUS_MAP[status]`)
   so an unmapped value raises, rather than `.get(status, SOME_DEFAULT)`, which hides it.
 
+## Integration checklists
+
+Adding a provider or a program type touches registration surfaces spread across the whole
+repo, and the history of merged provider PRs shows every surface below has been forgotten
+at least once — five providers in a row shipped without loader overloads (backfilled in
+[#1350](https://github.com/qBraid/qBraid/pull/1350)), Open Quantum shipped without
+discovery entry points ([#1347](https://github.com/qBraid/qBraid/pull/1347)), two
+providers merged without remote tests, and the README provider list trails the actual
+provider set. These checklists are compiled from that audit plus the current state of the
+integrations. Where a guard test exists, it is named — run it before pushing.
+
+### Adding a runtime provider
+
+**Implementation**
+
+- [ ] `qbraid/runtime/<name>/` — `provider.py`, `device.py`, `job.py`, and a public
+  `exceptions.py` (exceptions get their own importable module, exported from the package;
+  `qbraid/runtime/quantinuum/` is the reference shape). `__init__.py` carries the
+  autosummary docstring and `__all__`.
+- [ ] Vendor-status lookup is fail-loud: index the map directly and raise on unmapped
+  values (see [Fail Loudly on Missing Data](#fail-loudly-on-missing-data)).
+
+**Registration — the invisible surfaces**
+
+- [ ] `pyproject.toml` entry points, **both** groups:
+  `[project.entry-points."qbraid.providers"]` and `[project.entry-points."qbraid.jobs"]`.
+  Discovery via `get_providers()` / `load_provider()` / `load_job()` needs both.
+- [ ] `qbraid/runtime/loader.py`: the `TYPE_CHECKING` import plus a `load_provider` and a
+  `load_job` `@overload`, in alphabetical position.
+  `tests/runtime/test_loader.py::test_loader_overloads_match_entrypoints` fails if you
+  forget.
+- [ ] `qbraid/runtime/__init__.py`: `_lazy` dict entry, `TYPE_CHECKING` imports, and the
+  docstring autosummary listing.
+
+**Dependencies**
+
+- [ ] Optional-dependency extra in `pyproject.toml`, with an upper bound — vendor SDKs
+  routinely break within a minor series (qnexus 0.48.x shipped an undeclared import three
+  releases running; oqc-qcaas-client 3.23.0 removed an enum member the SDK read at import).
+- [ ] `requirements-dev.txt`, so CI actually installs the SDK and runs your tests. If the
+  vendor SDK cannot co-resolve with the main environment (mimiqcircuits pins
+  `protobuf>=6.30` against cirq-google's `<6`), do **not** leave the suite silently
+  skipping: add an isolated tox env and workflow job instead — see `unit-tests-qperfect`
+  in `tox.ini` and `test-qperfect` in `.github/workflows/main.yml`. Codecov merges that
+  job's report with the matrix job's, so coverage still counts.
+
+**Docs**
+
+- [ ] `docs/api/qbraid.runtime.rst`: add the submodule to the autosummary list
+  (alphabetical).
+- [ ] `docs/conf.py` `autodoc_mock_imports`: add the vendor SDK if any module imports it
+  at module scope — the docs build installs no extras and autosummary imports the whole
+  package. Keep vendor imports lazy where you can; note that runtime-evaluated
+  `X | Y` annotations over mocked names crash the build, so either add
+  `from __future__ import annotations` or quote the alias.
+- [ ] `README.md`: add the provider to the linked provider list in the qBraid Runtime
+  install section.
+- [ ] Provider guide on [docs.qbraid.com](https://docs.qbraid.com/v2/sdk/user-guide/runtime)
+  (separate repo) — the README links resolve there.
+
+**Tests**
+
+- [ ] `tests/runtime/<name>/` unit tests with production-shaped fixtures (see
+  [Testing Philosophy](#testing-philosophy)).
+- [ ] `tests/runtime/<name>/test_<name>_remote.py` behind the `remote` marker, exercised
+  against the live API at least once before merge (see
+  [Running Tests Requiring Remote Access](#running-tests-requiring-remote-access)).
+- [ ] The directory must **collect** cleanly without the extra installed:
+  `pytest.importorskip` at module top, or `collect_ignore` in the directory's
+  `conftest.py`. Watch module-level `parametrize` arguments — they evaluate at import
+  time, so a guarded import that fails still crashes collection if the decorator names it.
+
+**Bookkeeping**
+
+- [ ] `CHANGELOG.md` entry under `[Unreleased]` (style notes at the top of that file).
+- [ ] Keep the new package typed if possible; if it must join the `[tool.mypy]` `exclude`
+  list in `pyproject.toml`, say why in the PR.
+
+**Verify**
+
+```bash
+tox -e unit-tests -- tests/runtime/<name> tests/runtime/test_loader.py --remote false
+tox -e docs
+python -c "from qbraid.runtime import get_providers; print(get_providers())"
+```
+
+Then once more in a clean environment *without* the extra: the test directory must skip,
+not error.
+
+### Adding a program type
+
+- [ ] `qbraid/programs/<family>/<name>.py` wrapper class (`gate_model/`, `ahs/`, or
+  `annealing/`).
+- [ ] `qbraid/programs/_import.py`: add the lazy import hook and the module list entry.
+- [ ] `pyproject.toml` `[project.entry-points."qbraid.programs"]`: `alias = wrapper path`.
+  Derive the alias from the package name — every entry in `NATIVE_REGISTRY` does.
+- [ ] At least one transpiler edge: `qbraid/transpiler/conversions/<src>/<src>_to_<alias>.py`,
+  registered in that conversions package's `__init__.py` (import, `__all__`, docstring
+  autosummary). Extras-gated conversions carry `@requires_extras`.
+- [ ] Regenerate the conversion-graph art: `python bin/generate_conversion_graph.py` and
+  commit both SVGs — `tests/transpiler/test_conversion_graph_diagram.py` rejects stale
+  art. An alias reachable only through an extras package goes in that script's
+  `EXTERNAL_ALIASES`; a type with no edges goes in `ISOLATED_TYPES`.
+- [ ] `docs/conf.py` mocks and dependency handling: same rules as providers.
+- [ ] Tests: wrapper unit tests, and conversion tests asserting round-trip or unitary
+  equivalence rather than string equality. Adding `tests/fixtures/<alias>/` circuit
+  builders enrolls the type in the shared interface tests.
+- [ ] `CHANGELOG.md` entry.
+
+**Verify**
+
+```bash
+python bin/generate_conversion_graph.py   # must be a no-op after your commit
+pytest tests/transpiler/test_conversion_graph_diagram.py
+python -c "from qbraid.programs import QPROGRAM_REGISTRY; print(QPROGRAM_REGISTRY)"
+```
+
 ## Pull Requests
 
 Before submitting a pull request (PR), ensure your contributions comply with the [Developer's Certificate of Origin](https://developercertificate.org/), confirming your right to submit the work under this project's [LICENSE](LICENSE). Contributors are encouraged to [sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits), however, it is not required.
