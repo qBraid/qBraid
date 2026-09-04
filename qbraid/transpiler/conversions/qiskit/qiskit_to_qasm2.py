@@ -30,7 +30,10 @@ if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm2StringType
 
 
-@weight(0.999)
+# 1.0, not the 0.999 it carried from 2025-01 (#880): that value matched no benchmark and
+# existed only as a hidden tie-break. Verified 2026-08: qiskit gate coverage is 1.0 and
+# measured circuits survive with routes through this edge preferred on ties.
+@weight(1)
 def qiskit_to_qasm2(circuit: qiskit_.QuantumCircuit) -> Qasm2StringType:
     """Returns OpenQASM 2 string equivalent to the input Qiskit circuit.
 

@@ -134,16 +134,15 @@ def test_circuits_allclose_mismatched_dimensions_returns_false():
 
 
 def test_circuits_allclose_empty_target_unitary_returns_false():
-    """A measurement-only circuit converts to an empty Braket circuit (no operating
-    qubits), whose unitary has shape ``(0,)``. ``circuits_allclose`` must return
-    False instead of raising an ``IndexError`` in ``unitary_rev_qubits``."""
+    """An empty Braket circuit's unitary has shape ``(0,)``. ``circuits_allclose``
+    must return False instead of raising an ``IndexError`` in ``unitary_rev_qubits``."""
     cirq = pytest.importorskip("cirq")
     pytest.importorskip("braket")
+    from braket.circuits import Circuit as BKCircuit  # pylint: disable=import-outside-toplevel
+
     from qbraid.interface import circuits_allclose  # pylint: disable=import-outside-toplevel
-    from qbraid.transpiler import transpile  # pylint: disable=import-outside-toplevel
 
     q = cirq.LineQubit.range(3)
     source = cirq.Circuit(cirq.measure(*q, key="m"))
-    target = transpile(source, "braket")
 
-    assert circuits_allclose(source, target) is False
+    assert circuits_allclose(source, BKCircuit()) is False
