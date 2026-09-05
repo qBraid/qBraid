@@ -28,6 +28,8 @@ from cirq import ops, value
 from qbraid._version import __version__ as qbraid_version
 from qbraid.transpiler.annotations import weight
 
+from ._utils import _validate_resolved_parameters
+
 if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm2StringType
 
@@ -148,7 +150,11 @@ def cirq_to_qasm2(
 
     Returns:
         Qasm2StringType: QASM string equivalent to the input Cirq circuit.
+
+    Raises:
+        ProgramConversionError: If the circuit contains unresolved parameters.
     """
+    _validate_resolved_parameters(circuit, "OpenQASM 2")
     circuit = map_zpow_and_unroll(circuit)
     qasm = _order_cregs_by_key(str(_to_qasm_output(circuit, header, precision, qubit_order)))
     # format the qasm before returning

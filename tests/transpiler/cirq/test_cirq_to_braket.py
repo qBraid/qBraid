@@ -157,6 +157,21 @@ def test_to_braket_parameterized_single_qubit_gates(qubit_index):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+def test_to_braket_rejects_unresolved_parameters():
+    """Unresolved names are reported before numeric Braket conversion begins."""
+    alpha, theta = sympy.symbols("alpha theta")
+    circuit = Circuit(ops.rx(theta).on(LineQubit(0)), ops.ry(alpha).on(LineQubit(1)))
+
+    with pytest.raises(
+        ProgramConversionError,
+        match=(
+            r"Cannot convert a Cirq circuit to Amazon Braket with unresolved parameters: "
+            r"alpha, theta\. Resolve the parameters before conversion\."
+        ),
+    ):
+        cirq_to_braket(circuit)
+
+
 def test_to_braket_non_parameterized_two_qubit_gates():
     """Test converting circuit containing non-parameterized two-qubit gates."""
     qreg = LineQubit.range(2, 5)

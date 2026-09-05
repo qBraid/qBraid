@@ -54,6 +54,8 @@ import qbraid.programs.gate_model.cirq
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
+from ._utils import _validate_resolved_parameters
+
 try:
     from .braket_custom import C as BKControl
 except ImportError:  # pragma: no cover
@@ -72,7 +74,11 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
 
     Returns:
         Braket circuit equivalent to the input Cirq circuit.
+
+    Raises:
+        ProgramConversionError: If the circuit contains unresolved parameters.
     """
+    _validate_resolved_parameters(circuit, "Amazon Braket")
     cirq_qubits = list(circuit.all_qubits())
     cirq_int_qubits = [
         qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
