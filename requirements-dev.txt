@@ -26,7 +26,7 @@ qnexus>=0.39.0,<0.48
 # Temporarily disabled: pytket-qiskit requires qiskit>=2.3 while qiskit-qir pins
 # qiskit<2.0. Re-enable once qbraid-qir[qiskit] replaces qiskit-qir (see #1132).
 # pytket-qiskit>=0.71.0
-autoqasm>=0.1.2,<0.3
+autoqasm>=0.2.0,<0.3
 myqlm-interop>=2.0
 
 # optional runtime dependencies
