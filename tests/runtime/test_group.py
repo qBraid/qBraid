@@ -917,3 +917,57 @@ class TestPartialFailureRegistration:
             assert len(group._jobs) == 2
             # create_job was called exactly three times (2 successes + 1 fail)
             assert failing_client.create_job.call_count == 3
+
+
+# ===========================================================================
+# H. Credential handling
+# ===========================================================================
+
+
+class TestGroupJobSessionCredentials:
+    """How the session obtains a client when one is not handed to it."""
+
+    def test_api_key_is_forwarded_to_the_default_client(self):
+        """An api_key builds the default client, matching QbraidProvider."""
+        session = GroupJobSession(name="keyed", api_key="secret-key")
+
+        with patch("qbraid.runtime.group.QuantumRuntimeClient") as mock_client_cls:
+            client = session.client
+
+        mock_client_cls.assert_called_once_with(api_key="secret-key")
+        assert client is mock_client_cls.return_value
+
+    def test_client_is_built_once_and_cached(self):
+        """Repeated access reuses the client rather than re-authenticating."""
+        session = GroupJobSession(api_key="secret-key")
+
+        with patch("qbraid.runtime.group.QuantumRuntimeClient") as mock_client_cls:
+            first = session.client
+            second = session.client
+
+        assert first is second
+        assert mock_client_cls.call_count == 1
+
+    def test_no_api_key_defers_to_the_configured_credentials(self):
+        """Without an api_key the client falls back to qbraidrc / env vars."""
+        session = GroupJobSession()
+
+        with patch("qbraid.runtime.group.QuantumRuntimeClient") as mock_client_cls:
+            session.client  # pylint: disable=pointless-statement
+
+        mock_client_cls.assert_called_once_with(api_key=None)
+
+    def test_api_key_and_client_together_raise(self):
+        """The two are alternatives, so supplying both is a caller error."""
+        with pytest.raises(ValueError, match="not both"):
+            GroupJobSession(api_key="secret-key", client=MockClient())
+
+    def test_explicit_client_is_used_verbatim(self):
+        """An explicit client is never rebuilt from credentials."""
+        client = MockClient()
+        session = GroupJobSession(client=client)
+
+        with patch("qbraid.runtime.group.QuantumRuntimeClient") as mock_client_cls:
+            assert session.client is client
+
+        mock_client_cls.assert_not_called()

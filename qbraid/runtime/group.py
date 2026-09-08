@@ -144,6 +144,12 @@ class GroupJobSession:
         name: Optional human-readable name for the group.
         tags: Optional tags for filtering/organizing groups.
         metadata: Optional metadata dict.
+        api_key: Optional qBraid API key used to build the default client.
+            Mutually exclusive with ``client``. When neither is given, the
+            client falls back to the configured credentials (``qbraidrc`` or
+            ``QBRAID_API_KEY``), so a session that authenticates by passing
+            ``api_key`` to :class:`~qbraid.runtime.QbraidProvider` must pass it
+            here too, or hand over ``provider.client``.
         client: Optional QuantumRuntimeClient instance. If not provided,
             a default client is created.
         max_ttl: Optional max time-to-live in seconds (1–86400). After this
@@ -179,12 +185,16 @@ class GroupJobSession:
         metadata: dict[str, Any] | None = None,
         client: Any | None = None,
         max_ttl: int | None = None,
+        api_key: str | None = None,
     ):
         if max_ttl is not None and (max_ttl < 1 or max_ttl > 86400):
             raise ValueError(f"max_ttl must be between 1 and 86400 seconds, got {max_ttl}")
+        if api_key and client:
+            raise ValueError("Provide either api_key or client, not both.")
         self._name = name
         self._tags = tags or {}
         self._metadata = metadata or {}
+        self._api_key = api_key
         self._client = client
         self._max_ttl = max_ttl
         self._group_data: GroupJob | None = None
@@ -199,7 +209,7 @@ class GroupJobSession:
     def client(self):
         """Lazily initialize the QuantumRuntimeClient."""
         if self._client is None:
-            self._client = QuantumRuntimeClient()
+            self._client = QuantumRuntimeClient(api_key=self._api_key)
         return self._client
 
     @property
