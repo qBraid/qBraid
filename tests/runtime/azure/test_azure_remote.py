@@ -296,6 +296,7 @@ def test_workspace_from_connection_string():
 
 @pytest.mark.remote
 @pytest.mark.skipif(not cirq_found, reason="cirq not installed")
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed, so Rigetti has no ProgramSpec")
 def test_submit_cirq_to_rigetti(provider: AzureQuantumProvider):
     """A Cirq circuit reaches the Rigetti simulator and comes back with counts.
 
