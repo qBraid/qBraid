@@ -37,6 +37,7 @@ from azure.quantum import Job
 
 from qbraid.runtime.ionq.job import IonQJob
 from qbraid.runtime.postprocess import counts_to_probabilities, normalize_data
+from qbraid.runtime.result_data import MeasCount
 
 from .io_format import OutputDataFormat
 
@@ -252,7 +253,7 @@ class AzureResultBuilder:
         return {"counts": counts, "probabilities": probabilities}
 
     @staticmethod
-    def _analog_histogram(az_result: dict[str, Any]) -> dict[str, int]:
+    def _analog_histogram(az_result: dict[str, Any]) -> MeasCount:
         """Return the ``{bitstring: count}`` histogram from an AHS result payload.
 
         Pasqal's emulators wrap the histogram as ``{"counter": ..., "raw": [...]}``, where
