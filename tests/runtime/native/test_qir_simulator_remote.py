@@ -59,8 +59,10 @@ def bell_qir_module():
     qis.mz(q0, r0)
     qis.mz(q1, r1)
 
+    # Take the result pointer type off a result value: pyqir 0.12 dropped the
+    # `result_type` helper when QIR moved to opaque pointers.
     i8_ptr = pyqir.PointerType(pyqir.IntType(ctx, 8))
-    rt_type = pyqir.FunctionType(pyqir.Type.void(ctx), [pyqir.result_type(ctx), i8_ptr])
+    rt_type = pyqir.FunctionType(pyqir.Type.void(ctx), [r0.type, i8_ptr])
     rt_fn = pyqir.Function(
         rt_type, pyqir.Linkage.EXTERNAL, "__quantum__rt__result_record_output", mod
     )
