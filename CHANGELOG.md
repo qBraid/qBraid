@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added `qbraid.runtime.estimate()` and `QbraidProvider.estimate()` for resource and cost frontiers, with polling, open questions, narration, and optional pandas export through `QbraidEstimate`.
 - Added `QuantumDevice.supported_run_inputs` method, which returns the sorted list of program type aliases that can be passed as `run_input` to the device's `run` method ([#803](https://github.com/qBraid/qBraid/issues/803))
 - Added `QudoraProvider`, `QudoraDevice`, and `QudoraJob` classes implementing the qBraid runtime interface for the [QUDORA Cloud](https://api.qudora.com). Authenticates with a `Bearer` API token and submits OpenQASM directly over REST (no vendor SDK); reuses qBraid's existing `qasm2`/`qasm3` program specs so no converter is required. Device ids are backend `username`s (email addresses), and a program list is submitted as a single batched QUDORA job returning one histogram per program ([#1292](https://github.com/qBraid/qBraid/pull/1292))
 - Added `QbraidJob.compiled_program()`, returning the vendor-compiled program that executed on the QPU as a `Program` (`format` is `"qasm3"` for IQM, `"quil"` for Rigetti). It reveals the physical qubits selected and the logical-to-physical mapping the vendor's compiler chose. Returns `None` when no compiled program exists — a simulator, a job that has not completed, or one submitted before the backend captured them — so absence does not need a `try`/`except`. Requires `qbraid-core>=0.3.9`

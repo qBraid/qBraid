@@ -18,6 +18,14 @@ quantum jobs through (native) qBraid APIs.
 
 .. currentmodule:: qbraid.runtime.native
 
+Functions
+---------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    estimate
+
 Classes
 --------
 
@@ -30,13 +38,15 @@ Classes
     QbraidProvider
     QbraidDevice
     QbraidJob
+    QbraidEstimate
 
 """
 from qbraid_core import QbraidClientV1, QbraidSessionV1, Session
 
 from .device import QbraidDevice
+from .estimate import QbraidEstimate
 from .job import QbraidJob
-from .provider import QbraidProvider
+from .provider import QbraidProvider, estimate
 
 __all__ = [
     "Session",
@@ -45,4 +55,6 @@ __all__ = [
     "QbraidProvider",
     "QbraidDevice",
     "QbraidJob",
+    "QbraidEstimate",
+    "estimate",
 ]
