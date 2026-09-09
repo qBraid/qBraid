@@ -27,6 +27,9 @@ on:
           - patch
         default: 'patch'
 
+permissions:
+  contents: read
+
 jobs:
   bump-version:
     runs-on: ubuntu-latest

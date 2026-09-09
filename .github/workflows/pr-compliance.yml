@@ -19,10 +19,16 @@ on:
     branches: ['main']
     types: [opened, reopened, ready_for_review, synchronize]
 
+permissions:
+  contents: read
+
 jobs:
   remind:
     name: Changelog
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # the reminder posts a comment on the PR
     if: ${{ github.actor != 'dependabot' && github.actor != 'dependabot[bot]' && github.actor != 'github-actions' && github.actor != 'github-actions[bot]' && github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v7.0.1

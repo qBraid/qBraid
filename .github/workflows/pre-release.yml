@@ -17,6 +17,9 @@ name: Pre-release qbraid to PyPi
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   pypi-publish:
     name: Build dist & upload to PyPI
