@@ -41,6 +41,7 @@ Functions
     load_job
     get_providers
     load_provider
+    estimate
 
 Classes
 --------
@@ -59,6 +60,7 @@ Classes
     AnalogResultData
     AnalogShotResult
     AnnealingResultData
+    QbraidEstimate
 
 Exceptions
 ------------
@@ -153,6 +155,8 @@ __all__ = [
     "AnnealingResultData",
     "ValidationLevel",
     "PROVIDERS",
+    "QbraidEstimate",
+    "estimate",
 ]
 
 _lazy = {
@@ -228,6 +232,8 @@ _lazy = {
         "QbraidProvider",
         "QbraidDevice",
         "QbraidJob",
+        "QbraidEstimate",
+        "estimate",
         "QirRunner",
     ],
     "schemas": [],
@@ -253,10 +259,12 @@ if TYPE_CHECKING:
     from .ionq import IonQSession as IonQSession
     from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
+    from .native import QbraidEstimate as QbraidEstimate
     from .native import QbraidJob as QbraidJob
     from .native import QbraidProvider as QbraidProvider
     from .native import QbraidSessionV1 as QbraidSessionV1
     from .native import Session as Session
+    from .native.provider import estimate as estimate
     from .openquantum import OpenQuantumDevice as OpenQuantumDevice
     from .openquantum import OpenQuantumJob as OpenQuantumJob
     from .openquantum import OpenQuantumProvider as OpenQuantumProvider

@@ -23,13 +23,14 @@ import json
 from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
-from qbraid_core.exceptions import AuthError
+from qbraid_core.exceptions import AuthError, RequestsApiError
 from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
+from qbraid_core.services.runtime.schemas.estimate import Estimate, EstimateRequest, EstimateTarget
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
-from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, get_program_type_alias, load_program
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.ionq.provider import IonQProvider
@@ -39,10 +40,13 @@ from qbraid.runtime.provider import QuantumProvider
 from qbraid.transpiler import transpile
 
 from .device import QbraidDevice
+from .estimate import QbraidEstimate
 
 if TYPE_CHECKING:
     import pulser
     import pyqir
+
+    import qbraid.programs
 
 
 def _serialize_program(program) -> Program:
@@ -271,6 +275,64 @@ class QbraidProvider(QuantumProvider):
         profile = self._build_runtime_profile(device_model)
         return QbraidDevice(profile, client=self.client)
 
+    def estimate(  # pylint: disable=too-many-arguments
+        self,
+        program: qbraid.programs.QPROGRAM,
+        targets: list[str] | None = None,
+        shots: int | None = None,
+        target: EstimateTarget | dict[str, Any] | None = None,
+        narrate: bool = True,
+        wait: bool = True,
+    ) -> QbraidEstimate:
+        """Estimate resources and cost across devices without submitting a quantum job.
+
+        Args:
+            program: A single supported quantum program. OpenQASM 2/3 strings pass
+                through unchanged; other programs are transpiled to OpenQASM 3.
+            targets: Device QRNs, or ``None`` for all public direct-access devices.
+            shots: Shot count, or ``None`` to leave it to the estimator.
+            target: Observable kind and tolerance, as an EstimateTarget or dictionary.
+            narrate: Whether to request a narrative explanation. Defaults to True.
+            wait: Whether to wait for completion. Defaults to True.
+
+        Returns:
+            The estimate, completed if ``wait`` is True.
+
+        Raises:
+            ValueError: If a batch is supplied or the request is invalid.
+            TimeoutError: If waiting exceeds 300 seconds.
+            QbraidRuntimeError: If estimation fails while waiting.
+        """
+        if isinstance(program, list):
+            raise ValueError("Estimation requires a single program, not a batch.")
+        alias = get_program_type_alias(program)
+        if alias in {"qasm2", "qasm3"}:
+            # The device serializer reformats QASM; preserve source supplied directly.
+            serialized = Program(format="qasm2" if alias == "qasm2" else "qasm3", data=program)
+        else:
+            program = transpile(program, "qasm3")
+            spec = ProgramSpec(
+                QPROGRAM_REGISTRY["qasm3"], alias="qasm3", serialize=_serialize_program
+            )
+            serialized = spec.serialize(program)
+        if isinstance(target, dict):
+            target = EstimateTarget.model_validate(target)
+        request = EstimateRequest(
+            program=serialized,
+            targets=targets,
+            shots=shots,
+            target=target,
+            narrate=narrate,
+        )
+        client = self.client
+        try:
+            response = client.session.post("/estimates", json=request.model_dump(mode="json"))
+            model = Estimate.model_validate(response.json()["data"])
+        except RequestsApiError as err:
+            raise QuantumRuntimeServiceRequestError(f"Failed to create estimate: {err}") from err
+        result = QbraidEstimate(model, client)
+        return result.wait() if wait else result
+
     def __hash__(self):
         if not hasattr(self, "_hash"):
             user_metadata = self.client._user_metadata
@@ -280,3 +342,29 @@ class QbraidProvider(QuantumProvider):
             )
             object.__setattr__(self, "_hash", hash_value)
         return self._hash  # pylint: disable=no-member
+
+
+def estimate(  # pylint: disable=too-many-arguments
+    program: qbraid.programs.QPROGRAM,
+    targets: list[str] | None = None,
+    shots: int | None = None,
+    target: EstimateTarget | dict[str, Any] | None = None,
+    narrate: bool = True,
+    wait: bool = True,
+) -> QbraidEstimate:
+    """Estimate resources using the default :class:`QbraidProvider` credentials.
+
+    Args:
+        program: A single supported program; non-QASM inputs transpile to OpenQASM 3.
+        targets: Device QRNs, or None for all public direct-access devices.
+        shots: Optional shot count.
+        target: Optional EstimateTarget or dictionary of observable kind and tolerance.
+        narrate: Whether to request a narrative explanation.
+        wait: Whether to wait for completion (up to 300 seconds).
+
+    Returns:
+        A :class:`QbraidEstimate`. See :meth:`QbraidProvider.estimate` for details.
+    """
+    return QbraidProvider().estimate(
+        program, targets=targets, shots=shots, target=target, narrate=narrate, wait=wait
+    )
