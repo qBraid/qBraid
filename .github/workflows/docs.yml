@@ -20,6 +20,9 @@ on:
     types: [opened, reopened, ready_for_review, synchronize]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
     if: github.event.pull_request.draft == false
