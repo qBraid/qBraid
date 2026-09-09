@@ -25,9 +25,9 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot' && github.actor != 'dependabot[bot]' && github.actor != 'github-actions' && github.actor != 'github-actions[bot]' && github.event.pull_request.draft == false }}
     steps:
-    - uses: actions/checkout@v7.0.1
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
     - name: Changelog Reminder
-      uses: peterjgrainger/action-changelog-reminder@v1.3.0
+      uses: peterjgrainger/action-changelog-reminder@de92130a79d81c60dbb7f1ff64244646d138a645 # v1.3.0
       with:
         changelog_regex: 'CHANGELOG.md'
         customPrMessage: |
