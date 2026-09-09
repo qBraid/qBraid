@@ -29,6 +29,7 @@ import datetime
 import json
 import os
 import re
+from collections import Counter
 from typing import Any, Optional, Union
 
 import numpy as np
@@ -36,6 +37,7 @@ from azure.quantum import Job
 
 from qbraid.runtime.ionq.job import IonQJob
 from qbraid.runtime.postprocess import counts_to_probabilities, normalize_data
+from qbraid.runtime.result_data import MeasCount
 
 from .io_format import OutputDataFormat
 
@@ -250,16 +252,30 @@ class AzureResultBuilder:
         probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
         return {"counts": counts, "probabilities": probabilities}
 
+    @staticmethod
+    def _analog_histogram(az_result: dict[str, Any]) -> MeasCount:
+        """Return the ``{bitstring: count}`` histogram from an AHS result payload.
+
+        Pasqal's emulators wrap the histogram as ``{"counter": ..., "raw": [...]}``, where
+        ``raw`` holds one bitstring per shot; older targets return it bare. An unrecognized
+        payload is passed through so the caller reports on the real shape.
+        """
+        if "counter" in az_result and isinstance(az_result["counter"], dict):
+            return az_result["counter"]
+        if "raw" in az_result and isinstance(az_result["raw"], list):
+            return dict(Counter(az_result["raw"]))
+        return az_result
+
     def _format_analog_results(self) -> dict[str, Any]:
         """
         Translate Microsoft's AHS job results histogram into a format that
         can be consumed by qBraid runtime.
 
         """
-        histogram = self.job.get_results()
+        histogram = self._analog_histogram(self.job.get_results())
         counts = normalize_data(histogram)
         probabilities = counts_to_probabilities(counts)
-        return {"counts": histogram, "probabilities": probabilities}
+        return {"counts": counts, "probabilities": probabilities}
 
     def _format_unknown_results(self):
         """Format Job results data when the job output is in an unknown format."""
