@@ -902,31 +902,38 @@ def test_resolve_noise_model_raises_for_unsupported_model(mock_qbraid_device):
         mock_qbraid_device._resolve_noise_model("depolarizing")
 
 
-def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client):
+def test_device_data_fixture_isolates_shared_resource(device_data_qir):
+    """The fixture hands out a private copy, including nested keys.
+
+    ``MockClient`` reads the module-level resources directly, so a test that writes through a
+    shallow copy poisons every later device built from them in the same session.
+    """
+    assert device_data_qir == DEVICE_DATA_QIR
+    assert device_data_qir["data"] is not DEVICE_DATA_QIR["data"]
+
+    device_data_qir["data"]["directAccess"] = False
+    assert DEVICE_DATA_QIR["data"]["directAccess"] is True
+
+
+def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client, device_data_qir):
     """Test that get_devices raises ResourceNotFoundError when no directAccess devices found."""
     provider = QbraidProvider(client=mock_client)
     # Mock client to return devices without directAccess
-    device_data_no_direct = DEVICE_DATA_QIR.copy()
-    device_data_no_direct["data"]["directAccess"] = False
+    device_data_qir["data"]["directAccess"] = False
     mock_client.list_devices = Mock()
-    mock_client.list_devices.return_value = [
-        RuntimeDevice.model_validate(device_data_no_direct["data"])
-    ]
+    mock_client.list_devices.return_value = [RuntimeDevice.model_validate(device_data_qir["data"])]
 
     with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria"):
         provider.get_devices()
 
 
-def test_provider_get_device_raises_when_no_direct_access(mock_client):
+def test_provider_get_device_raises_when_no_direct_access(mock_client, device_data_qir):
     """Test that get_device raises ValueError when device doesn't support direct access."""
     provider = QbraidProvider(client=mock_client)
     # Mock client to return device without directAccess
-    device_data_no_direct = DEVICE_DATA_QIR.copy()
-    device_data_no_direct["data"]["directAccess"] = False
+    device_data_qir["data"]["directAccess"] = False
     mock_client.get_device = Mock()
-    mock_client.get_device.return_value = RuntimeDevice.model_validate(
-        device_data_no_direct["data"]
-    )
+    mock_client.get_device.return_value = RuntimeDevice.model_validate(device_data_qir["data"])
 
     with pytest.raises(
         ValueError,
