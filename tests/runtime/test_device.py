@@ -634,7 +634,9 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
             ValueError,
             match=(
                 f"OpenQASM programs submitted to the {device_id} "
-                "must be compatible with IonQ JSON format."
+                # The conversion's own reason is appended, so the caller learns what was
+                # actually wrong rather than only that something was.
+                "must be compatible with IonQ JSON format: .*Invalid QASM3 code"
             ),
         ):
             validate(invalid_program)

@@ -17,7 +17,6 @@ Unit tests for submissions to IonQ devices via qBraid native runtime.
 
 """
 import os
-import warnings
 
 import pytest
 
@@ -33,7 +32,6 @@ def test_qiskit_ionq_workflow():
         # pylint: disable=import-outside-toplevel
         import qiskit
         import qiskit.qasm2
-        import qiskit_ionq
 
         # pylint: enable=import-outside-toplevel
 
@@ -41,19 +39,19 @@ def test_qiskit_ionq_workflow():
         path_to_qasm_file = os.path.join(current_file_directory, "test.qasm")
         qiskit_circuit = qiskit.qasm2.load(path_to_qasm_file)
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-
-            qiskit_ionq_provider = qiskit_ionq.IonQProvider()
-            qiskit_ionq_backend = qiskit_ionq_provider.get_backend("ionq_simulator")
-
-            qiskit_circuit_transpiled = qiskit.transpile(qiskit_circuit, qiskit_ionq_backend)
+        # Optimized without a backend: the 4402-gate circuit collapses to one unitary, so
+        # the job finishes well inside DEFAULT_TIMEOUT. Optimizing *against* qiskit-ionq's
+        # backend would also lay the circuit out on the device's 29 physical qubits, which
+        # serialize to OpenQASM as hardware qubits ($0) that the IonQ format cannot
+        # express. That step belongs to the direct IonQ route, where `qiskit_to_ionq`
+        # undoes the layout immediately after.
+        qiskit_circuit = qiskit.transpile(qiskit_circuit, optimization_level=3)
 
         provider = QbraidProvider()
         device = provider.get_device("ionq:ionq:sim:simulator")
 
         shots = 10
-        job: QbraidJob = device.run(qiskit_circuit_transpiled, shots=shots)
+        job: QbraidJob = device.run(qiskit_circuit, shots=shots)
 
         # pylint: disable=no-member
         try:

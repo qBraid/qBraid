@@ -84,9 +84,12 @@ def validate_qasm_to_ionq(program: Qasm2StringType | Qasm3StringType, device_id:
     try:
         transpile(program, "ionq", max_path_depth=1)
     except Exception as err:  # pylint: disable=broad-exception-caught
+        # Carry the conversion's own reason: without it every incompatibility reads the
+        # same, and the cause is only reachable by walking __cause__.
+        reason = str(err).strip().splitlines()[-1].strip()
         raise ValueError(
             f"OpenQASM programs submitted to the {device_id} "
-            "must be compatible with IonQ JSON format."
+            f"must be compatible with IonQ JSON format: {reason}"
         ) from err
 
 

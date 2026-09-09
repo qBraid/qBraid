@@ -761,3 +761,26 @@ def test_parse_gates_uses_unrolled_ast_when_no_top_level_gates():
 
     gates = _parse_gates(program)
     assert len(gates) > 0
+
+
+@pytest.mark.parametrize(
+    "gate_line",
+    ["rx(0.5) $0;", "cx $0, $1;", "h q[0];\n    ry(0.25) $1;"],
+    ids=["single-qubit", "two-qubit", "alongside-a-register"],
+)
+def test_openqasm3_to_ionq_rejects_hardware_qubits(gate_line):
+    """Hardware qubits cannot be expressed in IonQ's logical-register format.
+
+    qiskit>=2 emits these once a circuit is laid out on a backend's physical qubits. They
+    were previously an AttributeError on a multi-qubit gate, and silently dropped the gate
+    on a single-qubit one.
+    """
+    qasm = f"""
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    {gate_line}
+    """
+    with pytest.raises(ValueError) as excinfo:
+        openqasm3_to_ionq(qasm)
+    assert "is not supported by the IonQ format" in str(excinfo.value)
