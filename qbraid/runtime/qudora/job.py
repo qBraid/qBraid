@@ -133,8 +133,12 @@ class QudoraJob(QuantumJob):
             message = job_data["user_error"] or f"job ended with status {status.name}"
             raise QudoraJobError(f"QUDORA job {self.id} did not complete: {message}.")
 
+        # A null entry means that program has no histogram to decode. Caught here so it
+        # surfaces as this function's own error rather than a TypeError out of
+        # ``json.loads`` -- ``[None]`` slips past a bare falsiness check, a non-empty
+        # list being truthy.
         result_payload = job_data["result"]
-        if not result_payload:
+        if not result_payload or any(entry is None for entry in result_payload):
             raise QudoraJobError(f"QUDORA job {self.id} completed but returned no result data.")
 
         data = GateModelResultData(measurement_counts=self._parse_counts(result_payload))

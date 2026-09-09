@@ -641,3 +641,16 @@ class TestQudoraJob:
         job = QudoraJob("42", session=mock_session, device=device)
         with pytest.raises(QudoraJobError, match="no result data"):
             job.result()
+
+    @pytest.mark.parametrize("payload", [[None], ['{"01": 100}', None]], ids=["all", "partial"])
+    def test_result_null_entry_raises_job_error(self, mock_session, device, payload):
+        """A null histogram raises QudoraJobError, not a TypeError from json.loads.
+
+        ``[None]`` passes a bare falsiness check -- a non-empty list is truthy -- so
+        the null used to reach ``_parse_counts`` and surface as an error from the JSON
+        layer, which told the caller nothing about the job.
+        """
+        mock_session.get_job.return_value = _job_record("Completed", result=payload)
+        job = QudoraJob("42", session=mock_session, device=device)
+        with pytest.raises(QudoraJobError, match="no result data"):
+            job.result()
