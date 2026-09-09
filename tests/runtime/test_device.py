@@ -642,6 +642,63 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
 
 
+# A Braket verbatim box: native IonQ gates the backend must run exactly as given.
+# IonQ JSON has no way to express it, which is the whole point of the construct.
+VERBATIM_QASM3 = """OPENQASM 3;
+
+bit[2] c;
+
+#pragma braket verbatim
+box{
+    gpi(0.0) $0;
+    gpi2(0.1) $1;
+    ms(0.1, 0.2, 0.25) $0, $1;
+}
+
+c[0] = measure $0;
+c[1] = measure $1;
+"""
+
+
+@pytest.mark.parametrize(
+    "device_id, expects_validator",
+    [
+        # Serializes to IonQ JSON, so the check is meaningful.
+        ("ionq:ionq:qpu:forte-1", True),
+        # Rebases to the IonQ basis gate set before submitting, same constraint.
+        ("azure:ionq:qpu:forte-enterprise-1", True),
+        # Braket takes the OpenQASM through untouched.
+        ("aws:ionq:qpu:forte-enterprise-1", False),
+        # Open Quantum likewise forwards the OpenQASM as given.
+        ("openquantum:ionq:qpu:forte-1", False),
+    ],
+)
+def test_ionq_qasm_validator_is_scoped_by_vendor(device_id, expects_validator):
+    """The IonQ JSON check applies only where the program is serialized to IonQ JSON."""
+    validate = get_program_spec_lambdas("qasm3", device_id)["validate"]
+    assert (validate is not None) is expects_validator
+
+
+def test_verbatim_qasm_accepted_for_braket_hosted_ionq():
+    """A Braket verbatim program reaches an AWS-hosted IonQ device unrejected."""
+    validate = get_program_spec_lambdas("qasm3", "aws:ionq:qpu:forte-enterprise-1")["validate"]
+    assert validate is None
+
+
+def test_verbatim_qasm_still_rejected_for_direct_ionq():
+    """The same program is still refused where it genuinely cannot be submitted."""
+    device_id = "ionq:ionq:qpu:forte-1"
+    validate = get_program_spec_lambdas("qasm3", device_id)["validate"]
+    with pytest.raises(ValueError, match="must be compatible with IonQ JSON format"):
+        validate(VERBATIM_QASM3)
+
+
+def test_quera_measurement_validator_survives_aws_hosting():
+    """QuEra's check is a device capability limit, so AWS hosting must not drop it."""
+    validate = get_program_spec_lambdas("qasm3", "aws:quera:qpu:aquila")["validate"]
+    assert validate is not None
+
+
 def test_get_program_spec_lambdas_pulser():
     """Test that the validate lambda for pulser programs."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")

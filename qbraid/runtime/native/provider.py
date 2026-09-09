@@ -90,6 +90,15 @@ def validate_qasm_to_ionq(program: Qasm2StringType | Qasm3StringType, device_id:
         ) from err
 
 
+# Vendors that forward OpenQASM to the backend as written. Their dialect admits
+# constructs IonQ JSON cannot express -- a Braket verbatim box above all, which
+# exists precisely to reach the QPU uncompiled -- so requiring IonQ-JSON
+# convertibility rejects programs the backend would run. Direct IonQ serializes to
+# IonQ JSON, and Azure rebases to the IonQ basis gate set before submitting, so
+# both keep the check.
+_QASM_PASSTHROUGH_VENDORS = frozenset({"aws", "openquantum"})
+
+
 def get_program_spec_lambdas(
     program_type_alias: str, device_id: str
 ) -> dict[str, Callable[[Any], None] | None]:
@@ -101,16 +110,18 @@ def get_program_spec_lambdas(
         return {"serialize": _serialize_sequence, "validate": None}
 
     if program_type_alias in {"qasm2", "qasm3"}:
-        provider = device_id.split(":")[1]
+        vendor, provider = device_id.split(":")[:2]
 
         # pylint: disable=unnecessary-lambda-assignment
-        validations = {
-            "quera": lambda p: validate_qasm_no_measurements(p, device_id),
-            "ionq": lambda p: validate_qasm_to_ionq(p, device_id),
-        }
+        if provider == "quera":
+            # A capability limit of the device itself: Aquila is analog and cannot
+            # measure mid-circuit, which holds whichever vendor fronts it.
+            validate = lambda p: validate_qasm_no_measurements(p, device_id)
+        elif provider == "ionq" and vendor not in _QASM_PASSTHROUGH_VENDORS:
+            validate = lambda p: validate_qasm_to_ionq(p, device_id)
+        else:
+            validate = None
         # pylint: enable=unnecessary-lambda-assignment
-
-        validate = validations.get(provider)
     else:
         validate = None
 
