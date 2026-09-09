@@ -1043,6 +1043,54 @@ def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_
     assert result["probabilities"] == {"001010": 0.5, "001011": 0.5}
 
 
+def test_ahs_builder_format_analog_results_counter(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Pasqal emulators wrap the histogram in a 'counter' key alongside per-shot 'raw'."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {
+        "counter": {"001100": 3, "001101": 1},
+        "raw": ["001100", "001100", "001101", "001100"],
+    }
+
+    result = azure_ahs_result_builder._format_analog_results()
+
+    assert result["counts"] == {"001100": 3, "001101": 1}
+    assert result["probabilities"] == {"001100": 0.75, "001101": 0.25}
+
+
+def test_ahs_builder_format_analog_results_raw_only(azure_ahs_result_builder, mock_azure_ahs_job):
+    """A payload carrying only per-shot 'raw' bitstrings is tallied into counts."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {"raw": ["001100", "001100", "001101", "001100"]}
+
+    result = azure_ahs_result_builder._format_analog_results()
+
+    assert result["counts"] == {"001100": 3, "001101": 1}
+    assert result["probabilities"] == {"001100": 0.75, "001101": 0.25}
+
+
+def test_azure_job_result_pasqal_counter(mock_azure_pasqal_job):
+    """A wrapped Pasqal histogram reaches AnalogResultData as a flat count mapping."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_pasqal_job.details.output_data_format = OutputDataFormat.PASQAL.value
+    mock_azure_pasqal_job.get_results.return_value = {
+        "counter": {"001010": 50, "001011": 50},
+        "raw": ["001010"] * 50 + ["001011"] * 50,
+    }
+
+    job = AzureQuantumJob(
+        job_id=mock_azure_pasqal_job.id, workspace=mock_azure_pasqal_job.workspace
+    )
+    job._job = mock_azure_pasqal_job
+
+    result = job.result()
+
+    assert isinstance(result.data, AnalogResultData)
+    assert result.data.to_dict() == {
+        "measurement_counts": {"001010": 50, "001011": 50},
+        "measurements": None,
+    }
+
+
 def test_ahs_builder_format_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
     """Test the _format_results method when the job succeeds."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
