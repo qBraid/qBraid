@@ -561,7 +561,7 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
 @patch("importlib.util.find_spec", return_value=None)
 def test_ionq_failed_job(_mock_find_spec, mock_post, mock_get, circuit):
     """Test running a fake job."""
-    GET_JOB_RESPONSE["status"] = "failed"
+    failed_job_response = {**GET_JOB_RESPONSE, "status": "failed"}
     simulator_data = next(d for d in DEVICE_DATA if d["backend"] == "simulator")
 
     def mock_get_response_func(url):
@@ -570,7 +570,7 @@ def test_ionq_failed_job(_mock_find_spec, mock_post, mock_get, circuit):
         if "/backends/" in url:
             mock_resp.json.return_value = simulator_data
         else:  # job endpoints
-            mock_resp.json.return_value = GET_JOB_RESPONSE
+            mock_resp.json.return_value = failed_job_response
         return mock_resp
 
     mock_get.side_effect = lambda url, **kwargs: mock_get_response_func(url)
