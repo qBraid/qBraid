@@ -22,6 +22,7 @@ Submodules
    oqc
    origin
    pasqal
+   qdi
    qperfect
    quantinuum
    qudora

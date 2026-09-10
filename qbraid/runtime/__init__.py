@@ -210,6 +210,16 @@ _lazy = {
         "QuantinuumDevice",
         "QuantinuumJob",
     ],
+    "qdi": [
+        "QdiClient",
+        "QdiDevice",
+        "QdiDeviceDescriptor",
+        "QdiHttpClient",
+        "QdiJob",
+        "QdiProvider",
+        "QdiStatus",
+        "QdiTaskStatus",
+    ],
     "qudora": [
         "QudoraSession",
         "QudoraProvider",
@@ -270,6 +280,14 @@ if TYPE_CHECKING:
     from .pasqal import PasqalDevice as PasqalDevice
     from .pasqal import PasqalJob as PasqalJob
     from .pasqal import PasqalProvider as PasqalProvider
+    from .qdi import QdiClient as QdiClient
+    from .qdi import QdiDevice as QdiDevice
+    from .qdi import QdiDeviceDescriptor as QdiDeviceDescriptor
+    from .qdi import QdiHttpClient as QdiHttpClient
+    from .qdi import QdiJob as QdiJob
+    from .qdi import QdiProvider as QdiProvider
+    from .qdi import QdiStatus as QdiStatus
+    from .qdi import QdiTaskStatus as QdiTaskStatus
     from .qperfect import QPerfectDevice as QPerfectDevice
     from .qperfect import QPerfectJob as QPerfectJob
     from .qperfect import QPerfectProvider as QPerfectProvider
