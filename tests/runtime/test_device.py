@@ -634,12 +634,71 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
             ValueError,
             match=(
                 f"OpenQASM programs submitted to the {device_id} "
-                "must be compatible with IonQ JSON format."
+                # The conversion's own reason is appended, so the caller learns what was
+                # actually wrong rather than only that something was.
+                "must be compatible with IonQ JSON format: .*Invalid QASM3 code"
             ),
         ):
             validate(invalid_program)
 
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
+
+
+# A Braket verbatim box: native IonQ gates the backend must run exactly as given.
+# IonQ JSON has no way to express it, which is the whole point of the construct.
+VERBATIM_QASM3 = """OPENQASM 3;
+
+bit[2] c;
+
+#pragma braket verbatim
+box{
+    gpi(0.0) $0;
+    gpi2(0.1) $1;
+    ms(0.1, 0.2, 0.25) $0, $1;
+}
+
+c[0] = measure $0;
+c[1] = measure $1;
+"""
+
+
+@pytest.mark.parametrize(
+    "device_id, expects_validator",
+    [
+        # Serializes to IonQ JSON, so the check is meaningful.
+        ("ionq:ionq:qpu:forte-1", True),
+        # Rebases to the IonQ basis gate set before submitting, same constraint.
+        ("azure:ionq:qpu:forte-enterprise-1", True),
+        # Braket takes the OpenQASM through untouched.
+        ("aws:ionq:qpu:forte-enterprise-1", False),
+        # Open Quantum likewise forwards the OpenQASM as given.
+        ("openquantum:ionq:qpu:forte-1", False),
+    ],
+)
+def test_ionq_qasm_validator_is_scoped_by_vendor(device_id, expects_validator):
+    """The IonQ JSON check applies only where the program is serialized to IonQ JSON."""
+    validate = get_program_spec_lambdas("qasm3", device_id)["validate"]
+    assert (validate is not None) is expects_validator
+
+
+def test_verbatim_qasm_accepted_for_braket_hosted_ionq():
+    """A Braket verbatim program reaches an AWS-hosted IonQ device unrejected."""
+    validate = get_program_spec_lambdas("qasm3", "aws:ionq:qpu:forte-enterprise-1")["validate"]
+    assert validate is None
+
+
+def test_verbatim_qasm_still_rejected_for_direct_ionq():
+    """The same program is still refused where it genuinely cannot be submitted."""
+    device_id = "ionq:ionq:qpu:forte-1"
+    validate = get_program_spec_lambdas("qasm3", device_id)["validate"]
+    with pytest.raises(ValueError, match="must be compatible with IonQ JSON format"):
+        validate(VERBATIM_QASM3)
+
+
+def test_quera_measurement_validator_survives_aws_hosting():
+    """QuEra's check is a device capability limit, so AWS hosting must not drop it."""
+    validate = get_program_spec_lambdas("qasm3", "aws:quera:qpu:aquila")["validate"]
+    assert validate is not None
 
 
 def test_get_program_spec_lambdas_pulser():
@@ -902,31 +961,38 @@ def test_resolve_noise_model_raises_for_unsupported_model(mock_qbraid_device):
         mock_qbraid_device._resolve_noise_model("depolarizing")
 
 
-def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client):
+def test_device_data_fixture_isolates_shared_resource(device_data_qir):
+    """The fixture hands out a private copy, including nested keys.
+
+    ``MockClient`` reads the module-level resources directly, so a test that writes through a
+    shallow copy poisons every later device built from them in the same session.
+    """
+    assert device_data_qir == DEVICE_DATA_QIR
+    assert device_data_qir["data"] is not DEVICE_DATA_QIR["data"]
+
+    device_data_qir["data"]["directAccess"] = False
+    assert DEVICE_DATA_QIR["data"]["directAccess"] is True
+
+
+def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client, device_data_qir):
     """Test that get_devices raises ResourceNotFoundError when no directAccess devices found."""
     provider = QbraidProvider(client=mock_client)
     # Mock client to return devices without directAccess
-    device_data_no_direct = DEVICE_DATA_QIR.copy()
-    device_data_no_direct["data"]["directAccess"] = False
+    device_data_qir["data"]["directAccess"] = False
     mock_client.list_devices = Mock()
-    mock_client.list_devices.return_value = [
-        RuntimeDevice.model_validate(device_data_no_direct["data"])
-    ]
+    mock_client.list_devices.return_value = [RuntimeDevice.model_validate(device_data_qir["data"])]
 
     with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria"):
         provider.get_devices()
 
 
-def test_provider_get_device_raises_when_no_direct_access(mock_client):
+def test_provider_get_device_raises_when_no_direct_access(mock_client, device_data_qir):
     """Test that get_device raises ValueError when device doesn't support direct access."""
     provider = QbraidProvider(client=mock_client)
     # Mock client to return device without directAccess
-    device_data_no_direct = DEVICE_DATA_QIR.copy()
-    device_data_no_direct["data"]["directAccess"] = False
+    device_data_qir["data"]["directAccess"] = False
     mock_client.get_device = Mock()
-    mock_client.get_device.return_value = RuntimeDevice.model_validate(
-        device_data_no_direct["data"]
-    )
+    mock_client.get_device.return_value = RuntimeDevice.model_validate(device_data_qir["data"])
 
     with pytest.raises(
         ValueError,

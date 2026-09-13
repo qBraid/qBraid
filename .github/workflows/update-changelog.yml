@@ -18,6 +18,9 @@ on:
   issue_comment:
     types: [created]
 
+permissions:
+  contents: read
+
 jobs:
   update-changelog:
     runs-on: ubuntu-latest
@@ -35,7 +38,7 @@ jobs:
       issues: write
     steps:
       - name: React to comment with eyes
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             await github.rest.reactions.createForIssueComment({
@@ -47,7 +50,7 @@ jobs:
 
       - name: Get PR metadata
         id: pr_meta
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const pr = await github.rest.pulls.get({
@@ -63,7 +66,7 @@ jobs:
 
       - name: Abort if fork PR
         if: steps.pr_meta.outputs.is_fork == 'true'
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             await github.rest.issues.createComment({
@@ -279,7 +282,7 @@ jobs:
 
       - name: React to comment with rocket
         if: steps.pr_meta.outputs.is_fork != 'true' && success()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             await github.rest.reactions.createForIssueComment({
@@ -291,7 +294,7 @@ jobs:
 
       - name: Post error comment on failure
         if: steps.pr_meta.outputs.is_fork != 'true' && failure()
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             await github.rest.issues.createComment({

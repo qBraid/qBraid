@@ -84,10 +84,22 @@ def validate_qasm_to_ionq(program: Qasm2StringType | Qasm3StringType, device_id:
     try:
         transpile(program, "ionq", max_path_depth=1)
     except Exception as err:  # pylint: disable=broad-exception-caught
+        # Carry the conversion's own reason: without it every incompatibility reads the
+        # same, and the cause is only reachable by walking __cause__.
+        reason = str(err).strip().splitlines()[-1].strip()
         raise ValueError(
             f"OpenQASM programs submitted to the {device_id} "
-            "must be compatible with IonQ JSON format."
+            f"must be compatible with IonQ JSON format: {reason}"
         ) from err
+
+
+# Vendors that forward OpenQASM to the backend as written. Their dialect admits
+# constructs IonQ JSON cannot express -- a Braket verbatim box above all, which
+# exists precisely to reach the QPU uncompiled -- so requiring IonQ-JSON
+# convertibility rejects programs the backend would run. Direct IonQ serializes to
+# IonQ JSON, and Azure rebases to the IonQ basis gate set before submitting, so
+# both keep the check.
+_QASM_PASSTHROUGH_VENDORS = frozenset({"aws", "openquantum"})
 
 
 def get_program_spec_lambdas(
@@ -101,16 +113,18 @@ def get_program_spec_lambdas(
         return {"serialize": _serialize_sequence, "validate": None}
 
     if program_type_alias in {"qasm2", "qasm3"}:
-        provider = device_id.split(":")[1]
+        vendor, provider = device_id.split(":")[:2]
 
         # pylint: disable=unnecessary-lambda-assignment
-        validations = {
-            "quera": lambda p: validate_qasm_no_measurements(p, device_id),
-            "ionq": lambda p: validate_qasm_to_ionq(p, device_id),
-        }
+        if provider == "quera":
+            # A capability limit of the device itself: Aquila is analog and cannot
+            # measure mid-circuit, which holds whichever vendor fronts it.
+            validate = lambda p: validate_qasm_no_measurements(p, device_id)
+        elif provider == "ionq" and vendor not in _QASM_PASSTHROUGH_VENDORS:
+            validate = lambda p: validate_qasm_to_ionq(p, device_id)
+        else:
+            validate = None
         # pylint: enable=unnecessary-lambda-assignment
-
-        validate = validations.get(provider)
     else:
         validate = None
 

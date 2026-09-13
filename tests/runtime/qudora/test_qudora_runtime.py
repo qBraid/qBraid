@@ -641,3 +641,25 @@ class TestQudoraJob:
         job = QudoraJob("42", session=mock_session, device=device)
         with pytest.raises(QudoraJobError, match="no result data"):
             job.result()
+
+    @pytest.mark.parametrize(
+        ("payload", "expected"),
+        [
+            ([None], "1 of 1 programs"),
+            (['{"01": 100}', None], "1 of 2 programs"),
+            ([None, None, '{"01": 100}'], "2 of 3 programs"),
+        ],
+        ids=["single", "partial-pair", "partial-batch"],
+    )
+    def test_result_null_entry_raises_job_error(self, mock_session, device, payload, expected):
+        """A null histogram raises QudoraJobError naming how much of the batch is missing.
+
+        ``[None]`` passes a bare falsiness check -- a list with a null in it is still
+        truthy -- so the null used to reach ``_parse_counts`` and surface as an error
+        from the JSON layer, which told the caller nothing about the job. The payload is
+        incomplete rather than absent, so it is reported separately from the empty case.
+        """
+        mock_session.get_job.return_value = _job_record("Completed", result=payload)
+        job = QudoraJob("42", session=mock_session, device=device)
+        with pytest.raises(QudoraJobError, match=f"incomplete result data: {expected}"):
+            job.result()

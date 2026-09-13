@@ -142,9 +142,11 @@ class PasqalProvider(QuantumProvider):
         # pylint: disable-next=import-outside-toplevel
         from pasqal_cloud import SDK
 
-        resolved_project_id = project_id or os.getenv("PASQAL_PROJECT_ID")
-        resolved_username = username or os.getenv("PASQAL_USERNAME")
-        resolved_password = password or os.getenv("PASQAL_PASSWORD")
+        # An unset CI secret exports as "", which must read as absent rather than be
+        # forwarded to the SDK as an empty credential.
+        resolved_project_id = project_id or os.getenv("PASQAL_PROJECT_ID") or None
+        resolved_username = username or os.getenv("PASQAL_USERNAME") or None
+        resolved_password = password or os.getenv("PASQAL_PASSWORD") or None
 
         if token_provider is None and not resolved_username:
             raise ValueError(

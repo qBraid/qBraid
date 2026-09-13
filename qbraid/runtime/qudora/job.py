@@ -137,6 +137,17 @@ class QudoraJob(QuantumJob):
         if not result_payload:
             raise QudoraJobError(f"QUDORA job {self.id} completed but returned no result data.")
 
+        # A null entry is one program with no histogram to decode, which a bare falsiness
+        # check misses -- a list with a null in it is still truthy. Caught here so it
+        # surfaces as this function's own error, naming how much of the batch is missing,
+        # rather than a TypeError out of ``json.loads``.
+        missing = sum(1 for entry in result_payload if entry is None)
+        if missing:
+            raise QudoraJobError(
+                f"QUDORA job {self.id} completed but returned incomplete result data: "
+                f"{missing} of {len(result_payload)} programs have no histogram."
+            )
+
         data = GateModelResultData(measurement_counts=self._parse_counts(result_payload))
         # The job record's ``target`` is the backend's display name ("QVLS-Q1 Emulator"), not
         # the id jobs are submitted against, so prefer the device's own id and resolve
