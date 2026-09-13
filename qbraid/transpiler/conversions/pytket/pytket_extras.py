@@ -26,6 +26,8 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import requires_extras
 from qbraid.transpiler.exceptions import ProgramConversionError
 
+from ._utils import _validate_resolved_parameters
+
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
 pytket_cirq = LazyLoader("pytket_cirq", globals(), "pytket.extensions.cirq")
@@ -52,9 +54,13 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
 
     Returns:
         braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
+
+    Raises:
+        ProgramConversionError: If the circuit contains unresolved parameters.
     """
     from pytket.circuit import OpType  # pylint: disable=import-outside-toplevel
 
+    _validate_resolved_parameters(circuit, "Amazon Braket")
     braket_circuit, _, measure_map = pytket_braket.braket_convert.tk_to_braket(circuit)
 
     measured_qubits = set()

@@ -188,5 +188,9 @@ def test_transpile_parameterized_cirq_reports_unresolved_names(target):
     theta = sympy.Symbol("theta")
     circuit = cirq.Circuit(cirq.rx(theta).on(cirq.LineQubit(0)))
 
-    with pytest.raises(ProgramConversionError, match=r"unresolved parameters: theta"):
+    with pytest.raises(ProgramConversionError) as exc_info:
         transpile(circuit, target)
+
+    message = str(exc_info.value)
+    assert "unresolved parameters: theta" in message
+    assert "TypeError:" not in message

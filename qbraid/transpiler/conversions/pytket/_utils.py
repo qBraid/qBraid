@@ -1,4 +1,4 @@
-# Copyright 2025 qBraid
+# Copyright 2026 qBraid
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,38 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Module containing functions to convert between OpenQASM 2 and PyTKET.
+"""Shared validation for PyTKET conversion functions."""
 
-"""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from pytket.qasm import circuit_to_qasm_str
-
-from qbraid.transpiler.annotations import weight
-
-from ._utils import _validate_resolved_parameters
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
     import pytket.circuit
 
-    from qbraid.programs.typer import Qasm2StringType
 
-
-@weight(1)
-def pytket_to_qasm2(circuit: pytket.circuit.Circuit) -> Qasm2StringType:
-    """Returns an OpenQASM 2 string equivalent to the input pytket circuit.
+def _validate_resolved_parameters(circuit: pytket.circuit.Circuit, target: str) -> None:
+    """Reject unresolved parameters before entering a concrete conversion.
 
     Args:
-        circuit (pytket.circuit.Circuit): PyTKET circuit to convert to OpenQASM 2 string.
-
-    Returns:
-        str: OpenQASM 2 string equivalent to input pytket circuit.
+        circuit: PyTKET circuit to validate.
+        target: Name of the concrete target format.
 
     Raises:
         ProgramConversionError: If the circuit contains unresolved parameters.
     """
-    _validate_resolved_parameters(circuit, "OpenQASM 2")
-    return circuit_to_qasm_str(circuit)
+    parameters = sorted(str(symbol) for symbol in circuit.free_symbols())
+    if parameters:
+        names = ", ".join(parameters)
+        raise ProgramConversionError(
+            f"Cannot convert a PyTKET circuit to {target} with unresolved parameters: {names}. "
+            "Resolve the parameters before conversion."
+        )

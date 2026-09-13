@@ -18,6 +18,7 @@ Unit tests for conversions between Cirq circuits and pytket circuits.
 """
 
 import pytest
+import sympy
 
 try:
     import numpy as np
@@ -27,9 +28,14 @@ try:
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pytket
-    from qbraid.transpiler.conversions.pytket import pytket_to_cirq
+    from qbraid.transpiler.conversions.pytket import (
+        pytket_to_braket,
+        pytket_to_cirq,
+        pytket_to_qasm2,
+    )
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
     from qbraid.transpiler.converter import transpile
+    from qbraid.transpiler.exceptions import ProgramConversionError
 
     from ..cirq_utils import _equal
 
@@ -61,6 +67,38 @@ def test_cirq_pytket_direct_conversions():
 
     circuit_cirq = pytket_to_cirq(pytket_circuit)
     assert circuits_allclose(cirq_circuit, circuit_cirq, strict_gphase=False)
+
+
+def test_cirq_to_pytket_preserves_unresolved_parameters():
+    """Cirq-to-PyTKET conversion keeps symbolic parameters intact."""
+    theta = sympy.Symbol("theta")
+    cirq_circuit = Circuit(ops.rx(theta).on(LineQubit(0)))
+
+    pytket_circuit = cirq_to_pytket(cirq_circuit)
+
+    assert pytket_circuit.free_symbols() == {theta}
+
+
+@pytest.mark.parametrize(
+    ("converter", "target"),
+    [
+        (pytket_to_braket, "Amazon Braket"),
+        (pytket_to_qasm2, "OpenQASM 2"),
+    ],
+)
+def test_pytket_concrete_targets_reject_unresolved_parameters(converter, target):
+    """Concrete PyTKET conversion targets reject every unresolved symbol."""
+    alpha, theta = sympy.symbols("alpha theta")
+    circuit = TKCircuit(2).Rx(theta, 0).Ry(alpha, 1)
+
+    with pytest.raises(
+        ProgramConversionError,
+        match=(
+            rf"Cannot convert a PyTKET circuit to {target} with unresolved parameters: "
+            r"alpha, theta\. Resolve the parameters before conversion\."
+        ),
+    ):
+        converter(circuit)
 
 
 def test_random_circuit_to_from_circuits():
