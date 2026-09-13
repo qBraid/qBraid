@@ -21,12 +21,14 @@ from typing import Optional
 import cirq
 import numpy as np
 import pytest
+import sympy
 
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.programs import NATIVE_REGISTRY, load_program
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.conversions.cirq import cirq_to_qasm2
 from qbraid.transpiler.converter import transpile
+from qbraid.transpiler.exceptions import ProgramConversionError
 from qbraid.transpiler.graph import ConversionGraph
 
 
@@ -161,3 +163,34 @@ def test_cirq_to_qasm2_leaves_unindexed_creg_names_in_place():
     measures = [line for line in qasm.splitlines() if line.startswith("measure")]
     assert len(measures) == len(keys)
     assert len({line.split("->")[1].strip() for line in measures}) == len(keys)
+
+
+def test_cirq_to_qasm2_rejects_unresolved_parameters():
+    """The direct QASM 2 edge reports every unresolved parameter by name."""
+    alpha, theta = sympy.symbols("alpha theta")
+    circuit = cirq.Circuit(
+        cirq.rx(theta).on(cirq.LineQubit(0)), cirq.ry(alpha).on(cirq.LineQubit(1))
+    )
+
+    with pytest.raises(
+        ProgramConversionError,
+        match=(
+            r"Cannot convert a Cirq circuit to OpenQASM 2 with unresolved parameters: "
+            r"alpha, theta\. Resolve the parameters before conversion\."
+        ),
+    ):
+        cirq_to_qasm2(circuit)
+
+
+@pytest.mark.parametrize("target", ["braket", "qasm2", "qasm3"])
+def test_transpile_parameterized_cirq_reports_unresolved_names(target):
+    """Real conversion paths name symbolic inputs instead of leaking numeric errors."""
+    theta = sympy.Symbol("theta")
+    circuit = cirq.Circuit(cirq.rx(theta).on(cirq.LineQubit(0)))
+
+    with pytest.raises(ProgramConversionError) as exc_info:
+        transpile(circuit, target)
+
+    message = str(exc_info.value)
+    assert "unresolved parameters: theta" in message
+    assert "TypeError:" not in message
