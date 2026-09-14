@@ -1,4 +1,4 @@
-rustworkx>=0.15.0
+rustworkx>=0.18.1
 numpy>=1.17
 openqasm3[parser]>=0.4.0
 qbraid-core>=0.6.1,<1.0
