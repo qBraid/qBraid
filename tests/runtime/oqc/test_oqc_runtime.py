@@ -20,6 +20,7 @@ Unit tests for OQCProvider class
 """
 from __future__ import annotations
 
+import copy
 import datetime
 import json
 import logging
@@ -34,7 +35,13 @@ from requests import ReadTimeout
 
 try:
     from qbraid_core.decimal import USD
-    from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
+    from qcaas_client.client import (  # type: ignore
+        OQCClient,
+        QPUTask,
+        QPUTaskErrors,
+        QPUTaskResult,
+        ServerException,
+    )
 
     from qbraid.programs import NATIVE_REGISTRY, ExperimentType, ProgramSpec
     from qbraid.runtime import GateModelResultData, Result, TargetProfile
@@ -156,9 +163,13 @@ TOSHIKO_EXEC_ESTIMATE = {
 }
 
 
-def online_window() -> str:
-    """Return a window start time for an online QPU."""
-    now = datetime.datetime.now()
+def online_window() -> tuple[str, str]:
+    """Return the start and end times of a window that is currently open.
+
+    ``OQCDevice.get_next_window`` reads these as UTC, so they must be built from
+    UTC rather than local time or the window lands in the future east of UTC.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
     start_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:00:00"
     end_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:59:59"
     return start_time, end_time
@@ -258,7 +269,10 @@ class MockOQCClient:
     def get_qpu_execution_estimates(self, qpu_ids: Optional[str] = None):
         """Get QPU execution estimates."""
         if qpu_ids == TOSHIKO_ID:
-            exec_est = TOSHIKO_EXEC_ESTIMATE.copy()
+            # deepcopy, not copy: a shallow copy shares the nested window list, so
+            # prepending the open window below would edit the module-level constant
+            # and leave every later test seeing Toshiko as online.
+            exec_est = copy.deepcopy(TOSHIKO_EXEC_ESTIMATE)
             if self._toshiko_online:
                 start_time, end_time = online_window()
                 current_window = {
@@ -612,6 +626,42 @@ def test_cancel_job(oqc_device, program):
     assert job.cancel() is None
 
 
+def remote_provider_or_skip(token: str) -> OQCProvider:
+    """Return a provider for ``token``, skipping the test if OQC rejects it.
+
+    The client sends the token unchecked on its first request, so an expired or
+    revoked one surfaces here as a 403 rather than a 401.
+    """
+    try:
+        return OQCProvider(token=token)
+    except ServerException as err:
+        if err.server_error_code in (401, 403):
+            pytest.skip(
+                f"OQC rejected OQC_AUTH_TOKEN with status {err.server_error_code}; "
+                "the token has most likely expired"
+            )
+        raise
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+def test_remote_provider_skips_on_rejected_token(status_code):
+    """A token the server refuses skips the remote test instead of failing it."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.side_effect = ServerException("Forbidden", status_code)
+
+        with pytest.raises(pytest.skip.Exception, match="most likely expired"):
+            remote_provider_or_skip("expired_token")
+
+
+def test_remote_provider_reraises_non_auth_errors():
+    """A server error unrelated to the token stays a failure."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.side_effect = ServerException("Internal Server Error", 500)
+
+        with pytest.raises(ServerException):
+            remote_provider_or_skip("fake_token")
+
+
 @pytest.mark.remote
 def test_oqc_runtime_remote_execution(program, optimized_program):
     """Test OQC runtime with remote execution."""
@@ -619,7 +669,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     if token is None:
         pytest.skip("Missing OQC_AUTH_TOKEN")
 
-    provider = OQCProvider(token=token)
+    provider = remote_provider_or_skip(token)
 
     device = provider.get_device(LUCY_SIM_ID)
     assert isinstance(device, OQCDevice)
