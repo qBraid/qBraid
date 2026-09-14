@@ -43,7 +43,7 @@ recurring-ical-events>=3.0; python_version < "3.13"
 
 # visualization
 ipython
-matplotlib>=3.3,<3.11
+matplotlib>=3.10.9,<3.11
 
 # testing dependencies
 sympy
