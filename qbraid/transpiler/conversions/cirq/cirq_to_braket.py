@@ -76,7 +76,7 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
         Braket circuit equivalent to the input Cirq circuit.
 
     Raises:
-        ProgramConversionError: If the circuit contains unresolved parameters.
+        ProgramConversionError: If the circuit cannot be represented by an Amazon Braket circuit.
     """
     _validate_resolved_parameters(circuit, "Amazon Braket")
     cirq_qubits = list(circuit.all_qubits())

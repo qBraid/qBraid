@@ -29,7 +29,14 @@ def _validate_resolved_parameters(circuit: cirq.Circuit, target: str) -> None:
     Raises:
         ProgramConversionError: If the circuit contains unresolved parameters.
     """
-    parameters = sorted(cirq.parameter_names(circuit))
+    parameters = sorted(
+        {
+            name
+            for operation in circuit.all_operations()
+            if operation.qubits
+            for name in cirq.parameter_names(operation)
+        }
+    )
     if parameters:
         names = ", ".join(parameters)
         raise ProgramConversionError(

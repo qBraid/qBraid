@@ -18,10 +18,10 @@ Unit tests for conversions between Cirq circuits and pytket circuits.
 """
 
 import pytest
-import sympy
 
 try:
     import numpy as np
+    import sympy
     from cirq import Circuit, LineQubit, ops, testing
     from pytket.circuit import Circuit as TKCircuit
     from pytket.qasm import circuit_to_qasm_str
@@ -31,6 +31,7 @@ try:
     from qbraid.transpiler.conversions.pytket import (
         pytket_to_braket,
         pytket_to_cirq,
+        pytket_to_pyqir,
         pytket_to_qasm2,
     )
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
@@ -39,6 +40,11 @@ try:
 
     from ..cirq_utils import _equal
 
+    PYTKET_CONVERTERS = {
+        "pytket_to_braket": pytket_to_braket,
+        "pytket_to_pyqir": pytket_to_pyqir,
+        "pytket_to_qasm2": pytket_to_qasm2,
+    }
     pytket_not_installed = False
 except ImportError:
     pytket_not_installed = True
@@ -80,14 +86,16 @@ def test_cirq_to_pytket_preserves_unresolved_parameters():
 
 
 @pytest.mark.parametrize(
-    ("converter", "target"),
+    ("converter_name", "target"),
     [
-        (pytket_to_braket, "Amazon Braket"),
-        (pytket_to_qasm2, "OpenQASM 2"),
+        ("pytket_to_braket", "Amazon Braket"),
+        ("pytket_to_pyqir", "PyQIR"),
+        ("pytket_to_qasm2", "OpenQASM 2"),
     ],
 )
-def test_pytket_concrete_targets_reject_unresolved_parameters(converter, target):
+def test_pytket_concrete_targets_reject_unresolved_parameters(converter_name, target):
     """Concrete PyTKET conversion targets reject every unresolved symbol."""
+    converter = PYTKET_CONVERTERS[converter_name]
     alpha, theta = sympy.symbols("alpha theta")
     circuit = TKCircuit(2).Rx(theta, 0).Ry(alpha, 1)
 
@@ -99,6 +107,17 @@ def test_pytket_concrete_targets_reject_unresolved_parameters(converter, target)
         ),
     ):
         converter(circuit)
+
+
+@pytest.mark.parametrize("converter_name", ["pytket_to_braket", "pytket_to_qasm2"])
+def test_pytket_concrete_targets_ignore_global_phase_parameters(converter_name):
+    """Parameters used only in a discarded global phase remain accepted."""
+    converter = PYTKET_CONVERTERS[converter_name]
+    theta = sympy.Symbol("theta")
+    circuit = TKCircuit(1).H(0)
+    circuit.add_phase(theta)
+
+    converter(circuit)
 
 
 def test_random_circuit_to_from_circuits():

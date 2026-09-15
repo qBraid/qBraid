@@ -56,7 +56,8 @@ def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit
         braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
 
     Raises:
-        ProgramConversionError: If the circuit contains unresolved parameters.
+        ProgramConversionError: If the circuit cannot be represented by an Amazon Braket
+            circuit.
     """
     from pytket.circuit import OpType  # pylint: disable=import-outside-toplevel
 
@@ -127,7 +128,11 @@ def pytket_to_pyqir(circuit: pytket.circuit.Circuit) -> Module:
 
     Returns:
         pyqir.Module: PyQIR module equivalent to input pytket circuit.
+
+    Raises:
+        ProgramConversionError: If the circuit contains unresolved parameters.
     """
+    _validate_resolved_parameters(circuit, "PyQIR")
     llvm_ir = pytket_qir.pytket_to_qir(
         circuit,
         qir_format=pytket_qir.QIRFormat.STRING,

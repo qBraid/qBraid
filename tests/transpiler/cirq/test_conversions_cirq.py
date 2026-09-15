@@ -182,6 +182,19 @@ def test_cirq_to_qasm2_rejects_unresolved_parameters():
         cirq_to_qasm2(circuit)
 
 
+def test_cirq_to_qasm2_ignores_global_phase_parameters():
+    """Parameters used only in a discarded global phase remain accepted."""
+    theta = sympy.Symbol("theta")
+    qubit = cirq.LineQubit(0)
+    circuit = cirq.Circuit(
+        cirq.H(qubit), cirq.global_phase_operation(sympy.exp(1j * theta))
+    )
+
+    qasm = cirq_to_qasm2(circuit)
+
+    assert "h q[0];" in qasm
+
+
 @pytest.mark.parametrize("target", ["braket", "qasm2", "qasm3"])
 def test_transpile_parameterized_cirq_reports_unresolved_names(target):
     """Real conversion paths name symbolic inputs instead of leaking numeric errors."""
