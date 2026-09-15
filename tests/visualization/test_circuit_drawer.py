@@ -19,6 +19,8 @@ Unit tests for circuit drawer
 
 """
 import importlib.util
+import json
+import re
 
 import pytest
 
@@ -138,7 +140,15 @@ def test_pytket_draw(bell_circuit):
     """Test draw function html output for pytket bell circuit."""
     pytket_bell, _ = bell_circuit
     raw_html: str = circuit_drawer(pytket_bell, output="html")
-    assert 2381 <= len(raw_html) <= 4469
+
+    assert raw_html.strip().startswith("<!DOCTYPE html>")
+    assert raw_html.strip().endswith("</html>")
+
+    # pytket embeds the circuit it drew as JSON. Assert on that rather than on the
+    # length of the page around it, which shifts with every pytket release.
+    circuit_json = re.search(r'<div id="circuit-json-to-display">(.*?)</div>', raw_html, re.DOTALL)
+    assert circuit_json is not None
+    assert json.loads(circuit_json.group(1)) == pytket_bell.to_dict()
 
 
 @pytest.mark.skipif("pytket" not in AVAILABLE_TARGETS, reason="pytket not installed")
