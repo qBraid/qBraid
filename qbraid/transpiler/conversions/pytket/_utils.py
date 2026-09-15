@@ -35,11 +35,7 @@ def _validate_resolved_parameters(circuit: pytket.circuit.Circuit, target: str) 
         ProgramConversionError: If the circuit contains unresolved parameters.
     """
     parameters = sorted(
-        {
-            str(symbol)
-            for command in circuit.get_commands()
-            for symbol in command.op.free_symbols()
-        }
+        {str(symbol) for command in circuit.get_commands() for symbol in command.op.free_symbols()}
     )
     if parameters:
         names = ", ".join(parameters)

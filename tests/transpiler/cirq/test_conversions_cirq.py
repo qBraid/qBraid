@@ -186,9 +186,7 @@ def test_cirq_to_qasm2_ignores_global_phase_parameters():
     """Parameters used only in a discarded global phase remain accepted."""
     theta = sympy.Symbol("theta")
     qubit = cirq.LineQubit(0)
-    circuit = cirq.Circuit(
-        cirq.H(qubit), cirq.global_phase_operation(sympy.exp(1j * theta))
-    )
+    circuit = cirq.Circuit(cirq.H(qubit), cirq.global_phase_operation(sympy.exp(1j * theta)))
 
     qasm = cirq_to_qasm2(circuit)
 

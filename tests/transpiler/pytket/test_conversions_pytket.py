@@ -109,7 +109,9 @@ def test_pytket_concrete_targets_reject_unresolved_parameters(converter_name, ta
         converter(circuit)
 
 
-@pytest.mark.parametrize("converter_name", ["pytket_to_braket", "pytket_to_qasm2"])
+@pytest.mark.parametrize(
+    "converter_name", ["pytket_to_braket", "pytket_to_pyqir", "pytket_to_qasm2"]
+)
 def test_pytket_concrete_targets_ignore_global_phase_parameters(converter_name):
     """Parameters used only in a discarded global phase remain accepted."""
     converter = PYTKET_CONVERTERS[converter_name]
