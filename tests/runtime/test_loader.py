@@ -87,6 +87,7 @@ def test_get_providers():
             "origin",
             "pasqal",
             "qbraid",
+            "qdi",
             "qperfect",
             "quantinuum",
             "qudora",
