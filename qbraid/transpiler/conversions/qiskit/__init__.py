@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Qiskit conversions
 
@@ -38,8 +37,10 @@ from .qiskit_to_aqt_connector import qiskit_to_aqt_connector
 from .qiskit_to_qasm2 import qiskit_to_qasm2
 from .qiskit_to_qasm3 import qiskit_to_qasm3
 from .qiskit_to_qrisp import qiskit_to_qrisp
+from .qiskit_to_iqm import qiskit_to_iqm
 
 __all__ = [
+    "qiskit_to_iqm",
     "qiskit_to_qasm2",
     "qiskit_to_qasm3",
     "qiskit_to_braket",
@@ -48,4 +49,5 @@ __all__ = [
     "qiskit_to_aqt_connector",
     "qiskit_to_qrisp",
     "qiskit_to_pennylane",
+   qiskit_to_iqm
 ]

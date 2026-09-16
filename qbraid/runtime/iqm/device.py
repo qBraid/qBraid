@@ -16,16 +16,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from uuid import UUID
 
+import rustworkx as rx
 from qbraid_core._import import LazyLoader
-from qiskit import QuantumCircuit, transpile
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
-from ._qiskit import serialize_circuit
 from .job import IQMJob
 
 if TYPE_CHECKING:
@@ -35,18 +34,6 @@ if TYPE_CHECKING:
     import qbraid.runtime.iqm.provider
 
 iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
-
-
-def to_iqm_circuit(
-    circuit: QuantumCircuit,
-    *,
-    qubit_index_to_name: dict[int, str],
-) -> iqm.iqm_client.Circuit:
-    """Serialize a qiskit circuit to the circuit model accepted by IQM."""
-    return serialize_circuit(
-        circuit,
-        qubit_index_to_name=qubit_index_to_name,
-    )
 
 
 class IQMDevice(QuantumDevice):
@@ -87,48 +74,65 @@ class IQMDevice(QuantumDevice):
             return DeviceStatus.UNAVAILABLE
         return DeviceStatus.ONLINE
 
-    def _get_coupling_map(self) -> list[list[int]] | None:
-        """Convert IQM connectivity into a qiskit integer coupling map."""
-        if not self.qubit_connectivity:
+    def _coupling_edges(self) -> set[tuple[str, str]]:
+        """Physical qubit pairs that support CZ, both directions."""
+        edges: set[tuple[str, str]] = set()
+        for edge in self.qubit_connectivity:
+            if len(edge) == 2:
+                edges.add((edge[0], edge[1]))
+                edges.add((edge[1], edge[0]))
+        return edges
+
+    def qubit_mapping_for(self, circuit: iqm.iqm_client.Circuit) -> dict[str, str] | None:
+        """Bind the circuit's logical qubit names to physical qubits on this device.
+
+        Returns ``None`` when the circuit already uses physical names, matching
+        what ``IQMClient.submit_circuits`` expects in that case.
+
+        Raises:
+            ValueError: If no placement puts every two-qubit gate on a CZ-capable pair.
+        """
+        physical = list(self.qubits)
+        logical = sorted(
+            {qubit for instruction in circuit.instructions for qubit in instruction.locus}
+        )
+        if not logical or set(logical) <= set(physical):
             return None
 
-        qubit_to_index = {qubit: index for index, qubit in enumerate(self.qubits)}
-        qubit_names = set(self.qubits)
-        coupling_map = []
-        seen_edges = set()
-
-        for edge in self.qubit_connectivity:
-            if len(edge) != 2 or any(component not in qubit_names for component in edge):
-                continue
-
-            source, target = edge
-            source_index = qubit_to_index[source]
-            target_index = qubit_to_index[target]
-
-            for directed_edge in ((source_index, target_index), (target_index, source_index)):
-                if directed_edge in seen_edges:
-                    continue
-                seen_edges.add(directed_edge)
-                coupling_map.append(list(directed_edge))
-
-        return coupling_map or None
-
-    def transform(self, run_input: QuantumCircuit) -> QuantumCircuit:
-        """Transform the input circuit to IQM-compatible qiskit basis gates."""
-        # MOVE is an IQM-native operation but not a standard qiskit basis gate.
-        # Existing/inferred MOVE operations are handled on the typed IQM circuit
-        # in submit(), after qiskit lowering has finished.
-        basis_gates = set(self.profile.basis_gates or {"r", "cz"}) - {"move"}
-        transpile_kwargs: dict[str, Any] = {
-            "basis_gates": sorted(basis_gates),
-            "optimization_level": 0,
-            "seed_transpiler": 0,
+        interactions = {
+            tuple(sorted(instruction.locus))
+            for instruction in circuit.instructions
+            if len(instruction.locus) == 2
         }
-        coupling_map = self._get_coupling_map()
-        if coupling_map is not None:
-            transpile_kwargs["coupling_map"] = coupling_map
+        edges = self._coupling_edges()
 
-        return transpile(run_input, **transpile_kwargs)
+        def valid(assignment: dict[str, str]) -> bool:
+            return all((assignment[a], assignment[b]) in edges for a, b in interactions)
+
+        identity = {name: physical[index] for index, name in enumerate(logical)}
+        if valid(identity):
+            return identity
+
+        graph = rx.PyGraph()
+        node_for = {qubit: graph.add_node(qubit) for qubit in physical}
+        for first, second in edges:
+            if not graph.has_edge(node_for[first], node_for[second]):
+                graph.add_edge(node_for[first], node_for[second], None)
+
+        pattern = rx.PyGraph()
+        pattern_node = {name: pattern.add_node(name) for name in logical}
+        for first, second in interactions:
+            pattern.add_edge(pattern_node[first], pattern_node[second], None)
+
+        for mapping in rx.vf2_mapping(graph, pattern, subgraph=True, induced=False):
+            assignment = {logical[target]: physical[source] for source, target in mapping.items()}
+            if valid(assignment):
+                return assignment
+
+        raise ValueError(
+            f"No placement of {len(logical)} qubits on '{self.id}' puts every two-qubit "
+            "gate on a CZ-capable pair. Route the circuit against the device topology first."
+        )
 
     def _resolve_calibration_set_id(self, calibration_set_id: UUID | None = None) -> UUID | None:
         """Resolve the calibration set to use for a single IQM run."""
@@ -230,6 +234,17 @@ class IQMDevice(QuantumDevice):
                 )
                 for circuit in circuits
             ]
+
+        if qubit_mapping is None:
+            mappings = {
+                frozenset((self.qubit_mapping_for(circuit) or {}).items()) for circuit in circuits
+            }
+            if len(mappings) > 1:
+                raise ValueError(
+                    "IQM applies one qubit_mapping to the whole batch, but these circuits "
+                    "need different placements. Submit them as separate jobs."
+                )
+            qubit_mapping = dict(next(iter(mappings))) or None
 
         job = self.session.submit_circuits(
             circuits,

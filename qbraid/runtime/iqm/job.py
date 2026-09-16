@@ -20,6 +20,8 @@ from __future__ import annotations
 
 import warnings
 from collections import Counter
+import re
+from dataclasses import dataclass
 from collections.abc import Sequence
 from typing import TYPE_CHECKING
 
@@ -44,6 +46,37 @@ iqm_qiskit: iqm.qiskit_iqm.qiskit_to_iqm = LazyLoader(
     globals(),
     "iqm.qiskit_iqm.qiskit_to_iqm",
 )
+
+
+_QISKIT_KEY_RE = re.compile(r".+_(?P<creg_len>\d+)_(?P<creg_idx>\d+)_(?P<clbit_idx>\d+)")
+
+
+@dataclass(frozen=True)
+class _MeasurementKey:
+    """Where one IQM measurement result lands in the classical register layout."""
+
+    creg_idx: int
+    creg_len: int
+    clbit_idx: int
+
+
+def _parse_measurement_key(key: str, values, register_index: int) -> _MeasurementKey:
+    """Locate an IQM measurement key in the classical register layout.
+
+    Circuits serialized from Qiskit carry ``<creg>_<len>_<creg idx>_<bit idx>`` keys,
+    which name one exact bit. Circuits from any other frontend carry whatever key the
+    user wrote, so each key becomes its own register, as wide as the measured locus.
+    Parsed here rather than via ``iqm.qiskit_iqm`` so decoding results never needs Qiskit.
+    """
+    match = _QISKIT_KEY_RE.fullmatch(key)
+    if match:
+        return _MeasurementKey(
+            creg_idx=int(match.group("creg_idx")),
+            creg_len=int(match.group("creg_len")),
+            clbit_idx=int(match.group("clbit_idx")),
+        )
+    shape = np.asarray(values, dtype=int).shape
+    return _MeasurementKey(register_index, shape[1] if len(shape) > 1 else 1, 0)
 
 
 def _format_measurement_memory(
@@ -72,8 +105,8 @@ def _format_measurement_memory(
     formatted_results: dict[int, np.ndarray] = {}
     shot_count = requested_shots if expect_exact_shots else None
 
-    for key, values in measurement_results.items():
-        measurement_key = iqm_qiskit.MeasurementKey.from_string(key)
+    for register_index, (key, values) in enumerate(measurement_results.items()):
+        measurement_key = _parse_measurement_key(key, values, register_index)
         result_array = np.asarray(values, dtype=int)
         current_shots = len(result_array)
 
@@ -100,18 +133,20 @@ def _format_measurement_memory(
             )
             result_array = np.array([], dtype=int)
         else:
-            if result_array.ndim != 2 or result_array.shape[1] != 1:
+            if result_array.ndim != 2:
                 raise ValueError(
                     f"Measurement result {measurement_key} has the wrong shape "
-                    f"{result_array.shape}, expected (*, 1)"
+                    f"{result_array.shape}, expected (*, N)"
                 )
-            result_array = result_array[:, 0]
 
         classical_register = formatted_results.setdefault(
             measurement_key.creg_idx,
             np.zeros((current_shots, measurement_key.creg_len), dtype=int),
         )
-        classical_register[:, measurement_key.clbit_idx] = result_array
+        width = result_array.shape[1]
+        classical_register[:, measurement_key.clbit_idx : measurement_key.clbit_idx + width] = (
+            result_array
+        )
 
     resolved_shots = shot_count or 0
     return [

@@ -18,7 +18,6 @@ from __future__ import annotations
 
 import os
 import platform
-from functools import partial
 from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -26,7 +25,6 @@ from uuid import UUID
 
 import requests
 from qbraid_core._import import LazyLoader
-from qiskit import QuantumCircuit
 
 from qbraid._caching import cached_method
 from qbraid._version import __version__ as qbraid_version
@@ -35,7 +33,7 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
-from .device import IQMDevice, to_iqm_circuit
+from .device import IQMDevice
 
 if TYPE_CHECKING:
     import iqm.iqm_client
@@ -356,14 +354,7 @@ class IQMProvider(QuantumProvider):
             simulator=False,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=len(static_architecture.qubits),
-            program_spec=ProgramSpec(
-                QuantumCircuit,
-                alias="qiskit",
-                serialize=partial(
-                    to_iqm_circuit,
-                    qubit_index_to_name=dict(enumerate(static_architecture.qubits)),
-                ),
-            ),
+            program_spec=ProgramSpec(iqm_client.Circuit, alias="iqm"),
             provider_name="IQM",
             basis_gates=self._build_basis_gates(native_operations),
             device_name=dut_label or device_id,
