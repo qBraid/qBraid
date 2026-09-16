@@ -541,6 +541,7 @@ def test_get_counts_error():
 def test_ahs_task_result(ahs_result):
     """Test result method for an AHS task."""
     mock_task = Mock(spec=AwsQuantumTask)
+    mock_task.state.return_value = "COMPLETED"
     mock_task.result.return_value = ahs_result
     mock_task.metadata.return_value = {
         "status": "COMPLETED",

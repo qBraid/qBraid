@@ -18,18 +18,18 @@
 
 from __future__ import annotations
 
+import re
 import warnings
 from collections import Counter
-import re
-from dataclasses import dataclass
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 import numpy as np
 from qbraid_core._import import LazyLoader
 
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.iqm.exceptions import IQMJobError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import BatchResult, Result
 from qbraid.runtime.result_data import GateModelResultData
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 
     import qbraid.runtime.iqm
 
-qbraid_rt_iqm: qbraid.runtime.iqm = LazyLoader("qbraid_rt_iqm", globals(), "qbraid.runtime.iqm")
+qbraid_rt_iqm = LazyLoader("qbraid_rt_iqm", globals(), "qbraid.runtime.iqm")
 iqm_qiskit: iqm.qiskit_iqm.qiskit_to_iqm = LazyLoader(
     "iqm_qiskit",
     globals(),
@@ -81,8 +81,6 @@ def _parse_measurement_key(key: str, values, register_index: int) -> _Measuremen
 
 def _format_measurement_memory(
     measurement_results: iqm.iqm_client.CircuitMeasurementResults,
-    requested_shots: int,
-    expect_exact_shots: bool = True,
 ) -> list[str]:
     """Convert one IQM circuit result into Qiskit's classical-register layout.
 
@@ -92,9 +90,6 @@ def _format_measurement_memory(
 
     Args:
         measurement_results: Results keyed by IQM measurement key.
-        requested_shots: Number of shots requested at submission time.
-        expect_exact_shots: Whether every key must contain exactly ``requested_shots`` rows.
-
     Returns:
         One Qiskit-style memory string per shot.
 
@@ -103,20 +98,14 @@ def _format_measurement_memory(
             inconsistent shot counts.
     """
     formatted_results: dict[int, np.ndarray] = {}
-    shot_count = requested_shots if expect_exact_shots else None
+    shot_count: int | None = None
 
     for register_index, (key, values) in enumerate(measurement_results.items()):
         measurement_key = _parse_measurement_key(key, values, register_index)
         result_array = np.asarray(values, dtype=int)
         current_shots = len(result_array)
 
-        if expect_exact_shots:
-            if current_shots != requested_shots:
-                raise ValueError(
-                    f"Expected {requested_shots} shots but got {current_shots} "
-                    f"for measurement result {measurement_key}"
-                )
-        elif shot_count is None:
+        if shot_count is None:
             shot_count = current_shots
         elif current_shots != shot_count:
             raise ValueError(
@@ -124,7 +113,7 @@ def _format_measurement_memory(
                 f"expected {shot_count} but got {current_shots} for {measurement_key}"
             )
 
-        if current_shots == 0 and not expect_exact_shots:
+        if current_shots == 0:
             warnings.warn(
                 "Received measurement results containing zero shots. "
                 "In case you are using non-default heralding mode, this could be "
@@ -162,11 +151,7 @@ def _format_measurement_results(
     measurement_results: iqm.iqm_client.CircuitMeasurementResults,
 ) -> tuple[list[str], np.ndarray, dict[str, int]]:
     """Build qBraid memory, shot-array, and count views for one IQM circuit result."""
-    memory = _format_measurement_memory(
-        measurement_results,
-        requested_shots=0,
-        expect_exact_shots=False,
-    )
+    memory = _format_measurement_memory(measurement_results)
     bitstrings = [item.replace(" ", "") for item in memory]
     measurements = (
         np.array([[int(bit) for bit in bitstring] for bitstring in bitstrings], dtype=int)
@@ -177,8 +162,13 @@ def _format_measurement_results(
     return memory, measurements, counts
 
 
-class IQMJobError(QbraidRuntimeError):
-    """Class for errors raised while processing an IQM job."""
+_JOB_STATUS = {
+    "waiting": JobStatus.QUEUED,
+    "processing": JobStatus.RUNNING,
+    "completed": JobStatus.COMPLETED,
+    "failed": JobStatus.FAILED,
+    "cancelled": JobStatus.CANCELLED,
+}
 
 
 class IQMJob(QuantumJob):
@@ -203,14 +193,13 @@ class IQMJob(QuantumJob):
     @staticmethod
     def _map_status(status: str) -> JobStatus:
         """Convert an IQM job status to a qBraid job status."""
-        status_map = {
-            "waiting": JobStatus.QUEUED,
-            "processing": JobStatus.RUNNING,
-            "completed": JobStatus.COMPLETED,
-            "failed": JobStatus.FAILED,
-            "cancelled": JobStatus.CANCELLED,
-        }
-        return status_map.get(status.lower(), JobStatus.UNKNOWN)
+        try:
+            return _JOB_STATUS[status.lower()]
+        except KeyError as err:
+            raise IQMJobError(
+                f"Unrecognized IQM job status '{status}'. This usually means IQM added a "
+                "status qBraid does not map yet."
+            ) from err
 
     def _get_job(self, refresh: bool = False) -> iqm.iqm_client.CircuitJob:
         if refresh or self._job is None:
@@ -282,11 +271,15 @@ class IQMJob(QuantumJob):
         )
         return self._cache_metadata
 
+    def queue_position(self) -> int | None:
+        """Return the job's position in the IQM queue, or ``None`` once it has started."""
+        return self._get_job(refresh=self._terminal_status() is None).data.queue_position
+
     def cancel(self) -> None:
         """Cancel the IQM job."""
-        self.session.cancel_job(self.id)
+        self.session.cancel_job(str(self.id))
 
-    def result(
+    def result(  # type: ignore[override]  # batch submissions return a BatchResult
         self,
     ) -> Result[GateModelResultData] | BatchResult[GateModelResultData]:
         """Return the result of the IQM job."""
@@ -299,12 +292,10 @@ class IQMJob(QuantumJob):
         if status != JobStatus.COMPLETED:
             messages = self._stringify_many(job_data.messages)
             errors = self._stringify_many(job_data.errors)
-            details = (
-                "; ".join(errors or messages) or "No additional error details returned by IQM."
-            )
-            raise IQMJobError(f"Job {self.id} finished with status '{status_value}': {details}")
+            reason = "; ".join(errors or messages) or "No additional error details returned by IQM."
+            raise IQMJobError(f"Job {self.id} finished with status '{status_value}': {reason}")
 
-        measurement_batch = self.session.get_job_measurements(self.id)
+        measurement_batch = self.session.get_job_measurements(str(self.id))
         formatted_results = [
             _format_measurement_results(measurements) for measurements in measurement_batch
         ]

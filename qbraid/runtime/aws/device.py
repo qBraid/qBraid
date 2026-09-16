@@ -26,6 +26,7 @@ from braket.aws import AwsDevice
 from braket.circuits import Circuit
 from braket.circuits.measure import Measure
 
+from qbraid._logging import logger
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -147,6 +148,12 @@ class BraketDevice(QuantumDevice):
                     tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
                 )
                 program = braket_transformed
+            else:
+                logger.info(
+                    "Skipping the IonQ gateset transform: the pytket <-> braket conversion "
+                    "edges are unavailable. Install 'pytket-braket' to enable rebasing of "
+                    "gates IonQ devices on Braket do not accept natively."
+                )
 
         qprogram = load_program(program)
         qprogram.transform(self)

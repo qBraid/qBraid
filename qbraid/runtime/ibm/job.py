@@ -96,7 +96,12 @@ class QiskitJob(QuantumJob):
         """Returns status from Qiskit Job object."""
         job_status = self._job.status()
         job_status = job_status if isinstance(job_status, str) else job_status.name
-        status = IBM_JOB_STATUS_MAP.get(job_status, JobStatus.UNKNOWN)
+        if job_status not in IBM_JOB_STATUS_MAP:
+            raise ValueError(
+                f"Unknown IBM job status '{job_status}'. "
+                f"Expected one of: {', '.join(IBM_JOB_STATUS_MAP)}"
+            )
+        status = IBM_JOB_STATUS_MAP[job_status]
         self._cache_metadata["status"] = status
         return status
 

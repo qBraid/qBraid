@@ -73,7 +73,7 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
     return bk_circuit.to_unitary()
 
 
-@weight(0.99)
+@weight(1)
 def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 
@@ -86,16 +86,31 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     Returns:
         Cirq circuit equivalent to the input Braket circuit.
     """
-    # pylint: disable-next=import-outside-toplevel
-    from qbraid.programs.gate_model.cirq import CirqCircuit as QbraidCircuit
-
     bk_qubits = [int(q) for q in circuit.qubits]
     cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]
     qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
-    circuit = cirq.Circuit(
-        _from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions
+    # Braket measurements are always terminal and carry no key, so collect them into a
+    # single keyed measurement; per-instruction M('') gates fragment or collapse the
+    # readout register in downstream QASM/Quil exports. Readout order is the Measure's
+    # classical bit index, which Circuit.from_ir preserves from permuted mappings such as
+    # ``b[2] = measure q[0]`` -- instruction order would transpose those. Braket exposes
+    # no public accessor for it as of amazon-braket-sdk 1.120; it defaults to 0, so the
+    # sort's stability falls back to instruction order for directly built Measures.
+    measured = []
+    gate_instructions = []
+    for instr in circuit.instructions:
+        if str(instr.operator) == "Measure":
+            index = getattr(instr.operator, "_target_index", 0) or 0
+            measured.extend((index, qubit_mapping[int(q)]) for q in instr.target)
+        else:
+            gate_instructions.append(instr)
+    converted = cirq.Circuit(
+        _from_braket_instruction(instr, qubit_mapping) for instr in gate_instructions
     )
-    return QbraidCircuit.align_final_measurements(circuit)
+    if measured:
+        qubits = [qubit for _, qubit in sorted(measured, key=lambda pair: pair[0])]
+        converted.append(cirq.measure(*qubits, key="m"))
+    return converted
 
 
 def _from_braket_instruction(
@@ -115,9 +130,6 @@ def _from_braket_instruction(
     nqubits = len(instr.target)
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
-
-    if str(instr.operator) == "Measure":
-        return [cirq.ops.MeasurementGate(num_qubits=nqubits).on(*qubits)]
 
     try:
         if nqubits == 1:

@@ -34,16 +34,19 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
+    IQMDeviceError
     IQMJobError
 
 """
 
 from .device import IQMDevice
-from .job import IQMJob, IQMJobError
+from .exceptions import IQMDeviceError, IQMJobError
+from .job import IQMJob
 from .provider import IQMProvider, IQMSession
 
 __all__ = [
     "IQMDevice",
+    "IQMDeviceError",
     "IQMJob",
     "IQMJobError",
     "IQMProvider",

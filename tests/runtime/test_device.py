@@ -634,12 +634,71 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
             ValueError,
             match=(
                 f"OpenQASM programs submitted to the {device_id} "
-                "must be compatible with IonQ JSON format."
+                # The conversion's own reason is appended, so the caller learns what was
+                # actually wrong rather than only that something was.
+                "must be compatible with IonQ JSON format: .*Invalid QASM3 code"
             ),
         ):
             validate(invalid_program)
 
         mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
+
+
+# A Braket verbatim box: native IonQ gates the backend must run exactly as given.
+# IonQ JSON has no way to express it, which is the whole point of the construct.
+VERBATIM_QASM3 = """OPENQASM 3;
+
+bit[2] c;
+
+#pragma braket verbatim
+box{
+    gpi(0.0) $0;
+    gpi2(0.1) $1;
+    ms(0.1, 0.2, 0.25) $0, $1;
+}
+
+c[0] = measure $0;
+c[1] = measure $1;
+"""
+
+
+@pytest.mark.parametrize(
+    "device_id, expects_validator",
+    [
+        # Serializes to IonQ JSON, so the check is meaningful.
+        ("ionq:ionq:qpu:forte-1", True),
+        # Rebases to the IonQ basis gate set before submitting, same constraint.
+        ("azure:ionq:qpu:forte-enterprise-1", True),
+        # Braket takes the OpenQASM through untouched.
+        ("aws:ionq:qpu:forte-enterprise-1", False),
+        # Open Quantum likewise forwards the OpenQASM as given.
+        ("openquantum:ionq:qpu:forte-1", False),
+    ],
+)
+def test_ionq_qasm_validator_is_scoped_by_vendor(device_id, expects_validator):
+    """The IonQ JSON check applies only where the program is serialized to IonQ JSON."""
+    validate = get_program_spec_lambdas("qasm3", device_id)["validate"]
+    assert (validate is not None) is expects_validator
+
+
+def test_verbatim_qasm_accepted_for_braket_hosted_ionq():
+    """A Braket verbatim program reaches an AWS-hosted IonQ device unrejected."""
+    validate = get_program_spec_lambdas("qasm3", "aws:ionq:qpu:forte-enterprise-1")["validate"]
+    assert validate is None
+
+
+def test_verbatim_qasm_still_rejected_for_direct_ionq():
+    """The same program is still refused where it genuinely cannot be submitted."""
+    device_id = "ionq:ionq:qpu:forte-1"
+    validate = get_program_spec_lambdas("qasm3", device_id)["validate"]
+    with pytest.raises(ValueError, match="must be compatible with IonQ JSON format"):
+        validate(VERBATIM_QASM3)
+
+
+def test_quera_measurement_validator_survives_aws_hosting():
+    """QuEra's check is a device capability limit, so AWS hosting must not drop it."""
+    validate = get_program_spec_lambdas("qasm3", "aws:quera:qpu:aquila")["validate"]
+    assert validate is not None
 
 
 def test_get_program_spec_lambdas_pulser():
@@ -902,31 +961,38 @@ def test_resolve_noise_model_raises_for_unsupported_model(mock_qbraid_device):
         mock_qbraid_device._resolve_noise_model("depolarizing")
 
 
-def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client):
+def test_device_data_fixture_isolates_shared_resource(device_data_qir):
+    """The fixture hands out a private copy, including nested keys.
+
+    ``MockClient`` reads the module-level resources directly, so a test that writes through a
+    shallow copy poisons every later device built from them in the same session.
+    """
+    assert device_data_qir == DEVICE_DATA_QIR
+    assert device_data_qir["data"] is not DEVICE_DATA_QIR["data"]
+
+    device_data_qir["data"]["directAccess"] = False
+    assert DEVICE_DATA_QIR["data"]["directAccess"] is True
+
+
+def test_provider_get_devices_raises_when_no_direct_access_devices(mock_client, device_data_qir):
     """Test that get_devices raises ResourceNotFoundError when no directAccess devices found."""
     provider = QbraidProvider(client=mock_client)
     # Mock client to return devices without directAccess
-    device_data_no_direct = DEVICE_DATA_QIR.copy()
-    device_data_no_direct["data"]["directAccess"] = False
+    device_data_qir["data"]["directAccess"] = False
     mock_client.list_devices = Mock()
-    mock_client.list_devices.return_value = [
-        RuntimeDevice.model_validate(device_data_no_direct["data"])
-    ]
+    mock_client.list_devices.return_value = [RuntimeDevice.model_validate(device_data_qir["data"])]
 
     with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria"):
         provider.get_devices()
 
 
-def test_provider_get_device_raises_when_no_direct_access(mock_client):
+def test_provider_get_device_raises_when_no_direct_access(mock_client, device_data_qir):
     """Test that get_device raises ValueError when device doesn't support direct access."""
     provider = QbraidProvider(client=mock_client)
     # Mock client to return device without directAccess
-    device_data_no_direct = DEVICE_DATA_QIR.copy()
-    device_data_no_direct["data"]["directAccess"] = False
+    device_data_qir["data"]["directAccess"] = False
     mock_client.get_device = Mock()
-    mock_client.get_device.return_value = RuntimeDevice.model_validate(
-        device_data_no_direct["data"]
-    )
+    mock_client.get_device.return_value = RuntimeDevice.model_validate(device_data_qir["data"])
 
     with pytest.raises(
         ValueError,
@@ -1080,3 +1146,249 @@ def test_coupling_map_cached_per_device(mock_profile):
 
     assert first == second
     client.get_device_calibrations.assert_called_once()
+
+
+class TestSupportedRunInputs:
+    """Tests for QuantumDevice.supported_run_inputs."""
+
+    @staticmethod
+    def _device(program_spec, scheme=None):
+        profile = TargetProfile(device_id="fake", simulator=True, program_spec=program_spec)
+        return MockDevice(profile=profile, scheme=scheme)
+
+    def test_single_spec_matches_graph_reachability(self):
+        """Every alias with a path to the target is returned, sorted, target included."""
+        device = self._device(ProgramSpec(str, alias="qasm2"))
+        supported = device.supported_run_inputs()
+
+        graph = device.scheme.conversion_graph
+        expected = sorted(n for n in graph.nodes() if graph.has_path(n, "qasm2"))
+        assert supported == expected
+        assert "qasm2" in supported
+
+    def test_multi_spec_unions_reachable_aliases(self):
+        """A device with several target specs accepts an alias reachable to any of them.
+
+        Regression test: the IonQ, Open Quantum, QUDORA and native devices carry a
+        ``list[ProgramSpec]``, on which this method raised ``AttributeError``.
+        """
+        device = self._device([ProgramSpec(str, alias="qasm2"), ProgramSpec(str, alias="qasm3")])
+        supported = device.supported_run_inputs()
+
+        graph = device.scheme.conversion_graph
+        expected = sorted(
+            n for n in graph.nodes() if graph.has_path(n, "qasm2") or graph.has_path(n, "qasm3")
+        )
+        assert supported == expected
+        assert {"qasm2", "qasm3"} <= set(supported)
+
+    def test_no_target_spec_returns_empty(self):
+        """Without a target spec there is nothing run() could convert to."""
+        device = self._device(None)
+        assert device.supported_run_inputs() == []
+
+    def test_respects_scheme_max_path_depth(self):
+        """An alias whose shortest conversion path exceeds the scheme's depth is excluded.
+
+        Regression test: run() enforces ``max_path_depth``, so an alias listed here but
+        rejected by run() would break the method's contract.
+        """
+        device = self._device(
+            ProgramSpec(str, alias="qasm2"), scheme=ConversionScheme(max_path_depth=1)
+        )
+        supported = device.supported_run_inputs()
+
+        graph = device.scheme.conversion_graph
+        for alias in supported:
+            if alias == "qasm2":
+                continue
+            shortest = graph.find_top_shortest_conversion_paths(alias, "qasm2", top_n=1)
+            assert len(shortest[0]) <= 1, f"{alias} needs {len(shortest[0])} hops"
+
+        deeper = sorted(n for n in graph.nodes() if graph.has_path(n, "qasm2"))
+        assert set(supported) < set(deeper), "the depth limit should exclude something"
+
+    def test_transpile_disabled_advertises_only_native_aliases(self):
+        """With the transpile option off, run() converts nothing, so only spec aliases apply.
+
+        Regression test: apply_runtime_profile transpiles only when the option is True,
+        so advertising graph-reachable aliases here would sell inputs run() rejects.
+        """
+        device = self._device([ProgramSpec(str, alias="qasm2"), ProgramSpec(str, alias="qasm3")])
+        device.set_options(transpile=False)
+
+        assert device.supported_run_inputs() == ["qasm2", "qasm3"]
+
+
+# ===========================================================================
+# Device best qubits selection
+# ===========================================================================
+
+
+def _calibration(qubits: dict, cz_edges: list, **extra_gates) -> DeviceCalibration:
+    """Compact builder: qubits maps id -> (readout_error, rb_error), edges are
+    (source, target, error) triples keyed by gate name."""
+    gate_error = {"cz": [{"source": s, "target": t, "value": v} for s, t, v in cz_edges]}
+    for gate_name, edges in extra_gates.items():
+        gate_error[gate_name] = [{"source": s, "target": t, "value": v} for s, t, v in edges]
+    return DeviceCalibration.model_validate(
+        {
+            "physicalDeviceId": "rigetti:Cepheus-1-108Q",
+            "deviceQRNs": [CEPHEUS_QRN],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-07-21T18:55:46+00:00",
+            "fetchedAt": "2026-07-21T19:00:18.386133+00:00",
+            "qubits": {
+                str(q): {"readoutError": ro, "gateError": {"rb": rb}}
+                for q, (ro, rb) in qubits.items()
+            },
+            "edges": {"gateError": gate_error},
+        }
+    )
+
+
+def _device_with(calibration: DeviceCalibration | None, mock_profile) -> QbraidDevice:
+    client = Mock()
+    client.get_device_calibrations.return_value = calibration
+    return QbraidDevice(profile=mock_profile, client=client)
+
+
+def test_best_qubits_none_without_calibration(mock_profile):
+    """best_qubits is None when the device has no calibration data."""
+    device = _device_with(None, mock_profile)
+    assert device.best_qubits(2) is None
+
+
+def test_best_qubits_rejects_non_gate_model_devices():
+    """Analog devices have no fixed qubit lattice: the question is ill-posed."""
+    profile = TargetProfile(
+        device_id="aws:quera:qpu:aquila",
+        simulator=False,
+        experiment_type=ExperimentType.ANALOG,
+    )
+    device = QbraidDevice(profile=profile, client=Mock())
+    with pytest.raises(ValueError, match="gate-model devices.*ANALOG"):
+        device.best_qubits(2)
+
+
+def test_best_qubits_rejects_non_positive(mock_profile):
+    """num_qubits must be a positive integer."""
+    device = _device_with(_cepheus_calibration(), mock_profile)
+    with pytest.raises(ValueError, match="positive integer"):
+        device.best_qubits(0)
+
+
+def test_best_qubits_single_by_combined_qubit_metrics(mock_profile):
+    """n=1 picks the qubit with the best combined readout and gate fidelity."""
+    calibration = _calibration(
+        {0: (0.04, 0.002), 1: (0.01, 0.001), 2: (0.02, 0.001)},
+        [(0, 1, 0.01), (1, 2, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(1) == (1,)
+
+
+def test_best_qubits_pair_prefers_lowest_edge_error(mock_profile):
+    """With equal qubit metrics, the pair with the lowest edge error wins."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.03), (2, 3, 0.008)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+def test_best_qubits_folds_readout_into_edge_choice(mock_profile):
+    """With equal edge errors, the pair whose qubits read out better wins."""
+    calibration = _calibration(
+        {0: (0.05, 0.001), 1: (0.05, 0.001), 2: (0.01, 0.001), 3: (0.01, 0.001)},
+        [(0, 1, 0.01), (2, 3, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+def test_best_qubits_chain_avoids_bad_edge(mock_profile):
+    """Chain search routes around a high-error edge."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.005), (1, 2, 0.1), (1, 3, 0.005)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(3) == (0, 1, 3)
+
+
+def test_best_qubits_edge_uses_best_gate_by_default(mock_profile):
+    """Each edge takes its lowest error across calibrated gates unless pinned."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.05), (2, 3, 0.02)],
+        iswap=[(0, 1, 0.005)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (0, 1)
+    assert device.best_qubits(2, gate="cz") == (2, 3)
+
+
+def test_best_qubits_unknown_gate_raises(mock_profile):
+    """Requesting a gate with no calibrated edges raises with the options."""
+    device = _device_with(_cepheus_calibration(), mock_profile)
+    with pytest.raises(ValueError, match="Available gates.*cz.*iswap"):
+        device.best_qubits(2, gate="xy")
+
+
+def test_best_qubits_more_qubits_than_calibrated_raises(mock_profile):
+    """Requesting more qubits than the device calibrates raises rather than truncating."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.01, 0.001)}, [])
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="2 calibrated qubits; 3 requested"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_chain_returned_lowest_id_first(mock_profile):
+    """A chain comes back lowest-id-first, whichever direction the search recorded it.
+
+    A path and its reverse cost the same in exact arithmetic, so which orientation the search
+    keeps comes down to summation order in floating point. On this star — cheap arm to qubit 1,
+    equal expensive arms to 0 and 2 — the winning chain is recorded as 2-3-1 and normalized.
+    """
+    calibration = _calibration(
+        {0: (0.02, 0.02), 1: (0.002, 0.002), 2: (0.002, 0.02), 3: (0.02, 0.002)},
+        [(0, 3, 0.05), (1, 3, 0.002), (2, 3, 0.05)],
+    )
+    device = _device_with(calibration, mock_profile)
+    chain = device.best_qubits(3)
+    assert chain == (1, 3, 2)
+    assert chain[0] < chain[-1]
+
+
+def test_best_qubits_all_to_all_ranks_qubits(mock_profile):
+    """Devices with qubit metrics but no edges return the n best qubits."""
+    calibration = _calibration(
+        {0: (0.05, 0.002), 1: (0.01, 0.001), 2: (0.02, 0.001)},
+        [],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (1, 2)
+
+
+def test_best_qubits_no_chain_long_enough_raises(mock_profile):
+    """Disconnected coupling graph with no path of the requested length raises."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.01), (2, 3, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="No connected chain of 3 qubits"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_excludes_dead_edges(mock_profile):
+    """Edges at 100% error are unusable and never selected."""
+    calibration = _calibration(
+        {0: (0.02, 0.001), 1: (0.02, 0.001)},
+        [(0, 1, 1.0)],
+    )
+    device = _device_with(calibration, mock_profile)
+    with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+        device.best_qubits(2)

@@ -31,8 +31,9 @@ from qbraid.runtime.postprocess import (
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_data,
+    reverse_bit_order,
 )
-from qbraid.runtime.result import Result
+from qbraid.runtime.result import BatchResult, Result
 from qbraid.runtime.result_data import (
     AnalogResultData,
     AnalogShotResult,
@@ -282,6 +283,34 @@ def test_batch_normalized_counts():
     counts = normalize_data(raw_counts, include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
+
+
+def test_batch_counts_preserve_each_circuit_width():
+    """Batch counts do not pad every circuit to the widest register."""
+    counts = [
+        {"00": 18, "01": 24, "10": 24, "11": 34},
+        {"000": 14, "111": 15},
+        {"0": 3, "1": 97},
+    ]
+    results = [
+        Result("device_id", f"job_id_{index}", True, GateModelResultData(measurement_counts=item))
+        for index, item in enumerate(counts)
+    ]
+    batch_result = BatchResult("device_id", "batch_job_id", True, results)
+
+    assert batch_result.data.get_counts() == counts
+    assert [result.data.get_counts() for result in batch_result.results] == counts
+    assert batch_result.data.to_dict()["num_measured_qubits"] == [2, 3, 1]
+    assert normalize_data(counts, include_zero_values=True) == [
+        {"00": 18, "01": 24, "10": 24, "11": 34},
+        {"000": 14, "001": 0, "010": 0, "011": 0, "100": 0, "101": 0, "110": 0, "111": 15},
+        {"0": 3, "1": 97},
+    ]
+    assert normalize_data(counts, decimal=True) == [
+        {0: 18, 1: 24, 2: 24, 3: 34},
+        {0: 14, 7: 15},
+        {0: 3, 1: 97},
+    ]
 
 
 def test_decimal_get_counts():
@@ -853,3 +882,33 @@ def test_distribute_counts_diff_non_zero():
     result = distribute_counts(probs, shots)
     assert sum(result.values()) == shots, "Counts do not sum to the number of shots."
     assert result[0] + result[1] + result[2] == shots, "Counts adjustment did not work as expected."
+
+
+class TestReverseBitOrder:
+    """qBraid reports qubit 0 last; providers that report it first are flipped here."""
+
+    def test_moves_qubit_zero_from_first_to_last(self):
+        """A vendor key with qubit 0 first becomes qBraid's qubit-0-last order."""
+        assert reverse_bit_order({"100": 90, "110": 10}) == {"001": 90, "011": 10}
+
+    def test_multi_register_keys_reverse_whole(self):
+        """Register order flips with the bits, for vendors that emit registers reversed."""
+        assert reverse_bit_order({"1 01": 100}) == {"10 1": 100}
+
+    def test_batch_input_is_mapped_elementwise(self):
+        """Batch results are a list of histograms; each is converted independently."""
+        assert reverse_bit_order([{"100": 5}, {"011": 7}]) == [{"001": 5}, {"110": 7}]
+
+    def test_is_its_own_inverse(self):
+        """Applying it twice restores the input, which is why every call site is justified
+        against a verified provider order rather than added defensively."""
+        counts = {"1011": 3, "0100": 9}
+        assert reverse_bit_order(reverse_bit_order(counts)) == counts
+
+    def test_values_are_untouched(self):
+        """Only keys are rewritten -- shot counts must survive the conversion."""
+        assert list(reverse_bit_order({"10": 7}).values()) == [7]
+
+    def test_empty_input(self):
+        """A job with no counts converts to an empty mapping rather than raising."""
+        assert reverse_bit_order({}) == {}

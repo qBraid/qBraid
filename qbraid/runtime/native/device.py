@@ -28,10 +28,12 @@ from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._logging import logger
+from qbraid.programs import ExperimentType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
 
+from .calibrations import best_chain, edge_costs, qubit_costs
 from .job import QbraidJob
 
 if TYPE_CHECKING:
@@ -111,6 +113,63 @@ class QbraidDevice(QuantumDevice):
             for entry in entries
         }
         return tuple(sorted(pairs))
+
+    def best_qubits(self, num_qubits: int, gate: str | None = None) -> tuple[int, ...] | None:
+        """Select the best-calibrated qubits for a circuit of ``num_qubits`` qubits.
+
+        Fetches a fresh calibration snapshot and returns the connected chain of
+        physical qubits maximizing estimated fidelity: the product of
+        ``(1 - error)`` over each qubit's readout and gate errors and each
+        edge's two-qubit gate error. The chain is returned in path order, ready
+        for e.g. Qiskit's ``initial_layout``. Calibrations shift with every
+        refresh, so select shortly before submitting.
+
+        For devices that publish qubit metrics but no coupling edges (all-to-all
+        connectivity, e.g. trapped ion), returns the ``num_qubits`` individually
+        best-calibrated qubits instead of a chain.
+
+        Args:
+            num_qubits: Number of qubits the circuit needs.
+            gate: Restrict edge errors to this two-qubit gate (e.g. ``"cz"``).
+                By default each edge uses its best calibrated gate.
+
+        Returns:
+            Physical qubit ids, or ``None`` when the device has no published
+            calibration data (e.g. simulators).
+
+        Raises:
+            ValueError: If the device is not gate-model (e.g. analog neutral
+                atom, where atom geometry is programmable and there is no fixed
+                qubit lattice to select from), ``num_qubits < 1``, no connected
+                chain of that length exists, ``gate`` has no calibrated edges,
+                or the device has fewer calibrated qubits than requested.
+        """
+        experiment_type = self.profile.experiment_type
+        if experiment_type is not None and experiment_type != ExperimentType.GATE_MODEL:
+            raise ValueError(
+                "best_qubits applies to gate-model devices; this device's "
+                f"experiment type is {experiment_type.name}"
+            )
+        if num_qubits < 1:
+            raise ValueError(f"num_qubits must be a positive integer, got {num_qubits}")
+        calibration = self.get_calibrations()
+        if calibration is None:
+            return None
+        node_costs = qubit_costs(calibration)
+        edge_costs_map = edge_costs(calibration, gate=gate)
+        if num_qubits == 1 or not edge_costs_map:
+            if len(node_costs) < num_qubits:
+                raise ValueError(
+                    f"Device has {len(node_costs)} calibrated qubits; {num_qubits} requested"
+                )
+            ranked = sorted(node_costs, key=lambda qubit: (node_costs[qubit], qubit))
+            return tuple(ranked[:num_qubits])
+        chain = best_chain(node_costs, edge_costs_map, num_qubits)
+        if chain is None:
+            raise ValueError(
+                f"No connected chain of {num_qubits} qubits exists on this device's coupling graph"
+            )
+        return tuple(chain)
 
     def _resolve_noise_model(self, noise_model: NoiseModel | str) -> str:
         """Verify given noise model is supported by device and map to string representation."""

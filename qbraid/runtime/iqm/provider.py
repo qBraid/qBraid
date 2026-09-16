@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import os
 import platform
+from hashlib import sha256
 from importlib.metadata import PackageNotFoundError, version
 from typing import TYPE_CHECKING
 from urllib.parse import urlparse
@@ -55,6 +56,7 @@ iqm_authentication = LazyLoader(
 IQM_SERVER_URL_ENV = "IQM_SERVER_URL"
 IQM_QUANTUM_COMPUTER_ENV = "IQM_QUANTUM_COMPUTER"
 DEFAULT_IQM_SERVER_URL = "https://resonance.meetiqm.com"
+MOCK_ALIAS_SUFFIX = ":mock"
 
 
 def _create_client_signature(client_signature: str | None) -> str:
@@ -154,11 +156,12 @@ class IQMSession:
         self._token = token
         self._tokens_file = tokens_file
         self._client: iqm.iqm_client.IQMClient | None = None
-        self._auth_config = {
-            "quantum_computer": self.quantum_computer,
-            "token": self._token,
-            "tokens_file": tokens_file,
-        }
+
+    @property
+    def token_id(self) -> str | None:
+        """Return a non-secret fingerprint of the credential this session uses."""
+        secret = self._token or self._tokens_file
+        return sha256(secret.encode()).hexdigest() if secret else None
 
     def with_quantum_computer(self, quantum_computer: str) -> IQMSession:
         """Return a session scoped to a specific IQM quantum computer alias."""
@@ -220,6 +223,10 @@ class IQMSession:
     def get_job(self, job_id: str | UUID) -> iqm.iqm_client.CircuitJob:
         """Return the current state of an IQM job."""
         return self.client.get_job(self._coerce_job_id(job_id))
+
+    def get_health(self) -> dict:
+        """Return the operational status reported by the quantum computer."""
+        return self.client.get_health()
 
     def get_job_measurements(
         self, job_id: str | UUID
@@ -351,7 +358,8 @@ class IQMProvider(QuantumProvider):
         dut_label = getattr(static_architecture, "dut_label", None)
         return TargetProfile(
             device_id=device_id,
-            simulator=False,
+            # IQM exposes a simulated twin of each QPU under a ":mock" alias.
+            simulator=device_id.endswith(MOCK_ALIAS_SUFFIX),
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=len(static_architecture.qubits),
             program_spec=ProgramSpec(iqm_client.Circuit, alias="iqm"),
@@ -369,6 +377,7 @@ class IQMProvider(QuantumProvider):
                 dynamic_architecture,
             ),
             calibration_set_id=dynamic_architecture.calibration_set_id,
+            dynamic_architecture=dynamic_architecture,
         )
 
     def _build_device(self, quantum_computer: str) -> IQMDevice:
@@ -389,12 +398,17 @@ class IQMProvider(QuantumProvider):
 
     @cached_method
     def get_device(self, device_id: str) -> IQMDevice:
-        """Return the IQM device exposed by the configured server."""
-        for quantum_computer in self.session.list_quantum_computers():
-            device = self._build_device(quantum_computer)
-            if device.id == device_id or device.profile.get("dut_label") == device_id:
-                return device
-        raise ResourceNotFoundError(f"Device '{device_id}' not found.")
+        """Return the IQM device exposed by the configured server.
+
+        ``device_id`` is the quantum computer alias, so the match is made on the alias
+        list before any architecture is fetched; only the selected device is built.
+        """
+        aliases = self.session.list_quantum_computers()
+        if device_id in aliases:
+            return self._build_device(device_id)
+        raise ResourceNotFoundError(
+            f"Device '{device_id}' not found. Available devices: {', '.join(aliases)}."
+        )
 
     @cached_method
     def get_devices(self, **kwargs) -> list[IQMDevice]:
@@ -414,10 +428,9 @@ class IQMProvider(QuantumProvider):
 
     def __hash__(self):
         if not hasattr(self, "_hash"):
-            auth_items = tuple(sorted(self.session._auth_config.items()))
             object.__setattr__(
                 self,
                 "_hash",
-                hash((self.session.url, self.session.client_signature, auth_items)),
+                hash((self.session.url, self.session.quantum_computer, self.session.token_id)),
             )
         return self._hash  # pylint: disable=no-member

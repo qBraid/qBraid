@@ -16,6 +16,8 @@
 
 from __future__ import annotations
 
+import importlib.util
+import logging
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -24,6 +26,7 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.iqm.exceptions import IQMDeviceError
 
 from .job import IQMJob
 
@@ -34,6 +37,15 @@ if TYPE_CHECKING:
     import qbraid.runtime.iqm.provider
 
 iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
+
+logger = logging.getLogger(__name__)
+
+_DEVICE_STATUS = {
+    "online": DeviceStatus.ONLINE,
+    "maintenance": DeviceStatus.UNAVAILABLE,
+    "offline": DeviceStatus.OFFLINE,
+    "out_of_service": DeviceStatus.OFFLINE,
+}
 
 
 class IQMDevice(QuantumDevice):
@@ -67,12 +79,72 @@ class IQMDevice(QuantumDevice):
         return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self) -> DeviceStatus:
-        """Return the current status of the IQM device."""
+        """Return the current status of the IQM device.
+
+        Reads ``/health``. ``get_static_quantum_architecture`` is ``@cache``d on
+        ``IQMClient`` and the provider already called it to build the profile, so it
+        would answer from cache and report ``ONLINE`` forever.
+
+        Raises:
+            IQMDeviceError: If IQM reports an operational status qBraid does not map.
+        """
+        health = self.session.get_health()
+        operational_status = str(health.get("operational_status", "")).lower()
         try:
-            self.session.get_static_quantum_architecture()
-        except Exception:  # pylint: disable=broad-exception-caught
-            return DeviceStatus.UNAVAILABLE
-        return DeviceStatus.ONLINE
+            return _DEVICE_STATUS[operational_status]
+        except KeyError as err:
+            raise IQMDeviceError(
+                f"Unrecognized operational status '{operational_status}' "
+                f"for device '{self.id}'."
+            ) from err
+
+    def transform(self, run_input: iqm.iqm_client.Circuit) -> iqm.iqm_client.Circuit:
+        """Route the circuit onto this device's topology.
+
+        IQM's server does not route: a two-qubit gate on a pair that cannot run CZ is
+        rejected at submission. When ``qiskit`` is importable the circuit goes through
+        IQM's own ``transpile_to_IQM``, which routes and applies IQM's single-qubit
+        optimizations. Without it the circuit is left as-is, which is valid whenever
+        its interaction graph already embeds in the topology -- ``qubit_mapping_for``
+        raises with a clear message when it does not.
+        """
+        if importlib.util.find_spec("qiskit") is None:
+            return run_input
+        try:
+            return self._route_with_qiskit(run_input)
+        except ValueError as err:
+            # The round trip goes through Qiskit's measurement-key convention, which
+            # only circuits serialized from Qiskit follow. Anything else keeps its
+            # placement as-is, which qubit_mapping_for still validates before submit.
+            logger.debug("Skipping IQM routing for '%s': %s", self.id, err)
+            return run_input
+
+    def _route_with_qiskit(self, circuit: iqm.iqm_client.Circuit) -> iqm.iqm_client.Circuit:
+        """Round-trip through Qiskit so IQM's own transpiler can route and optimize."""
+        # pylint: disable=import-outside-toplevel
+        from iqm.qiskit_iqm import IQMBackend, transpile_to_IQM
+        from iqm.qiskit_iqm.qiskit_to_iqm import (
+            deserialize_instructions,
+            serialize_instructions,
+        )
+        from qiskit.circuit import QuantumRegister
+        from qiskit.transpiler import Layout
+
+        logical = sorted({qubit for op in circuit.instructions for qubit in op.locus})
+        name_to_index = {name: index for index, name in enumerate(logical)}
+        layout = Layout.generate_trivial_layout(QuantumRegister(len(logical), "q"))
+
+        qiskit_circuit = deserialize_instructions(list(circuit.instructions), name_to_index, layout)
+        backend = IQMBackend(self.session.client)
+        routed = transpile_to_IQM(qiskit_circuit, backend)
+        # transpile_to_IQM chose physical qubits using the device's real topology.
+        # Serialize with those physical names so qubit_mapping_for leaves them alone
+        # rather than reassigning them by logical order and discarding the layout.
+        return iqm_client.Circuit(
+            name=routed.name,
+            instructions=tuple(serialize_instructions(routed, dict(enumerate(self.qubits)))),
+            metadata=None,
+        )
 
     def _coupling_edges(self) -> set[tuple[str, str]]:
         """Physical qubit pairs that support CZ, both directions."""
@@ -109,6 +181,12 @@ class IQMDevice(QuantumDevice):
         def valid(assignment: dict[str, str]) -> bool:
             return all((assignment[a], assignment[b]) in edges for a, b in interactions)
 
+        if len(logical) > len(physical):
+            raise ValueError(
+                f"No placement of {len(logical)} qubits on '{self.id}': the device has "
+                f"only {len(physical)}."
+            )
+
         identity = {name: physical[index] for index, name in enumerate(logical)}
         if valid(identity):
             return identity
@@ -142,49 +220,6 @@ class IQMDevice(QuantumDevice):
             else self.profile.get("calibration_set_id")
         )
 
-    @staticmethod
-    def _build_compilation_options(  # pylint: disable=too-many-arguments
-        compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
-        *,
-        circuit_compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
-        max_circuit_duration_over_t2: float | None = None,
-        heralding_mode: iqm.iqm_client.HeraldingMode | None = None,
-        move_gate_validation: iqm.iqm_client.MoveGateValidationMode | None = None,
-        move_gate_frame_tracking: iqm.iqm_client.MoveGateFrameTrackingMode | None = None,
-        active_reset_cycles: int | None = None,
-        dd_mode: iqm.iqm_client.DDMode | None = None,
-        dd_strategy: iqm.iqm_client.DDStrategy | None = None,
-    ) -> iqm.iqm_client.CircuitCompilationOptions | None:
-        if compilation_options is not None and circuit_compilation_options is not None:
-            raise ValueError(
-                "Use either 'compilation_options' or 'circuit_compilation_options', not both."
-            )
-
-        resolved_options = compilation_options or circuit_compilation_options
-        option_fields = {
-            "max_circuit_duration_over_t2": max_circuit_duration_over_t2,
-            "heralding_mode": heralding_mode,
-            "move_gate_validation": move_gate_validation,
-            "move_gate_frame_tracking": move_gate_frame_tracking,
-            "active_reset_cycles": active_reset_cycles,
-            "dd_mode": dd_mode,
-            "dd_strategy": dd_strategy,
-        }
-
-        if resolved_options is not None:
-            if any(value is not None for value in option_fields.values()):
-                raise ValueError(
-                    "Use either a compilation options object or individual compilation "
-                    "option keyword arguments, not both."
-                )
-            return resolved_options
-
-        option_kwargs = {key: value for key, value in option_fields.items() if value is not None}
-        if not option_kwargs:
-            return None
-
-        return iqm_client.CircuitCompilationOptions(**option_kwargs)
-
     # pylint: disable-next=arguments-differ,too-many-arguments
     def submit(
         self,
@@ -193,39 +228,24 @@ class IQMDevice(QuantumDevice):
         *,
         qubit_mapping: iqm.iqm_client.QubitMapping | None = None,
         calibration_set_id: UUID | None = None,
-        compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
-        circuit_compilation_options: iqm.iqm_client.CircuitCompilationOptions | None = None,
+        options: iqm.iqm_client.CircuitCompilationOptions | None = None,
         use_timeslot: bool = False,
-        max_circuit_duration_over_t2: float | None = None,
-        heralding_mode: iqm.iqm_client.HeraldingMode | None = None,
-        move_gate_validation: iqm.iqm_client.MoveGateValidationMode | None = None,
-        move_gate_frame_tracking: iqm.iqm_client.MoveGateFrameTrackingMode | None = None,
-        active_reset_cycles: int | None = None,
-        dd_mode: iqm.iqm_client.DDMode | None = None,
-        dd_strategy: iqm.iqm_client.DDStrategy | None = None,
     ) -> IQMJob:
         """Submit one or more IQM circuits to the configured server."""
         circuits = [run_input] if not isinstance(run_input, list) else run_input
         if not circuits:
             raise ValueError("run_input list cannot be empty.")
 
-        resolved_options = self._build_compilation_options(
-            compilation_options,
-            circuit_compilation_options=circuit_compilation_options,
-            max_circuit_duration_over_t2=max_circuit_duration_over_t2,
-            heralding_mode=heralding_mode,
-            move_gate_validation=move_gate_validation,
-            move_gate_frame_tracking=move_gate_frame_tracking,
-            active_reset_cycles=active_reset_cycles,
-            dd_mode=dd_mode,
-            dd_strategy=dd_strategy,
-        )
         resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
 
         if self.profile.get("computational_resonators"):
-            dynamic_architecture = self.session.get_dynamic_quantum_architecture(
-                resolved_calibration_set_id
-            )
+            # Captured when the profile was built; get_dynamic_quantum_architecture is not
+            # cached on IQMClient, so refetching it here would be a round trip per run.
+            dynamic_architecture = self.profile.get("dynamic_architecture")
+            if dynamic_architecture is None:
+                dynamic_architecture = self.session.get_dynamic_quantum_architecture(
+                    resolved_calibration_set_id
+                )
             circuits = [
                 iqm_client.transpile_insert_moves(
                     circuit,
@@ -251,7 +271,7 @@ class IQMDevice(QuantumDevice):
             qubit_mapping=qubit_mapping,
             calibration_set_id=resolved_calibration_set_id,
             shots=shots,
-            options=resolved_options,
+            options=options,
             use_timeslot=use_timeslot,
         )
         return IQMJob(

@@ -189,6 +189,17 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
             qubits = statement.qubits
             qubit_values = []
 
+            # IonQ addresses a logical register and places the circuit itself, so a
+            # hardware qubit ($0) has nothing to map onto. qiskit>=2 emits these once a
+            # circuit is laid out on a backend's physical qubits.
+            for qubit in qubits:
+                if isinstance(qubit, openqasm3.ast.Identifier) and qubit.name.startswith("$"):
+                    raise ValueError(
+                        f"Hardware qubit '{qubit.name}' is not supported by the IonQ format, "
+                        "which addresses a logical register. Convert the circuit before it is "
+                        "laid out on a backend's physical qubits."
+                    )
+
             if len(qubits) == 1 and isinstance(qubits[0], openqasm3.ast.Identifier):
                 reg_name = qubits[0].name
                 for qreg_name, reg_size in program_qubits:

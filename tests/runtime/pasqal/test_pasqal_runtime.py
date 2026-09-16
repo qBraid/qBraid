@@ -161,9 +161,14 @@ class TestProviderHelpers:
 
 
 class TestPasqalProvider:
-    def test_init_requires_credentials(self, monkeypatch):
+    @pytest.fixture(autouse=True)
+    def _clear_pasqal_env(self, monkeypatch):
+        # CI exports PASQAL_* from repository secrets, so credentials resolved from the
+        # environment would otherwise leak into every constructor assertion below.
         for key in ("PASQAL_USERNAME", "PASQAL_PASSWORD", "PASQAL_PROJECT_ID"):
             monkeypatch.delenv(key, raising=False)
+
+    def test_init_requires_credentials(self):
         with pytest.raises(ValueError, match="Pasqal authentication is required"):
             PasqalProvider()
 

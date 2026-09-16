@@ -19,7 +19,9 @@
 
 from __future__ import annotations
 
+import importlib
 import json
+import sys
 import uuid
 from dataclasses import dataclass, field
 from enum import Enum
@@ -29,9 +31,12 @@ from unittest.mock import Mock
 
 import numpy as np
 import pytest
+from iqm.iqm_client import Circuit as RealIQMCircuit
 from qiskit import QuantumCircuit
 
 from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.gate_model.iqm import IQMProgram
 from qbraid.runtime import (
     BatchResult,
     GateModelResultData,
@@ -40,9 +45,19 @@ from qbraid.runtime import (
     TargetProfile,
 )
 from qbraid.runtime.enums import DeviceStatus, JobStatus
-from qbraid.runtime.iqm import IQMDevice, IQMJob, IQMJobError, IQMProvider, IQMSession
+from qbraid.runtime.iqm import (
+    IQMDevice,
+    IQMDeviceError,
+    IQMJob,
+    IQMJobError,
+    IQMProvider,
+    IQMSession,
+)
 from qbraid.runtime.iqm import provider as iqm_provider
-from qbraid.runtime.iqm.device import to_iqm_circuit
+from qbraid.transpiler.conversions.qiskit import qiskit_to_iqm
+
+importlib.import_module("qbraid.transpiler.conversions.qiskit.qiskit_to_iqm")
+qiskit_to_iqm_module = sys.modules["qbraid.transpiler.conversions.qiskit.qiskit_to_iqm"]
 from qbraid.runtime.iqm.job import _format_measurement_memory, _format_measurement_results
 
 
@@ -222,6 +237,7 @@ FAKE_IQM_ALIASES = tuple(FAKE_STATIC_ARCHITECTURES)
 
 
 class FakeIQMClient:
+    operational_status = "online"
     """Fake IQM client with class-level fixtures."""
 
     aliases = FAKE_IQM_ALIASES
@@ -278,6 +294,9 @@ class FakeIQMClient:
 
     def cancel_job(self, job_id):
         type(self).jobs[job_id].data.status = FakeJobStatus.CANCELLED
+
+    def get_health(self):
+        return {"operational_status": type(self).operational_status}
 
 
 @pytest.fixture
@@ -390,19 +409,21 @@ def fake_symbols(monkeypatch):
         CircuitCompilationOptions=FakeCompilationOptions,
         ExistingMoveHandlingOptions=SimpleNamespace(KEEP="keep"),
         transpile_insert_moves=fake_transpile_insert_moves,
-        Circuit=FakeCircuit,
+        Circuit=RealIQMCircuit,
         CircuitOperation=FakeCircuitOperation,
     )
     monkeypatch.setattr("qbraid.runtime.iqm.device.iqm_client", symbols)
     monkeypatch.setattr("qbraid.runtime.iqm.provider.iqm_client", symbols)
-    monkeypatch.setattr("qbraid.runtime.iqm._qiskit.iqm_client", symbols)
+    monkeypatch.setattr(qiskit_to_iqm_module, "iqm_client", symbols)
     monkeypatch.setattr(
-        "qbraid.runtime.iqm._qiskit.iqm_qiskit",
+        qiskit_to_iqm_module,
+        "qiskit_to_iqm_",
         SimpleNamespace(serialize_instructions=fake_serialize_instructions),
     )
     monkeypatch.setattr(
-        "qbraid.runtime.iqm.job.iqm_qiskit",
-        SimpleNamespace(MeasurementKey=FakeMeasurementKey),
+        qiskit_to_iqm_module,
+        "qiskit_",
+        SimpleNamespace(transpile=lambda circuit, **kwargs: circuit),
     )
     monkeypatch.setattr(
         "qbraid.runtime.iqm.provider.list_quantum_computers",
@@ -424,14 +445,7 @@ def profile():
         simulator=False,
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=len(qubits),
-        program_spec=ProgramSpec(
-            QuantumCircuit,
-            alias="qiskit",
-            serialize=lambda circuit: to_iqm_circuit(
-                circuit,
-                qubit_index_to_name=dict(enumerate(qubits)),
-            ),
-        ),
+        program_spec=ProgramSpec(RealIQMCircuit, alias="iqm"),
         provider_name="IQM",
         basis_gates=["r", "cz"],
         quantum_computer="garnet",
@@ -598,148 +612,21 @@ def test_iqm_session_defaults_from_environment(monkeypatch):
 def test_iqm_device_status(profile):
     """Test IQM device status mapping."""
     session = Mock()
-    session.get_static_quantum_architecture.return_value = FakeIQMClient.static_architectures[
-        "garnet"
-    ]
     device = IQMDevice(profile=profile, session=session)
+
+    session.get_health.return_value = {"operational_status": "online"}
     assert device.status() == DeviceStatus.ONLINE
 
-    session.get_static_quantum_architecture.side_effect = RuntimeError("offline")
+    session.get_health.return_value = {"operational_status": "maintenance"}
     assert device.status() == DeviceStatus.UNAVAILABLE
 
+    session.get_health.return_value = {"operational_status": "offline"}
+    assert device.status() == DeviceStatus.OFFLINE
 
-def test_iqm_device_transform_and_prepare(fake_symbols, profile):
-    """Test qiskit lowering to IQM instructions."""
-    session = Mock()
-    device = IQMDevice(profile=profile, session=session)
-
-    circuit = QuantumCircuit(2, 2)
-    circuit.h(0)
-    circuit.cx(0, 1)
-    circuit.measure([0, 1], [0, 1])
-
-    transformed = device.transform(circuit)
-    assert {instruction.operation.name for instruction in transformed.data} <= {
-        "r",
-        "cz",
-        "measure",
-    }
-
-    prepared = device.prepare(transformed)
-    assert isinstance(prepared, FakeCircuit)
-    assert any(instruction.name == "prx" for instruction in prepared.instructions)
-    assert any(instruction.name == "cz" for instruction in prepared.instructions)
-    measure_keys = [
-        instruction.args["key"]
-        for instruction in prepared.instructions
-        if instruction.name == "measure"
-    ]
-    assert measure_keys == ["c_2_0_0", "c_2_0_1"]
-    serialized_qubits = {
-        qubit for instruction in prepared.instructions for qubit in instruction.locus
-    }
-    assert serialized_qubits <= set(FakeIQMClient.static_architectures["garnet"].qubits)
-
-
-def test_iqm_device_submit(fake_symbols, profile):
-    """Test submitting IQM circuits through the session wrapper."""
-    provider = IQMProvider(url="https://demo.iqm.fi")
-    device = provider.get_device("garnet")
-
-    iqm_circuit = FakeCircuit(
-        name="bell",
-        instructions=(
-            FakeCircuitOperation(name="measure", locus=("QB1",), args={"key": "c_1_0_0"}),
-        ),
-        metadata={"num_clbits": 1},
-    )
-
-    job = device.submit(
-        iqm_circuit,
-        shots=32,
-        max_circuit_duration_over_t2=0.5,
-    )
-
-    assert isinstance(job, IQMJob)
-    assert job.device is device
-    assert FakeIQMClient.submitted_call is not None
-    assert FakeIQMClient.submitted_call["circuits"] == [iqm_circuit]
-    assert (
-        FakeIQMClient.submitted_call["calibration_set_id"] == device.profile["calibration_set_id"]
-    )
-    assert FakeIQMClient.submitted_call["shots"] == 32
-    assert FakeIQMClient.submitted_call["options"] == FakeCompilationOptions(
-        max_circuit_duration_over_t2=0.5
-    )
-
-
-def test_iqm_device_submit_routes_fictional_cz(fake_symbols):
-    """Test MOVE insertion for simplified qubit-qubit CZ loci on star architectures."""
-    provider = IQMProvider(url="https://demo.iqm.fi")
-    device = provider.get_device("sirius")
-
-    circuit = QuantumCircuit(2, 2)
-    circuit.h(0)
-    circuit.cx(0, 1)
-    circuit.measure([0, 1], [0, 1])
-
-    transformed = device.transform(circuit)
-    prepared = device.prepare(transformed)
-    device.submit(prepared)
-    assert FakeIQMClient.submitted_call is not None
-    routed = FakeIQMClient.submitted_call["circuits"][0]
-
-    assert isinstance(prepared, FakeCircuit)
-    assert all(instruction.name != "move" for instruction in prepared.instructions)
-    assert sum(instruction.name == "move" for instruction in routed.instructions) == 2
-    assert any(
-        instruction.name == "cz" and instruction.locus == ("QB1", "CR1")
-        for instruction in routed.instructions
-    )
-    assert all(
-        not (instruction.name == "cz" and instruction.locus == ("QB1", "QB2"))
-        for instruction in routed.instructions
-    )
-
-
-def test_iqm_device_submit_preserves_existing_moves(fake_symbols):
-    """Test native IQM MOVE sandwiches survive submission with KEEP handling."""
-    provider = IQMProvider(url="https://demo.iqm.fi")
-    device = provider.get_device("sirius")
-    instructions = (
-        FakeCircuitOperation(name="move", locus=("QB2", "CR1"), args={}),
-        FakeCircuitOperation(name="cz", locus=("QB1", "CR1"), args={}),
-        FakeCircuitOperation(name="move", locus=("QB2", "CR1"), args={}),
-    )
-    circuit = FakeCircuit(name="native-move", instructions=instructions)
-
-    device.submit(circuit)
-
-    assert FakeIQMClient.submitted_call is not None
-    submitted = FakeIQMClient.submitted_call["circuits"][0]
-    assert submitted.instructions == instructions
-
-
-def test_iqm_device_run_uses_one_calibration_set_for_prepare_and_submit(fake_symbols):
-    """Test one calibration override is shared between MOVE insertion and submission."""
-    provider = IQMProvider(url="https://demo.iqm.fi")
-    device = provider.get_device("sirius")
-    override_calibration_set_id = uuid.uuid4()
-    baseline_requests = len(FakeIQMClient.dynamic_architecture_requests)
-
-    circuit = QuantumCircuit(2, 2)
-    circuit.h(0)
-    circuit.cx(0, 1)
-    circuit.measure([0, 1], [0, 1])
-
-    job = device.run(circuit, shots=24, calibration_set_id=override_calibration_set_id)
-
-    assert isinstance(job, IQMJob)
-    assert FakeIQMClient.dynamic_architecture_requests[baseline_requests:] == [
-        override_calibration_set_id
-    ]
-    assert FakeIQMClient.submitted_call is not None
-    assert FakeIQMClient.submitted_call["calibration_set_id"] == override_calibration_set_id
+    # A status IQM adds later must fail loudly rather than read as available.
+    session.get_health.return_value = {"operational_status": "rebooting"}
+    with pytest.raises(IQMDeviceError, match="Unrecognized operational status 'rebooting'"):
+        device.status()
 
 
 def test_iqm_job_status_and_cancel(profile):
@@ -766,12 +653,17 @@ def test_iqm_job_status_and_cancel(profile):
         ("completed", JobStatus.COMPLETED),
         ("failed", JobStatus.FAILED),
         ("cancelled", JobStatus.CANCELLED),
-        ("future-status", JobStatus.UNKNOWN),
     ],
 )
 def test_iqm_job_maps_status_strings(iqm_status, qbraid_status):
     """Test IQM status strings map directly to qBraid statuses."""
     assert IQMJob._map_status(iqm_status) == qbraid_status
+
+
+def test_iqm_job_rejects_unmapped_status():
+    """A status IQM adds later fails loudly instead of degrading to UNKNOWN."""
+    with pytest.raises(IQMJobError, match="Unrecognized IQM job status 'future-status'"):
+        IQMJob._map_status("future-status")
 
 
 def test_iqm_job_terminal_status_is_cached():
@@ -801,19 +693,6 @@ def test_iqm_measurement_formatting(fake_symbols):
     assert memory == ["01", "10"]
     assert np.array_equal(measurements, np.array([[0, 1], [1, 0]]))
     assert counts == {"01": 1, "10": 1}
-
-
-def test_iqm_measurement_formatting_rejects_inconsistent_shots(fake_symbols):
-    """Test heralded results still require every measurement key to have equal shots."""
-    with pytest.raises(ValueError, match="Inconsistent number of shots"):
-        _format_measurement_memory(
-            {
-                "c_2_0_0": [[1], [0]],
-                "c_2_0_1": [[0]],
-            },
-            requested_shots=0,
-            expect_exact_shots=False,
-        )
 
 
 def test_iqm_job_result(fake_symbols, profile):
@@ -932,3 +811,101 @@ def test_iqm_job_result_failure():
     job = IQMJob(job_id=str(job_id), session=session)
     with pytest.raises(IQMJobError, match="Compilation failed"):
         job.result()
+
+
+def test_qiskit_to_iqm_is_device_independent():
+    """The conversion emits logical names and needs no device context."""
+    circuit = QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.measure([0, 1], [0, 1])
+
+    converted = qiskit_to_iqm(circuit)
+
+    loci = {qubit for op in converted.instructions for qubit in op.locus}
+    assert loci <= {"q_0", "q_1"}
+    assert {op.name for op in converted.instructions} <= {"prx", "cz", "measure"}
+
+
+def test_iqm_program_wraps_native_circuit():
+    """IQMProgram reports the named qubits and measured bits of an IQM circuit."""
+    circuit = QuantumCircuit(2, 2)
+    circuit.x(0)
+    circuit.measure([0, 1], [0, 1])
+    program = IQMProgram(qiskit_to_iqm(circuit))
+
+    assert program.qubits == ["q_0", "q_1"]
+    assert program.num_qubits == 2
+    assert program.num_clbits == 2
+
+
+def test_iqm_program_rejects_other_types():
+    """A non-IQM object is refused rather than silently wrapped."""
+    with pytest.raises(ProgramTypeError):
+        IQMProgram(QuantumCircuit(1))
+
+
+def test_qubit_mapping_binds_logical_names_to_physical_qubits(profile):
+    """The device, not the conversion, decides which physical qubits are used."""
+    device = IQMDevice(profile=profile, session=Mock())
+    circuit = QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.measure([0, 1], [0, 1])
+
+    mapping = device.qubit_mapping_for(qiskit_to_iqm(circuit))
+
+    assert set(mapping) == {"q_0", "q_1"}
+    assert set(mapping.values()) <= set(device.qubits)
+
+
+def test_qubit_mapping_is_none_for_physical_names(profile):
+    """A circuit already using physical names needs no mapping."""
+    device = IQMDevice(profile=profile, session=Mock())
+    physical = device.qubits[:2]
+    circuit = RealIQMCircuit(
+        name="physical",
+        instructions=(FakeCircuitOperation(name="cz", locus=tuple(physical), args={}),),
+        metadata=None,
+    )
+    assert device.qubit_mapping_for(circuit) is None
+
+
+def test_qubit_mapping_rejects_unplaceable_circuit(profile):
+    """A circuit whose interactions cannot embed in the topology fails loudly."""
+    device = IQMDevice(profile=profile, session=Mock())
+    qubit_count = len(device.qubits) + 1
+    circuit = QuantumCircuit(qubit_count)
+    for index in range(qubit_count):
+        for other in range(index + 1, qubit_count):
+            circuit.cz(index, other)
+
+    with pytest.raises(ValueError, match="No placement of"):
+        device.qubit_mapping_for(qiskit_to_iqm(circuit))
+
+
+def test_iqm_device_submit_passes_qubit_mapping(profile):
+    """submit() derives and forwards the mapping when the caller does not supply one."""
+    session = Mock()
+    session.submit_circuits.return_value = SimpleNamespace(job_id=uuid.uuid4())
+    device = IQMDevice(profile=profile, session=session)
+
+    circuit = QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.measure([0, 1], [0, 1])
+    device.submit(qiskit_to_iqm(circuit), shots=17)
+
+    _, kwargs = session.submit_circuits.call_args
+    assert kwargs["shots"] == 17
+    assert set(kwargs["qubit_mapping"]) == {"q_0", "q_1"}
+
+
+def test_iqm_measurement_formatting_rejects_inconsistent_shots(fake_symbols):
+    """Measurement keys disagreeing on shot count is a hard error."""
+    results = {
+        "c_2_0_0": [[0], [1]],
+        "c_2_0_1": [[0]],
+    }
+    with pytest.raises(ValueError, match="Inconsistent number of shots"):
+        _format_measurement_memory(results)

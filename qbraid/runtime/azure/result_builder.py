@@ -29,6 +29,7 @@ import datetime
 import json
 import os
 import re
+from collections import Counter
 from typing import Any, Optional, Union
 
 import numpy as np
@@ -36,6 +37,7 @@ from azure.quantum import Job
 
 from qbraid.runtime.ionq.job import IonQJob
 from qbraid.runtime.postprocess import counts_to_probabilities, normalize_data
+from qbraid.runtime.result_data import MeasCount
 
 from .io_format import OutputDataFormat
 
@@ -214,6 +216,28 @@ class AzureResultBuilder:
 
         return {"counts": counts, "probabilities": histogram}
 
+    @staticmethod
+    def _rigetti_readout_register(az_result: dict[str, Any]) -> str:
+        """Return the name of the register holding Rigetti readout.
+
+        Azure's Rigetti targets reject any program whose readout register is not named ``ro``,
+        so in practice results always carry that key. This tolerates a lone register under
+        another name rather than raising ``KeyError``; several registers with no ``ro`` stay
+        an error, since picking one would silently permute every bitstring.
+
+        Raises:
+            ValueError: If no register is present, or several are and none is named ``ro``.
+        """
+        if "ro" in az_result:
+            return "ro"
+        registers = sorted(az_result)
+        if len(registers) == 1:
+            return registers[0]
+        raise ValueError(
+            "Cannot identify the Rigetti readout register: expected 'ro' or a single "
+            f"declared register, got {registers}."
+        )
+
     def _format_rigetti_results(self) -> dict[str, Any]:
         """
         Translate Rigetti's readout data into a format that
@@ -221,12 +245,26 @@ class AzureResultBuilder:
 
         """
         az_result = self.job.get_results()
-        readout = az_result["ro"]
+        readout = az_result[self._rigetti_readout_register(az_result)]
         measurements = ["".join(map(str, row)) for row in readout]
         counts = {row: measurements.count(row) for row in set(measurements)}
         total_counts = sum(counts.values())
         probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
         return {"counts": counts, "probabilities": probabilities}
+
+    @staticmethod
+    def _analog_histogram(az_result: dict[str, Any]) -> MeasCount:
+        """Return the ``{bitstring: count}`` histogram from an AHS result payload.
+
+        Pasqal's emulators wrap the histogram as ``{"counter": ..., "raw": [...]}``, where
+        ``raw`` holds one bitstring per shot; older targets return it bare. An unrecognized
+        payload is passed through so the caller reports on the real shape.
+        """
+        if "counter" in az_result and isinstance(az_result["counter"], dict):
+            return az_result["counter"]
+        if "raw" in az_result and isinstance(az_result["raw"], list):
+            return dict(Counter(az_result["raw"]))
+        return az_result
 
     def _format_analog_results(self) -> dict[str, Any]:
         """
@@ -234,10 +272,10 @@ class AzureResultBuilder:
         can be consumed by qBraid runtime.
 
         """
-        histogram = self.job.get_results()
+        histogram = self._analog_histogram(self.job.get_results())
         counts = normalize_data(histogram)
         probabilities = counts_to_probabilities(counts)
-        return {"counts": histogram, "probabilities": probabilities}
+        return {"counts": counts, "probabilities": probabilities}
 
     def _format_unknown_results(self):
         """Format Job results data when the job output is in an unknown format."""

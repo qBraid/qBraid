@@ -126,6 +126,8 @@ def _get_class(module: str):
         return qrisp.QuantumCircuit  # type: ignore # noqa: F821
     if module == "qat.core.wrappers.circuit":  # pragma: no cover
         return qat.core.wrappers.circuit.Circuit  # type: ignore # noqa: F821
+    if module == "mimiqcircuits":
+        return mimiqcircuits.Circuit  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -145,6 +147,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "cpp_pyqubo",
         "cudaq",
         "qrisp",
+        "mimiqcircuits",
         "aqt_connector.models.circuits",
         "iqm.iqm_client",
     ]

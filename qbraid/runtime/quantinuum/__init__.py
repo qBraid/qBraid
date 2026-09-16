@@ -27,13 +27,25 @@ Classes
     QuantinuumDevice
     QuantinuumJob
 
+Exceptions
+------------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    QuantinuumDeviceError
+    QuantinuumJobError
+
 """
 from .device import QuantinuumDevice
+from .exceptions import QuantinuumDeviceError, QuantinuumJobError
 from .job import QuantinuumJob
 from .provider import QuantinuumProvider
 
 __all__ = [
     "QuantinuumDevice",
+    "QuantinuumDeviceError",
     "QuantinuumJob",
+    "QuantinuumJobError",
     "QuantinuumProvider",
 ]

@@ -144,23 +144,26 @@ class GroupJobSession:
         name: Optional human-readable name for the group.
         tags: Optional tags for filtering/organizing groups.
         metadata: Optional metadata dict.
-        client: Optional QuantumRuntimeClient instance. If not provided,
-            a default client is created.
+        client: Optional QuantumRuntimeClient. Defaults to one built from the
+            configured credentials (``qbraidrc`` or ``QBRAID_API_KEY``), which
+            does not see a key passed to ``QbraidProvider(api_key=...)``. Pass
+            ``provider.client`` in that case.
         max_ttl: Optional max time-to-live in seconds (1–86400). After this
             duration, the group is automatically closed by the backend.
             Defaults to None (backend default of 3600s / 1 hour).
 
     Example (context manager):
-        >>> from qbraid.runtime import GroupJobSession
-        >>> with GroupJobSession(name="sweep") as group:
+        >>> from qbraid.runtime import GroupJobSession, QbraidProvider
+        >>> provider = QbraidProvider()
+        >>> with GroupJobSession(name="sweep", client=provider.client) as group:
         ...     job1 = device_a.run(circuit_1)
         ...     job2 = device_b.run(circuit_2)
         >>> results = group.results(timeout=300)
-        >>> for job_id, result in results.items():
+        >>> for job_id, result in results.results.items():
         ...     print(result.data.get_counts())
 
     Example (manual open/close):
-        >>> group = GroupJobSession(name="interactive")
+        >>> group = GroupJobSession(name="interactive", client=provider.client)
         >>> group.open()
         >>> job1 = device_a.run(circuit_1)
         >>> job2 = device_b.run(circuit_2)

@@ -63,7 +63,3 @@ class IQMProgram(GateModelProgram):
             for instruction in self.program.instructions
             if instruction.name == "measure"
         )
-
-    def serialize(self) -> dict[str, str]:
-        """Return the circuit as the JSON payload IQM's REST API accepts."""
-        return {"iqmCircuit": self.program.model_dump_json()}

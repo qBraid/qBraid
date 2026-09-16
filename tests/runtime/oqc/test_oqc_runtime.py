@@ -20,6 +20,7 @@ Unit tests for OQCProvider class
 """
 from __future__ import annotations
 
+import copy
 import datetime
 import json
 import logging
@@ -32,11 +33,15 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from requests import ReadTimeout
 
-from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import ResourceNotFoundError
-
 try:
-    from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
+    from qbraid_core.decimal import USD
+    from qcaas_client.client import (  # type: ignore
+        OQCClient,
+        QPUTask,
+        QPUTaskErrors,
+        QPUTaskResult,
+        ServerException,
+    )
 
     from qbraid.programs import NATIVE_REGISTRY, ExperimentType, ProgramSpec
     from qbraid.runtime import GateModelResultData, Result, TargetProfile
@@ -44,7 +49,6 @@ try:
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
     from qbraid.runtime.postprocess import counts_to_probabilities
-    from qbraid.runtime.schemas.base import USD
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -159,9 +163,13 @@ TOSHIKO_EXEC_ESTIMATE = {
 }
 
 
-def online_window() -> str:
-    """Return a window start time for an online QPU."""
-    now = datetime.datetime.now()
+def online_window() -> tuple[str, str]:
+    """Return the start and end times of a window that is currently open.
+
+    ``OQCDevice.get_next_window`` reads these as UTC, so they must be built from
+    UTC rather than local time or the window lands in the future east of UTC.
+    """
+    now = datetime.datetime.now(datetime.timezone.utc)
     start_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:00:00"
     end_time = f"{now.year}-{now.month:02d}-{now.day:02d} {now.hour:02d}:59:59"
     return start_time, end_time
@@ -261,7 +269,10 @@ class MockOQCClient:
     def get_qpu_execution_estimates(self, qpu_ids: Optional[str] = None):
         """Get QPU execution estimates."""
         if qpu_ids == TOSHIKO_ID:
-            exec_est = TOSHIKO_EXEC_ESTIMATE.copy()
+            # deepcopy, not copy: a shallow copy shares the nested window list, so
+            # prepending the open window below would edit the module-level constant
+            # and leave every later test seeing Toshiko as online.
+            exec_est = copy.deepcopy(TOSHIKO_EXEC_ESTIMATE)
             if self._toshiko_online:
                 start_time, end_time = online_window()
                 current_window = {
@@ -272,7 +283,7 @@ class MockOQCClient:
                 new_windows = [current_window] + exec_est["qpu_wait_times"][0]["windows"]
                 exec_est["qpu_wait_times"][0]["windows"] = new_windows
             return exec_est
-        raise Exception("QPU execution estimates not available")
+        raise RuntimeError("QPU execution estimates not available")
 
     def get_task_status(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task status."""
@@ -615,6 +626,42 @@ def test_cancel_job(oqc_device, program):
     assert job.cancel() is None
 
 
+def remote_provider_or_skip(token: str) -> OQCProvider:
+    """Return a provider for ``token``, skipping the test if OQC rejects it.
+
+    The client sends the token unchecked on its first request, so an expired or
+    revoked one surfaces here as a 403 rather than a 401.
+    """
+    try:
+        return OQCProvider(token=token)
+    except ServerException as err:
+        if err.server_error_code in (401, 403):
+            pytest.skip(
+                f"OQC rejected OQC_AUTH_TOKEN with status {err.server_error_code}; "
+                "the token has most likely expired"
+            )
+        raise
+
+
+@pytest.mark.parametrize("status_code", [401, 403])
+def test_remote_provider_skips_on_rejected_token(status_code):
+    """A token the server refuses skips the remote test instead of failing it."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.side_effect = ServerException("Forbidden", status_code)
+
+        with pytest.raises(pytest.skip.Exception, match="most likely expired"):
+            remote_provider_or_skip("expired_token")
+
+
+def test_remote_provider_reraises_non_auth_errors():
+    """A server error unrelated to the token stays a failure."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.side_effect = ServerException("Internal Server Error", 500)
+
+        with pytest.raises(ServerException):
+            remote_provider_or_skip("fake_token")
+
+
 @pytest.mark.remote
 def test_oqc_runtime_remote_execution(program, optimized_program):
     """Test OQC runtime with remote execution."""
@@ -622,7 +669,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     if token is None:
         pytest.skip("Missing OQC_AUTH_TOKEN")
 
-    provider = OQCProvider(token=token)
+    provider = remote_provider_or_skip(token)
 
     device = provider.get_device(LUCY_SIM_ID)
     assert isinstance(device, OQCDevice)
@@ -638,7 +685,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     except TimeoutError:
         try:
             job.cancel()
-        except Exception:
+        except Exception:  # pylint: disable=broad-exception-caught
             pass
         pytest.skip(f"OQC job did not complete within {timeout} seconds")
     assert job.qpu_id == LUCY_SIM_ID
@@ -785,6 +832,7 @@ def test_oqc_provider_raises_for_no_token(monkeypatch):
 @patch("qbraid.runtime.oqc.device.logger")
 @patch("qbraid.runtime.oqc.device.OQCDevice.get_next_window")
 def test_device_status_online(mock_get_next_window, mock_logger):
+    """A device with an upcoming window reports ONLINE."""
     mock_get_next_window.return_value = datetime.datetime(2023, 10, 31, 12, 0, 0)
     device = OQCDevice(profile=Mock(), client=Mock())
     result = device.status()
@@ -806,7 +854,7 @@ def test_build_compiler_config_invalid_value():
 
 @patch("qbraid.runtime.oqc.device.logger")
 def test_device_get_next_window_raises_resource_not_found(mock_logger, target_profile):
-    """Test that the get_next_window method raises a ResourceNotFoundError when the window is not found."""
+    """Test that get_next_window raises ResourceNotFoundError when the window is not found."""
     client = Mock()
     client.get_next_window.side_effect = ReadTimeout
     client.get_qpu_execution_estimates.side_effect = Exception
@@ -831,3 +879,22 @@ def test_catch_device_status_resource_not_found(mock_logger, lucy_sim_data, tosh
             status = device.status()
             assert status == DeviceStatus.UNAVAILABLE
             mock_logger.info.assert_called_once()
+
+
+def test_oqc_result_reports_qubit_zero_last(oqc_job):
+    """OQC reports qubit 0 first; the emitted key must be reversed to qBraid's order.
+
+    Asserted at ``result()`` rather than on ``_get_counts``: the vendor parsing is
+    deliberately left in OQC's order, and the conversion is the step that was missing.
+    An asymmetric key is used so a no-op would fail.
+    """
+    vendor_counts = {"100": 90, "110": 10}
+
+    with (
+        patch.object(OQCJob, "status", return_value=JobStatus.COMPLETED),
+        patch.object(OQCJob, "_get_counts", return_value=vendor_counts),
+        patch.object(oqc_job._client, "get_task_results", return_value=MagicMock(result={"x": 1})),
+    ):
+        result = oqc_job.result()
+
+    assert result.data.measurement_counts == {"001": 90, "011": 10}

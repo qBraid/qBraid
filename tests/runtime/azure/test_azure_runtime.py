@@ -972,6 +972,40 @@ def test_format_rigetti_results(azure_result_builder, mock_azure_job):
     assert result["probabilities"] == {"01": 0.5, "10": 0.5}
 
 
+def test_format_rigetti_results_non_ro_register(azure_result_builder, mock_azure_job):
+    """A lone register is the readout even when it is not named ``ro``.
+
+    Defensive: Azure rejects non-``ro`` programs outright, so its results always carry that
+    key. This keeps a result that did arrive from failing on a raw ``KeyError``.
+    """
+    mock_azure_job.get_results.return_value = {"m0": [[0, 1], [1, 0], [0, 1], [1, 0]]}
+
+    result = azure_result_builder._format_rigetti_results()
+
+    assert result["counts"] == {"01": 2, "10": 2}
+    assert result["probabilities"] == {"01": 0.5, "10": 0.5}
+
+
+def test_format_rigetti_results_prefers_ro_over_other_registers(
+    azure_result_builder, mock_azure_job
+):
+    """``ro`` wins when the program also declares scratch registers."""
+    mock_azure_job.get_results.return_value = {
+        "ro": [[0, 1], [1, 0]],
+        "aux": [[1, 1], [1, 1]],
+    }
+
+    assert azure_result_builder._format_rigetti_results()["counts"] == {"01": 1, "10": 1}
+
+
+def test_format_rigetti_results_ambiguous_registers_raises(azure_result_builder, mock_azure_job):
+    """Several registers and no ``ro``: any choice would silently permute the bitstrings."""
+    mock_azure_job.get_results.return_value = {"m0": [[0]], "m1": [[1]]}
+
+    with pytest.raises(ValueError, match="Cannot identify the Rigetti readout register"):
+        azure_result_builder._format_rigetti_results()
+
+
 def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
     """Test formatting Pasqal results."""
     pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
@@ -1007,6 +1041,54 @@ def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_
 
     assert result["counts"] == {"001010": 50, "001011": 50}
     assert result["probabilities"] == {"001010": 0.5, "001011": 0.5}
+
+
+def test_ahs_builder_format_analog_results_counter(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Pasqal emulators wrap the histogram in a 'counter' key alongside per-shot 'raw'."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {
+        "counter": {"001100": 3, "001101": 1},
+        "raw": ["001100", "001100", "001101", "001100"],
+    }
+
+    result = azure_ahs_result_builder._format_analog_results()
+
+    assert result["counts"] == {"001100": 3, "001101": 1}
+    assert result["probabilities"] == {"001100": 0.75, "001101": 0.25}
+
+
+def test_ahs_builder_format_analog_results_raw_only(azure_ahs_result_builder, mock_azure_ahs_job):
+    """A payload carrying only per-shot 'raw' bitstrings is tallied into counts."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {"raw": ["001100", "001100", "001101", "001100"]}
+
+    result = azure_ahs_result_builder._format_analog_results()
+
+    assert result["counts"] == {"001100": 3, "001101": 1}
+    assert result["probabilities"] == {"001100": 0.75, "001101": 0.25}
+
+
+def test_azure_job_result_pasqal_counter(mock_azure_pasqal_job):
+    """A wrapped Pasqal histogram reaches AnalogResultData as a flat count mapping."""
+    pytest.importorskip("pulser", reason="Pasqal pulser package is not installed.")
+    mock_azure_pasqal_job.details.output_data_format = OutputDataFormat.PASQAL.value
+    mock_azure_pasqal_job.get_results.return_value = {
+        "counter": {"001010": 50, "001011": 50},
+        "raw": ["001010"] * 50 + ["001011"] * 50,
+    }
+
+    job = AzureQuantumJob(
+        job_id=mock_azure_pasqal_job.id, workspace=mock_azure_pasqal_job.workspace
+    )
+    job._job = mock_azure_pasqal_job
+
+    result = job.result()
+
+    assert isinstance(result.data, AnalogResultData)
+    assert result.data.to_dict() == {
+        "measurement_counts": {"001010": 50, "001011": 50},
+        "measurements": None,
+    }
 
 
 def test_ahs_builder_format_results_success(azure_ahs_result_builder, mock_azure_ahs_job):

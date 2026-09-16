@@ -26,6 +26,7 @@ from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
+from ._transport import ensure_bounded_client
 from .device import QuantinuumDevice
 
 if TYPE_CHECKING:
@@ -37,6 +38,10 @@ def _fetch_quantinuum_devices_df():
     # pylint: disable-next=import-outside-toplevel
     import qnexus as qnx
 
+    # Device enumeration is often the first qnexus call a process makes, so it
+    # must apply the client bound itself rather than rely on a device or job
+    # call having run first.
+    ensure_bounded_client()
     return qnx.devices.get_all(issuers=[qnx.devices.IssuerEnum.QUANTINUUM]).df()
 
 
@@ -58,6 +63,25 @@ def _get_device_entry(device_name: str):
     return matching_rows.iloc[0]
 
 
+def _is_simulator(device_name: str, nexus_hosted: bool) -> bool:
+    """Return whether a Quantinuum device name refers to a simulator.
+
+    Quantinuum names hardware as ``<family>-<n>`` (``H1-1``, ``H2-1``,
+    ``Helios-1``) and derives the non-hardware targets from it with a suffix:
+    ``E`` for the device-hosted emulator, ``LE`` for the Nexus-hosted one, and
+    ``SC`` for the syntax checker. Everything Nexus hosts itself is a simulator
+    by definition.
+
+    The suffix has to be matched at the end, not anywhere in the name: a
+    substring test for "E" also matches ``Helios-1``, silently billing a QPU
+    as a simulator and letting it past simulator-only guards.
+    """
+    if nexus_hosted:
+        return True
+    name = device_name.upper()
+    return name.endswith(("E", "SC")) or "EMULATOR" in name
+
+
 def _build_profile(device_id: str, backend_info: BackendInfo, nexus_hosted: bool) -> TargetProfile:
     """Build a TargetProfile from a Quantinuum device name and backend info."""
     # pylint: disable-next=import-outside-toplevel
@@ -65,8 +89,7 @@ def _build_profile(device_id: str, backend_info: BackendInfo, nexus_hosted: bool
 
     return TargetProfile(
         device_id=device_id,
-        # Quantinuum emulator/simulator device names contain "E" (e.g. "H1-1E").
-        simulator="E" in device_id.upper(),
+        simulator=_is_simulator(device_id, nexus_hosted),
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=len(backend_info.architecture.nodes),
         program_spec=ProgramSpec(Circuit, alias="pytket"),

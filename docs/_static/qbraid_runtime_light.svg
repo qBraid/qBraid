@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1040 430" width="1040" height="430" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif" fill="none">
+<defs><marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 10 5 0 10z" fill="#6B6B6B"/></marker></defs>
+<rect x="655" y="30" width="200" height="62" rx="10" fill="#F7F5FF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="755.0" y="60" font-size="14.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">QPU / simulator</text>
+<text x="755.0" y="80" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">provider hardware</text>
+<rect x="655" y="146" width="200" height="62" rx="10" fill="#F7F5FF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="755.0" y="176" font-size="14.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Provider REST API</text>
+<text x="755.0" y="196" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">job submission &#183; polling</text>
+<path d="M755.0 146L755.0 92" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<path d="M755.0 296L755.0 208" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)" marker-start="url(#ar)"/>
+<text x="765.0" y="236" font-size="11" font-weight="400" text-anchor="start" fill="#6B6B6B" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace">HTTPS</text>
+<rect x="200" y="252" width="640" height="140" rx="14" fill="none" stroke="#8B5CF6" stroke-width="1.5" stroke-dasharray="6 5"/>
+<text x="214" y="242" font-size="14" font-weight="600" text-anchor="start" fill="#8B5CF6" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">qBraid SDK</text>
+<rect x="216" y="296" width="136" height="72" rx="10" fill="#FFFFFF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="284.0" y="326" font-size="15.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace">transpile</text>
+<text x="284.0" y="346" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">any &#8594; target type</text>
+<path d="M355 332.0L370 332.0" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)"/>
+<rect x="373" y="296" width="136" height="72" rx="10" fill="#FFFFFF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="441.0" y="326" font-size="15.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace">transform</text>
+<text x="441.0" y="346" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">device-specific passes</text>
+<path d="M512 332.0L527 332.0" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)"/>
+<rect x="530" y="296" width="136" height="72" rx="10" fill="#FFFFFF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="598.0" y="326" font-size="15.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace">validate</text>
+<text x="598.0" y="346" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">against device profile</text>
+<path d="M669 332.0L684 332.0" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)"/>
+<rect x="687" y="296" width="136" height="72" rx="10" fill="#FFFFFF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="755.0" y="326" font-size="15.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="JetBrains Mono, SFMono-Regular, Menlo, Consolas, monospace">submit</text>
+<text x="755.0" y="346" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">serialized IR</text>
+<rect x="16" y="290" width="150" height="84" rx="10" fill="#F7F5FF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="91.0" y="320" font-size="14.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Quantum program</text>
+<text x="91.0" y="340" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Qiskit &#183; Cirq &#183; Braket</text>
+<text x="91.0" y="355" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">pyQuil &#183; OpenQASM &#183; &#8230;</text>
+<path d="M169 332L197 332" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)"/>
+<rect x="874" y="290" width="150" height="84" rx="10" fill="#F7F5FF" stroke="#D9D4E8" stroke-width="1.5"/>
+<text x="949.0" y="320" font-size="14.5" font-weight="600" text-anchor="middle" fill="#171717" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">Result</text>
+<text x="949.0" y="340" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">counts &#183; probabilities</text>
+<text x="949.0" y="355" font-size="11" font-weight="400" text-anchor="middle" fill="#6B6B6B" font-family="Space Grotesk, Inter, system-ui, -apple-system, Segoe UI, Helvetica, Arial, sans-serif">provider metadata</text>
+<path d="M843 332L871 332" stroke="#6B6B6B" stroke-width="1.5" marker-end="url(#ar)"/>
+</svg>

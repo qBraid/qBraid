@@ -757,7 +757,9 @@ class TestRigettiJobParseResults:
         )
         result = job._parse_results(exec_results)
 
-        assert result.measurement_counts == {"10": 2}
+        # The shot reads [1, 0] in register order; qBraid reports qubit 0 last, so the
+        # emitted key is that reversed.
+        assert result.measurement_counts == {"01": 2}
 
     def test_parse_results_all_zeros(self, rigetti_device: RigettiDevice) -> None:
         """All-zero measurements must produce a single '000...' count."""

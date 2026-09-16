@@ -68,7 +68,12 @@ class BraketQuantumTask(QuantumJob):
     def status(self):
         """Returns status from Braket QuantumTask object metadata."""
         state = self._task.state()
-        status = AWS_TASK_STATUS_MAP.get(state, JobStatus.UNKNOWN)
+        if state not in AWS_TASK_STATUS_MAP:
+            raise ValueError(
+                f"Unknown AWS task status '{state}'. "
+                f"Expected one of: {', '.join(AWS_TASK_STATUS_MAP)}"
+            )
+        status = AWS_TASK_STATUS_MAP[state]
         self._cache_metadata["status"] = status
         return status
 

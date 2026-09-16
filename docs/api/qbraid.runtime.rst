@@ -14,15 +14,17 @@ Submodules
 
    aqt
    aws
-   ibm
    azure
+   ibm
    ionq
    iqm
+   native
    openquantum
    oqc
    origin
-   quantinuum
-   native
-   rigetti
    pasqal
-   
+   qperfect
+   quantinuum
+   qudora
+   rigetti
+

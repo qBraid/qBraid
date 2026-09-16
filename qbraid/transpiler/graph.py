@@ -17,9 +17,10 @@ Module providing tools to map, analyze, and visualize conversion paths between d
 quantum programs available through the qbraid.transpiler using directed graphs.
 
 """
+import heapq
 from collections import deque
 from importlib import import_module
-from typing import Any, Callable, Optional, Union
+from typing import Any, Callable, Iterator, Optional, Union
 
 import rustworkx as rx
 
@@ -127,7 +128,11 @@ class ConversionGraph(rx.PyDiGraph):
         super().__init__()
         self.require_native = require_native
         self.edge_bias = edge_bias if edge_bias is not None else 0.25
-        self._conversions = conversions or self.load_default_conversions(bias=self.edge_bias)
+        self._conversions = (
+            conversions
+            if conversions is not None
+            else self.load_default_conversions(bias=self.edge_bias)
+        )
         self._node_alias_id_map: dict[str, int] = {}
         self._include_isolated = include_isolated
         self._init_nodes = set(nodes) if nodes is not None else set()
@@ -303,9 +308,165 @@ class ConversionGraph(rx.PyDiGraph):
             if not (conv.source == source and conv.target == target)
         ]
 
+    def _path_cost(self, path: list[int]) -> float:
+        """Return the total conversion cost of a path given as node ids.
+
+        Edge cost is ``log(1/weight) + bias``, so this is the quantity Dijkstra minimizes.
+        """
+        return sum(self.get_edge_data(path[i], path[i + 1])["weight"] for i in range(len(path) - 1))
+
+    def _alias_of(self) -> dict[int, str]:
+        """Return the reverse of ``_node_alias_id_map``, node id to alias."""
+        return {node_id: alias for alias, node_id in self._node_alias_id_map.items()}
+
+    def _rank_key(self, path: list[int], alias_of: dict[int, str]) -> tuple:
+        """Ranking key for a path of node ids: total cost, then hops, then node aliases.
+
+        The alias component keeps routing independent of conversion registration order.
+        :meth:`_cheapest_path` builds this same key incrementally; the two must agree, which
+        ``test_native_graph_shortest_path_agrees_with_top_paths`` checks on the real graph.
+        """
+        return (self._path_cost(path), len(path), tuple(alias_of[n] for n in path))
+
+    # pylint: disable-next=too-many-arguments
+    def _cheapest_path(
+        self,
+        source_id: int,
+        target_id: int,
+        banned_nodes: frozenset[int] = frozenset(),
+        banned_edges: frozenset[tuple[int, int]] = frozenset(),
+        initial_key: tuple | None = None,
+        max_nodes: int | None = None,
+    ) -> list[int] | None:
+        """Return the best-ranked path between two node ids, or None if unreachable.
+
+        Explores in ranking order, so the first time the target is reached its path is the
+        one :meth:`find_top_shortest_conversion_paths` ranks first. Appending an edge can
+        only increase the key -- cost is non-negative and the hop count strictly grows -- so
+        the greedy order is exact. Unlike enumerating every simple path, this stays
+        polynomial as conversions are added to the graph.
+
+        ``banned_nodes`` and ``banned_edges`` exclude parts of the graph from the search;
+        :meth:`_k_cheapest_paths` uses them to force deviations from paths it already has,
+        and passes the deviation root's ranking key as ``initial_key`` so the search
+        minimizes the key of the *whole* candidate path. Seeding also keeps every cost the
+        same left-to-right float sum :meth:`_rank_key` computes -- costs that are equal in
+        exact arithmetic can otherwise differ in the last ulp between the two, making the
+        spur search and the final ranking disagree near ties.
+
+        ``max_nodes`` caps the total node count (root prefix included) so a depth limit
+        bounds the search itself. Capped search settles per ``(node, hops)`` state rather
+        than per node: with a budget, a costlier-but-shorter label is not dominated by a
+        cheaper-but-longer one. States admit revisiting walks, but the returned path is
+        always simple -- removing a cycle strictly shrinks the key while staying feasible,
+        so no walk with a repeat can be the first to reach the target.
+        """
+        if source_id == target_id:
+            # Matches rx.all_simple_paths, which reports no simple path from a node to itself.
+            return None
+
+        alias_of = self._alias_of()
+        start_key = initial_key or (0.0, 1, (alias_of[source_id],))
+        heap: list[tuple[tuple, list[int]]] = [(start_key, [source_id])]
+        settled: set = set()
+
+        while heap:
+            (cost, hops, aliases), path = heapq.heappop(heap)
+            node = path[-1]
+            if node == target_id:
+                return path
+            state = node if max_nodes is None else (node, hops)
+            if state in settled:
+                continue
+            settled.add(state)
+            for _, successor, data in self.out_edges(node):
+                if successor in banned_nodes:
+                    continue
+                if max_nodes is None and successor in settled:
+                    continue
+                if max_nodes is not None and hops + 1 > max_nodes:
+                    continue
+                if (node, successor) in banned_edges:
+                    continue
+                extended = [*path, successor]
+                key = (cost + data["weight"], hops + 1, (*aliases, alias_of[successor]))
+                heapq.heappush(heap, (key, extended))
+
+        return None
+
+    def _k_cheapest_paths(
+        self, source_id: int, target_id: int, k: int, max_depth: int | None = None
+    ) -> Iterator[list[int]]:
+        """Yield up to ``k`` paths as node ids, cheapest first, by Yen's algorithm.
+
+        Each successive path is the best one that deviates from an already-accepted path at
+        some node, found by re-running :meth:`_cheapest_path` with the root banned. That costs
+        ``O(k * V * (E + V log V))``, where enumerating every simple path and sorting is
+        factorial in graph density.
+
+        Yen's usual proof assumes additive scalar costs; it carries over to the composite
+        ranking key because each spur search is seeded with its deviation root's key, so it
+        returns the deviation minimizing the full candidate's ranking key -- the property
+        the proof actually uses.
+
+        ``max_depth`` bounds the search itself, via each search's node-count cap, rather
+        than filtering afterward: with a filter, a depth-capped query whose cheap paths
+        were all too deep degenerated into enumerating every simple path in the graph.
+        Every accepted path qualifies by construction, so a depth limit also cannot hide
+        a qualifying path that merely ranks below the k-th.
+        """
+        if k <= 0:
+            return
+
+        max_nodes = None if max_depth is None else max_depth + 1
+        best = self._cheapest_path(source_id, target_id, max_nodes=max_nodes)
+        if best is None:
+            return
+
+        alias_of = self._alias_of()
+        accepted, candidates = [best], []
+        yield best
+        yielded = 1
+
+        while yielded < k:
+            previous = accepted[-1]
+            for index in range(len(previous) - 1):
+                root = previous[: index + 1]
+                banned_edges = frozenset(
+                    (path[index], path[index + 1])
+                    for path in accepted
+                    if len(path) > index + 1 and path[: index + 1] == root
+                )
+                spur = self._cheapest_path(
+                    root[-1],
+                    target_id,
+                    frozenset(root[:-1]),
+                    banned_edges,
+                    initial_key=self._rank_key(root, alias_of),
+                    max_nodes=max_nodes,
+                )
+                if spur is None:
+                    continue
+                candidate = root[:-1] + spur
+                if candidate not in candidates and candidate not in accepted:
+                    candidates.append(candidate)
+
+            if not candidates:
+                return
+
+            candidates.sort(key=lambda path: self._rank_key(path, alias_of))
+            accepted.append(candidates.pop(0))
+            yield accepted[-1]
+            yielded += 1
+
     def find_shortest_conversion_path(self, source: str, target: str) -> list[Callable]:
         """
         Find the shortest conversion path between two nodes in a graph.
+
+        Ranks by the same key as :meth:`find_top_shortest_conversion_paths`, so the path
+        reported here is the one ``transpile()`` will actually take. These were previously
+        separate implementations -- Dijkstra here, hop count there -- which disagreed for any
+        pair whose best-weighted route was not also its shortest.
 
         Args:
             source (str): The starting node for the path.
@@ -316,55 +477,53 @@ class ConversionGraph(rx.PyDiGraph):
                               as a list of bound methods of Conversion instances.
 
         Raises:
-            ValueError: If no path is found between source and target.
+            ConversionPathNotFoundError: If no path is found between source and target.
         """
-        path = rx.dijkstra_shortest_paths(
-            self,
-            self._node_alias_id_map[source],
-            target=self._node_alias_id_map[target],
-            weight_fn=lambda edge: edge["weight"],
-        )
-
-        if len(path) == 0:
+        path = self._cheapest_path(self._node_alias_id_map[source], self._node_alias_id_map[target])
+        if path is None:
             raise ConversionPathNotFoundError(source, target)
 
-        return [
-            self.get_edge_data(
-                path[self._node_alias_id_map[target]][i],
-                path[self._node_alias_id_map[target]][i + 1],
-            )["func"]
-            for i in range(len(path[self._node_alias_id_map[target]]) - 1)
-        ]
+        return [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
 
     def find_top_shortest_conversion_paths(
-        self, source: str, target: str, top_n: int = 3
+        self, source: str, target: str, top_n: int = 3, max_depth: int | None = None
     ) -> list[list[Callable]]:
         """
-        Find the top shortest conversion paths between two nodes in a graph.
+        Find the top conversion paths between two nodes, cheapest first.
+
+        Paths are ranked by total conversion cost, so a conversion's declared ``weight``
+        determines routing rather than only the number of hops. Ties fall back to hop count,
+        then to node aliases so that routing does not depend on conversion registration order.
 
         Args:
             source (str): The starting node for the path.
             target (str): The target node for the path.
-            top_n (int): Number of top shortest paths to find.
+            top_n (int): Number of top paths to find.
+            max_depth (int, optional): Skip paths longer than this many conversions. Applied
+                while selecting, so a path within the limit is still found when ``top_n``
+                cheaper paths exceed it.
 
         Returns:
-            list of list of Callable: The top shortest conversion paths.
+            list of list of Callable: The top conversion paths, best first.
 
         Raises:
             ConversionPathNotFoundError: If no path is found between source and target.
         """
-        all_paths = rx.all_simple_paths(
-            self, self._node_alias_id_map[source], self._node_alias_id_map[target]
+        paths = list(
+            self._k_cheapest_paths(
+                self._node_alias_id_map[source],
+                self._node_alias_id_map[target],
+                top_n,
+                max_depth,
+            )
         )
 
-        # rx.all_simple_paths returns an empty list if no path is found
-        if len(all_paths) == 0:
-            raise ConversionPathNotFoundError(source, target)
+        if not paths:
+            raise ConversionPathNotFoundError(source, target, max_depth)
 
-        sorted_paths = sorted(all_paths, key=len)[:top_n]
         return [
             [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
-            for path in sorted_paths
+            for path in paths
         ]
 
     def has_path(self, source: str, target: str) -> bool:
@@ -601,11 +760,18 @@ class ConversionGraph(rx.PyDiGraph):
         """
         Reset the graph to its default state.
 
+        Args:
+            conversions (list[Conversion], optional): Conversions to rebuild the graph from.
+                ``None`` restores the default conversions; an empty list leaves the graph
+                with no conversion edges.
+
         Returns:
             None
         """
         self.clear()
-        self._conversions = conversions or self.load_default_conversions()
+        self._conversions = (
+            conversions if conversions is not None else self.load_default_conversions()
+        )
         self._node_alias_id_map = {}
         self.create_conversion_graph()
 

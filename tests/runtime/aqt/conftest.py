@@ -19,7 +19,8 @@ The AQT suite (provider, device, job, and the ``qiskit -> aqt_connector`` conver
 ``aqt_connector`` pydantic models and the transpiler edge, both of which require the optional
 ``aqt-connector`` dependency (the ``aqt`` extra). That package conflicts with ``pasqal-cloud``
 (on ``auth0-python``) so it is not installed in the main test environment; skip the whole
-directory when it is unavailable.
+directory when it is unavailable. CI runs this suite through the ``unit-tests-aqt`` tox env,
+which installs the extra on its own.
 
 When ``aqt-connector`` *is* installed, the fixtures below are shared across the split test
 modules: the native-circuit factory (``aqt_circuit``), the raw arnica resource body

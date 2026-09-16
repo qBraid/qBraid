@@ -21,18 +21,30 @@ import pytest
 
 try:
     import numpy as np
+    import sympy
     from cirq import Circuit, LineQubit, ops, testing
     from pytket.circuit import Circuit as TKCircuit
     from pytket.qasm import circuit_to_qasm_str
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pytket
-    from qbraid.transpiler.conversions.pytket import pytket_to_cirq
+    from qbraid.transpiler.conversions.pytket import (
+        pytket_to_braket,
+        pytket_to_cirq,
+        pytket_to_pyqir,
+        pytket_to_qasm2,
+    )
     from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
     from qbraid.transpiler.converter import transpile
+    from qbraid.transpiler.exceptions import ProgramConversionError
 
     from ..cirq_utils import _equal
 
+    PYTKET_CONVERTERS = {
+        "pytket_to_braket": pytket_to_braket,
+        "pytket_to_pyqir": pytket_to_pyqir,
+        "pytket_to_qasm2": pytket_to_qasm2,
+    }
     pytket_not_installed = False
 except ImportError:
     pytket_not_installed = True
@@ -61,6 +73,53 @@ def test_cirq_pytket_direct_conversions():
 
     circuit_cirq = pytket_to_cirq(pytket_circuit)
     assert circuits_allclose(cirq_circuit, circuit_cirq, strict_gphase=False)
+
+
+def test_cirq_to_pytket_preserves_unresolved_parameters():
+    """Cirq-to-PyTKET conversion keeps symbolic parameters intact."""
+    theta = sympy.Symbol("theta")
+    cirq_circuit = Circuit(ops.rx(theta).on(LineQubit(0)))
+
+    pytket_circuit = cirq_to_pytket(cirq_circuit)
+
+    assert pytket_circuit.free_symbols() == {theta}
+
+
+@pytest.mark.parametrize(
+    ("converter_name", "target"),
+    [
+        ("pytket_to_braket", "Amazon Braket"),
+        ("pytket_to_pyqir", "PyQIR"),
+        ("pytket_to_qasm2", "OpenQASM 2"),
+    ],
+)
+def test_pytket_concrete_targets_reject_unresolved_parameters(converter_name, target):
+    """Concrete PyTKET conversion targets reject every unresolved symbol."""
+    converter = PYTKET_CONVERTERS[converter_name]
+    alpha, theta = sympy.symbols("alpha theta")
+    circuit = TKCircuit(2).Rx(theta, 0).Ry(alpha, 1)
+
+    with pytest.raises(
+        ProgramConversionError,
+        match=(
+            rf"Cannot convert a PyTKET circuit to {target} with unresolved parameters: "
+            r"alpha, theta\. Resolve the parameters before conversion\."
+        ),
+    ):
+        converter(circuit)
+
+
+@pytest.mark.parametrize(
+    "converter_name", ["pytket_to_braket", "pytket_to_pyqir", "pytket_to_qasm2"]
+)
+def test_pytket_concrete_targets_ignore_global_phase_parameters(converter_name):
+    """Parameters used only in a discarded global phase remain accepted."""
+    converter = PYTKET_CONVERTERS[converter_name]
+    theta = sympy.Symbol("theta")
+    circuit = TKCircuit(1).H(0)
+    circuit.add_phase(theta)
+
+    converter(circuit)
 
 
 def test_random_circuit_to_from_circuits():

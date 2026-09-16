@@ -24,6 +24,9 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
+
+from ._utils import _validate_resolved_parameters
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 pytket_qiskit = LazyLoader("pytket_qiskit", globals(), "pytket.extensions.qiskit")
@@ -43,13 +46,50 @@ if TYPE_CHECKING:
 def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit:
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
+    ``tk_to_braket`` drops measurement instructions, so they are re-appended here
+    from the source circuit in classical-bit order.
+
     Args:
         circuit (pytket.circuit.Circuit): PyTKET circuit to convert to Braket circuit.
 
     Returns:
         braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
+
+    Raises:
+        ProgramConversionError: If the circuit cannot be represented by an Amazon Braket
+            circuit.
     """
-    braket_circuit, _, _ = pytket_braket.braket_convert.tk_to_braket(circuit)
+    from pytket.circuit import OpType  # pylint: disable=import-outside-toplevel
+
+    _validate_resolved_parameters(circuit, "Amazon Braket")
+    braket_circuit, _, measure_map = pytket_braket.braket_convert.tk_to_braket(circuit)
+
+    measured_qubits = set()
+    measured_bits = set()
+    for command in circuit.get_commands():
+        if command.op.type == OpType.Barrier:
+            continue
+        if measured_qubits.intersection(command.qubits):
+            # Covers a gate on a measured qubit and a qubit measured into a second bit;
+            # silently converting the latter would drop one of its classical bits.
+            raise ProgramConversionError(
+                "Braket circuits do not support mid-circuit measurement: a qubit is "
+                "acted on after it has been measured."
+            )
+        if command.op.type == OpType.Measure:
+            if measured_bits.intersection(command.bits):
+                # pytket's later measurement overwrites the bit; Braket gives every
+                # measurement its own result bit, so converting silently would widen
+                # the register and report both outcomes.
+                raise ProgramConversionError(
+                    "Braket circuits cannot represent measuring two qubits into the "
+                    "same classical bit."
+                )
+            measured_qubits.update(command.qubits)
+            measured_bits.update(command.bits)
+    # measure_map maps braket qubit id -> pytket bit index; re-add in classical-bit order.
+    for braket_qubit, _ in sorted(measure_map.items(), key=lambda item: item[1]):
+        braket_circuit.measure(braket_qubit)
     return braket_circuit
 
 
@@ -88,7 +128,11 @@ def pytket_to_pyqir(circuit: pytket.circuit.Circuit) -> Module:
 
     Returns:
         pyqir.Module: PyQIR module equivalent to input pytket circuit.
+
+    Raises:
+        ProgramConversionError: If the circuit contains unresolved parameters.
     """
+    _validate_resolved_parameters(circuit, "PyQIR")
     llvm_ir = pytket_qir.pytket_to_qir(
         circuit,
         qir_format=pytket_qir.QIRFormat.STRING,

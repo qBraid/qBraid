@@ -19,6 +19,7 @@ Fixtures imported/defined in this file can be used by any test in this directory
 without needing to import them (pytest will automatically discover them).
 
 """
+import copy
 import random
 import textwrap
 from typing import Optional
@@ -152,13 +153,13 @@ def circuit_meas(request, run_inputs_meas):
 @pytest.fixture
 def device_data_qir():
     """Return a dictionary of device data for the qBraid QIR simulator."""
-    return DEVICE_DATA_QIR
+    return copy.deepcopy(DEVICE_DATA_QIR)
 
 
 @pytest.fixture
 def device_data_aquila():
     """Return a dictionary of device data for the QuEra Aquila QPU."""
-    return DEVICE_DATA_AQUILA
+    return copy.deepcopy(DEVICE_DATA_AQUILA)
 
 
 @pytest.fixture

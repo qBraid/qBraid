@@ -197,6 +197,11 @@ _lazy = {
         "RigettiDevice",
         "RigettiJob",
     ],
+    "qperfect": [
+        "QPerfectProvider",
+        "QPerfectDevice",
+        "QPerfectJob",
+    ],
     "origin": [
         "OriginProvider",
         "OriginDevice",
@@ -211,6 +216,12 @@ _lazy = {
         "QuantinuumProvider",
         "QuantinuumDevice",
         "QuantinuumJob",
+    ],
+    "qudora": [
+        "QudoraSession",
+        "QudoraProvider",
+        "QudoraDevice",
+        "QudoraJob",
     ],
     "ibm": [
         "QiskitRuntimeProvider",
@@ -243,15 +254,15 @@ if TYPE_CHECKING:
     from .ibm import QiskitBackend as QiskitBackend
     from .ibm import QiskitJob as QiskitJob
     from .ibm import QiskitRuntimeProvider as QiskitRuntimeProvider
+    from .ionq import IonQDevice as IonQDevice
+    from .ionq import IonQJob as IonQJob
+    from .ionq import IonQProvider as IonQProvider
+    from .ionq import IonQSession as IonQSession
     from .iqm import IQMDevice as IQMDevice
     from .iqm import IQMJob as IQMJob
     from .iqm import IQMJobError as IQMJobError
     from .iqm import IQMProvider as IQMProvider
     from .iqm import IQMSession as IQMSession
-    from .ionq import IonQDevice as IonQDevice
-    from .ionq import IonQJob as IonQJob
-    from .ionq import IonQProvider as IonQProvider
-    from .ionq import IonQSession as IonQSession
     from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
     from .native import QbraidJob as QbraidJob
@@ -271,9 +282,16 @@ if TYPE_CHECKING:
     from .pasqal import PasqalDevice as PasqalDevice
     from .pasqal import PasqalJob as PasqalJob
     from .pasqal import PasqalProvider as PasqalProvider
+    from .qperfect import QPerfectDevice as QPerfectDevice
+    from .qperfect import QPerfectJob as QPerfectJob
+    from .qperfect import QPerfectProvider as QPerfectProvider
     from .quantinuum import QuantinuumDevice as QuantinuumDevice
     from .quantinuum import QuantinuumJob as QuantinuumJob
     from .quantinuum import QuantinuumProvider as QuantinuumProvider
+    from .qudora import QudoraDevice as QudoraDevice
+    from .qudora import QudoraJob as QudoraJob
+    from .qudora import QudoraProvider as QudoraProvider
+    from .qudora import QudoraSession as QudoraSession
     from .rigetti import RigettiDevice as RigettiDevice
     from .rigetti import RigettiJob as RigettiJob
     from .rigetti import RigettiProvider as RigettiProvider

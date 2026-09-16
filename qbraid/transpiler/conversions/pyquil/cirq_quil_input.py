@@ -22,9 +22,12 @@ Module for conversions from Quil to Cirq.
 
 """
 
-from typing import Callable, Union, cast
+from __future__ import annotations
+
+from typing import Callable, TypeAlias, Union, cast
 
 import numpy as np
+import sympy
 from cirq import Circuit, LineQubit
 from cirq.ops import (
     CCNOT,
@@ -55,6 +58,17 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
+from pyquil.quilatom import (
+    Add,
+    Div,
+    Function,
+    MemoryReference,
+    Mul,
+    Parameter,
+    ParameterDesignator,
+    Pow,
+    Sub,
+)
 from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
@@ -263,6 +277,131 @@ SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
+# Quil's built-in functions, mapped to their sympy equivalents by Quil name. CIS(x) is
+# Quil's cos(x) + i*sin(x), i.e. exp(i*x).
+_QUIL_FUNCTIONS = {
+    "SIN": sympy.sin,
+    "COS": sympy.cos,
+    "SQRT": sympy.sqrt,
+    "EXP": sympy.exp,
+    "CIS": lambda x: sympy.exp(sympy.I * x),
+}
+
+
+# The arithmetic branches below combine two converted operands. ``ParameterDesignator``
+# includes pyQuil's abstract ``Expression``, which defines no operators, so mypy rejects
+# ``a + b`` on the recursive results even though every value reaching those lines is a
+# number or a ``sympy.Expr``. ``_operable`` states that invariant in one place instead of
+# repeating a cast at each of the five sites.
+#
+# The ``TypeAlias`` annotation is load-bearing. ``sympy`` ships no stubs, so ``sympy.Expr`` is
+# ``Any`` to mypy, and ``X | Any`` evaluates to a plain value rather than a type form -- without
+# the annotation mypy reads this as a variable ("not valid as a type") and every arithmetic
+# branch below goes back to reporting an unsupported operand. ``typing.Union`` keeps its alias
+# status implicitly; PEP 604 needs it said out loud.
+#
+# The quotes are load-bearing too, and for a different reason: ``docs/conf.py`` lists ``sympy``
+# in ``autodoc_mock_imports``, so while autosummary imports this package ``sympy.Expr`` is a
+# Sphinx mock *instance*. ``from __future__ import annotations`` defers the two signatures below
+# but never the right-hand side of an assignment, and evaluating ``... | <mock>`` raises
+# ``TypeError: unsupported operand type(s) for |: 'types.UnionType' and 'Expr'``, breaking the
+# docs build. Quoting leaves the alias unevaluated at runtime; mypy reads it either way, and
+# ``cast`` ignores its first argument. Do not un-quote this.
+_Operable: TypeAlias = "int | float | complex | np.number | sympy.Expr"
+
+
+def _operable(value: ParameterDesignator | sympy.Expr) -> _Operable:
+    """Narrows a converted parameter to the types the arithmetic branches combine."""
+    return cast(_Operable, value)
+
+
+def _quil_param_to_sympy(
+    param: ParameterDesignator, declared_sizes: dict[str, int] | None = None
+) -> ParameterDesignator | sympy.Expr:
+    """Converts a pyQuil gate parameter into something Cirq can hold.
+
+    Cirq gate parameters must be real numbers or ``sympy`` expressions. pyQuil represents the
+    angle of a parameterized gate with its own expression objects — a ``MemoryReference`` for a
+    bare ``DECLARE``d parameter, or a ``quilatom`` arithmetic node such as ``Div`` or ``Mul``
+    wrapping one. Passing those through unchanged puts a foreign object inside the Cirq gate,
+    where it is invisible to ``cirq.is_parameterized`` and breaks ``str()``, diagramming and
+    ``unitary()``.
+
+    A ``MemoryReference`` into a single-slot register becomes ``sympy.Symbol("name")``, so
+    ``resolve_parameters({"theta": ...})`` reads naturally. Every slot of a multi-slot register
+    keeps its index — including slot 0 — so that one register never yields two naming
+    conventions. Arithmetic nodes are rebuilt with sympy operands. Concrete numbers are returned
+    unchanged, which keeps the common non-parameterized path allocation-free and bit-identical.
+
+    Args:
+        param: A pyQuil gate parameter: a number, a ``MemoryReference``, a ``Parameter``, or a
+            ``quilatom`` arithmetic expression over those.
+        declared_sizes: Maps register name to the size given by its ``DECLARE``. Needed because
+            ``MemoryReference.declared_size`` is ``None`` on references parsed out of a program,
+            so the reference alone cannot say whether its register has one slot or many. When a
+            name is absent the reference is treated as single-slot, which is the shape a bare
+            ``DECLARE theta REAL`` produces.
+
+    Returns:
+        A ``float``/``complex`` when the parameter is already concrete, otherwise a
+        ``sympy.Expr``. Anything unrecognized is returned unchanged so that existing behaviour
+        is preserved rather than replaced by an exception.
+    """
+    # Already concrete: leave it alone. Cirq handles Python/NumPy numbers natively, and
+    # returning early keeps the non-parameterized path byte-for-byte as it was.
+    if isinstance(param, (int, float, complex, np.number)):
+        return param
+
+    if isinstance(param, sympy.Expr):
+        return param
+
+    if isinstance(param, MemoryReference):
+        # Prefer the size from the program's DECLARE over `param.declared_size`, which pyQuil
+        # leaves as None on parsed references. Without it a `REAL[2]` register would yield
+        # `thetas` for slot 0 but `thetas[1]` for slot 1 — the same register under two names,
+        # so resolving `{"thetas[0]": ..., "thetas[1]": ...}` would silently miss slot 0.
+        size = (declared_sizes or {}).get(param.name, param.declared_size)
+        if param.offset == 0 and size in (None, 1):
+            return sympy.Symbol(param.name)
+        return sympy.Symbol(f"{param.name}[{param.offset}]")
+
+    if isinstance(param, Parameter):
+        return sympy.Symbol(param.name)
+
+    # quilatom function nodes: SIN(theta) and friends. Mapped by Quil name rather than by the
+    # wrapped numpy ufunc, because the ufunc rejects a sympy argument.
+    if isinstance(param, Function):
+        sympy_fn = _QUIL_FUNCTIONS.get(param.name)
+        if sympy_fn is not None:
+            return sympy_fn(_quil_param_to_sympy(param.expression, declared_sizes))
+        return param
+
+    # quilatom arithmetic nodes: rebuild with sympy operands so the whole expression tree
+    # becomes sympy rather than a sympy leaf wrapped in a pyQuil node.
+    if isinstance(param, Add):
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) + _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
+        )
+    if isinstance(param, Sub):
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) - _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
+        )
+    if isinstance(param, Mul):
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) * _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
+        )
+    if isinstance(param, Div):
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) / _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
+        )
+    if isinstance(param, Pow):
+        return _operable(_quil_param_to_sympy(param.op1, declared_sizes)) ** _operable(
+            _quil_param_to_sympy(param.op2, declared_sizes)
+        )
+
+    return param
+
+
 def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
     """
     Parses non-parameterized DEFGATE definitions from a Quil program string.
@@ -336,6 +475,13 @@ def circuit_from_quil(quil: str) -> Circuit:
     for gate_name, matrix in defgates.items():
         defined_gates[gate_name] = MatrixGate(matrix)
 
+    # A MemoryReference parsed out of a program reports `declared_size is None`, so the
+    # register sizes have to come from the DECLARE instructions themselves. Collected up
+    # front because a gate may reference a register declared later in the program.
+    declared_sizes: dict[str, int] = {
+        inst.name: inst.memory_size for inst in instructions if isinstance(inst, Declare)
+    }
+
     for inst in instructions:
         # Pass when encountering a DECLARE.
         if isinstance(inst, Declare):
@@ -350,7 +496,8 @@ def circuit_from_quil(quil: str) -> Circuit:
                 raise UndefinedQuilGate(f"Quil gate {quil_gate_name} not supported in Cirq.")
             cirq_gate_fn = defined_gates[quil_gate_name]
             if quil_gate_params:
-                circuit += cast(Callable[..., Gate], cirq_gate_fn)(*quil_gate_params)(*line_qubits)
+                cirq_params = [_quil_param_to_sympy(p, declared_sizes) for p in quil_gate_params]
+                circuit += cast(Callable[..., Gate], cirq_gate_fn)(*cirq_params)(*line_qubits)
             else:
                 circuit += cirq_gate_fn(*line_qubits)
 

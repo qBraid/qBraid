@@ -109,12 +109,12 @@ def transpile(
     _warn_if_unsupported(source, "from")
     _warn_if_unsupported(target, "to")
 
-    paths = graph.find_top_shortest_conversion_paths(source, target, top_n=max_path_attempts)
-
-    if max_path_depth is not None:
-        paths = [path for path in paths if len(path) <= max_path_depth]
-        if len(paths) == 0:
-            raise ConversionPathNotFoundError(source, target, max_path_depth)
+    # max_path_depth is applied while selecting rather than to the selected paths: filtering
+    # afterwards reported "no path" whenever the top max_path_attempts all exceeded the limit,
+    # even though a qualifying path ranked just below them.
+    paths = graph.find_top_shortest_conversion_paths(
+        source, target, top_n=max_path_attempts, max_depth=max_path_depth
+    )
 
     error_messages = []
 
