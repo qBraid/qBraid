@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING
 from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from ._transport import (
     RETRYABLE_STATUS_CODES,
@@ -36,6 +37,7 @@ from ._transport import (
     positive_float_env,
     retry_transient,
 )
+from .availability import queue_lengths
 from .exceptions import QuantinuumDeviceError
 from .job import QuantinuumJob
 
@@ -89,6 +91,24 @@ class QuantinuumDevice(QuantumDevice):
         if status in (DeviceStateEnum.MAINTENANCE, DeviceStateEnum.RESERVED_MAINTENANCE):
             return DeviceStatus.UNAVAILABLE
         return DeviceStatus.OFFLINE
+
+    def queue_depth(self) -> int:
+        """Return the number of jobs queued on this NEXUS device.
+
+        NEXUS reports queue lengths per credential issuer rather than per device, so a
+        caller refreshing several devices can fetch them in one request with
+        :func:`~qbraid.runtime.quantinuum.availability.queue_lengths` instead of calling
+        this once per device.
+
+        Raises:
+            ResourceNotFoundError: NEXUS did not report a queue length for this device,
+                which is the case for cloud-hosted emulators — they do not queue behind
+                hardware, so there is no depth to report rather than a depth of zero.
+        """
+        lengths = queue_lengths([self.id])
+        if self.id not in lengths:
+            raise ResourceNotFoundError(f"NEXUS reported no queue length for '{self.id}'.")
+        return lengths[self.id]
 
     def submit(  # pylint: disable=arguments-differ
         self,

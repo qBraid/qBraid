@@ -57,6 +57,7 @@ from qbraid.runtime.quantinuum import (  # noqa: E402
     QuantinuumDevice,
     QuantinuumJob,
     QuantinuumProvider,
+    queue_lengths,
 )
 from qbraid.runtime.quantinuum._transport import (  # noqa: E402
     DEFAULT_HTTP_TIMEOUT_SECONDS,
@@ -1322,3 +1323,115 @@ class TestQuantinuumJob:
 
 # Silence unused-import warnings from conditional imports referenced only in tests.
 _ = QuantinuumDeviceError
+
+
+class TestQueueLengths:
+    """The NEXUS remote-queue endpoint, which ``qnexus`` exposes no wrapper for.
+
+    Documented in the NEXUS OpenAPI schema as ``GET /api/v6/remote_queue/{issuer}``,
+    returning one ``DeviceQueueInfo`` (``issuer``, ``device_name``, ``queue_length``)
+    per device. It is the only source of queue data NEXUS publishes: the device
+    listing carries capability and calibration data only, and the machine-status
+    endpoint answers with a state, not a depth.
+    """
+
+    @staticmethod
+    def _client(payload, status_code=200):
+        """A stand-in for the authenticated NEXUS httpx client."""
+        response = MagicMock()
+        response.status_code = status_code
+        response.json.return_value = payload
+        client = MagicMock()
+        client.get.return_value = response
+        return client
+
+    def test_returns_a_name_to_length_mapping(self):
+        payload = [
+            {"issuer": "Quantinuum", "device_name": "H1-1", "queue_length": 7},
+            {"issuer": "Quantinuum", "device_name": "H2-1", "queue_length": 0},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H1-1": 7, "H2-1": 0}
+
+    def test_names_are_sent_as_a_filter_so_one_call_can_cover_many_devices(self):
+        """The endpoint is keyed by issuer, not device, so the filter is what keeps a
+        refresh over N devices from being N identical full-issuer fetches."""
+        client = self._client([{"device_name": "H1-1", "queue_length": 3}])
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            queue_lengths(["H1-1", "H2-1"])
+
+        _args, kwargs = client.get.call_args
+        assert kwargs["params"] == {"device_names": ["H1-1", "H2-1"]}
+
+    def test_no_names_sends_no_filter(self):
+        client = self._client([])
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            queue_lengths()
+
+        assert client.get.call_args.kwargs["params"] is None
+
+    def test_a_non_200_is_reported_as_unavailable(self):
+        with patch("qnexus.client.get_nexus_client", return_value=self._client([], 503)):
+            with pytest.raises(ResourceNotFoundError, match="503"):
+                queue_lengths()
+
+    def test_a_malformed_entry_is_skipped_rather_than_raising(self):
+        """A refresh walks every device, so one unreadable entry must not fail the rest.
+
+        ``queue_length`` is required by the schema, but a field renamed upstream should
+        cost that one device its answer, not the whole sweep. A non-object entry counts:
+        calling ``.get`` on it raises, which would lose every device after it, not just
+        the bad one — so the readable entry last in this payload is the assertion that
+        matters.
+        """
+        payload = [
+            {"device_name": "H1-1", "queue_length": 4},
+            {"device_name": "H2-1"},
+            {"device_name": "H2-2", "queue_length": "many"},
+            None,
+            "H3-1",
+            {"device_name": "H2-3", "queue_length": 9},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H1-1": 4, "H2-3": 9}
+
+    def test_a_boolean_queue_length_is_not_read_as_a_depth(self):
+        """``bool`` subclasses ``int``, so a JSON ``true`` would pass an ``isinstance``
+        check and be stored as a depth of 1 — a fabricated number, not a missing one."""
+        payload = [
+            {"device_name": "H1-1", "queue_length": True},
+            {"device_name": "H2-1", "queue_length": 0},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H2-1": 0}
+
+
+class TestQuantinuumDeviceQueueDepth:
+    """``queue_depth`` on the device, which reads the issuer-wide endpoint for one name."""
+
+    @staticmethod
+    def _client(payload):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = payload
+        client = MagicMock()
+        client.get.return_value = response
+        return client
+
+    def test_returns_the_depth_for_this_device(self):
+        device = _make_device("H1-1")
+        payload = [{"device_name": "H1-1", "queue_length": 12}]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert device.queue_depth() == 12
+
+    def test_a_device_nexus_does_not_report_raises_rather_than_reading_zero(self):
+        """Absent is not empty.
+
+        A cloud-hosted emulator does not queue behind hardware, so NEXUS reports no
+        length for it. Returning 0 would claim the device is idle, which is a different
+        statement from "this device has no queue".
+        """
+        device = _make_device("H1-1E", nexus_hosted=True)
+        with patch("qnexus.client.get_nexus_client", return_value=self._client([])):
+            with pytest.raises(ResourceNotFoundError, match="H1-1E"):
+                device.queue_depth()
