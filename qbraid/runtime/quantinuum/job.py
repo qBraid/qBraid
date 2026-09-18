@@ -87,7 +87,7 @@ def _program_from_input_ref(ref: ExecutionProgram) -> Program | None:
     The compiled H-series circuits use native gates (``PhasedX``, ``ZZPhase``),
     which the default ``qelib1`` export cannot represent — hence ``hqslib1``.
     The emitted QASM carries ``include "hqslib1.inc";``, which pyqasm cannot
-    parse today (qBraid/pyqasm#370); that affects neither storing nor serving it.
+    parse today; that affects neither storing nor serving it.
     """
     # pylint: disable-next=import-outside-toplevel
     from qbraid_core.services.runtime.schemas.job import Program
