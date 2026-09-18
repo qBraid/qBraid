@@ -276,8 +276,22 @@ class IQMJob(QuantumJob):
         return self._get_job(refresh=self._terminal_status() is None).data.queue_position
 
     def cancel(self) -> None:
-        """Cancel the IQM job."""
-        self.session.cancel_job(str(self.id))
+        """Cancel the IQM job.
+
+        Raises:
+            IQMJobError: If the job has already reached a terminal state.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from iqm.iqm_client import ForbiddenError
+
+        try:
+            self.session.cancel_job(str(self.id))
+        except ForbiddenError as err:
+            raise IQMJobError(
+                f"Cannot cancel job {self.id}: IQM reports status "
+                f"'{self._get_job().data.status.value}'."
+            ) from err
+        self._cache_metadata["status"] = JobStatus.CANCELLED
 
     def result(  # type: ignore[override]  # batch submissions return a BatchResult
         self,

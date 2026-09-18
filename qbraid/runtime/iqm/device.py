@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+from dataclasses import replace
 from typing import TYPE_CHECKING
 from uuid import UUID
 
@@ -39,6 +40,23 @@ if TYPE_CHECKING:
 iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
 
 logger = logging.getLogger(__name__)
+
+
+def _backend_qubit_names(backend) -> dict[int, str]:
+    """Map Qiskit qubit indices to IQM component names for ``backend``.
+
+    Not the same as ``enumerate(device.qubits)``: the backend indexes only the
+    components it exposes -- Sirius calibrates 16 of its 24 qubits -- and Star
+    architectures carry a computational resonator past the last qubit, which MOVE
+    instructions address.
+    """
+    width = (
+        backend.target_with_resonators.num_qubits
+        if backend.has_resonators()
+        else backend.num_qubits
+    )
+    return {index: backend.index_to_qubit_name(index) for index in range(width)}
+
 
 _DEVICE_STATUS = {
     "online": DeviceStatus.ONLINE,
@@ -68,6 +86,13 @@ class IQMDevice(QuantumDevice):
     def qubits(self) -> tuple[str, ...]:
         """Return the architecture qubit labels."""
         return tuple(self.profile.get("qubits", ()))
+
+    @property
+    def components(self) -> frozenset[str]:
+        """Physical component names: qubits plus any computational resonators."""
+        return frozenset(self.qubits) | frozenset(
+            self.profile.get("computational_resonators") or ()
+        )
 
     @property
     def qubit_connectivity(self) -> tuple[tuple[str, ...], ...]:
@@ -108,6 +133,21 @@ class IQMDevice(QuantumDevice):
         its interaction graph already embeds in the topology -- ``qubit_mapping_for``
         raises with a clear message when it does not.
         """
+        if not isinstance(run_input, iqm_client.Circuit):
+            raise TypeError(
+                f"IQMDevice.transform expects an 'iqm.iqm_client.Circuit', got "
+                f"'{type(run_input).__name__}'. Did you disable the 'transpile' option?"
+            )
+
+        # Checked here rather than left to validate(), which runs after transform:
+        # routing an oversized circuit raises a bare qiskit TranspilerError.
+        width = len({qubit for op in run_input.instructions for qubit in op.locus})
+        if self.num_qubits and width > self.num_qubits:
+            raise ValueError(
+                f"Number of qubits in the circuit ({width}) exceeds "
+                f"the device's capacity ({self.num_qubits})."
+            )
+
         if importlib.util.find_spec("qiskit") is None:
             return run_input
         try:
@@ -142,7 +182,7 @@ class IQMDevice(QuantumDevice):
         # rather than reassigning them by logical order and discarding the layout.
         return iqm_client.Circuit(
             name=routed.name,
-            instructions=tuple(serialize_instructions(routed, dict(enumerate(self.qubits)))),
+            instructions=tuple(serialize_instructions(routed, _backend_qubit_names(backend))),
             metadata=None,
         )
 
@@ -168,13 +208,16 @@ class IQMDevice(QuantumDevice):
         logical = sorted(
             {qubit for instruction in circuit.instructions for qubit in instruction.locus}
         )
-        if not logical or set(logical) <= set(physical):
+        # Resonators count as physical: a routed Star-architecture circuit addresses
+        # them by name in MOVE, and remapping one would make the instruction invalid.
+        if not logical or set(logical) <= self.components:
             return None
 
         interactions = {
             tuple(sorted(instruction.locus))
             for instruction in circuit.instructions
-            if len(instruction.locus) == 2
+            # MOVE runs between a qubit and a resonator, not over the CZ graph.
+            if len(instruction.locus) == 2 and instruction.name != "move"
         }
         edges = self._coupling_edges()
 
@@ -210,6 +253,22 @@ class IQMDevice(QuantumDevice):
         raise ValueError(
             f"No placement of {len(logical)} qubits on '{self.id}' puts every two-qubit "
             "gate on a CZ-capable pair. Route the circuit against the device topology first."
+        )
+
+    def _place(self, circuit: iqm.iqm_client.Circuit) -> iqm.iqm_client.Circuit:
+        """Return ``circuit`` with its qubit names resolved to physical qubits."""
+        mapping = self.qubit_mapping_for(circuit)
+        if mapping is None:
+            return circuit
+        return replace(
+            circuit,
+            instructions=tuple(
+                replace(
+                    operation,
+                    locus=tuple(mapping.get(qubit, qubit) for qubit in operation.locus),
+                )
+                for operation in circuit.instructions
+            ),
         )
 
     def _resolve_calibration_set_id(self, calibration_set_id: UUID | None = None) -> UUID | None:
@@ -256,15 +315,11 @@ class IQMDevice(QuantumDevice):
             ]
 
         if qubit_mapping is None:
-            mappings = {
-                frozenset((self.qubit_mapping_for(circuit) or {}).items()) for circuit in circuits
-            }
-            if len(mappings) > 1:
-                raise ValueError(
-                    "IQM applies one qubit_mapping to the whole batch, but these circuits "
-                    "need different placements. Submit them as separate jobs."
-                )
-            qubit_mapping = dict(next(iter(mappings))) or None
+            # IQM applies a single qubit_mapping to a whole batch, and circuits in one
+            # batch can need different placements (a routed circuit already names
+            # physical qubits; an unrouted one does not). Resolving each circuit's
+            # placement into its own loci sidesteps that, so batches stay submittable.
+            circuits = [self._place(circuit) for circuit in circuits]
 
         job = self.session.submit_circuits(
             circuits,

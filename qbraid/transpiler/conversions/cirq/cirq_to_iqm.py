@@ -25,6 +25,7 @@ import cirq
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
     import iqm.iqm_client
@@ -33,6 +34,27 @@ cirq_iqm = LazyLoader("cirq_iqm", globals(), "iqm.cirq_iqm")
 cirq_iqm_serialize = LazyLoader("cirq_iqm_serialize", globals(), "iqm.cirq_iqm.serialize")
 
 LOGICAL_QUBIT_PREFIX = "q_"
+
+
+def _reject_unresolved_parameters(circuit: cirq.Circuit) -> None:
+    """Reject symbolic gate parameters, which IQM's wire format cannot carry.
+
+    Raises:
+        ProgramConversionError: If the circuit has unresolved gate parameters.
+    """
+    parameters = sorted(
+        {
+            name
+            for operation in circuit.all_operations()
+            if operation.qubits
+            for name in cirq.parameter_names(operation)
+        }
+    )
+    if parameters:
+        raise ProgramConversionError(
+            f"Cannot convert a Cirq circuit to IQM with unresolved parameters: "
+            f"{', '.join(parameters)}. Resolve the parameters before conversion."
+        )
 
 
 def _to_named_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
@@ -59,9 +81,13 @@ def cirq_to_iqm(circuit: cirq.Circuit) -> iqm.iqm_client.Circuit:
     Returns:
         iqm.iqm_client.Circuit: IQM circuit equivalent to the input circuit.
     """
-    qubit_count = len(circuit.all_qubits())
+    _reject_unresolved_parameters(circuit)
+
     # Fully connected metadata: this conversion decomposes to the IQM gate set only.
-    # Topology routing is the device's job, in IQMDevice.
+    # Topology routing is the device's job, in IQMDevice. IQM rejects an empty
+    # connectivity, so metadata is always built for at least two qubits even when the
+    # circuit uses fewer -- the extra one is never referenced.
+    qubit_count = max(len(circuit.all_qubits()), 2)
     metadata = cirq_iqm.IQMDeviceMetadata.from_qubit_indices(
         qubit_count, [{i, j} for i in range(qubit_count) for j in range(i + 1, qubit_count)]
     )

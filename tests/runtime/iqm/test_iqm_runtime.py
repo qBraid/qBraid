@@ -55,6 +55,7 @@ from qbraid.runtime.iqm import (
 )
 from qbraid.runtime.iqm import provider as iqm_provider
 from qbraid.transpiler.conversions.qiskit import qiskit_to_iqm
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 importlib.import_module("qbraid.transpiler.conversions.qiskit.qiskit_to_iqm")
 qiskit_to_iqm_module = sys.modules["qbraid.transpiler.conversions.qiskit.qiskit_to_iqm"]
@@ -884,8 +885,13 @@ def test_qubit_mapping_rejects_unplaceable_circuit(profile):
         device.qubit_mapping_for(qiskit_to_iqm(circuit))
 
 
-def test_iqm_device_submit_passes_qubit_mapping(profile):
-    """submit() derives and forwards the mapping when the caller does not supply one."""
+def test_iqm_device_submit_places_circuits_on_physical_qubits(profile):
+    """submit() resolves placement into each circuit's loci.
+
+    IQM applies one ``qubit_mapping`` per batch, so circuits needing different
+    placements could not share a job. Resolving placement per circuit keeps
+    heterogeneous batches submittable.
+    """
     session = Mock()
     session.submit_circuits.return_value = SimpleNamespace(job_id=uuid.uuid4())
     device = IQMDevice(profile=profile, session=session)
@@ -896,9 +902,30 @@ def test_iqm_device_submit_passes_qubit_mapping(profile):
     circuit.measure([0, 1], [0, 1])
     device.submit(qiskit_to_iqm(circuit), shots=17)
 
-    _, kwargs = session.submit_circuits.call_args
+    args, kwargs = session.submit_circuits.call_args
     assert kwargs["shots"] == 17
-    assert set(kwargs["qubit_mapping"]) == {"q_0", "q_1"}
+    assert kwargs["qubit_mapping"] is None
+
+    submitted = args[0]
+    loci = {qubit for circuit in submitted for op in circuit.instructions for qubit in op.locus}
+    assert loci <= set(device.qubits)
+
+
+def test_iqm_device_submit_respects_caller_supplied_mapping(profile):
+    """An explicit qubit_mapping is forwarded untouched, and placement is skipped."""
+    session = Mock()
+    session.submit_circuits.return_value = SimpleNamespace(job_id=uuid.uuid4())
+    device = IQMDevice(profile=profile, session=session)
+
+    circuit = QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.measure([0, 1], [0, 1])
+    mapping = {"q_0": device.qubits[-1], "q_1": device.qubits[-2]}
+    device.submit(qiskit_to_iqm(circuit), shots=5, qubit_mapping=mapping)
+
+    _, kwargs = session.submit_circuits.call_args
+    assert kwargs["qubit_mapping"] == mapping
 
 
 def test_iqm_measurement_formatting_rejects_inconsistent_shots(fake_symbols):
@@ -909,3 +936,80 @@ def test_iqm_measurement_formatting_rejects_inconsistent_shots(fake_symbols):
     }
     with pytest.raises(ValueError, match="Inconsistent number of shots"):
         _format_measurement_memory(results)
+
+
+def test_cirq_to_iqm_handles_single_qubit_circuits():
+    """IQM rejects an empty connectivity, so metadata is built for at least two qubits."""
+    cirq = pytest.importorskip("cirq")
+    from qbraid.transpiler.conversions.cirq import cirq_to_iqm
+
+    qubit = cirq.LineQubit(0)
+    converted = cirq_to_iqm(cirq.Circuit([cirq.X(qubit), cirq.measure(qubit, key="m")]))
+
+    assert [op.name for op in converted.instructions] == ["prx", "measure"]
+
+
+@pytest.mark.parametrize("source", ["qiskit", "cirq"])
+def test_unresolved_parameters_are_named_not_leaked(source):
+    """Symbolic gate parameters raise a qBraid error naming them, not a vendor TypeError."""
+    sympy = pytest.importorskip("sympy")
+
+    if source == "qiskit":
+        from qiskit.circuit import Parameter
+
+        from qbraid.transpiler.conversions.qiskit import qiskit_to_iqm as convert
+
+        circuit = QuantumCircuit(1, 1)
+        circuit.rx(Parameter("theta"), 0)
+        circuit.measure(0, 0)
+    else:
+        cirq = pytest.importorskip("cirq")
+
+        from qbraid.transpiler.conversions.cirq import cirq_to_iqm as convert
+
+        qubit = cirq.LineQubit(0)
+        circuit = cirq.Circuit([cirq.rx(sympy.Symbol("theta")).on(qubit)])
+
+    with pytest.raises(ProgramConversionError, match="unresolved parameters: theta"):
+        convert(circuit)
+
+
+def test_transform_rejects_circuits_wider_than_the_device(profile):
+    """An oversized circuit is named clearly, not left to qiskit's TranspilerError."""
+    device = IQMDevice(profile=profile, session=Mock())
+    width = device.num_qubits + 3
+    circuit = QuantumCircuit(width, width)
+    circuit.h(range(width))
+    circuit.measure(range(width), range(width))
+
+    with pytest.raises(ValueError, match="exceeds the device's capacity"):
+        device.transform(qiskit_to_iqm(circuit))
+
+
+def test_placement_leaves_computational_resonators_alone():
+    """MOVE addresses a resonator by name; remapping it would invalidate the instruction."""
+    qubits = ("QB1", "QB2", "QB3")
+    resonators = ("COMPR1",)
+    device_profile = TargetProfile(
+        device_id="star",
+        simulator=False,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=len(qubits),
+        program_spec=ProgramSpec(RealIQMCircuit, alias="iqm"),
+        provider_name="IQM",
+        qubits=qubits,
+        computational_resonators=resonators,
+        qubit_connectivity=(("QB1", "QB2"), ("QB2", "QB3")),
+    )
+    device = IQMDevice(profile=device_profile, session=Mock())
+    circuit = RealIQMCircuit(
+        name="star",
+        instructions=(
+            FakeCircuitOperation(name="move", locus=("QB2", "COMPR1"), args={}),
+            FakeCircuitOperation(name="cz", locus=("QB1", "QB2"), args={}),
+        ),
+        metadata=None,
+    )
+
+    assert device.qubit_mapping_for(circuit) is None
+    assert "COMPR1" in device.components

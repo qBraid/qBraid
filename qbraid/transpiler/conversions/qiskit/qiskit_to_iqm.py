@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
     import iqm.iqm_client
@@ -73,6 +74,13 @@ def qiskit_to_iqm(circuit: qiskit.QuantumCircuit) -> iqm.iqm_client.Circuit:
     Returns:
         iqm.iqm_client.Circuit: IQM circuit equivalent to the input circuit.
     """
+    if circuit.parameters:
+        names = ", ".join(sorted(str(parameter) for parameter in circuit.parameters))
+        raise ProgramConversionError(
+            f"Cannot convert a Qiskit circuit to IQM with unresolved parameters: {names}. "
+            "Resolve the parameters before conversion."
+        )
+
     # Gate set only: no coupling map, so this stays device-independent. Routing onto a
     # specific topology is IQMDevice.transform's job.
     native = qiskit_.transpile(circuit, basis_gates=IQM_BASIS_GATES, optimization_level=1)
