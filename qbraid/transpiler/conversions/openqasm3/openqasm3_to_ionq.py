@@ -148,6 +148,31 @@ def _parse_angle(angle: str, gate_name: str) -> float:
     return _parse_float_in_range(angle, gate_name, "angle", (0, 0.25))
 
 
+def _register_offsets(
+    program: openqasm3.ast.Program, register_sizes: dict[str, int]
+) -> dict[str, int]:
+    """Map each qubit register name to the IonQ index of its first qubit.
+
+    IonQ numbers qubits across the whole program, so each register starts where the
+    previously declared registers end. Sizes come from pyqasm when it has validated the
+    program, and from the declaration itself otherwise.
+    """
+    offsets: dict[str, int] = {}
+    offset = 0
+    for statement in program.statements:
+        if not isinstance(statement, openqasm3.ast.QubitDeclaration):
+            continue
+        name = statement.qubit.name
+        offsets[name] = offset
+        if name in register_sizes:
+            offset += register_sizes[name]
+        elif statement.size is None:
+            offset += 1
+        else:
+            offset += statement.size.value
+    return offsets
+
+
 # pylint: disable-next=too-many-statements
 def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dict[str, Any]]:
     program_qubits = program.module._qubit_registers.items()
@@ -166,6 +191,8 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
             ast_program = unrolled
         else:
             ast_program = original
+
+    register_offsets = _register_offsets(ast_program, dict(program_qubits))
 
     gates: list[dict[str, Any]] = []
 
@@ -204,13 +231,15 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                 reg_name = qubits[0].name
                 for qreg_name, reg_size in program_qubits:
                     if qreg_name == reg_name:
-                        qubit_values = list(range(reg_size))
+                        start = register_offsets[qreg_name]
+                        qubit_values = list(range(start, start + reg_size))
                         break
             else:
                 for qubit in qubits:
+                    start = register_offsets[qubit.name.name]
                     indices = qubit.indices
                     for index in indices:
-                        qubit_values.extend(literal.value for literal in index)
+                        qubit_values.extend(start + literal.value for literal in index)
 
             if name in IONQ_ONE_QUBIT_GATE_MAP:
                 ionq_name = IONQ_ONE_QUBIT_GATE_MAP[name]
