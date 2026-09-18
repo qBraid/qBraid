@@ -32,6 +32,8 @@ from qbraid.runtime.iqm import IQMDevice, IQMProvider
 pytestmark = pytest.mark.remote
 
 MOCK_DEVICE_ID = "garnet:mock"
+# Star architecture: a computational resonator, reached through MOVE.
+STAR_DEVICE_ID = "sirius:mock"
 
 
 def provider_or_skip() -> IQMProvider:
@@ -119,3 +121,59 @@ def test_cirq_circuit_round_trip(provider):
 
     counts = job.result().data.get_counts()
     assert sum(counts.values()) == 50
+
+
+def test_star_architecture_round_trip(provider):
+    """A Star-architecture device routes through its resonator and returns counts.
+
+    Regression: routed circuits were serialized against the static architecture's
+    qubit list, which is neither the backend's index space nor inclusive of the
+    resonator, so every Sirius submission failed with "MOVE instructions are only
+    allowed between qubit and resonator". Placement then remapped the resonator to
+    a qubit. Crystal-architecture devices cannot catch either.
+    """
+    qiskit = pytest.importorskip("qiskit")
+
+    device = provider.get_device(STAR_DEVICE_ID)
+    assert device.profile.get("computational_resonators")
+
+    circuit = qiskit.QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.measure([0, 1], [0, 1])
+
+    job = device.run(circuit, shots=50)
+    job.wait_for_final_state(timeout=300)
+    assert job.status() == JobStatus.COMPLETED
+    assert sum(job.result().data.get_counts().values()) == 50
+
+
+def test_star_architecture_keeps_move_on_the_resonator(provider):
+    """MOVE loci must name a resonator; remapping one makes the instruction invalid."""
+    qiskit = pytest.importorskip("qiskit")
+
+    device = provider.get_device(STAR_DEVICE_ID)
+    resonators = set(device.profile.get("computational_resonators") or ())
+
+    circuit = qiskit.QuantumCircuit(3, 3)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.cx(1, 2)
+    circuit.measure(range(3), range(3))
+
+    prepared = device.apply_runtime_profile(circuit)
+    placed = device._place(prepared)
+    moves = [op.locus for op in placed.instructions if op.name == "move"]
+
+    assert moves, "expected the Star architecture to route through its resonator"
+    assert all(len(set(locus) & resonators) == 1 for locus in moves)
+    assert {q for op in placed.instructions for q in op.locus} <= device.components
+
+
+def test_device_width_reflects_the_calibration_set(provider):
+    """A device is as wide as its calibration set, not as wide as the chip."""
+    device = provider.get_device(STAR_DEVICE_ID)
+    chip = device.profile.get("chip_qubits")
+
+    assert device.num_qubits == len(device.qubits)
+    assert set(device.qubits) <= set(chip)

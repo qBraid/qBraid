@@ -137,7 +137,13 @@ def list_quantum_computers(
 
 
 class IQMSession:
-    """Thin wrapper around the public ``iqm-client`` SDK."""
+    """Thin wrapper around the public ``iqm-client`` SDK.
+
+    ``token`` and ``tokens_file`` are handed to ``IQMClient`` unchanged, so the SDK's
+    own rules apply: it reads ``IQM_TOKEN``/``IQM_TOKENS_FILE`` when neither is given,
+    and rejects the call outright if one is given *and* the matching environment
+    variable is set.
+    """
 
     def __init__(
         self,
@@ -251,7 +257,17 @@ class IQMSession:
 
 
 class IQMProvider(QuantumProvider):
-    """IQM provider class."""
+    """IQM provider class.
+
+    Credentials are resolved by ``iqm-client``, not by qBraid: leave ``token``
+    unset to authenticate from ``IQM_TOKEN`` (or ``IQM_TOKENS_FILE``).
+
+    Note:
+        ``iqm-client`` refuses to mix credential sources. Passing ``token`` while
+        ``IQM_TOKEN`` is also set in the environment raises
+        ``ClientConfigurationError`` before any request is made, rather than one
+        taking precedence over the other. Supply exactly one.
+    """
 
     def __init__(
         self,
