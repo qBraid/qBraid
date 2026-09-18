@@ -73,11 +73,17 @@ def queue_lengths(device_names: Sequence[str] | None = None) -> dict[str, int]:
 
     # ``device_name`` and ``queue_length`` are both required by the schema, but a field
     # added or renamed upstream should degrade to "no answer for this device" rather
-    # than raising in the middle of a refresh over every device.
+    # than raising in the middle of a refresh over every device. That holds for a
+    # non-object entry too, which would otherwise raise on ``.get`` and lose the
+    # answers for every device after it.
     lengths: dict[str, int] = {}
     for entry in response.json():
+        if not isinstance(entry, dict):
+            continue
         name = entry.get("device_name")
         length = entry.get("queue_length")
-        if isinstance(name, str) and isinstance(length, int):
+        # ``bool`` is a subclass of ``int``, so a JSON ``true`` would otherwise be
+        # stored as a queue length of 1.
+        if isinstance(name, str) and isinstance(length, int) and not isinstance(length, bool):
             lengths[name] = length
     return lengths

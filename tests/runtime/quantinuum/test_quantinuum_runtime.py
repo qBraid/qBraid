@@ -1379,15 +1379,31 @@ class TestQueueLengths:
         """A refresh walks every device, so one unreadable entry must not fail the rest.
 
         ``queue_length`` is required by the schema, but a field renamed upstream should
-        cost that one device its answer, not the whole sweep.
+        cost that one device its answer, not the whole sweep. A non-object entry counts:
+        calling ``.get`` on it raises, which would lose every device after it, not just
+        the bad one — so the readable entry last in this payload is the assertion that
+        matters.
         """
         payload = [
             {"device_name": "H1-1", "queue_length": 4},
             {"device_name": "H2-1"},
             {"device_name": "H2-2", "queue_length": "many"},
+            None,
+            "H3-1",
+            {"device_name": "H2-3", "queue_length": 9},
         ]
         with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
-            assert queue_lengths() == {"H1-1": 4}
+            assert queue_lengths() == {"H1-1": 4, "H2-3": 9}
+
+    def test_a_boolean_queue_length_is_not_read_as_a_depth(self):
+        """``bool`` subclasses ``int``, so a JSON ``true`` would pass an ``isinstance``
+        check and be stored as a depth of 1 — a fabricated number, not a missing one."""
+        payload = [
+            {"device_name": "H1-1", "queue_length": True},
+            {"device_name": "H2-1", "queue_length": 0},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H2-1": 0}
 
 
 class TestQuantinuumDeviceQueueDepth:
