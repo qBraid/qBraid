@@ -27,6 +27,14 @@ Classes
     QuantinuumDevice
     QuantinuumJob
 
+Functions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    queue_lengths
+
 Exceptions
 ------------
 
@@ -37,6 +45,7 @@ Exceptions
     QuantinuumJobError
 
 """
+from .availability import queue_lengths
 from .device import QuantinuumDevice
 from .exceptions import QuantinuumDeviceError, QuantinuumJobError
 from .job import QuantinuumJob
@@ -48,4 +57,5 @@ __all__ = [
     "QuantinuumJob",
     "QuantinuumJobError",
     "QuantinuumProvider",
+    "queue_lengths",
 ]
