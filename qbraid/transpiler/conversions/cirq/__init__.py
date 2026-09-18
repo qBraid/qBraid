@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """
 Cirq conversions
 
@@ -36,10 +35,12 @@ Functions
 
 from .cirq_extras import cirq_to_pyqir, cirq_to_pytket, cirq_to_qat, cirq_to_stim, stim_to_cirq
 from .cirq_to_braket import cirq_to_braket
+from .cirq_to_iqm import cirq_to_iqm
 from .cirq_to_pyquil import cirq_to_pyquil
 from .cirq_to_qasm2 import cirq_to_qasm2
 
 __all__ = [
+    "cirq_to_iqm",
     "cirq_to_braket",
     "cirq_to_qasm2",
     "cirq_to_pyquil",

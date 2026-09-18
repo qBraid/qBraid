@@ -174,6 +174,13 @@ _lazy = {
         "IonQDevice",
         "IonQJob",
     ],
+    "iqm": [
+        "IQMSession",
+        "IQMProvider",
+        "IQMDevice",
+        "IQMJob",
+        "IQMJobError",
+    ],
     "openquantum": [
         "OpenQuantumSession",
         "OpenQuantumProvider",
@@ -251,6 +258,11 @@ if TYPE_CHECKING:
     from .ionq import IonQJob as IonQJob
     from .ionq import IonQProvider as IonQProvider
     from .ionq import IonQSession as IonQSession
+    from .iqm import IQMDevice as IQMDevice
+    from .iqm import IQMJob as IQMJob
+    from .iqm import IQMJobError as IQMJobError
+    from .iqm import IQMProvider as IQMProvider
+    from .iqm import IQMSession as IQMSession
     from .native import QbraidClientV1 as QbraidClientV1
     from .native import QbraidDevice as QbraidDevice
     from .native import QbraidJob as QbraidJob

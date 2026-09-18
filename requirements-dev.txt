@@ -29,6 +29,7 @@ myqlm-interop>=2.0
 
 # optional runtime dependencies
 qiskit-ibm-runtime>=0.39.0,<0.50
+iqm-client>=35,<36
 oqc-qcaas-client>=3.11.0,<3.23; python_version < "3.13"
 azure-quantum>=3.6.0,<4.0
 azure-identity>=1.25.3,<2.0

@@ -49,6 +49,7 @@ braket = ["amazon-braket-sdk>=1.83.0,<1.128.0"]
 cirq = ["cirq-core>=1.3,<1.7", "cirq-ionq>=1.3,<1.7", "ply>=3.6", "sympy", "attrs>=21.3.0"]
 cudaq = ["cudaq>=0.14.0,<0.15.0; python_version >= '3.11'"]
 ionq = ["qiskit-ionq>=0.5.12"]
+iqm = ["iqm-client>=35,<36"]
 oqc = ["oqc-qcaas-client>=3.11.0,<3.23"]
 origin = ["pyqpanda3"]
 pasqal = ["pasqal-cloud>=0.20.3", "pulser-core>=1.4.0,<2.0"]
@@ -73,6 +74,7 @@ braket_ahs = "qbraid.programs.analog.braket_ahs:BraketAHS"
 braket = "qbraid.programs.gate_model.braket:BraketCircuit"
 cirq = "qbraid.programs.gate_model.cirq:CirqCircuit"
 ionq = "qbraid.programs.gate_model.ionq:IonQProgram"
+iqm = "qbraid.programs.gate_model.iqm:IQMProgram"
 aqt_connector = "qbraid.programs.gate_model.aqt_connector:AQTProgram"
 pennylane = "qbraid.programs.gate_model.pennylane:PennylaneTape"
 pyquil = "qbraid.programs.gate_model.pyquil:PyQuilProgram"
@@ -90,6 +92,7 @@ aws = "qbraid.runtime.aws.provider:BraketProvider"
 azure = "qbraid.runtime.azure.provider:AzureQuantumProvider"
 ibm = "qbraid.runtime.ibm.provider:QiskitRuntimeProvider"
 ionq = "qbraid.runtime.ionq.provider:IonQProvider"
+iqm = "qbraid.runtime.iqm.provider:IQMProvider"
 openquantum = "qbraid.runtime.openquantum.provider:OpenQuantumProvider"
 origin = "qbraid.runtime.origin.provider:OriginProvider"
 pasqal = "qbraid.runtime.pasqal.provider:PasqalProvider"
@@ -106,6 +109,7 @@ aws = "qbraid.runtime.aws.job:BraketQuantumTask"
 azure = "qbraid.runtime.azure.job:AzureQuantumJob"
 ibm = "qbraid.runtime.ibm.job:QiskitJob"
 ionq = "qbraid.runtime.ionq.job:IonQJob"
+iqm = "qbraid.runtime.iqm.job:IQMJob"
 openquantum = "qbraid.runtime.openquantum.job:OpenQuantumJob"
 origin = "qbraid.runtime.origin.job:OriginJob"
 pasqal = "qbraid.runtime.pasqal.job:PasqalJob"

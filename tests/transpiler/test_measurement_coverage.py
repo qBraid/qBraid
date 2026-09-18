@@ -48,10 +48,15 @@ NUM_QUBITS = 3
 
 # Program types with unambiguous measurement semantics. Sorted so xdist workers agree.
 MEASUREMENT_ALIASES = sorted(
-    ["braket", "cirq", "openqasm3", "pyquil", "pytket", "qasm2", "qasm3", "qiskit"]
+    ["braket", "cirq", "iqm", "openqasm3", "pyquil", "pytket", "qasm2", "qasm3", "qiskit"]
 )
 
-_ALIAS_PACKAGE = {"openqasm3": "openqasm3", "qasm2": "openqasm3", "qasm3": "openqasm3"}
+_ALIAS_PACKAGE = {
+    "openqasm3": "openqasm3",
+    "qasm2": "openqasm3",
+    "qasm3": "openqasm3",
+    "iqm": "iqm.iqm_client",
+}
 
 
 def _installed(alias: str) -> bool:
@@ -71,6 +76,9 @@ def count_measurements(program, alias: str) -> int:
         module = pyqasm.loads(program)
         module.unroll()
         return len(re.findall(r"\bmeasure\b", pyqasm.dumps(module)))
+    if alias == "iqm":
+        # An IQM measure operation names every qubit it reads in one locus.
+        return sum(len(op.locus) for op in program.instructions if op.name == "measure")
     if alias == "qiskit":
         return sum(1 for instr in program.data if instr.operation.name == "measure")
     if alias == "cirq":

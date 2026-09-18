@@ -84,6 +84,8 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable
 def _get_class(module: str):
+    if module == "iqm.iqm_client":
+        return iqm.iqm_client.Circuit  # type: ignore # noqa: F821
     if module == "aqt_connector.models.circuits":
         return aqt_connector.models.circuits.QuantumCircuit  # type: ignore # noqa: F821
     if module == "bloqade.analog.builder.assign":
@@ -147,6 +149,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "qrisp",
         "mimiqcircuits",
         "aqt_connector.models.circuits",
+        "iqm.iqm_client",
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
