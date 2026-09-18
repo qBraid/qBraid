@@ -187,16 +187,16 @@ def deutch_jozsa_ionq() -> IonQDictType:
         "format": InputFormat.CIRCUIT.value,
         "qubits": 5,
         "circuit": [
-            {"gate": "x", "target": 0},
+            {"gate": "x", "target": 4},
             {"gate": "h", "target": 0},
             {"gate": "h", "target": 1},
             {"gate": "h", "target": 2},
             {"gate": "h", "target": 3},
-            {"gate": "h", "target": 0},
-            {"gate": "cnot", "control": 0, "target": 0},
-            {"gate": "cnot", "control": 1, "target": 0},
-            {"gate": "cnot", "control": 2, "target": 0},
-            {"gate": "cnot", "control": 3, "target": 0},
+            {"gate": "h", "target": 4},
+            {"gate": "cnot", "control": 0, "target": 4},
+            {"gate": "cnot", "control": 1, "target": 4},
+            {"gate": "cnot", "control": 2, "target": 4},
+            {"gate": "cnot", "control": 3, "target": 4},
             {"gate": "h", "target": 0},
             {"gate": "h", "target": 1},
             {"gate": "h", "target": 2},
@@ -332,6 +332,60 @@ def test_openqasm3_to_ionq_bare_register_expands_to_all_qubits():
     }
 
     assert openqasm3_to_ionq(parse(qasm_program)) == expected_ionq
+
+
+def test_qasm2_to_ionq_multiple_registers():
+    """Qubits in a later register are numbered after those in earlier registers.
+
+    Regression test for #770: every register's qubits were emitted as if they started
+    at 0, so ``cx q2[0], q2[1]`` landed on qubits 0 and 1 of ``q`` instead of 2 and 3.
+    """
+    qasm_program = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    x q[0];
+    y q[0];
+
+    qreg q2[2];
+    cx q2[0], q2[1];
+    h q2;
+    cx q[1], q2[0];
+    """
+    expected_circuit = [
+        {"gate": "x", "target": 0},
+        {"gate": "y", "target": 0},
+        {"gate": "cnot", "control": 2, "target": 3},
+        {"gate": "h", "target": 2},
+        {"gate": "h", "target": 3},
+        {"gate": "cnot", "control": 1, "target": 2},
+    ]
+
+    ionq_program = qasm2_to_ionq(qasm_program)
+    assert ionq_program["qubits"] == 4
+    assert ionq_program["circuit"] == expected_circuit
+
+
+def test_qasm3_to_ionq_multiple_registers():
+    """Register offsets follow declaration order, including a const-sized register."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    const int n = 3;
+    qubit a;
+    qubit[n] b;
+    qubit[2] c;
+    cx a, b[2];
+    rz(0.5) c[1];
+    """
+    expected_circuit = [
+        {"gate": "cnot", "control": 0, "target": 3},
+        {"gate": "rz", "target": 5, "rotation": 0.5},
+    ]
+
+    ionq_program = qasm3_to_ionq(qasm_program)
+    assert ionq_program["qubits"] == 6
+    assert ionq_program["circuit"] == expected_circuit
 
 
 @pytest.mark.parametrize(
