@@ -343,6 +343,28 @@ class IQMProvider(QuantumProvider):
             )
         )
 
+    @staticmethod
+    def _runnable_qubits(
+        static_architecture: iqm.iqm_client.StaticQuantumArchitecture,
+        dynamic_architecture: iqm.iqm_client.DynamicQuantumArchitecture,
+    ) -> tuple[str, ...]:
+        """Return the qubits the current calibration set can drive and read out.
+
+        A qubit needs both a single-qubit gate and a readout to be usable at all, so
+        anything missing either is excluded even though the chip provides it. Chip
+        order is preserved so qubit indices stay stable and human-readable.
+        """
+
+        def loci_components(gate: str) -> set[str]:
+            info = dynamic_architecture.gates.get(gate)
+            return {component for locus in getattr(info, "loci", ()) for component in locus}
+
+        usable = loci_components("prx") & loci_components("measure")
+        runnable = tuple(qubit for qubit in static_architecture.qubits if qubit in usable)
+        # Fall back to the chip layout rather than advertising a device with no qubits
+        # if IQM ever renames these gates.
+        return runnable or tuple(static_architecture.qubits)
+
     def _build_profile(
         self,
         static_architecture: iqm.iqm_client.StaticQuantumArchitecture,
@@ -350,8 +372,17 @@ class IQMProvider(QuantumProvider):
         *,
         quantum_computer: str | None,
     ) -> TargetProfile:
-        """Build a qBraid target profile from IQM architecture data."""
+        """Build a qBraid target profile from IQM architecture data.
+
+        ``qubits`` comes from the dynamic architecture, not the static one. The SQA
+        describes the chip; the DQA describes what the current calibration set can
+        actually run, and the two differ -- Sirius lists 24 qubits of which 16 carry
+        ``prx`` and ``measure``. IQM's own ``IQMBackend`` builds its target from the
+        DQA for the same reason. The full chip layout stays available as
+        ``chip_qubits`` because it is different information, not wrong information.
+        """
         native_operations = set(dynamic_architecture.gates.keys())
+        runnable = self._runnable_qubits(static_architecture, dynamic_architecture)
         device_id = (
             quantum_computer or getattr(static_architecture, "dut_label", None) or self.session.url
         )
@@ -361,7 +392,7 @@ class IQMProvider(QuantumProvider):
             # IQM exposes a simulated twin of each QPU under a ":mock" alias.
             simulator=device_id.endswith(MOCK_ALIAS_SUFFIX),
             experiment_type=ExperimentType.GATE_MODEL,
-            num_qubits=len(static_architecture.qubits),
+            num_qubits=len(runnable),
             program_spec=ProgramSpec(iqm_client.Circuit, alias="iqm"),
             provider_name="IQM",
             basis_gates=self._build_basis_gates(native_operations),
@@ -370,7 +401,8 @@ class IQMProvider(QuantumProvider):
             native_operations=tuple(sorted(native_operations)),
             quantum_computer=quantum_computer,
             dut_label=dut_label,
-            qubits=tuple(static_architecture.qubits),
+            qubits=runnable,
+            chip_qubits=tuple(static_architecture.qubits),
             computational_resonators=tuple(static_architecture.computational_resonators),
             qubit_connectivity=self._build_qubit_connectivity(
                 static_architecture,

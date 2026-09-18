@@ -67,7 +67,13 @@ _DEVICE_STATUS = {
 
 
 class IQMDevice(QuantumDevice):
-    """IQM quantum device interface."""
+    """IQM quantum device interface.
+
+    A device holds one calibration snapshot: the qubits it reports and the
+    calibration set its jobs run against are those in effect when the device was
+    built. IQM recalibrates, which changes both, so fetch a fresh device from the
+    provider rather than holding one across a long-running process.
+    """
 
     def __init__(
         self,
@@ -294,6 +300,13 @@ class IQMDevice(QuantumDevice):
         circuits = [run_input] if not isinstance(run_input, list) else run_input
         if not circuits:
             raise ValueError("run_input list cannot be empty.")
+
+        empty = [index for index, circuit in enumerate(circuits) if not circuit.instructions]
+        if empty:
+            raise ValueError(
+                f"Circuit(s) at index {', '.join(map(str, empty))} contain no instructions. "
+                "IQM requires at least one instruction per circuit."
+            )
 
         resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
 

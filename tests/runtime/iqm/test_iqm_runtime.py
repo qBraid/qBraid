@@ -190,7 +190,8 @@ FAKE_STATIC_ARCHITECTURES = {
     ),
     "sirius": FakeStaticArchitecture(
         dut_label="M152_W2_A07_Z11",
-        qubits=["QB1", "QB2"],
+        # QB3 is on the chip but carries no calibrated gates, as on the real Sirius.
+        qubits=["QB1", "QB2", "QB3"],
         computational_resonators=["CR1"],
         connectivity=[("QB1", "QB2")],
     ),
@@ -203,7 +204,7 @@ FAKE_DYNAMIC_ARCHITECTURES = {
         gates={
             "prx": FakeGateInfo(loci=(("QB1",), ("QB2",), ("QB3",))),
             "cz": FakeGateInfo(loci=(("QB1", "QB2"), ("QB2", "QB3"))),
-            "measure": FakeGateInfo(),
+            "measure": FakeGateInfo(loci=(("QB1",), ("QB2",), ("QB3",))),
             "barrier": FakeGateInfo(),
             "reset": FakeGateInfo(),
         },
@@ -215,7 +216,7 @@ FAKE_DYNAMIC_ARCHITECTURES = {
         gates={
             "prx": FakeGateInfo(loci=(("QB1",), ("QB2",))),
             "cz": FakeGateInfo(loci=(("QB1", "QB2"),)),
-            "measure": FakeGateInfo(),
+            "measure": FakeGateInfo(loci=(("QB1",), ("QB2",))),
             "barrier": FakeGateInfo(),
             "reset": FakeGateInfo(),
         },
@@ -228,7 +229,7 @@ FAKE_DYNAMIC_ARCHITECTURES = {
             "prx": FakeGateInfo(loci=(("QB1",), ("QB2",))),
             "cz": FakeGateInfo(loci=(("QB1", "CR1"), ("QB2", "CR1"))),
             "move": FakeGateInfo(loci=(("QB1", "CR1"), ("QB2", "CR1"))),
-            "measure": FakeGateInfo(),
+            "measure": FakeGateInfo(loci=(("QB1",), ("QB2",))),
             "barrier": FakeGateInfo(),
             "reset": FakeGateInfo(),
         },
@@ -1013,3 +1014,39 @@ def test_placement_leaves_computational_resonators_alone():
 
     assert device.qubit_mapping_for(circuit) is None
     assert "COMPR1" in device.components
+
+
+def test_profile_width_comes_from_the_dynamic_architecture(fake_symbols):
+    """A chip qubit with no calibrated gates is not advertised as usable.
+
+    The SQA describes the chip and the DQA describes what the current calibration
+    set can run. Sirius lists 24 qubits of which 16 carry ``prx`` and ``measure``,
+    so reading the SQA advertises 8 qubits that cannot run anything.
+    """
+    provider = IQMProvider(token="token")
+    static = FakeIQMClient.static_architectures["sirius"]
+    dynamic = FakeIQMClient.dynamic_architectures["sirius"]
+
+    runnable = provider._runnable_qubits(static, dynamic)
+
+    # QB3 is on the chip but carries neither prx nor measure.
+    assert "QB3" in static.qubits
+    assert runnable == ("QB1", "QB2")
+
+
+def test_runnable_qubits_falls_back_to_the_chip_layout(fake_symbols):
+    """If IQM ever renames these gates, advertise the chip rather than no device."""
+    provider = IQMProvider(token="token")
+    static = FakeIQMClient.static_architectures["garnet"]
+    dynamic = SimpleNamespace(gates={})
+
+    assert provider._runnable_qubits(static, dynamic) == tuple(static.qubits)
+
+
+def test_submit_rejects_circuits_with_no_instructions(profile):
+    """An empty circuit fails locally instead of costing a round trip."""
+    device = IQMDevice(profile=profile, session=Mock())
+    empty = RealIQMCircuit(name="empty", instructions=(), metadata=None)
+
+    with pytest.raises(ValueError, match="contain no instructions"):
+        device.submit(empty, shots=1)
