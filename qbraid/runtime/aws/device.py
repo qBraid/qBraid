@@ -19,6 +19,7 @@ Module defining BraketDeviceWrapper Class
 from __future__ import annotations
 
 import datetime
+import warnings
 from typing import TYPE_CHECKING
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
@@ -67,6 +68,16 @@ class BraketDevice(QuantumDevice):
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return the status of this Device."""
         if self._device.status == "ONLINE":
+            # Braket reports a device ONLINE even when its capabilities fail schema
+            # validation, and then ``is_available`` raises on the unset properties.
+            if self._device.properties is None:
+                warnings.warn(
+                    f"Device '{self.id}' is ONLINE but its capabilities could not be parsed, "
+                    "so its availability is unknown. Reporting it as unavailable; upgrading "
+                    "amazon-braket-schemas may resolve this.",
+                    UserWarning,
+                )
+                return DeviceStatus.UNAVAILABLE
             if self._device.is_available:
                 return DeviceStatus.ONLINE
             return DeviceStatus.UNAVAILABLE

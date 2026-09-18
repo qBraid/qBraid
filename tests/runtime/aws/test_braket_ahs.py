@@ -446,6 +446,19 @@ def test_aquila_device_status(device_status, is_available, expected_status, aqui
         assert device.status() == expected_status
 
 
+def test_device_status_unparsed_capabilities(aquila_profile):
+    """Test that an ONLINE device whose capabilities failed to parse is not queried
+    for availability, which would raise on the unset properties."""
+    with patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device:
+        mock_aws_device_instance = mock_aws_device.return_value
+        mock_aws_device_instance.status = "ONLINE"
+        mock_aws_device_instance.properties = None
+        mock_aws_device_instance.is_available = True
+        device = BraketDevice(profile=aquila_profile, session=MockAwsSession())
+        with pytest.warns(UserWarning, match="capabilities could not be parsed"):
+            assert device.status() == DeviceStatus.UNAVAILABLE
+
+
 @pytest.mark.parametrize(
     "quantum_tasks, expected_output",
     [
