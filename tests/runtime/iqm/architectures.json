@@ -1,0 +1,779 @@
+{
+  "emerald": {
+    "dynamic": {
+      "calibration_set_id": "9ba9a24c-3638-4a7e-ade0-548be3e87303",
+      "computational_resonators": [],
+      "gates": {
+        "cc_prx": {
+          "default_implementation": "prx_composite",
+          "implementations": {
+            "prx_composite": {
+              "loci": [
+                [
+                  "QB4"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB1"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "cz": {
+          "default_implementation": "slepian_crf",
+          "implementations": {
+            "crf_acstarkcrf": {
+              "loci": []
+            },
+            "slepian_crf": {
+              "loci": [
+                [
+                  "QB1",
+                  "QB2"
+                ],
+                [
+                  "QB4",
+                  "QB3"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {
+            "QB44,QB50": "crf_acstarkcrf",
+            "QB49,QB50": "crf_acstarkcrf",
+            "QB51,QB50": "crf_acstarkcrf",
+            "QB54,QB50": "crf_acstarkcrf"
+          }
+        },
+        "measure": {
+          "default_implementation": "constant",
+          "implementations": {
+            "constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "measure_fidelity": {
+          "default_implementation": "shelved_constant",
+          "implementations": {
+            "constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            },
+            "shelved_constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "prx": {
+          "default_implementation": "drag_crf_sx",
+          "implementations": {
+            "drag_crf_sx": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "prx_12": {
+          "default_implementation": "modulated_drag_crf",
+          "implementations": {
+            "modulated_drag_crf": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "reset_wait": {
+          "default_implementation": "reset_wait",
+          "implementations": {
+            "reset_wait": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        }
+      },
+      "qubits": [
+        "QB1",
+        "QB2",
+        "QB3",
+        "QB4"
+      ]
+    },
+    "static": {
+      "computational_resonators": [],
+      "connectivity": [
+        [
+          "QB1",
+          "QB2"
+        ],
+        [
+          "QB3",
+          "QB4"
+        ]
+      ],
+      "dut_label": "M216_F0W102525_H03_F08",
+      "qubits": [
+        "QB1",
+        "QB2",
+        "QB3",
+        "QB4"
+      ]
+    }
+  },
+  "garnet": {
+    "dynamic": {
+      "calibration_set_id": "f9be2044-7c6f-4b46-8aa4-bc71cc4d93e9",
+      "computational_resonators": [],
+      "gates": {
+        "cc_prx": {
+          "default_implementation": "prx_composite",
+          "implementations": {
+            "prx_composite": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "cz": {
+          "default_implementation": "slepian_crf",
+          "implementations": {
+            "slepian_crf": {
+              "loci": [
+                [
+                  "QB2",
+                  "QB1"
+                ],
+                [
+                  "QB2",
+                  "QB5"
+                ],
+                [
+                  "QB4",
+                  "QB1"
+                ],
+                [
+                  "QB4",
+                  "QB3"
+                ],
+                [
+                  "QB4",
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "measure": {
+          "default_implementation": "constant",
+          "implementations": {
+            "constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            },
+            "fast_constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "measure_fidelity": {
+          "default_implementation": "constant",
+          "implementations": {
+            "constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "prx": {
+          "default_implementation": "drag_crf_sx",
+          "implementations": {
+            "drag_crf_sx": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "prx_12": {
+          "default_implementation": "modulated_drag_crf",
+          "implementations": {
+            "modulated_drag_crf": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "reset_wait": {
+          "default_implementation": "reset_wait",
+          "implementations": {
+            "reset_wait": {
+              "loci": [
+                [
+                  "QB3"
+                ],
+                [
+                  "QB5"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB1"
+                ],
+                [
+                  "QB4"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        }
+      },
+      "qubits": [
+        "QB1",
+        "QB2",
+        "QB3",
+        "QB4",
+        "QB5"
+      ]
+    },
+    "static": {
+      "computational_resonators": [],
+      "connectivity": [
+        [
+          "QB1",
+          "QB2"
+        ],
+        [
+          "QB1",
+          "QB4"
+        ],
+        [
+          "QB2",
+          "QB5"
+        ],
+        [
+          "QB3",
+          "QB4"
+        ],
+        [
+          "QB4",
+          "QB5"
+        ]
+      ],
+      "dut_label": "M194_F0W2114_P08_B15",
+      "qubits": [
+        "QB1",
+        "QB2",
+        "QB3",
+        "QB4",
+        "QB5"
+      ]
+    }
+  },
+  "sirius": {
+    "dynamic": {
+      "calibration_set_id": "382d8e33-1cee-40c9-9c6b-d759acb72930",
+      "computational_resonators": [
+        "COMPR1"
+      ],
+      "gates": {
+        "cc_prx": {
+          "default_implementation": "prx_composite",
+          "implementations": {
+            "prx_composite": {
+              "loci": [
+                [
+                  "QB2"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ],
+                [
+                  "QB1"
+                ],
+                [
+                  "QB8"
+                ],
+                [
+                  "QB3"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "cz": {
+          "default_implementation": "crf_crf",
+          "implementations": {
+            "crf_crf": {
+              "loci": [
+                [
+                  "QB1",
+                  "COMPR1"
+                ],
+                [
+                  "QB3",
+                  "COMPR1"
+                ],
+                [
+                  "QB4",
+                  "COMPR1"
+                ],
+                [
+                  "QB5",
+                  "COMPR1"
+                ],
+                [
+                  "QB8",
+                  "COMPR1"
+                ]
+              ]
+            },
+            "tgss": {
+              "loci": [
+                [
+                  "QB2",
+                  "COMPR1"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {
+            "QB10,COMPR1": "tgss",
+            "QB2,COMPR1": "tgss"
+          }
+        },
+        "measure": {
+          "default_implementation": "constant",
+          "implementations": {
+            "constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ],
+                [
+                  "QB8"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "measure_fidelity": {
+          "default_implementation": "constant",
+          "implementations": {
+            "constant": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ],
+                [
+                  "QB6"
+                ],
+                [
+                  "QB7"
+                ],
+                [
+                  "QB8"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "move": {
+          "default_implementation": "crf_crf",
+          "implementations": {
+            "crf_crf": {
+              "loci": [
+                [
+                  "QB1",
+                  "COMPR1"
+                ],
+                [
+                  "QB2",
+                  "COMPR1"
+                ],
+                [
+                  "QB3",
+                  "COMPR1"
+                ],
+                [
+                  "QB4",
+                  "COMPR1"
+                ],
+                [
+                  "QB5",
+                  "COMPR1"
+                ],
+                [
+                  "QB8",
+                  "COMPR1"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "prx": {
+          "default_implementation": "drag_crf",
+          "implementations": {
+            "drag_crf": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ],
+                [
+                  "QB8"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "prx_12": {
+          "default_implementation": "modulated_drag_crf",
+          "implementations": {
+            "modulated_drag_crf": {
+              "loci": [
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB5"
+                ],
+                [
+                  "QB8"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        },
+        "reset_wait": {
+          "default_implementation": "reset_wait",
+          "implementations": {
+            "reset_wait": {
+              "loci": [
+                [
+                  "COMPR1"
+                ],
+                [
+                  "QB3"
+                ],
+                [
+                  "QB4"
+                ],
+                [
+                  "QB8"
+                ],
+                [
+                  "QB1"
+                ],
+                [
+                  "QB2"
+                ],
+                [
+                  "QB5"
+                ]
+              ]
+            }
+          },
+          "override_default_implementation": {}
+        }
+      },
+      "qubits": [
+        "QB1",
+        "QB2",
+        "QB3",
+        "QB4",
+        "QB5",
+        "QB6",
+        "QB7",
+        "QB8"
+      ]
+    },
+    "static": {
+      "computational_resonators": [
+        "COMPR1"
+      ],
+      "connectivity": [
+        [
+          "QB1",
+          "COMPR1"
+        ],
+        [
+          "QB2",
+          "COMPR1"
+        ],
+        [
+          "QB3",
+          "COMPR1"
+        ],
+        [
+          "QB4",
+          "COMPR1"
+        ],
+        [
+          "QB5",
+          "COMPR1"
+        ],
+        [
+          "QB6",
+          "COMPR1"
+        ],
+        [
+          "QB7",
+          "COMPR1"
+        ],
+        [
+          "QB8",
+          "COMPR1"
+        ]
+      ],
+      "dut_label": "M186_F0W2259_ND1_O12",
+      "qubits": [
+        "QB1",
+        "QB2",
+        "QB3",
+        "QB4",
+        "QB5",
+        "QB6",
+        "QB7",
+        "QB8"
+      ]
+    }
+  }
+}

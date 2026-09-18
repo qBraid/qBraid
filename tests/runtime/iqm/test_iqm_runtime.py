@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import pathlib
 import sys
 import uuid
 from dataclasses import dataclass, field
@@ -32,6 +33,10 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 from iqm.iqm_client import Circuit as RealIQMCircuit
+from iqm.iqm_client import (
+    DynamicQuantumArchitecture,
+    StaticQuantumArchitecture,
+)
 from qiskit import QuantumCircuit
 
 from qbraid.programs import ExperimentType, ProgramSpec
@@ -175,65 +180,23 @@ class FakeCircuitJob:
         return self.data.status
 
 
+_ARCHITECTURES = json.loads(
+    (pathlib.Path(__file__).parent / "architectures.json").read_text(encoding="utf-8")
+)
+
+# Real payloads, trimmed to a reviewable number of qubits and validated through
+# iqm-client's own models, so upstream schema drift surfaces here as a validation
+# error naming the field. Sirius keeps its calibration gap: QB6 and QB7 are on the
+# chip but carry no prx or measure, which is what makes the device 16 qubits wide,
+# not 24.
 FAKE_STATIC_ARCHITECTURES = {
-    "garnet": FakeStaticArchitecture(
-        dut_label="M138_W0_A22_Z99",
-        qubits=["QB1", "QB2", "QB3"],
-        computational_resonators=[],
-        connectivity=[("QB1", "QB2"), ("QB2", "QB3")],
-    ),
-    "emerald": FakeStaticArchitecture(
-        dut_label="M149_W1_A05_Z12",
-        qubits=["QB1", "QB2"],
-        computational_resonators=[],
-        connectivity=[("QB1", "QB2")],
-    ),
-    "sirius": FakeStaticArchitecture(
-        dut_label="M152_W2_A07_Z11",
-        # QB3 is on the chip but carries no calibrated gates, as on the real Sirius.
-        qubits=["QB1", "QB2", "QB3"],
-        computational_resonators=["CR1"],
-        connectivity=[("QB1", "QB2")],
-    ),
+    alias: StaticQuantumArchitecture.model_validate(payload["static"])
+    for alias, payload in _ARCHITECTURES.items()
 }
+
 FAKE_DYNAMIC_ARCHITECTURES = {
-    "garnet": FakeDynamicArchitecture(
-        calibration_set_id=uuid.uuid4(),
-        qubits=FAKE_STATIC_ARCHITECTURES["garnet"].qubits,
-        computational_resonators=[],
-        gates={
-            "prx": FakeGateInfo(loci=(("QB1",), ("QB2",), ("QB3",))),
-            "cz": FakeGateInfo(loci=(("QB1", "QB2"), ("QB2", "QB3"))),
-            "measure": FakeGateInfo(loci=(("QB1",), ("QB2",), ("QB3",))),
-            "barrier": FakeGateInfo(),
-            "reset": FakeGateInfo(),
-        },
-    ),
-    "emerald": FakeDynamicArchitecture(
-        calibration_set_id=uuid.uuid4(),
-        qubits=FAKE_STATIC_ARCHITECTURES["emerald"].qubits,
-        computational_resonators=[],
-        gates={
-            "prx": FakeGateInfo(loci=(("QB1",), ("QB2",))),
-            "cz": FakeGateInfo(loci=(("QB1", "QB2"),)),
-            "measure": FakeGateInfo(loci=(("QB1",), ("QB2",))),
-            "barrier": FakeGateInfo(),
-            "reset": FakeGateInfo(),
-        },
-    ),
-    "sirius": FakeDynamicArchitecture(
-        calibration_set_id=uuid.uuid4(),
-        qubits=FAKE_STATIC_ARCHITECTURES["sirius"].qubits,
-        computational_resonators=FAKE_STATIC_ARCHITECTURES["sirius"].computational_resonators,
-        gates={
-            "prx": FakeGateInfo(loci=(("QB1",), ("QB2",))),
-            "cz": FakeGateInfo(loci=(("QB1", "CR1"), ("QB2", "CR1"))),
-            "move": FakeGateInfo(loci=(("QB1", "CR1"), ("QB2", "CR1"))),
-            "measure": FakeGateInfo(loci=(("QB1",), ("QB2",))),
-            "barrier": FakeGateInfo(),
-            "reset": FakeGateInfo(),
-        },
-    ),
+    alias: DynamicQuantumArchitecture.model_validate(payload["dynamic"])
+    for alias, payload in _ARCHITECTURES.items()
 }
 FAKE_IQM_ALIASES = tuple(FAKE_STATIC_ARCHITECTURES)
 
@@ -1029,9 +992,10 @@ def test_profile_width_comes_from_the_dynamic_architecture(fake_symbols):
 
     runnable = provider._runnable_qubits(static, dynamic)
 
-    # QB3 is on the chip but carries neither prx nor measure.
-    assert "QB3" in static.qubits
-    assert runnable == ("QB1", "QB2")
+    # QB6 and QB7 are on the Sirius chip but carry neither prx nor measure.
+    assert {"QB6", "QB7"} <= set(static.qubits)
+    assert runnable == ("QB1", "QB2", "QB3", "QB4", "QB5", "QB8")
+    assert set(runnable) == {q for q in static.qubits} - {"QB6", "QB7"}
 
 
 def test_runnable_qubits_falls_back_to_the_chip_layout(fake_symbols):

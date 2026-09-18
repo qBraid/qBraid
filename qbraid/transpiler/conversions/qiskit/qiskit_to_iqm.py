@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
@@ -60,6 +60,7 @@ def logical_qubit_name(index: int) -> str:
     return f"{LOGICAL_QUBIT_PREFIX}{index}"
 
 
+@weight(1)
 @requires_extras("iqm.qiskit_iqm")
 def qiskit_to_iqm(circuit: qiskit.QuantumCircuit) -> iqm.iqm_client.Circuit:
     """Return an IQM circuit equivalent to the input qiskit circuit.

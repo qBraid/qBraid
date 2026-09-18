@@ -41,6 +41,9 @@ iqm_client = LazyLoader("iqm_client", globals(), "iqm.iqm_client")
 
 logger = logging.getLogger(__name__)
 
+# IQM's client defaults to one shot; qBraid providers default to 100.
+DEFAULT_SHOTS = 100
+
 
 def _backend_qubit_names(backend) -> dict[int, str]:
     """Map Qiskit qubit indices to IQM component names for ``backend``.
@@ -120,7 +123,7 @@ class IQMDevice(QuantumDevice):
             IQMDeviceError: If IQM reports an operational status qBraid does not map.
         """
         health = self.session.get_health()
-        operational_status = str(health.get("operational_status", "")).lower()
+        operational_status = str(health["operational_status"]).lower()
         try:
             return _DEVICE_STATUS[operational_status]
         except KeyError as err:
@@ -289,7 +292,7 @@ class IQMDevice(QuantumDevice):
     def submit(
         self,
         run_input: iqm.iqm_client.Circuit | list[iqm.iqm_client.Circuit],
-        shots: int = 1,
+        shots: int = DEFAULT_SHOTS,
         *,
         qubit_mapping: iqm.iqm_client.QubitMapping | None = None,
         calibration_set_id: UUID | None = None,

@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING
 import cirq
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ def _to_named_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     return circuit.transform_qubits(lambda q: mapping[q])
 
 
+@weight(1)
 @requires_extras("iqm.cirq_iqm")
 def cirq_to_iqm(circuit: cirq.Circuit) -> iqm.iqm_client.Circuit:
     """Return an IQM circuit equivalent to the input Cirq circuit.

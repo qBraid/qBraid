@@ -206,7 +206,7 @@ class IQMSession:
         *,
         qubit_mapping: iqm.iqm_client.QubitMapping | None = None,
         calibration_set_id: UUID | None = None,
-        shots: int = 1,
+        shots: int = 1,  # IQMClient's own default; IQMDevice.submit applies qBraid's.
         options: iqm.iqm_client.CircuitCompilationOptions | None = None,
         use_timeslot: bool = False,
     ) -> iqm.iqm_client.CircuitJob:
