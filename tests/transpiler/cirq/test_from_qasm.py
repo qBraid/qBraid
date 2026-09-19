@@ -209,6 +209,29 @@ c2[0] = measure q[2];
     assert len(measurements) == 3
 
 
+def test_qasm3_to_cirq_multi_statement_if_block():
+    """Every gate inside a braced if block stays classically controlled."""
+    qasm = """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[3] q;
+bit[1] c;
+x q[0];
+c[0] = measure q[0];
+if (c[0] == false) {
+  x q[1];
+  x q[2];
+}
+"""
+    circuit = qasm3_to_cirq(qasm)
+
+    controlled_qubits = {
+        op.qubits[0]
+        for op in circuit.all_operations()
+        if isinstance(op, cirq.ClassicallyControlledOperation)
+    }
+    assert controlled_qubits == {cirq.NamedQubit("q_1"), cirq.NamedQubit("q_2")}
+
+
 def test_qasm3_to_cirq_without_conditionals():
     """Test QASM 3 to Cirq conversion without conditionals still works."""
     qasm = """OPENQASM 3.0;
