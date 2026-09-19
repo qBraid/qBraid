@@ -531,6 +531,12 @@ def test_normalize_if_blocks_higher_bit_index():
     assert normalize_if_blocks(qasm) == "if(c==2) x q[0];"
 
 
+def test_normalize_if_blocks_multiple_statements():
+    """Every statement in the block stays conditional, not just the first."""
+    qasm = "if (c[0] == true) {\n  x q[1];\n  x q[2];\n}"
+    assert normalize_if_blocks(qasm) == "if(c==1) x q[1];\nif(c==1) x q[2];"
+
+
 def test_normalize_if_blocks_no_change():
     """Test that QASM without if blocks is unchanged."""
     qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\n'
