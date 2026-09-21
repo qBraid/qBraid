@@ -21,6 +21,7 @@ Unit tests for Quantinuum provider, device, and job classes.
 """
 import importlib
 import os
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -372,6 +373,81 @@ class TestQuantinuumDevice:
         assert execute_kwargs["n_shots"] == [500]
         assert isinstance(job, QuantinuumJob)
         assert job.id == execute_job_id
+
+    @staticmethod
+    def _execute_kwargs_for(mock_execute, **submit_kwargs):
+        """Run ``submit`` against fully mocked NEXUS and return the execute kwargs."""
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_execute.return_value = MagicMock(id="00000000-0000-0000-0000-000000000002")
+
+        device = _make_device()
+        device.submit(Circuit(2), shots=10, **submit_kwargs)
+        return mock_execute.call_args.kwargs
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_forwards_job_properties(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """Properties are how a job is attributed once every job shares one project."""
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+
+        kwargs = self._execute_kwargs_for(
+            mock_execute,
+            job_properties={"org_user_id": "ou-123", "job_qrn": "qrn:job:abc"},
+        )
+
+        assert kwargs["properties"] == OrderedDict(org_user_id="ou-123", job_qrn="qrn:job:abc")
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_omits_properties_when_none_given(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """Send None rather than an empty dict: NEXUS rejects undefined property keys,
+        so a caller that passes nothing must not have an empty mapping sent on its behalf."""
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+
+        kwargs = self._execute_kwargs_for(mock_execute)
+        assert kwargs["properties"] is None
 
     @patch("qnexus.start_execute_job")
     @patch("qnexus.jobs.results")
