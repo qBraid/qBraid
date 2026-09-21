@@ -915,6 +915,35 @@ def test_transform_preserves_qasm2_includes(target_profile, oqc_client):
     assert device.transform(qasm2) == qasm2
 
 
+@pytest.mark.parametrize(
+    "header",
+    [
+        "",
+        "// bell pair\n",
+        "/* bell pair */\n",
+        "/*\n multi-line\n*/\n",
+        "\n\n",
+    ],
+    ids=["bare", "line-comment", "block-comment", "multiline-block", "blank-lines"],
+)
+def test_transform_preserves_qasm2_includes_whatever_precedes_the_version(
+    header, target_profile, oqc_client
+):
+    """The QASM 2 check must see past anything legal before the version directive.
+
+    A hand-rolled version regex skipped ``//`` comments but not ``/* */`` ones, so a
+    block-comment header sent QASM 2 down the QASM 3 branch and stripped the include
+    OQC needs to resolve its gates.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm2 = header + (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        "qreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    assert device.transform(qasm2) == qasm2
+
+
 def test_transform_strips_qasm3_includes(target_profile, oqc_client):
     """QASM 3 keeps the existing behaviour: OQC has the standard gates built in."""
     device = OQCDevice(profile=target_profile, client=oqc_client)

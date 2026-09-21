@@ -19,7 +19,6 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-import re
 from typing import TYPE_CHECKING, Optional, Union
 
 import pyqasm
@@ -33,6 +32,7 @@ from qcaas_client.client import (
 from qcaas_client.compiler_config import MetricsType  # type: ignore
 
 from qbraid._logging import logger
+from qbraid.programs import Qasm2String
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -43,8 +43,6 @@ if TYPE_CHECKING:
     import qcaas_client.client
 
     import qbraid.runtime
-
-QASM2_VERSION = re.compile(r"\s*(?://[^\n]*\n|\s)*OPENQASM\s+2(?:\.\d+)?\s*;")
 
 RESULTS_FORMAT = {
     "binary": QuantumResultsFormat().binary_count(),
@@ -166,7 +164,7 @@ class OQCDevice(QuantumDevice):
         passed through untouched: dropping that include leaves every gate undefined
         and the task fails to compile.
         """
-        if QASM2_VERSION.match(run_input):
+        if isinstance(run_input, Qasm2String):
             return run_input
 
         qasm_module = pyqasm.loads(run_input)
