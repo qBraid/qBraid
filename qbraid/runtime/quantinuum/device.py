@@ -22,6 +22,7 @@ import asyncio
 import functools
 import os
 import uuid
+from collections import OrderedDict
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
@@ -42,6 +43,8 @@ from .exceptions import QuantinuumDeviceError
 from .job import QuantinuumJob
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from pytket.circuit import Circuit
 
     from qbraid.runtime.profile import TargetProfile
@@ -116,6 +119,7 @@ class QuantinuumDevice(QuantumDevice):
         shots: int = 1000,
         project_name: str | None = None,
         optimisation_level: int | None = None,
+        job_properties: Mapping[str, bool | int | float | str] | None = None,
     ) -> QuantinuumJob:
         """Compile and submit a pytket circuit (or batch) to the Quantinuum device.
 
@@ -139,6 +143,11 @@ class QuantinuumDevice(QuantumDevice):
                 NEXUS compile stage. Falls back to the
                 ``QUANTINUUM_NEXUS_OPT_LEVEL`` environment variable, and
                 ultimately to ``1``.
+            job_properties: Key/value metadata recorded on the NEXUS execute
+                job. NEXUS indexes these, so jobs sharing a project can still be
+                filtered by them (``qnx.jobs.get_all(properties=...)``). Each key
+                must already be defined on the project via
+                ``qnx.projects.add_property``; NEXUS rejects undefined keys.
 
         Every NEXUS request made here is bounded by a per-request HTTP timeout
         (``QUANTINUUM_NEXUS_HTTP_TIMEOUT``, seconds, default ``60``), and the
@@ -250,6 +259,7 @@ class QuantinuumDevice(QuantumDevice):
                 backend_config=backend_config,
                 project=project,
                 language=Language.QIR,
+                properties=OrderedDict(job_properties) if job_properties else None,
             )
         except (httpx.TransportError, ConnectionError) as err:
             raise QuantinuumDeviceError(

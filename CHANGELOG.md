@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added a `job_properties` argument to `QuantinuumDevice.submit`/`run`, forwarded to NEXUS as job properties. NEXUS indexes them, so jobs sharing one project stay attributable — `qnx.jobs.get_all(properties={...})` filters by them. Each key must already be defined on the project via `qnx.projects.add_property`; NEXUS rejects undefined keys
 - `QuantinuumDevice.queue_depth()` now reports how many jobs are queued on a NEXUS device, and `qbraid.runtime.quantinuum.queue_lengths()` fetches several devices in one request. Cloud-hosted emulators raise `ResourceNotFoundError` rather than reporting `0`, since they do not queue behind hardware ([#1409](https://github.com/qBraid/qBraid/pull/1409))
 - Added `QuantumDevice.supported_run_inputs` method, which returns the sorted list of program type aliases that can be passed as `run_input` to the device's `run` method ([#803](https://github.com/qBraid/qBraid/issues/803))
 - Added `QudoraProvider`, `QudoraDevice`, and `QudoraJob` classes implementing the qBraid runtime interface for the [QUDORA Cloud](https://api.qudora.com). Authenticates with a `Bearer` API token and submits OpenQASM directly over REST (no vendor SDK); reuses qBraid's existing `qasm2`/`qasm3` program specs so no converter is required. Device ids are backend `username`s (email addresses), and a program list is submitted as a single batched QUDORA job returning one histogram per program ([#1292](https://github.com/qBraid/qBraid/pull/1292))
