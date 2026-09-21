@@ -1424,6 +1424,43 @@ class TestQuantinuumJob:
         assert job.compiled_program() is None
         mock_results.assert_not_called()
 
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_qir_job(self, mock_results, mock_status):
+        """NEXUS picks the union arm, so a QIR job must report qir.bc, not qasm2."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import QIRRef
+
+        qir_ref = MagicMock(spec=QIRRef)
+        qir_ref.download_qir.return_value = b"BC\xc0\xde"
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = qir_ref
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qir.bc"
+        assert program.data == b"BC\xc0\xde"
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_wraps_fetch_errors(self, mock_results, mock_status):
+        """A standalone call fetches its own refs; NEXUS failures there must surface
+        as QuantinuumJobError rather than a raw transport exception."""
+        mock_status.return_value = _nexus_status("COMPLETED")
+        mock_results.side_effect = RuntimeError("connection reset")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        with pytest.raises(QuantinuumJobError, match="Failed to fetch compiled program"):
+            job.compiled_program()
+
 
 # Silence unused-import warnings from conditional imports referenced only in tests.
 _ = QuantinuumDeviceError
