@@ -1416,6 +1416,54 @@ class TestQuantinuumJob:
 
     @patch("qnexus.jobs.status")
     @patch("qnexus.jobs.results")
+    def test_compiled_program_batch_keeps_unmapped_slots(self, mock_results, mock_status):
+        """A batch stays a list, positionally aligned, even when an entry is unmappable.
+
+        Dropping the unmappable entry would both collapse a two-program batch to a
+        scalar and silently shift the surviving program to the wrong index.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import HUGRRef
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        hugr_item = MagicMock()
+        hugr_item.download_result.return_value = download
+        hugr_item.get_input.return_value = MagicMock(spec=HUGRRef)
+
+        mock_results.return_value = [self._circuit_item(), hugr_item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        programs = job.compiled_program()
+
+        assert isinstance(programs, list)
+        assert len(programs) == 2
+        assert programs[0].format == "qasm2"
+        assert programs[1] is None
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_result_survives_compiled_program_capture_failure(self, mock_results, mock_status):
+        """The compiled program is optional metadata; losing it must not discard the
+        measurement counts that were already downloaded successfully."""
+        download = MagicMock()
+        download.get_counts.return_value = {(0, 1): 512}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.side_effect = RuntimeError("connection reset")
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        result = job.result()
+
+        assert result.success is True
+        assert result.data.measurement_counts == {"01": 512}
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
     def test_compiled_program_none_before_completion(self, mock_results, mock_status):
         """An unfinished job has no compiled program and must not fetch results."""
         mock_status.return_value = _nexus_status("RUNNING")
