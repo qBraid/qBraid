@@ -376,7 +376,7 @@ def target_profile(lucy_sim_data):
         experiment_type=ExperimentType.GATE_MODEL,
         endpoint_url=lucy_sim_data["url"],
         num_qubits=num_qubits,
-        program_spec=ProgramSpec(str, alias="qasm3"),
+        program_spec=ProgramSpec(str, alias="qasm2"),
         feature_set=feature_set,
         price_per_shot=USD(lucy_sim_data["price_per_shot"]),
         price_per_task=USD(lucy_sim_data["price_per_task"]),
@@ -549,7 +549,7 @@ def test_oqc_device_status_raises(lucy_sim_data, toshiko_data):
             experiment_type=ExperimentType.GATE_MODEL,
             endpoint_url="https://uk.cloud.oqc.app/fake_id",
             num_qubits=8,
-            program_spec=ProgramSpec(str, alias="qasm3"),
+            program_spec=ProgramSpec(str, alias="qasm2"),
         )
         fake_device = OQCDevice(profile=fake_profile, client=provider.client)
         with pytest.raises(ResourceNotFoundError):
@@ -590,7 +590,7 @@ def test_build_runtime_profile(lucy_sim_data):
         assert profile["device_id"] == lucy_sim_data["id"]
         assert profile["simulator"] is True
         assert profile["num_qubits"] == 8
-        assert profile["program_spec"] == ProgramSpec(str, alias="qasm3")
+        assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
@@ -898,3 +898,29 @@ def test_oqc_result_reports_qubit_zero_last(oqc_job):
         result = oqc_job.result()
 
     assert result.data.measurement_counts == {"001": 90, "011": 10}
+
+
+def test_transform_preserves_qasm2_includes(target_profile, oqc_client):
+    """QASM 2 must reach OQC with ``qelib1.inc`` intact.
+
+    OQC's QASM 2 parser resolves the standard gates from the include, so stripping it
+    leaves every gate undefined and the task fails to compile server-side.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm2 = (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        "qreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    assert device.transform(qasm2) == qasm2
+
+
+def test_transform_strips_qasm3_includes(target_profile, oqc_client):
+    """QASM 3 keeps the existing behaviour: OQC has the standard gates built in."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm3 = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nbit[1] c;\nh q[0];\nc[0] = measure q[0];\n'
+
+    transformed = device.transform(qasm3)
+
+    assert "stdgates.inc" not in transformed
+    assert "h q[0];" in transformed

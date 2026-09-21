@@ -90,7 +90,12 @@ class OQCProvider(QuantumProvider):
             simulator=simulator,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
-            program_spec=ProgramSpec(str, alias="qasm3"),
+            # OQC accepts both dialects, but every OpenQASM 3 program carrying a
+            # two-qubit gate currently fails to compile server-side -- including the
+            # ``cx`` and ``ecr`` that OQC documents as supported. QASM 2 compiles the
+            # same circuits, so targeting it transpiles QASM 3 down rather than
+            # submitting a program that will fail. Revisit once OQC fixes this.
+            program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=endpoint_url,
             provider_name="OQC",
