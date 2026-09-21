@@ -238,7 +238,7 @@ class OQCJob(QuantumJob):
         """Get the full task record, including timings and execution metadata."""
         return self._client.get_task(task_id=self.id, qpu_id=self.qpu_id)
 
-    def execution_time_s(self) -> Optional[float]:
+    def execution_time_s(self) -> float | None:
         """Get the time the task spent executing on the QPU, in seconds.
 
         Returns None if the task has not completed. Excludes compilation and queue
@@ -248,7 +248,7 @@ class OQCJob(QuantumJob):
             return None
         return self._get_task().get("execute_time")
 
-    def compile_time_s(self) -> Optional[float]:
+    def compile_time_s(self) -> float | None:
         """Get the time the task spent compiling, in seconds.
 
         Returns None if the task has not completed.
@@ -257,7 +257,7 @@ class OQCJob(QuantumJob):
             return None
         return self._get_task().get("compile_time")
 
-    def compiled_program(self) -> Optional[str]:
+    def compiled_program(self) -> str | None:
         """Get the program as compiled by OQC, or None if it has not been compiled yet.
 
         OQC decides the dialect and whether to map onto physical qubits, so neither the

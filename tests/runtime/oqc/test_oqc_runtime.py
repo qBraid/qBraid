@@ -111,6 +111,12 @@ MOCK_TIMINGS = {
 
 MOCK_METRICS = {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
 
+MOCK_TASK = {
+    "id": "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada",
+    "compile_time": 1.23,
+    "execute_time": 4.56,
+}
+
 MOCK_TASK_ID = "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada"
 MOCK_TASK_ID_NO_RESULT = "e35fb436-ff08-44c8-8acc-7d5a1f1a0adb"
 
@@ -290,6 +296,12 @@ class MockOQCClient:
         if task_id == MOCK_TASK_ID:
             return "COMPLETED"
         return "FAILED"
+
+    def get_task(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get the full task record."""
+        task = MOCK_TASK.copy()
+        task["id"] = task_id
+        return task
 
     def get_task_timings(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task timings."""
@@ -953,3 +965,46 @@ def test_transform_strips_qasm3_includes(target_profile, oqc_client):
 
     assert "stdgates.inc" not in transformed
     assert "h q[0];" in transformed
+
+
+def test_oqc_job_execution_time(oqc_job):
+    """A completed task reports the QPU duration, which is what gets billed."""
+    assert oqc_job.execution_time_s() == MOCK_TASK["execute_time"]
+
+
+def test_oqc_job_compile_time(oqc_job):
+    """A completed task reports how long OQC spent compiling it."""
+    assert oqc_job.compile_time_s() == MOCK_TASK["compile_time"]
+
+
+def test_oqc_job_compiled_program(oqc_job):
+    """The compiled program is the circuit OQC actually ran."""
+    assert oqc_job.compiled_program() == MOCK_METRICS["optimized_circuit"]
+
+
+@pytest.mark.parametrize(
+    "accessor", ["execution_time_s", "compile_time_s"], ids=["execution", "compile"]
+)
+def test_oqc_job_timings_are_none_before_completion(accessor, oqc_job_failed):
+    """Timings are only meaningful once the task is done, so absence is not an error."""
+    assert getattr(oqc_job_failed, accessor)() is None
+
+
+def test_oqc_device_submit_forwards_tag(target_profile, oqc_client, program):
+    """``tag`` reaches the OQC task.
+
+    It is the only way to attribute a task to an individual user when several share
+    one OQC account, so a dropped tag is unattributable usage.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    scheduled = []
+    original = oqc_client.schedule_tasks
+
+    def capture(tasks, qpu_id=None, tag=None):
+        scheduled.extend(tasks if isinstance(tasks, list) else [tasks])
+        return original(tasks, qpu_id=qpu_id, tag=tag)
+
+    oqc_client.schedule_tasks = capture
+    device.submit(program, tag="user-42")
+
+    assert [task.tag for task in scheduled] == ["user-42"]

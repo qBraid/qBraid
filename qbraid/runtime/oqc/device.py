@@ -221,9 +221,7 @@ class OQCDevice(QuantumDevice):
             raise ValueError(f"Invalid configuration option: {err.args[0]}") from err
 
     # pylint: disable-next=arguments-differ
-    def submit(
-        self, run_input, *, tag: Optional[str] = None, **kwargs
-    ) -> Union[OQCJob, list[OQCJob]]:
+    def submit(self, run_input, *, tag: str | None = None, **kwargs) -> Union[OQCJob, list[OQCJob]]:
         """Submit one or more jobs to the device.
 
         ``tag`` is stored on the OQC task and is the only way to attribute a task to
