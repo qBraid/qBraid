@@ -221,7 +221,7 @@ def normalize_if_blocks(qasm: str) -> str:
         reg = match.group(1)
         idx = match.group(2)
         val_str = match.group(3)
-        body = match.group(4).strip().rstrip(";")
+        statements = [s.strip() for s in match.group(4).split(";") if s.strip()]
 
         val = 1 if val_str == "true" else (0 if val_str == "false" else int(val_str))
 
@@ -229,7 +229,8 @@ def normalize_if_blocks(qasm: str) -> str:
             bit_index = int(idx)
             val = val << bit_index
 
-        return f"if({reg}=={val}) {body};"
+        # QASM 2 conditions a single statement, so repeat the condition on each one.
+        return "\n".join(f"if({reg}=={val}) {stmt};" for stmt in statements)
 
     pattern = re.compile(
         r"if\s*\(\s*(\w+)(?:\[(\d+)\])?\s*==\s*(\w+)\s*\)\s*\{\s*\n\s*(.+?)\n\s*\}",
