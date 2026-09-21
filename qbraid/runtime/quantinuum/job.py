@@ -328,6 +328,8 @@ class QuantinuumJob(QuantumJob):
 
         ``None`` when the job has no compiled program to report: it has not
         completed, or NEXUS returned only program types qBraid has no format for.
+        Absence before completion is not cached, so a job polled early picks its
+        program up on a later call.
 
         Downloading the program itself is a NEXUS request, so it is made on first
         call and cached. Calling :meth:`result` first is cheaper overall — it
@@ -336,11 +338,21 @@ class QuantinuumJob(QuantumJob):
         if self._compiled_programs is None:
             if self._input_refs is None:
                 self._load_input_refs()
-            self._compiled_programs = [
-                program
-                for program in (_program_from_input_ref(ref) for ref in self._input_refs or [])
-                if program is not None
-            ]
+            if self._input_refs is None:
+                # Unfinished job: absence is not cached, so a call after the job
+                # completes still picks the program up. Caching ``[]`` here would
+                # make every later call return ``None`` for the job's whole life.
+                return None
+            try:
+                self._compiled_programs = [
+                    program
+                    for program in (_program_from_input_ref(ref) for ref in self._input_refs)
+                    if program is not None
+                ]
+            except Exception as exc:
+                raise QuantinuumJobError(
+                    f"Failed to download compiled program for Quantinuum job {self.id}"
+                ) from exc
         if not self._compiled_programs:
             return None
         if len(self._compiled_programs) == 1:

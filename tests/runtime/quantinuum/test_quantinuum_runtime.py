@@ -1461,6 +1461,54 @@ class TestQuantinuumJob:
         with pytest.raises(QuantinuumJobError, match="Failed to fetch compiled program"):
             job.compiled_program()
 
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_absence_not_cached_before_completion(self, mock_results, mock_status):
+        """A job polled before it finishes must still report its program afterwards.
+
+        Caching the empty result of an early call would pin ``None`` for the life of
+        the job object, since the cache check short-circuits the refs reload.
+        """
+        mock_results.return_value = [self._circuit_item()]
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+
+        mock_status.return_value = _nexus_status("RUNNING")
+        assert job.compiled_program() is None
+
+        mock_status.return_value = _nexus_status("COMPLETED")
+        job._cache_metadata.pop("status", None)  # pylint: disable=protected-access
+        assert job.compiled_program().format == "qasm2"
+
+    @pytest.mark.parametrize("ref_kind", ["circuit", "qir"])
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_wraps_download_errors(self, mock_results, mock_status, ref_kind):
+        """Downloading the program is a separate NEXUS request from fetching the refs,
+        so its failures need the same wrapping rather than escaping as transport errors."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import CircuitRef, QIRRef
+
+        if ref_kind == "circuit":
+            ref = MagicMock(spec=CircuitRef)
+            ref.download_circuit.side_effect = RuntimeError("connection reset")
+        else:
+            ref = MagicMock(spec=QIRRef)
+            ref.download_qir.side_effect = RuntimeError("connection reset")
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = ref
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        with pytest.raises(QuantinuumJobError, match="Failed to download compiled program"):
+            job.compiled_program()
+
 
 # Silence unused-import warnings from conditional imports referenced only in tests.
 _ = QuantinuumDeviceError
