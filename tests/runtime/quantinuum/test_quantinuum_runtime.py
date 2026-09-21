@@ -437,8 +437,8 @@ class TestQuantinuumDevice:
         mock_results,
         mock_execute,
     ):
-        """Send None rather than an empty dict: NEXUS rejects undefined property keys,
-        so a caller that passes nothing must not have an empty mapping sent on its behalf."""
+        """Send None rather than an empty dict, so a caller that asked for no
+        properties adds no empty annotation to the job it creates."""
         mock_get_or_create.return_value = MagicMock(name="project")
         mock_compile.return_value = MagicMock(id="compile-job-id")
         compiled_item = MagicMock()
