@@ -249,6 +249,10 @@ async def test_async_result_keeps_the_event_loop_responsive(quantum_job):
         time.sleep(blocking_seconds)
         return JobStatus.COMPLETED
 
+    def blocking_result():
+        time.sleep(blocking_seconds)
+        return "done"
+
     gaps: list[float] = []
     stop = asyncio.Event()
 
@@ -264,7 +268,7 @@ async def test_async_result_keeps_the_event_loop_responsive(quantum_job):
     await asyncio.sleep(heartbeat_interval * 2)  # let the heartbeat establish a baseline
     try:
         with patch.object(quantum_job, "status", side_effect=blocking_status):
-            with patch.object(quantum_job, "result", side_effect=lambda: "done"):
+            with patch.object(quantum_job, "result", side_effect=blocking_result):
                 assert await quantum_job.async_result(poll_interval=0) == "done"
     finally:
         stop.set()
@@ -275,8 +279,8 @@ async def test_async_result_keeps_the_event_loop_responsive(quantum_job):
     # Generous margin: the point is that the stall is nowhere near `blocking_seconds`,
     # not that the loop is perfectly punctual on a busy CI runner.
     assert max(gaps) < blocking_seconds / 2, (
-        f"event loop stalled for {max(gaps):.3f}s while status() blocked for "
-        f"{blocking_seconds}s; the poll is running on the loop"
+        f"event loop stalled for {max(gaps):.3f}s while status() and result() each "
+        f"blocked for {blocking_seconds}s; a call is running on the loop"
     )
 
 
