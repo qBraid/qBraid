@@ -18,6 +18,8 @@
 Unit tests for quantum jobs functions and data types
 
 """
+import asyncio
+import time
 from unittest.mock import patch
 
 import pytest
@@ -228,6 +230,58 @@ async def test_async_result_success(quantum_job):
         with patch.object(quantum_job, "result", return_value=mock_result):
             result = await quantum_job.async_result(timeout=1, poll_interval=0.1)
             assert result == mock_result
+
+
+@pytest.mark.asyncio
+async def test_async_result_keeps_the_event_loop_responsive(quantum_job):
+    """A blocking status() or result() must not stall other coroutines.
+
+    #942 moved the delay between polls onto asyncio.sleep, but each poll still called
+    the synchronous status() directly on the loop, and async_result then called the
+    equally synchronous result(). Both issue HTTP requests on every provider, so the
+    loop froze for the duration of each. Without the offload this test records a stall
+    of roughly the combined blocking time; with it, about one heartbeat interval.
+    """
+    blocking_seconds = 0.2
+    heartbeat_interval = 0.01
+
+    def blocking_status():
+        time.sleep(blocking_seconds)
+        return JobStatus.COMPLETED
+
+    def blocking_result():
+        time.sleep(blocking_seconds)
+        return "done"
+
+    gaps: list[float] = []
+    stop = asyncio.Event()
+
+    async def heartbeat():
+        last = time.perf_counter()
+        while not stop.is_set():
+            await asyncio.sleep(heartbeat_interval)
+            now = time.perf_counter()
+            gaps.append(now - last)
+            last = now
+
+    beat = asyncio.create_task(heartbeat())
+    await asyncio.sleep(heartbeat_interval * 2)  # let the heartbeat establish a baseline
+    try:
+        with patch.object(quantum_job, "status", side_effect=blocking_status):
+            with patch.object(quantum_job, "result", side_effect=blocking_result):
+                assert await quantum_job.async_result(poll_interval=0) == "done"
+    finally:
+        stop.set()
+        await beat
+
+    assert gaps, "the heartbeat never ran: the event loop was blocked throughout"
+
+    # Generous margin: the point is that the stall is nowhere near `blocking_seconds`,
+    # not that the loop is perfectly punctual on a busy CI runner.
+    assert max(gaps) < blocking_seconds / 2, (
+        f"event loop stalled for {max(gaps):.3f}s while status() and result() each "
+        f"blocked for {blocking_seconds}s; a call is running on the loop"
+    )
 
 
 @pytest.mark.asyncio
