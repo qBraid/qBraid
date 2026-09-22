@@ -30,8 +30,9 @@ from ._transport import ensure_bounded_client
 from .exceptions import QuantinuumJobError
 
 if TYPE_CHECKING:
+    from qbraid_core.services.runtime.schemas.job import Program
     from qnexus.models.job_status import JobStatus as NexusJobStatus
-    from qnexus.models.references import ExecuteJobRef
+    from qnexus.models.references import ExecuteJobRef, ExecutionProgram
 
     from qbraid.runtime.quantinuum.device import QuantinuumDevice
 
@@ -75,6 +76,36 @@ def _map_quantinuum_status(last_status: str | None) -> JobStatus:
         raise QuantinuumJobError(f"Unrecognized Quantinuum job status {last_status!r}.") from err
 
 
+def _program_from_input_ref(ref: ExecutionProgram) -> Program | None:
+    """Convert a NEXUS execution input reference to a qBraid :class:`Program`.
+
+    NEXUS decides which arm of ``ExecutionProgram`` a job returns, so this
+    branches on the concrete type rather than assuming one. Returns ``None`` for
+    an arm with no ``Program.format`` counterpart (HUGR) rather than guessing at
+    one; the caller keeps that ``None`` in place to stay aligned with the batch.
+
+    The compiled H-series circuits use native gates (``PhasedX``, ``ZZPhase``),
+    which the default ``qelib1`` export cannot represent — hence ``hqslib1``.
+    The emitted QASM carries ``include "hqslib1.inc";``, which pyqasm cannot
+    parse today; that affects neither storing nor serving it.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid_core.services.runtime.schemas.job import Program
+
+    # pylint: disable-next=import-outside-toplevel
+    from qnexus.models.references import CircuitRef, QIRRef
+
+    if isinstance(ref, CircuitRef):
+        # pylint: disable-next=import-outside-toplevel
+        from pytket.qasm import circuit_to_qasm_str
+
+        return Program(format="qasm2", data=circuit_to_qasm_str(ref.download_circuit(), "hqslib1"))
+    if isinstance(ref, QIRRef):
+        return Program(format="qir.bc", data=ref.download_qir())
+    logger.debug("No compiled-program format for NEXUS input ref %s", type(ref).__name__)
+    return None
+
+
 class QuantinuumJob(QuantumJob):
     """Quantinuum NEXUS job class."""
 
@@ -88,6 +119,8 @@ class QuantinuumJob(QuantumJob):
         super().__init__(job_id=job_id, device=device, **kwargs)
         self._job = job
         self._status_detail: NexusJobStatus | None = None
+        self._input_refs: list[ExecutionProgram] | None = None
+        self._compiled_programs: list[Program | None] | None = None
 
     def _get_ref(self) -> ExecuteJobRef:
         """Return the cached qnexus job reference, or look it up by ID."""
@@ -260,14 +293,35 @@ class QuantinuumJob(QuantumJob):
         # ``download_result`` is lazy and issues its own NEXUS request per item,
         # so the loop needs the same wrapping as the results listing above.
         all_counts: list[dict[str, int]] = []
+        input_refs: list[ExecutionProgram] | None = []
         try:
             for result_item in results:
                 counts = result_item.download_result().get_counts(basis=BasisOrder.dlo)
                 all_counts.append({"".join(map(str, k)): v for k, v in counts.items()})
+                # Served from the fetch ``download_result`` just made: both read the
+                # same cached payload on the ref, so this costs no extra request.
+                #
+                # Guarded separately: the compiled program is optional metadata, and
+                # letting its failure escape would discard measurement counts that
+                # were already downloaded successfully. Dropping to None rather than
+                # a partial list leaves compiled_program() free to refetch later.
+                if input_refs is not None:
+                    try:
+                        input_refs.append(result_item.get_input())
+                    except Exception:  # pylint: disable=broad-exception-caught
+                        logger.debug(
+                            "Could not capture the compiled-program reference for "
+                            "Quantinuum job %s",
+                            self.id,
+                            exc_info=True,
+                        )
+                        input_refs = None
         except Exception as exc:
             raise QuantinuumJobError(
                 f"Failed to download results for Quantinuum job {self.id}"
             ) from exc
+
+        self._input_refs = input_refs
 
         measurement_counts = all_counts[0] if len(all_counts) == 1 else all_counts
         device_id = self._resolve_device_id(ref)
@@ -278,3 +332,60 @@ class QuantinuumJob(QuantumJob):
             success=True,
             data=GateModelResultData(measurement_counts=measurement_counts),
         )
+
+    def compiled_program(self) -> Program | list[Program | None] | None:
+        """Return the NEXUS-compiled program that executed on the QPU.
+
+        Reveals the native gates and qubit mapping Quantinuum's compiler chose —
+        information not recoverable from measurement counts. ``format`` is
+        ``"qasm2"`` (``hqslib1`` dialect) for circuit jobs and ``"qir.bc"`` for
+        QIR jobs. A batch submission returns a list with one entry per program,
+        positionally aligned, holding ``None`` for any program type qBraid
+        has no format for.
+
+        ``None`` when the job has no compiled program to report: it has not
+        completed, or NEXUS returned only program types qBraid has no format for.
+        Absence before completion is not cached, so a job polled early picks its
+        program up on a later call.
+
+        Downloading the program itself is a NEXUS request, so it is made on first
+        call and cached. Calling :meth:`result` first is cheaper overall — it
+        captures the references for free — but is not required.
+        """
+        if self._compiled_programs is None:
+            if self._input_refs is None:
+                self._load_input_refs()
+            if self._input_refs is None:
+                # Unfinished job: absence is not cached, so a call after the job
+                # completes still picks the program up. Caching ``[]`` here would
+                # make every later call return ``None`` for the job's whole life.
+                return None
+            try:
+                # One entry per submitted program, ``None`` where NEXUS returned a
+                # type with no ``Program.format``. Dropping those instead would
+                # shorten the list and silently misalign it with the batch.
+                self._compiled_programs = [_program_from_input_ref(ref) for ref in self._input_refs]
+            except Exception as exc:
+                raise QuantinuumJobError(
+                    f"Failed to download compiled program for Quantinuum job {self.id}"
+                ) from exc
+        if not any(program is not None for program in self._compiled_programs):
+            return None
+        if len(self._compiled_programs) == 1:
+            return self._compiled_programs[0]
+        return self._compiled_programs
+
+    def _load_input_refs(self) -> None:
+        """Populate ``_input_refs`` for a job whose results were never downloaded."""
+        # pylint: disable-next=import-outside-toplevel
+        import qnexus as qnx
+
+        if self.status() != JobStatus.COMPLETED:
+            return
+        try:
+            ensure_bounded_client()
+            self._input_refs = [item.get_input() for item in qnx.jobs.results(self._get_ref())]
+        except Exception as exc:
+            raise QuantinuumJobError(
+                f"Failed to fetch compiled program for Quantinuum job {self.id}"
+            ) from exc
