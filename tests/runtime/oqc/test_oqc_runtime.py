@@ -27,7 +27,7 @@ import logging
 import os
 import textwrap
 import uuid
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -218,6 +218,8 @@ def optimized_program():
 class MockOQCClient:
     """Test class for OQC client."""
 
+    cancelled: ClassVar[list[str]] = []
+
     def __init__(self, authentication_token=None, **kwargs):
         self._authentication_token = authentication_token
         self.default_qpu_id = "qpu:uk:3:9829a5504f"
@@ -333,8 +335,14 @@ class MockOQCClient:
         error_details = self.get_task_errors(task_id, qpu_id)
         return QPUTaskResult(task_id, result=result, metrics=metrics, error_details=error_details)
 
-    def cancel_task(self, task_id: str, qpu_id: Optional[str] = None):
-        """Cancel task."""
+    def cancel_task(self, task_ids: Union[str, list[str]], qpu_id: Optional[str] = None):
+        """Cancel one or more tasks.
+
+        Mirrors ``OQCClient.cancel_task``, whose parameter is ``task_ids``. The mock
+        previously named it ``task_id``, so a call that raised ``TypeError`` against
+        the real client passed here.
+        """
+        type(self).cancelled.extend(task_ids if isinstance(task_ids, list) else [task_ids])
         return None
 
 
@@ -983,11 +991,28 @@ def test_oqc_job_compiled_program(oqc_job):
 
 
 @pytest.mark.parametrize(
-    "accessor", ["execution_time_s", "compile_time_s"], ids=["execution", "compile"]
+    "accessor, field",
+    [("execution_time_s", "execute_time"), ("compile_time_s", "compile_time")],
+    ids=["execution", "compile"],
 )
-def test_oqc_job_timings_are_none_before_completion(accessor, oqc_job_failed):
-    """Timings are only meaningful once the task is done, so absence is not an error."""
-    assert getattr(oqc_job_failed, accessor)() is None
+def test_oqc_job_timings_do_not_wait_for_completion(accessor, field, oqc_job_failed):
+    """Timings are reported as soon as OQC publishes them.
+
+    OQC fills in ``compile_time``, ``execute_time`` and the compiled circuit and only
+    then marks the task completed, so gating these on ``COMPLETED`` discarded real
+    values. Traced on Lucy Simulator: a SUBMITTED task already carried the same
+    numbers it reported once COMPLETED.
+    """
+    assert getattr(oqc_job_failed, accessor)() == MOCK_TASK[field]
+
+
+def test_oqc_job_cancel_uses_the_client_parameter_name(oqc_job):
+    """``OQCClient.cancel_task`` takes ``task_ids``; ``task_id`` raises ``TypeError``."""
+    MockOQCClient.cancelled.clear()
+
+    oqc_job.cancel()
+
+    assert MockOQCClient.cancelled == [oqc_job.id]
 
 
 def test_oqc_device_submit_forwards_tag(target_profile, oqc_client, program):
