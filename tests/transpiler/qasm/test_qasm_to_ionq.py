@@ -388,6 +388,56 @@ def test_qasm3_to_ionq_multiple_registers():
     assert ionq_program["circuit"] == expected_circuit
 
 
+def test_register_offsets_rejects_non_literal_size():
+    """A register whose size pyqasm hasn't resolved (e.g. because an earlier
+    statement failed to unroll) raises a clear ValueError instead of the
+    AttributeError that fell out of reading '.value' off a non-literal size."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] a;
+    ms(0.1, 0.2, 0.3, 0.4) a[0], a[1];
+    const int n = 2;
+    qubit[n] b;
+    h b[0];
+    """
+    with pytest.raises(ValueError, match="cannot determine the size of qubit register 'b'"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_multi_qubit_gate_rejects_unresolved_register_alias():
+    """An operand naming a register with no matching QubitDeclaration -- an
+    alias, in this case -- raises a clear ValueError instead of a KeyError."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[4] q;
+    let a = q[0:1];
+    cx a[0], a[1];
+    """
+    with pytest.raises(ValueError, match="qubit register 'a' used by gate 'cx'"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_multi_qubit_gate_rejects_bare_register_broadcast():
+    """A 2+ qubit gate applied to whole registers with no index raises a clear
+    ValueError instead of an AttributeError from indexing a bare Identifier."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[2] r;
+    cx q, r;
+    """
+    with pytest.raises(ValueError, match="without an index"):
+        openqasm3_to_ionq(qasm_program)
+
+    # The public qasm3_to_ionq wrapper recovers via its pyqasm-assisted retry,
+    # which unrolls the broadcast into indexed gates before reconverting.
+    ionq_program = qasm3_to_ionq(qasm_program)
+    assert ionq_program["qubits"] == 4
+
+
 @pytest.mark.parametrize(
     "qasm_code, error_message",
     [

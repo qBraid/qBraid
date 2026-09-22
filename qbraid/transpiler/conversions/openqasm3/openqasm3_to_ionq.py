@@ -168,8 +168,16 @@ def _register_offsets(
             offset += register_sizes[name]
         elif statement.size is None:
             offset += 1
-        else:
+        elif isinstance(statement.size, openqasm3.ast.IntegerLiteral):
             offset += statement.size.value
+        else:
+            # A const- or expression-sized register (e.g. `qubit[n] b;`) whose size
+            # pyqasm hasn't resolved for us. This surfaces when an earlier statement
+            # failed to unroll, so `register_sizes` was never populated for it.
+            raise ValueError(
+                f"cannot determine the size of qubit register '{name}': its declared "
+                "size is not a literal integer and pyqasm has not resolved it."
+            )
     return offsets
 
 
@@ -236,7 +244,22 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                         break
             else:
                 for qubit in qubits:
-                    start = register_offsets[qubit.name.name]
+                    if not isinstance(qubit, openqasm3.ast.IndexedIdentifier):
+                        raise ValueError(
+                            f"gate '{name}' addresses register "
+                            f"'{getattr(qubit, 'name', qubit)}' without an index; "
+                            "broadcasting a multi-qubit gate across a whole register "
+                            "is not supported."
+                        )
+                    reg_name = qubit.name.name
+                    if reg_name not in register_offsets:
+                        raise ValueError(
+                            f"qubit register '{reg_name}' used by gate '{name}' has no "
+                            "matching declaration. This can happen for an alias (e.g. "
+                            "'let a = q[0:1];') -- IonQ conversion only supports qubits "
+                            "declared directly with 'qubit[n] name;'."
+                        )
+                    start = register_offsets[reg_name]
                     indices = qubit.indices
                     for index in indices:
                         qubit_values.extend(start + literal.value for literal in index)
