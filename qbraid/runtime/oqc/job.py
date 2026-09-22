@@ -126,7 +126,7 @@ class OQCJob(QuantumJob):
 
     def cancel(self) -> None:
         """Cancel the task."""
-        self._client.cancel_task(task_id=self.id, qpu_id=self.qpu_id)
+        self._client.cancel_task(task_ids=self.id, qpu_id=self.qpu_id)
 
     @staticmethod
     def _get_counts(
@@ -233,6 +233,37 @@ class OQCJob(QuantumJob):
     def get_timings(self) -> dict[str, Any]:
         """Get the timings for the task."""
         return self._client.get_task_timings(task_id=self.id, qpu_id=self.qpu_id)
+
+    def _get_task(self) -> dict[str, Any]:
+        """Get the full task record, including timings and execution metadata."""
+        return self._client.get_task(task_id=self.id, qpu_id=self.qpu_id)
+
+    def execution_time_s(self) -> float | None:
+        """Get the time the task spent executing on the QPU, in seconds.
+
+        Excludes compilation and queue wait, so it is the duration to bill against.
+        Returns ``None`` until OQC has published it, which happens before the task
+        is marked completed, not after.
+        """
+        return self._get_task().get("execute_time")
+
+    def compile_time_s(self) -> float | None:
+        """Get the time the task spent compiling, in seconds.
+
+        Returns ``None`` until OQC has published it, which happens before the task
+        is marked completed, not after.
+        """
+        return self._get_task().get("compile_time")
+
+    def compiled_program(self) -> str | None:
+        """Get the program as compiled by OQC, or ``None`` if it is not available yet.
+
+        OQC decides the dialect and whether to map onto physical qubits, so neither the
+        QASM version nor the register names are guaranteed to match the submitted program.
+        Available as soon as OQC has compiled the task, which can precede completion.
+        """
+        metrics = self.metrics() or {}
+        return metrics.get("optimized_circuit")
 
     def get_errors(self) -> Optional[dict[str, Any]]:
         """Get the error message for the task."""
