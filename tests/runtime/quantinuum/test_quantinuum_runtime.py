@@ -1396,6 +1396,243 @@ class TestQuantinuumJob:
         result = job.result()
         assert result.device_id == "quantinuum"
 
+    @staticmethod
+    def _circuit_item(counts=None):
+        """A NEXUS result ref whose input program is a compiled pytket circuit."""
+        # pylint: disable-next=import-outside-toplevel
+        from pytket.circuit import Circuit, OpType
+
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import CircuitRef
+
+        circuit = Circuit(2)
+        circuit.add_gate(OpType.ZZPhase, 0.3, [0, 1])
+        circuit.add_gate(OpType.PhasedX, [0.1, 0.2], [0])
+
+        circuit_ref = MagicMock(spec=CircuitRef)
+        circuit_ref.download_circuit.return_value = circuit
+
+        download = MagicMock()
+        download.get_counts.return_value = counts or {(0, 1): 10}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = circuit_ref
+        return item
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_hqslib1(self, mock_results, mock_status):
+        """Compiled H-series circuits use native gates the default qelib1 export rejects."""
+        mock_results.return_value = [self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert 'include "hqslib1.inc";' in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_reuses_refs_from_result(self, mock_results, mock_status):
+        """``result`` captures the refs, so this costs no second results listing."""
+        mock_results.return_value = [self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        assert mock_results.call_count == 1
+
+        job.compiled_program()
+        job.compiled_program()
+        assert mock_results.call_count == 1
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_without_result_fetches_refs(self, mock_results, mock_status):
+        """Callers that never asked for counts still get the compiled program."""
+        mock_results.return_value = [self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        assert job.compiled_program().format == "qasm2"
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_batch_returns_list(self, mock_results, mock_status):
+        mock_results.return_value = [self._circuit_item(), self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        programs = job.compiled_program()
+
+        assert isinstance(programs, list)
+        assert [p.format for p in programs] == ["qasm2", "qasm2"]
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_skips_unmapped_ref_type(self, mock_results, mock_status):
+        """NEXUS picks the union arm; HUGR has no Program.format, so report nothing."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import HUGRRef
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = MagicMock(spec=HUGRRef)
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        assert job.compiled_program() is None
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_batch_keeps_unmapped_slots(self, mock_results, mock_status):
+        """A batch stays a list, positionally aligned, even when an entry is unmappable.
+
+        Dropping the unmappable entry would both collapse a two-program batch to a
+        scalar and silently shift the surviving program to the wrong index.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import HUGRRef
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        hugr_item = MagicMock()
+        hugr_item.download_result.return_value = download
+        hugr_item.get_input.return_value = MagicMock(spec=HUGRRef)
+
+        mock_results.return_value = [self._circuit_item(), hugr_item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        programs = job.compiled_program()
+
+        assert isinstance(programs, list)
+        assert len(programs) == 2
+        assert programs[0].format == "qasm2"
+        assert programs[1] is None
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_result_survives_compiled_program_capture_failure(self, mock_results, mock_status):
+        """The compiled program is optional metadata; losing it must not discard the
+        measurement counts that were already downloaded successfully."""
+        download = MagicMock()
+        download.get_counts.return_value = {(0, 1): 512}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.side_effect = RuntimeError("connection reset")
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        result = job.result()
+
+        assert result.success is True
+        assert result.data.measurement_counts == {"01": 512}
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_none_before_completion(self, mock_results, mock_status):
+        """An unfinished job has no compiled program and must not fetch results."""
+        mock_status.return_value = _nexus_status("RUNNING")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        assert job.compiled_program() is None
+        mock_results.assert_not_called()
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_qir_job(self, mock_results, mock_status):
+        """NEXUS picks the union arm, so a QIR job must report qir.bc, not qasm2."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import QIRRef
+
+        qir_ref = MagicMock(spec=QIRRef)
+        qir_ref.download_qir.return_value = b"BC\xc0\xde"
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = qir_ref
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qir.bc"
+        assert program.data == b"BC\xc0\xde"
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_wraps_fetch_errors(self, mock_results, mock_status):
+        """A standalone call fetches its own refs; NEXUS failures there must surface
+        as QuantinuumJobError rather than a raw transport exception."""
+        mock_status.return_value = _nexus_status("COMPLETED")
+        mock_results.side_effect = RuntimeError("connection reset")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        with pytest.raises(QuantinuumJobError, match="Failed to fetch compiled program"):
+            job.compiled_program()
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_absence_not_cached_before_completion(self, mock_results, mock_status):
+        """A job polled before it finishes must still report its program afterwards.
+
+        Caching the empty result of an early call would pin ``None`` for the life of
+        the job object, since the cache check short-circuits the refs reload.
+        """
+        mock_results.return_value = [self._circuit_item()]
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+
+        mock_status.return_value = _nexus_status("RUNNING")
+        assert job.compiled_program() is None
+
+        mock_status.return_value = _nexus_status("COMPLETED")
+        job._cache_metadata.pop("status", None)  # pylint: disable=protected-access
+        assert job.compiled_program().format == "qasm2"
+
+    @pytest.mark.parametrize("ref_kind", ["circuit", "qir"])
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_wraps_download_errors(self, mock_results, mock_status, ref_kind):
+        """Downloading the program is a separate NEXUS request from fetching the refs,
+        so its failures need the same wrapping rather than escaping as transport errors."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import CircuitRef, QIRRef
+
+        if ref_kind == "circuit":
+            ref = MagicMock(spec=CircuitRef)
+            ref.download_circuit.side_effect = RuntimeError("connection reset")
+        else:
+            ref = MagicMock(spec=QIRRef)
+            ref.download_qir.side_effect = RuntimeError("connection reset")
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = ref
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        with pytest.raises(QuantinuumJobError, match="Failed to download compiled program"):
+            job.compiled_program()
+
 
 # Silence unused-import warnings from conditional imports referenced only in tests.
 _ = QuantinuumDeviceError
