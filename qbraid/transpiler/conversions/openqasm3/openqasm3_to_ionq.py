@@ -243,6 +243,16 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                         start = register_offsets[qreg_name]
                         qubit_values = list(range(start, start + reg_size))
                         break
+                else:
+                    # Without this the loop falls through with an empty qubit_values
+                    # and the gate is dropped, producing a circuit that differs from
+                    # the program with nothing to signal it.
+                    raise ValueError(
+                        f"qubit register '{reg_name}' used by gate '{name}' has no "
+                        "matching declaration. This can happen for an alias (e.g. "
+                        "'let a = q[0:1];') -- IonQ conversion only supports qubits "
+                        "declared directly with 'qubit[n] name;'."
+                    )
             else:
                 for qubit in qubits:
                     if not isinstance(qubit, openqasm3.ast.IndexedIdentifier):
