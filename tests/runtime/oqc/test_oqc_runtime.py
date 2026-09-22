@@ -27,7 +27,7 @@ import logging
 import os
 import textwrap
 import uuid
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -110,6 +110,12 @@ MOCK_TIMINGS = {
 }
 
 MOCK_METRICS = {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
+
+MOCK_TASK = {
+    "id": "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada",
+    "compile_time": 1.23,
+    "execute_time": 4.56,
+}
 
 MOCK_TASK_ID = "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada"
 MOCK_TASK_ID_NO_RESULT = "e35fb436-ff08-44c8-8acc-7d5a1f1a0adb"
@@ -212,6 +218,8 @@ def optimized_program():
 class MockOQCClient:
     """Test class for OQC client."""
 
+    cancelled: ClassVar[list[str]] = []
+
     def __init__(self, authentication_token=None, **kwargs):
         self._authentication_token = authentication_token
         self.default_qpu_id = "qpu:uk:3:9829a5504f"
@@ -291,6 +299,12 @@ class MockOQCClient:
             return "COMPLETED"
         return "FAILED"
 
+    def get_task(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get the full task record."""
+        task = MOCK_TASK.copy()
+        task["id"] = task_id
+        return task
+
     def get_task_timings(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task timings."""
         return MOCK_TIMINGS
@@ -321,8 +335,14 @@ class MockOQCClient:
         error_details = self.get_task_errors(task_id, qpu_id)
         return QPUTaskResult(task_id, result=result, metrics=metrics, error_details=error_details)
 
-    def cancel_task(self, task_id: str, qpu_id: Optional[str] = None):
-        """Cancel task."""
+    def cancel_task(self, task_ids: Union[str, list[str]], qpu_id: Optional[str] = None):
+        """Cancel one or more tasks.
+
+        Mirrors ``OQCClient.cancel_task``, whose parameter is ``task_ids``. The mock
+        previously named it ``task_id``, so a call that raised ``TypeError`` against
+        the real client passed here.
+        """
+        type(self).cancelled.extend(task_ids if isinstance(task_ids, list) else [task_ids])
         return None
 
 
@@ -376,7 +396,7 @@ def target_profile(lucy_sim_data):
         experiment_type=ExperimentType.GATE_MODEL,
         endpoint_url=lucy_sim_data["url"],
         num_qubits=num_qubits,
-        program_spec=ProgramSpec(str, alias="qasm3"),
+        program_spec=ProgramSpec(str, alias="qasm2"),
         feature_set=feature_set,
         price_per_shot=USD(lucy_sim_data["price_per_shot"]),
         price_per_task=USD(lucy_sim_data["price_per_task"]),
@@ -549,7 +569,7 @@ def test_oqc_device_status_raises(lucy_sim_data, toshiko_data):
             experiment_type=ExperimentType.GATE_MODEL,
             endpoint_url="https://uk.cloud.oqc.app/fake_id",
             num_qubits=8,
-            program_spec=ProgramSpec(str, alias="qasm3"),
+            program_spec=ProgramSpec(str, alias="qasm2"),
         )
         fake_device = OQCDevice(profile=fake_profile, client=provider.client)
         with pytest.raises(ResourceNotFoundError):
@@ -590,7 +610,7 @@ def test_build_runtime_profile(lucy_sim_data):
         assert profile["device_id"] == lucy_sim_data["id"]
         assert profile["simulator"] is True
         assert profile["num_qubits"] == 8
-        assert profile["program_spec"] == ProgramSpec(str, alias="qasm3")
+        assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
@@ -898,3 +918,118 @@ def test_oqc_result_reports_qubit_zero_last(oqc_job):
         result = oqc_job.result()
 
     assert result.data.measurement_counts == {"001": 90, "011": 10}
+
+
+def test_transform_preserves_qasm2_includes(target_profile, oqc_client):
+    """QASM 2 must reach OQC with ``qelib1.inc`` intact.
+
+    OQC's QASM 2 parser resolves the standard gates from the include, so stripping it
+    leaves every gate undefined and the task fails to compile server-side.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm2 = (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        "qreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    assert device.transform(qasm2) == qasm2
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "",
+        "// bell pair\n",
+        "/* bell pair */\n",
+        "/*\n multi-line\n*/\n",
+        "\n\n",
+    ],
+    ids=["bare", "line-comment", "block-comment", "multiline-block", "blank-lines"],
+)
+def test_transform_preserves_qasm2_includes_whatever_precedes_the_version(
+    header, target_profile, oqc_client
+):
+    """The QASM 2 check must see past anything legal before the version directive.
+
+    A hand-rolled version regex skipped ``//`` comments but not ``/* */`` ones, so a
+    block-comment header sent QASM 2 down the QASM 3 branch and stripped the include
+    OQC needs to resolve its gates.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm2 = header + (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        "qreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    assert device.transform(qasm2) == qasm2
+
+
+def test_transform_strips_qasm3_includes(target_profile, oqc_client):
+    """QASM 3 keeps the existing behaviour: OQC has the standard gates built in."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm3 = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nbit[1] c;\nh q[0];\nc[0] = measure q[0];\n'
+
+    transformed = device.transform(qasm3)
+
+    assert "stdgates.inc" not in transformed
+    assert "h q[0];" in transformed
+
+
+def test_oqc_job_execution_time(oqc_job):
+    """A completed task reports the QPU duration, which is what gets billed."""
+    assert oqc_job.execution_time_s() == MOCK_TASK["execute_time"]
+
+
+def test_oqc_job_compile_time(oqc_job):
+    """A completed task reports how long OQC spent compiling it."""
+    assert oqc_job.compile_time_s() == MOCK_TASK["compile_time"]
+
+
+def test_oqc_job_compiled_program(oqc_job):
+    """The compiled program is the circuit OQC actually ran."""
+    assert oqc_job.compiled_program() == MOCK_METRICS["optimized_circuit"]
+
+
+@pytest.mark.parametrize(
+    "accessor, field",
+    [("execution_time_s", "execute_time"), ("compile_time_s", "compile_time")],
+    ids=["execution", "compile"],
+)
+def test_oqc_job_timings_do_not_wait_for_completion(accessor, field, oqc_job_failed):
+    """Timings are reported as soon as OQC publishes them.
+
+    OQC fills in ``compile_time``, ``execute_time`` and the compiled circuit and only
+    then marks the task completed, so gating these on ``COMPLETED`` discarded real
+    values. Traced on Lucy Simulator: a SUBMITTED task already carried the same
+    numbers it reported once COMPLETED.
+    """
+    assert getattr(oqc_job_failed, accessor)() == MOCK_TASK[field]
+
+
+def test_oqc_job_cancel_uses_the_client_parameter_name(oqc_job):
+    """``OQCClient.cancel_task`` takes ``task_ids``; ``task_id`` raises ``TypeError``."""
+    MockOQCClient.cancelled.clear()
+
+    oqc_job.cancel()
+
+    assert MockOQCClient.cancelled == [oqc_job.id]
+
+
+def test_oqc_device_submit_forwards_tag(target_profile, oqc_client, program):
+    """``tag`` reaches the OQC task.
+
+    It is the only way to attribute a task to an individual user when several share
+    one OQC account, so a dropped tag is unattributable usage.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    scheduled = []
+    original = oqc_client.schedule_tasks
+
+    def capture(tasks, qpu_id=None, tag=None):
+        scheduled.extend(tasks if isinstance(tasks, list) else [tasks])
+        return original(tasks, qpu_id=qpu_id, tag=tag)
+
+    oqc_client.schedule_tasks = capture
+    device.submit(program, tag="user-42")
+
+    assert [task.tag for task in scheduled] == ["user-42"]

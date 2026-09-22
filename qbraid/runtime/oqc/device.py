@@ -19,7 +19,7 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import pyqasm
 from qcaas_client.client import (
@@ -32,6 +32,7 @@ from qcaas_client.client import (
 from qcaas_client.compiler_config import MetricsType  # type: ignore
 
 from qbraid._logging import logger
+from qbraid.programs import Qasm2String
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -156,7 +157,16 @@ class OQCDevice(QuantumDevice):
         )
 
     def transform(self, run_input: str) -> str:
-        """Transforms the input program before submitting it to the device."""
+        """Transforms the input program before submitting it to the device.
+
+        OQC's OpenQASM 3 parser treats the standard gates as built in, but its
+        OpenQASM 2 parser resolves them from ``qelib1.inc``, so a QASM 2 program is
+        passed through untouched: dropping that include leaves every gate undefined
+        and the task fails to compile.
+        """
+        if isinstance(run_input, Qasm2String):
+            return run_input
+
         qasm_module = pyqasm.loads(run_input)
         qasm_module.remove_includes()
         qasm_no_includes = pyqasm.dumps(qasm_module)
@@ -211,12 +221,19 @@ class OQCDevice(QuantumDevice):
             raise ValueError(f"Invalid configuration option: {err.args[0]}") from err
 
     # pylint: disable-next=arguments-differ
-    def submit(self, run_input, **kwargs) -> Union[OQCJob, list[OQCJob]]:
-        """Submit one or more jobs to the device."""
+    def submit(self, run_input, *, tag: str | None = None, **kwargs) -> OQCJob | list[OQCJob]:
+        """Submit one or more jobs to the device.
+
+        ``tag`` is stored on the OQC task and is the only way to attribute a task to
+        an individual user when many users share a single OQC account.
+        """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         config = self._build_compiler_config(**kwargs) if any(kwargs) else None
-        tasks = [QPUTask(program=program, config=config, qpu_id=self.id) for program in run_input]
+        tasks = [
+            QPUTask(program=program, config=config, qpu_id=self.id, tag=tag or "")
+            for program in run_input
+        ]
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id=self.id)
         jobs = [OQCJob(job_id=task.task_id, device=self, client=self._client) for task in qpu_tasks]
         return jobs[0] if is_single_input else jobs
