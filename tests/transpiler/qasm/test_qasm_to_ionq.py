@@ -433,6 +433,46 @@ def test_register_offsets_orders_mixed_sized_and_unsized_registers():
     assert _register_offsets(ast, {}) == {"a": 0, "b": 2, "c": 3}
 
 
+def test_single_qubit_gate_rejects_unresolved_register_alias():
+    """A single-qubit gate on an unresolved register must not be dropped.
+
+    The name search fell through without a match, leaving the operand list empty, so
+    the gate vanished and the converted circuit computed something different from the
+    program with nothing to signal it. The multi-qubit branch already rejected this;
+    the single-qubit one did not.
+    """
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[4] q;
+    let a = q[0:1];
+    h a;
+    x q[3];
+    """
+    with pytest.raises(ValueError, match="qubit register 'a' used by gate 'h'"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_single_qubit_gate_on_a_declared_register_still_expands():
+    """The valid case is unaffected: a bare register broadcasts over its qubits."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[2] r;
+    h q;
+    x r[1];
+    """
+    ionq_program = openqasm3_to_ionq(qasm_program)
+
+    assert ionq_program["qubits"] == 4
+    assert ionq_program["circuit"] == [
+        {"gate": "h", "target": 0},
+        {"gate": "h", "target": 1},
+        {"gate": "x", "target": 3},
+    ]
+
+
 def test_multi_qubit_gate_rejects_unresolved_register_alias():
     """An operand naming a register with no matching QubitDeclaration -- an
     alias, in this case -- raises a clear ValueError instead of a KeyError."""
