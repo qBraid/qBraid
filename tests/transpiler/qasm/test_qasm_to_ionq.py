@@ -29,6 +29,7 @@ from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
     _parse_gates,
+    _register_offsets,
     extract_params,
     openqasm3_to_ionq,
 )
@@ -187,16 +188,16 @@ def deutch_jozsa_ionq() -> IonQDictType:
         "format": InputFormat.CIRCUIT.value,
         "qubits": 5,
         "circuit": [
-            {"gate": "x", "target": 0},
+            {"gate": "x", "target": 4},
             {"gate": "h", "target": 0},
             {"gate": "h", "target": 1},
             {"gate": "h", "target": 2},
             {"gate": "h", "target": 3},
-            {"gate": "h", "target": 0},
-            {"gate": "cnot", "control": 0, "target": 0},
-            {"gate": "cnot", "control": 1, "target": 0},
-            {"gate": "cnot", "control": 2, "target": 0},
-            {"gate": "cnot", "control": 3, "target": 0},
+            {"gate": "h", "target": 4},
+            {"gate": "cnot", "control": 0, "target": 4},
+            {"gate": "cnot", "control": 1, "target": 4},
+            {"gate": "cnot", "control": 2, "target": 4},
+            {"gate": "cnot", "control": 3, "target": 4},
             {"gate": "h", "target": 0},
             {"gate": "h", "target": 1},
             {"gate": "h", "target": 2},
@@ -332,6 +333,137 @@ def test_openqasm3_to_ionq_bare_register_expands_to_all_qubits():
     }
 
     assert openqasm3_to_ionq(parse(qasm_program)) == expected_ionq
+
+
+def test_qasm2_to_ionq_multiple_registers():
+    """Qubits in a later register are numbered after those in earlier registers.
+
+    Regression test for #770: every register's qubits were emitted as if they started
+    at 0, so ``cx q2[0], q2[1]`` landed on qubits 0 and 1 of ``q`` instead of 2 and 3.
+    """
+    qasm_program = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    x q[0];
+    y q[0];
+
+    qreg q2[2];
+    cx q2[0], q2[1];
+    h q2;
+    cx q[1], q2[0];
+    """
+    expected_circuit = [
+        {"gate": "x", "target": 0},
+        {"gate": "y", "target": 0},
+        {"gate": "cnot", "control": 2, "target": 3},
+        {"gate": "h", "target": 2},
+        {"gate": "h", "target": 3},
+        {"gate": "cnot", "control": 1, "target": 2},
+    ]
+
+    ionq_program = qasm2_to_ionq(qasm_program)
+    assert ionq_program["qubits"] == 4
+    assert ionq_program["circuit"] == expected_circuit
+
+
+def test_qasm3_to_ionq_multiple_registers():
+    """Register offsets follow declaration order, including a const-sized register."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    const int n = 3;
+    qubit a;
+    qubit[n] b;
+    qubit[2] c;
+    cx a, b[2];
+    rz(0.5) c[1];
+    """
+    expected_circuit = [
+        {"gate": "cnot", "control": 0, "target": 3},
+        {"gate": "rz", "target": 5, "rotation": 0.5},
+    ]
+
+    ionq_program = qasm3_to_ionq(qasm_program)
+    assert ionq_program["qubits"] == 6
+    assert ionq_program["circuit"] == expected_circuit
+
+
+def test_register_offsets_rejects_non_literal_size():
+    """A register whose size pyqasm hasn't resolved (e.g. because an earlier
+    statement failed to unroll) raises a clear ValueError instead of the
+    AttributeError that fell out of reading '.value' off a non-literal size."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] a;
+    ms(0.1, 0.2, 0.3, 0.4) a[0], a[1];
+    const int n = 2;
+    qubit[n] b;
+    h b[0];
+    """
+    with pytest.raises(ValueError, match="cannot determine the size of qubit register 'b'"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_register_offsets_counts_an_unsized_register_as_one_qubit():
+    """A bare `qubit b;` advances the offset by one when pyqasm has not sized it.
+
+    Reaching this needs a register pyqasm never resolved -- here because an earlier
+    statement failed to unroll -- so the declared size, not `program_qubits`, is what
+    the offset is computed from. The `ms` gate below is the trigger, and its error is
+    what surfaces; the offsets are computed before it.
+    """
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] a;
+    ms(0.1, 0.2, 0.3, 0.4) a[0], a[1];
+    qubit b;
+    h b;
+    """
+    with pytest.raises(ValueError, match="Invalid number of parameters for the 'ms' gate"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_register_offsets_orders_mixed_sized_and_unsized_registers():
+    """Declaration order holds when sized and unsized registers are interleaved."""
+    ast = parse('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] a;\nqubit b;\nqubit[3] c;\n')
+
+    assert _register_offsets(ast, {}) == {"a": 0, "b": 2, "c": 3}
+
+
+def test_multi_qubit_gate_rejects_unresolved_register_alias():
+    """An operand naming a register with no matching QubitDeclaration -- an
+    alias, in this case -- raises a clear ValueError instead of a KeyError."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[4] q;
+    let a = q[0:1];
+    cx a[0], a[1];
+    """
+    with pytest.raises(ValueError, match="qubit register 'a' used by gate 'cx'"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_multi_qubit_gate_rejects_bare_register_broadcast():
+    """A 2+ qubit gate applied to whole registers with no index raises a clear
+    ValueError instead of an AttributeError from indexing a bare Identifier."""
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[2] r;
+    cx q, r;
+    """
+    with pytest.raises(ValueError, match="without an index"):
+        openqasm3_to_ionq(qasm_program)
+
+    # The public qasm3_to_ionq wrapper recovers via its pyqasm-assisted retry,
+    # which unrolls the broadcast into indexed gates before reconverting.
+    ionq_program = qasm3_to_ionq(qasm_program)
+    assert ionq_program["qubits"] == 4
 
 
 @pytest.mark.parametrize(
