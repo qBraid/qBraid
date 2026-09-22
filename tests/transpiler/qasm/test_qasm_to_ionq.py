@@ -29,6 +29,7 @@ from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
     _parse_gates,
+    _register_offsets,
     extract_params,
     openqasm3_to_ionq,
 )
@@ -403,6 +404,33 @@ def test_register_offsets_rejects_non_literal_size():
     """
     with pytest.raises(ValueError, match="cannot determine the size of qubit register 'b'"):
         openqasm3_to_ionq(qasm_program)
+
+
+def test_register_offsets_counts_an_unsized_register_as_one_qubit():
+    """A bare `qubit b;` advances the offset by one when pyqasm has not sized it.
+
+    Reaching this needs a register pyqasm never resolved -- here because an earlier
+    statement failed to unroll -- so the declared size, not `program_qubits`, is what
+    the offset is computed from. The `ms` gate below is the trigger, and its error is
+    what surfaces; the offsets are computed before it.
+    """
+    qasm_program = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] a;
+    ms(0.1, 0.2, 0.3, 0.4) a[0], a[1];
+    qubit b;
+    h b;
+    """
+    with pytest.raises(ValueError, match="Invalid number of parameters for the 'ms' gate"):
+        openqasm3_to_ionq(qasm_program)
+
+
+def test_register_offsets_orders_mixed_sized_and_unsized_registers():
+    """Declaration order holds when sized and unsized registers are interleaved."""
+    ast = parse('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] a;\nqubit b;\nqubit[3] c;\n')
+
+    assert _register_offsets(ast, {}) == {"a": 0, "b": 2, "c": 3}
 
 
 def test_multi_qubit_gate_rejects_unresolved_register_alias():
