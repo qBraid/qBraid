@@ -175,8 +175,9 @@ def _register_offsets(
             # pyqasm hasn't resolved for us. This surfaces when an earlier statement
             # failed to unroll, so `register_sizes` was never populated for it.
             raise ValueError(
-                f"cannot determine the size of qubit register '{name}': its declared "
-                "size is not a literal integer and pyqasm has not resolved it."
+                f"cannot determine the size of qubit register '{name}': its declared size "
+                "is not a literal integer and pyqasm has not resolved it. This usually means "
+                "an earlier statement failed to unroll; fix that error first."
             )
     return offsets
 
