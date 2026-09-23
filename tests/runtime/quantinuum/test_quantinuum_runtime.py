@@ -1084,6 +1084,22 @@ class TestTransportHardening:
 # --- Job ---
 
 
+def _result_item(circuit, counts=None):
+    """Wrap a pytket circuit in the NEXUS result/input refs the job reads."""
+    # pylint: disable-next=import-outside-toplevel
+    from qnexus.models.references import CircuitRef
+
+    circuit_ref = MagicMock(spec=CircuitRef)
+    circuit_ref.download_circuit.return_value = circuit
+
+    download = MagicMock()
+    download.get_counts.return_value = counts or {(0, 1): 10}
+    item = MagicMock()
+    item.download_result.return_value = download
+    item.get_input.return_value = circuit_ref
+    return item
+
+
 def _nexus_status(name: str, **kwargs):
     """Build a real qnexus ``JobStatus`` for the given status name."""
     # pylint: disable=import-outside-toplevel
@@ -1397,27 +1413,34 @@ class TestQuantinuumJob:
         assert result.device_id == "quantinuum"
 
     @staticmethod
-    def _circuit_item(counts=None):
+    def _circuit_item(counts=None, n_qubits=None, conditional=False):
         """A NEXUS result ref whose input program is a compiled pytket circuit."""
         # pylint: disable-next=import-outside-toplevel
         from pytket.circuit import Circuit, OpType
 
-        # pylint: disable-next=import-outside-toplevel
-        from qnexus.models.references import CircuitRef
+        if conditional:
+            # pylint: disable-next=import-outside-toplevel
+            from pytket.qasm import circuit_from_qasm_str
 
-        circuit = Circuit(2)
+            # A mid-circuit conditional becomes a RangePredicate, which is the
+            # op whose export pytket caps at maxwidth 64.
+            return _result_item(
+                circuit_from_qasm_str(
+                    'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+                    "qreg q[2];\ncreg c[2];\nmeasure q[0] -> c[0];\n"
+                    "if(c!=0) x q[1];\n",
+                    maxwidth=64,
+                ),
+                counts,
+            )
+
+        circuit = Circuit(n_qubits or 2)
         circuit.add_gate(OpType.ZZPhase, 0.3, [0, 1])
         circuit.add_gate(OpType.PhasedX, [0.1, 0.2], [0])
+        if n_qubits:
+            circuit.measure_all()
 
-        circuit_ref = MagicMock(spec=CircuitRef)
-        circuit_ref.download_circuit.return_value = circuit
-
-        download = MagicMock()
-        download.get_counts.return_value = counts or {(0, 1): 10}
-        item = MagicMock()
-        item.download_result.return_value = download
-        item.get_input.return_value = circuit_ref
-        return item
+        return _result_item(circuit, counts)
 
     @patch("qnexus.jobs.status")
     @patch("qnexus.jobs.results")
@@ -1432,6 +1455,44 @@ class TestQuantinuumJob:
 
         assert program.format == "qasm2"
         assert 'include "hqslib1.inc";' in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_wide_registers(self, mock_results, mock_status):
+        """A compiled circuit wider than pytket's default maxwidth still exports.
+
+        H2-1 is 56 qubits, and pytket's QASM writer rejects a classical register
+        above 32 by default, so compiled_program() failed on exactly the circuits
+        large enough to be worth inspecting.
+        """
+        mock_results.return_value = [self._circuit_item(n_qubits=56)]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert "creg c[56];" in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_conditional_circuit(self, mock_results, mock_status):
+        """A mid-circuit conditional still exports, whatever maxwidth we pass.
+
+        pytket represents ``if(c!=0)`` as a RangePredicate and refuses to write one
+        when maxwidth exceeds 64, so raising the limit too far breaks narrow
+        conditional circuits that used to export fine.
+        """
+        mock_results.return_value = [self._circuit_item(conditional=True)]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert "if(" in program.data
 
     @patch("qnexus.jobs.status")
     @patch("qnexus.jobs.results")
