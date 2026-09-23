@@ -1392,3 +1392,58 @@ def test_best_qubits_excludes_dead_edges(mock_profile):
     device = _device_with(calibration, mock_profile)
     with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
         device.best_qubits(2)
+
+
+def test_best_qubits_excludes_negative_qubit_error(mock_profile):
+    """A negative error is corrupt data, not a bonus.
+
+    ``-log(1 - error)`` turns negative once the error does, which would rank the
+    qubit ahead of a flawless one instead of flagging it as unusable.
+    """
+    calibration = _calibration(
+        {0: (0.01, 0.001), 1: (-0.5, 0.001), 2: (0.02, 0.001)},
+        [(0, 1, 0.01), (1, 2, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(1) == (0,)
+
+
+def test_best_qubits_excludes_out_of_range_gate_error(mock_profile):
+    """The guard covers a qubit's gate errors, not just its readout error.
+
+    Qubit 0 carries a negative gate error and qubit 2 a NaN; neither is a rate.
+    """
+    calibration = _calibration(
+        {0: (0.02, -0.5), 1: (0.02, 0.001), 2: (0.02, float("nan"))},
+        [(0, 1, 0.01), (1, 2, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(1) == (1,)
+
+
+def test_best_qubits_excludes_negative_edge_error(mock_profile):
+    """An edge with a negative error is unusable, like one at 100%."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.03), (2, 3, -0.3)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(2) == (0, 1)
+
+
+def test_best_qubits_edge_falls_back_to_its_valid_gate(mock_profile):
+    """One corrupt entry costs the pair that gate, not the pair itself."""
+    calibration = _calibration(
+        {q: (0.02, 0.001) for q in range(4)},
+        [(0, 1, 0.05), (2, 3, 0.02)],
+        iswap=[(0, 1, -0.3)],
+    )
+    device = _device_with(calibration, mock_profile)
+
+    # (0, 1) keeps its cz error of 0.05 and so loses to (2, 3) at 0.02, rather
+    # than winning the device on an iswap error of -0.3.
+    assert device.best_qubits(2) == (2, 3)
+
+    # Pinned to the corrupt gate, the pair has nothing usable left.
+    with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+        device.best_qubits(2, gate="iswap")
