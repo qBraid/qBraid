@@ -1447,3 +1447,18 @@ def test_best_qubits_edge_falls_back_to_its_valid_gate(mock_profile):
     # Pinned to the corrupt gate, the pair has nothing usable left.
     with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
         device.best_qubits(2, gate="iswap")
+
+
+def test_best_qubits_ignores_unpublished_metrics(mock_profile):
+    """A metric the provider does not publish contributes nothing, good or bad.
+
+    Qubit 0 reports no readout error. It is ranked on its gate error alone rather
+    than being penalized for the missing value — the counterpart to an
+    out-of-range value, which is not missing data but wrong data.
+    """
+    calibration = _calibration(
+        {0: (None, 0.001), 1: (0.30, 0.001), 2: (0.30, 0.001)},
+        [(0, 1, 0.01), (1, 2, 0.01)],
+    )
+    device = _device_with(calibration, mock_profile)
+    assert device.best_qubits(1) == (0,)
