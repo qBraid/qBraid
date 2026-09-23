@@ -82,11 +82,13 @@ def test_submit_batch(device, mock_connection):
     assert kwargs["algorithm"] == "statevector"
 
 
-def test_submit_batch_requires_explicit_algorithm(device, mock_connection):
-    """MIMIQ rejects algorithm='auto' for batches, so a batch must name one itself."""
-    with pytest.raises(ValueError, match="Batch submission requires an explicit algorithm"):
-        device.submit([mc.Circuit(), mc.Circuit()], shots=100)
-    mock_connection.submit.assert_not_called()
+def test_submit_batch_defaults_to_mps_algorithm(device, mock_connection):
+    """MIMIQ rejects algorithm='auto' for batches, so a batch defaults to ``'mps'`` instead."""
+    circuits = [mc.Circuit(), mc.Circuit()]
+    device.submit(circuits, shots=100)
+    args, kwargs = mock_connection.submit.call_args
+    assert args[0] is circuits
+    assert kwargs["algorithm"] == "mps"
 
 
 def test_str_names_the_device(device):

@@ -105,14 +105,13 @@ class QPerfectDevice(QuantumDevice):
             **options: MIMIQ submit options forwarded to the emulator, e.g. ``algorithm``
                 (``"auto"`` / ``"statevector"`` / ``"mps"``), ``timelimit``, ``bonddim``,
                 ``entdim``, ``seed``, ``bitstrings``, or ``noisemodel``. ``algorithm`` defaults
-                to ``"auto"`` for a single circuit, and is required for a batch.
+                to ``"auto"`` for a single circuit and to ``"mps"`` for a batch.
 
         Returns:
             QPerfectJob: A handle to the submitted job.
 
         Raises:
-            ValueError: If an unsupported submit option is passed, or if a batch is submitted
-                without an explicit ``algorithm``.
+            ValueError: If an unsupported submit option is passed.
         """
         unknown = set(options) - _SUBMIT_OPTIONS
         if unknown:
@@ -122,13 +121,8 @@ class QPerfectDevice(QuantumDevice):
             )
         connection = self._provider.connection
         kwargs: dict[str, Any] = {"nsamples": shots, "label": name or "qbraid", **options}
-        # MIMIQ rejects algorithm="auto" for batches, so only single circuits get the default.
-        if not isinstance(run_input, list):
-            kwargs.setdefault("algorithm", "auto")
-        elif "algorithm" not in kwargs:
-            raise ValueError(
-                "Batch submission requires an explicit algorithm: pass algorithm='statevector' "
-                "or algorithm='mps'. MIMIQ only supports algorithm='auto' for a single circuit."
-            )
+        # MIMIQ refuses algorithm="auto" for a batch. "mps" is what "auto" resolves to past toy
+        # widths and runs at every width the device advertises; "statevector" fails above ~30.
+        kwargs.setdefault("algorithm", "auto" if not isinstance(run_input, list) else "mps")
         execution = connection.submit(run_input, **kwargs)
         return QPerfectJob(job_id=str(execution), connection=connection, device=self, shots=shots)
