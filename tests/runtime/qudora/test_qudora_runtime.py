@@ -542,7 +542,7 @@ class TestQudoraJob:
     )
     def test_map_status(self, status_name, expected):
         """QUDORA JobStatusName values map to the expected qBraid JobStatus."""
-        assert QudoraJob._map_status(status_name) == expected
+        assert QudoraJob.map_status(status_name) == expected
 
     def test_map_status_unmapped_raises(self):
         """An unmapped JobStatusName raises instead of degrading to UNKNOWN.
@@ -553,7 +553,23 @@ class TestQudoraJob:
         """
         assert JobStatus.UNKNOWN not in JobStatus.terminal_states()
         with pytest.raises(QudoraJobError, match="PartiallyCompleted"):
-            QudoraJob._map_status("PartiallyCompleted")
+            QudoraJob.map_status("PartiallyCompleted")
+
+    def test_decoding_a_held_record_costs_no_requests(self, mock_session):
+        """A caller holding a record can map and decode it without a round trip.
+
+        This is the point of both methods being public. status() costs 1 request and
+        result() costs 3 (wait_for_final_state's status check, its own record fetch,
+        and get_backends to resolve the device id), so a poller that settles a job
+        through them spends 5 against an API that rate-limits.
+        """
+        record = _job_record("Completed", result=['{"01": 100}'])
+
+        assert QudoraJob.map_status(record["status"]) == JobStatus.COMPLETED
+        assert QudoraJob.parse_counts(record["result"]) == {"01": 100}
+
+        mock_session.get_job.assert_not_called()
+        mock_session.get_backends.assert_not_called()
 
     def test_status(self, mock_session):
         """status() fetches the job record and maps its status."""
@@ -655,7 +671,7 @@ class TestQudoraJob:
         """A null histogram raises QudoraJobError naming how much of the batch is missing.
 
         ``[None]`` passes a bare falsiness check -- a list with a null in it is still
-        truthy -- so the null used to reach ``_parse_counts`` and surface as an error
+        truthy -- so the null used to reach ``parse_counts`` and surface as an error
         from the JSON layer, which told the caller nothing about the job. The payload is
         incomplete rather than absent, so it is reported separately from the empty case.
         """

@@ -72,8 +72,12 @@ class QudoraJob(QuantumJob):
         return self._session
 
     @staticmethod
-    def _map_status(status: str) -> JobStatus:
+    def map_status(status: str) -> JobStatus:
         """Convert a QUDORA ``JobStatusName`` to a qBraid ``JobStatus``.
+
+        Public so a caller holding a job record can map it without the extra request
+        ``status()`` makes. QUDORA rate-limits, so a poller that already fetched the
+        record should not spend a round trip to reach this mapping.
 
         Raises:
             QudoraJobError: If QUDORA reports a status name that is not mapped. Defaulting to
@@ -105,19 +109,24 @@ class QudoraJob(QuantumJob):
     def status(self) -> JobStatus:
         """Return the current status of the QUDORA job."""
         job_data = self.session.get_job(self.id)
-        return self._map_status(job_data["status"])
+        return self.map_status(job_data["status"])
 
     def cancel(self) -> None:
         """Cancel the QUDORA job."""
         self.session.cancel_job(self.id)
 
     @staticmethod
-    def _parse_counts(result: list[str]) -> MeasCount | list[MeasCount]:
+    def parse_counts(result: list[str]) -> MeasCount | list[MeasCount]:
         """Parse the QUDORA ``result`` field (a list of JSON count-dict strings).
 
         Each element is the measurement histogram of one program. The bitstring key
         orientation is preserved exactly as returned by the QUDORA API (matching the
         vendor ``qudora-sdk``, which forwards the same dict to Qiskit unchanged).
+
+        Public for the same reason as :meth:`map_status`: a caller that fetched the
+        record with ``include_results=True`` can decode it without the three requests
+        ``result()`` makes. Entries are not checked for ``None`` here -- ``result()``
+        rejects an incomplete batch before calling this.
         """
         counts: list[MeasCount] = [json.loads(entry) for entry in result]
         return counts[0] if len(counts) == 1 else counts
@@ -126,7 +135,7 @@ class QudoraJob(QuantumJob):
         """Return the result of the QUDORA job."""
         self.wait_for_final_state()
         job_data = self.session.get_job(self.id, include_results=True)
-        status = self._map_status(job_data["status"])
+        status = self.map_status(job_data["status"])
         success = status == JobStatus.COMPLETED
 
         if not success:
@@ -148,7 +157,7 @@ class QudoraJob(QuantumJob):
                 f"{missing} of {len(result_payload)} programs have no histogram."
             )
 
-        data = GateModelResultData(measurement_counts=self._parse_counts(result_payload))
+        data = GateModelResultData(measurement_counts=self.parse_counts(result_payload))
         # The job record's ``target`` is the backend's display name ("QVLS-Q1 Emulator"), not
         # the id jobs are submitted against, so prefer the device's own id and resolve
         # ``target`` back to a device id only when the job was constructed without one.
