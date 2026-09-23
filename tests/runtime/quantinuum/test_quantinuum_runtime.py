@@ -1397,7 +1397,7 @@ class TestQuantinuumJob:
         assert result.device_id == "quantinuum"
 
     @staticmethod
-    def _circuit_item(counts=None):
+    def _circuit_item(counts=None, n_qubits=None):
         """A NEXUS result ref whose input program is a compiled pytket circuit."""
         # pylint: disable-next=import-outside-toplevel
         from pytket.circuit import Circuit, OpType
@@ -1405,9 +1405,11 @@ class TestQuantinuumJob:
         # pylint: disable-next=import-outside-toplevel
         from qnexus.models.references import CircuitRef
 
-        circuit = Circuit(2)
+        circuit = Circuit(n_qubits or 2)
         circuit.add_gate(OpType.ZZPhase, 0.3, [0, 1])
         circuit.add_gate(OpType.PhasedX, [0.1, 0.2], [0])
+        if n_qubits:
+            circuit.measure_all()
 
         circuit_ref = MagicMock(spec=CircuitRef)
         circuit_ref.download_circuit.return_value = circuit
@@ -1432,6 +1434,25 @@ class TestQuantinuumJob:
 
         assert program.format == "qasm2"
         assert 'include "hqslib1.inc";' in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_wide_registers(self, mock_results, mock_status):
+        """A compiled circuit wider than pytket's default maxwidth still exports.
+
+        H2-1 is 56 qubits, and pytket's QASM writer rejects a classical register
+        above 32 by default, so compiled_program() failed on exactly the circuits
+        large enough to be worth inspecting.
+        """
+        mock_results.return_value = [self._circuit_item(n_qubits=56)]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert "creg c[56];" in program.data
 
     @patch("qnexus.jobs.status")
     @patch("qnexus.jobs.results")

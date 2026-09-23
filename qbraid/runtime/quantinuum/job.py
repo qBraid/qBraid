@@ -99,7 +99,13 @@ def _program_from_input_ref(ref: ExecutionProgram) -> Program | None:
         # pylint: disable-next=import-outside-toplevel
         from pytket.qasm import circuit_to_qasm_str
 
-        return Program(format="qasm2", data=circuit_to_qasm_str(ref.download_circuit(), "hqslib1"))
+        # pylint: disable-next=import-outside-toplevel
+        from qbraid.transpiler.conversions.pytket._utils import QASM_MAXWIDTH
+
+        return Program(
+            format="qasm2",
+            data=circuit_to_qasm_str(ref.download_circuit(), "hqslib1", maxwidth=QASM_MAXWIDTH),
+        )
     if isinstance(ref, QIRRef):
         return Program(format="qir.bc", data=ref.download_qir())
     logger.debug("No compiled-program format for NEXUS input ref %s", type(ref).__name__)
