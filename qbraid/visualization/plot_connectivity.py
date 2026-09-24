@@ -16,6 +16,7 @@
 Module for plotting device connectivity graphs colored by calibration data.
 
 """
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -81,6 +82,11 @@ def _fallback_positions(coupling_map) -> dict:
     return {q: (layout[indices[q]][0] * scale, layout[indices[q]][1] * scale) for q in nodes}
 
 
+def _usable_error(value: float | None) -> float | None:
+    """Keep physical error rates and mark missing or out-of-range values unavailable."""
+    return value if value is not None and 0.0 <= value <= 1.0 else None
+
+
 # pylint: disable-next=too-many-locals,too-many-statements,too-many-arguments
 def plot_connectivity_graph(
     device: qbraid.runtime.QbraidDevice | None = None,
@@ -124,6 +130,7 @@ def plot_connectivity_graph(
     from matplotlib.cm import ScalarMappable
     from matplotlib.collections import LineCollection
     from matplotlib.colors import Normalize
+    from matplotlib.patches import Patch
 
     if calibration is None and device is not None:
         calibration = device.get_calibrations()
@@ -165,11 +172,16 @@ def plot_connectivity_graph(
     nodes = sorted({q for edge in coupling_map for q in edge})
     pos = lattice_positions(topology, nodes) or _fallback_positions(coupling_map)
 
-    edge_vals = [edge_error.get((a, b), edge_error.get((b, a), 0.0)) for a, b in coupling_map]
-    node_vals = [readout_error.get(q, 0.0) for q in nodes]
-    edge_norm = Normalize(min(edge_vals), max(edge_vals))
-    node_norm = Normalize(min(node_vals), max(node_vals))
+    edge_vals = [
+        _usable_error(edge_error.get((a, b), edge_error.get((b, a)))) for a, b in coupling_map
+    ]
+    node_vals = [_usable_error(readout_error.get(q)) for q in nodes]
+    valid_edges = [value for value in edge_vals if value is not None]
+    valid_nodes = [value for value in node_vals if value is not None]
+    edge_norm = Normalize(min(valid_edges), max(valid_edges)) if valid_edges else Normalize(0, 1)
+    node_norm = Normalize(min(valid_nodes), max(valid_nodes)) if valid_nodes else Normalize(0, 1)
     cmap = plt.cm.Purples_r
+    unavailable_color = "#9ca3af"
 
     xs = [xy[0] for xy in pos.values()]
     ys = [xy[1] for xy in pos.values()]
@@ -178,27 +190,40 @@ def plot_connectivity_graph(
     fig, ax = plt.subplots(figsize=(width * 0.72 + 2.6, height * 0.72 + 1.2))
 
     segments = [(pos[a], pos[b]) for a, b in coupling_map]
-    lines = LineCollection(segments, colors=cmap(edge_norm(edge_vals)), linewidths=3.4)
+    lines = LineCollection(
+        segments,
+        colors=[
+            cmap(edge_norm(value)) if value is not None else unavailable_color
+            for value in edge_vals
+        ],
+        linewidths=3.4,
+    )
     ax.add_collection(lines)
     ax.scatter(
         [pos[q][0] for q in nodes],
         [pos[q][1] for q in nodes],
         s=330,
-        c=cmap(node_norm(node_vals)),
+        c=[
+            cmap(node_norm(value)) if value is not None else unavailable_color
+            for value in node_vals
+        ],
         edgecolors="#581c87",
         linewidths=1.1,
         zorder=2,
     )
-    for q in nodes:
+    for q, value in zip(nodes, node_vals):
         ax.annotate(
             str(q),
             pos[q],
             ha="center",
             va="center",
             fontsize=6.5,
-            color="#f3e8ff",
+            color="#111827" if value is None else "#f3e8ff",
             zorder=3,
         )
+
+    if None in edge_vals or None in node_vals:
+        ax.legend(handles=[Patch(color=unavailable_color, label="No usable calibration")])
 
     # Qubits in the lattice footprint with no couplings (e.g. dead qubits)
     footprint = lattice_positions(topology, range(max(nodes) + 1)) or {}
@@ -222,18 +247,20 @@ def plot_connectivity_graph(
             zorder=3,
         )
 
-    fig.colorbar(
-        ScalarMappable(edge_norm, cmap),
-        ax=ax,
-        shrink=0.7,
-        label=f"{gate.upper()} error (darker is better)",
-    )
-    fig.colorbar(
-        ScalarMappable(node_norm, cmap),
-        ax=ax,
-        shrink=0.7,
-        label="Readout error (darker is better)",
-    )
+    if valid_edges:
+        fig.colorbar(
+            ScalarMappable(edge_norm, cmap),
+            ax=ax,
+            shrink=0.7,
+            label=f"{gate.upper()} error (darker is better)",
+        )
+    if valid_nodes:
+        fig.colorbar(
+            ScalarMappable(node_norm, cmap),
+            ax=ax,
+            shrink=0.7,
+            label="Readout error (darker is better)",
+        )
 
     if title is None:
         device_id = getattr(device, "id", None) or calibration.physical_device_id

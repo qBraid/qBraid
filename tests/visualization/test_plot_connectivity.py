@@ -16,10 +16,12 @@
 Unit tests for plotting device connectivity graphs.
 
 """
+
 from unittest.mock import Mock
 
 import matplotlib
 import pytest
+from matplotlib.colors import to_rgba
 from qbraid_core.services.runtime.schemas import DeviceCalibration
 
 from qbraid.visualization import plot_connectivity_graph
@@ -184,3 +186,94 @@ class TestPlotConnectivityGraph:
         device = _device(topology={"type": "square-lattice", "rows": 1, "cols": 3})
         plot_connectivity_graph(device, show=True)
         assert shown == [True]
+
+    def test_invalid_errors_do_not_rescale_the_plot(self, monkeypatch):
+        """A negative error is unavailable, not the best value on either colorbar."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        calibration = _calibration(
+            edges={
+                "cz": [
+                    {"source": 0, "target": 1, "value": -0.1},
+                    {"source": 1, "target": 2, "value": 0.02},
+                    {"source": 0, "target": 2, "value": 0.03},
+                ]
+            },
+            qubits={
+                "0": {"readoutError": -0.1},
+                "1": {"readoutError": 0.04},
+                "2": {"readoutError": 0.08},
+            },
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1), (1, 2), (0, 2)),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 3},
+            show=False,
+        )
+
+        figure = figures[0]
+        ax = figure.axes[0]
+        assert figure.axes[1].get_ylim()[0] == pytest.approx(0.02)
+        assert figure.axes[2].get_ylim()[0] == pytest.approx(0.04)
+        assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+        assert tuple(ax.collections[1].get_facecolors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+        assert ax.get_legend().get_texts()[0].get_text() == "No usable calibration"
+        original_close(figure)
+
+    def test_missing_errors_are_not_drawn_as_perfect(self, monkeypatch):
+        """An unmeasured edge or qubit is marked unavailable rather than zero error."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        calibration = _calibration(
+            edges={"cz": [{"source": 0, "target": 1, "value": 0.02}]},
+            qubits={"0": {"readoutError": 0.04}, "1": {"readoutError": 0.08}},
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1), (1, 2)),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 3},
+            show=False,
+        )
+
+        ax = figures[0].axes[0]
+        assert tuple(ax.collections[0].get_colors()[1]) == pytest.approx(to_rgba("#9ca3af"))
+        assert tuple(ax.collections[1].get_facecolors()[2]) == pytest.approx(to_rgba("#9ca3af"))
+        original_close(figures[0])
+
+    def test_plot_with_no_usable_errors(self, monkeypatch):
+        """A plot with only out-of-range errors remains drawable and marks them unknown."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        calibration = _calibration(
+            edges={"cz": [{"source": 0, "target": 1, "value": 1.2}]},
+            qubits={"0": {"readoutError": -0.1}, "1": {"readoutError": 1.1}},
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1),),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 2},
+            show=False,
+        )
+
+        ax = figures[0].axes[0]
+        assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+        assert all(
+            tuple(color) == pytest.approx(to_rgba("#9ca3af"))
+            for color in ax.collections[1].get_facecolors()
+        )
+        assert ax.get_legend() is not None
+        assert len(figures[0].axes) == 1
+        original_close(figures[0])
