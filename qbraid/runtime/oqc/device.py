@@ -140,10 +140,10 @@ class OQCDevice(QuantumDevice):
 
         Note: Currently only AWS windows are defined.
         """
-        next_window_err: Optional[Exception] = None
+        next_window_err: Exception | None = None
         try:
             # NOTE: get_next_window returns str not datetime.datetime
-            start_time: Optional[str] = self._client.get_next_window(self.id)
+            start_time: str | None = self._client.get_next_window(self.id)
             # start_time will be a string of the format: '2025-12-19T00:50:00Z'
         except Exception as err:  # pylint: disable=broad-exception-caught
             next_window_err = err

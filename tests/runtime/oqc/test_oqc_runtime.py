@@ -906,11 +906,15 @@ def test_device_get_next_window_raises_resource_not_found(mock_logger, target_pr
 
 @patch("qbraid.runtime.oqc.device.logger")
 def test_get_next_window_none_raises_resource_not_found(mock_logger, target_profile):
-    """OQC answers None for an always-on device; that is "no window", not a crash."""
+    """Reproduces #1436: OQC returns None for an always-on device, which crashed with AttributeError.
+
+    Both responses are the ones OQC Cloud gives for the Lucy Simulator: no next window, and a
+    rejected execution-estimates request.
+    """
     client = Mock()
     client.get_next_window.return_value = None
-    client.get_qpu_execution_estimates.side_effect = Exception(
-        '{"message":"Invalid input provided"}'
+    client.get_qpu_execution_estimates.side_effect = ServerException(
+        '{"message":"Invalid input provided"}', 400
     )
     device = OQCDevice(target_profile, client)
     with pytest.raises(ResourceNotFoundError, match="Falied to fetch next active window"):
@@ -919,11 +923,25 @@ def test_get_next_window_none_raises_resource_not_found(mock_logger, target_prof
 
 
 def test_get_next_window_none_falls_back_to_execution_estimates(target_profile):
-    """A None window is resolved from the execution estimates when they carry one."""
+    """A None window is resolved from the execution estimates when they carry one.
+
+    The payload is OQC Cloud's response for Toshiko Tokyo-1.
+    """
     client = Mock()
     client.get_next_window.return_value = None
     client.get_qpu_execution_estimates.return_value = {
-        "qpu_wait_times": [{"windows": [{"start_time": "2026-09-24 17:00:00"}]}]
+        "qpu_wait_times": [
+            {
+                "average_processing_seconds": 0.0,
+                "estimated_availability_time": "2026-09-24 17:00:00",
+                "qpu_id": "qpu:jp:3:673b1ad43c",
+                "tasks_in_queue": 0,
+                "timestamp": "2026-09-24 15:19:00.660269",
+                "windows": [
+                    {"end_time": "2026-09-24 19:00:00", "start_time": "2026-09-24 17:00:00"}
+                ],
+            }
+        ]
     }
     device = OQCDevice(target_profile, client)
     assert device.get_next_window() == datetime.datetime(
