@@ -56,8 +56,25 @@ jobs:
             out_dir="${PWD}/dist"
             bin/create_dev_build.sh $QBRAID_PRE_RELEASE_VERSION "${out_dir}"
             echo "dir=$out_dir" >> $GITHUB_OUTPUT
+            echo "version=$QBRAID_PRE_RELEASE_VERSION" >> $GITHUB_OUTPUT
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
         with:
           packages-dir: ${{ steps.build-dev.outputs.dir }}
+
+      - name: Report published version
+        if: ${{ steps.build-dev.outputs.version != '' }}
+        env:
+          VERSION: ${{ steps.build-dev.outputs.version }}
+        run: |
+          echo "Published qbraid==${VERSION} to PyPI"
+          {
+            echo "### Published \`qbraid==${VERSION}\`"
+            echo
+            echo "https://pypi.org/project/qbraid/${VERSION}/"
+            echo
+            echo '```bash'
+            echo "pip install qbraid==${VERSION}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
