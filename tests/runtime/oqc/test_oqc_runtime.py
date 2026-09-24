@@ -201,18 +201,37 @@ def program():
 
 
 @pytest.fixture
-def optimized_program():
-    """Return a QASM3 program."""
-    qasm3 = """
-    OPENQASM 3.0;
-    qubit[2] q;
-    bit[2] c;
+def qasm2_program():
+    """Return a QASM2 Bell program, the format OQC devices target."""
+    qasm2 = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c[2];
+
     h q[0];
     cx q[0], q[1];
-    c = measure q;
+
+    measure q -> c;
     """
-    qasm3_compat = textwrap.dedent(qasm3).strip()
-    return qasm3_compat
+    return textwrap.dedent(qasm2).strip()
+
+
+@pytest.fixture
+def optimized_qasm2_program():
+    """Return the circuit OQC's compiler produces for ``qasm2_program`` on Lucy."""
+    qasm2 = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+
+    qreg node[8];
+    creg c[2];
+    u3(0.5*pi,0.0*pi,1.0*pi) node[7];
+    cx node[7],node[0];
+    measure node[7] -> c[0];
+    measure node[0] -> c[1];
+    """
+    return textwrap.dedent(qasm2).strip()
 
 
 class MockOQCClient:
@@ -683,7 +702,7 @@ def test_remote_provider_reraises_non_auth_errors():
 
 
 @pytest.mark.remote
-def test_oqc_runtime_remote_execution(program, optimized_program):
+def test_oqc_runtime_remote_execution(qasm2_program, optimized_qasm2_program):
     """Test OQC runtime with remote execution."""
     token = os.getenv("OQC_AUTH_TOKEN")
     if token is None:
@@ -697,7 +716,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
 
     shots = 100
     timeout = 120
-    job = device.run(program, shots=shots)
+    job = device.run(qasm2_program, shots=shots)
     assert isinstance(job, OQCJob)
 
     try:
@@ -718,7 +737,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     assert result.details["shots"] == shots
 
     optimized_out = result.details["metrics"]["optimized_circuit"]
-    assert optimized_out.strip() == optimized_program.strip()
+    assert optimized_out.strip() == optimized_qasm2_program.strip()
 
     data = result.data
     assert isinstance(data, GateModelResultData)
@@ -881,8 +900,57 @@ def test_device_get_next_window_raises_resource_not_found(mock_logger, target_pr
     device = OQCDevice(target_profile, client)
     with pytest.raises(ResourceNotFoundError) as excinfo:
         device.get_next_window()
-    assert "Falied to fetch next active window for device" in str(excinfo.value)
+    assert "Could not fetch the next access window for device" in str(excinfo.value)
+    assert "ReadTimeout" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, ReadTimeout)
     mock_logger.error.assert_called_once()
+
+
+@patch("qbraid.runtime.oqc.device.logger")
+def test_get_next_window_none_raises_resource_not_found(mock_logger, target_profile):
+    """Reproduces #1436: OQC returns None for an always-on device, which crashed with AttributeError.
+
+    Both responses are the ones OQC Cloud gives for the Lucy Simulator: no next window, and a
+    rejected execution-estimates request.
+    """
+    client = Mock()
+    client.get_next_window.return_value = None
+    client.get_qpu_execution_estimates.side_effect = ServerException(
+        '{"message":"Invalid input provided"}', 400
+    )
+    device = OQCDevice(target_profile, client)
+    with pytest.raises(ResourceNotFoundError, match="OQC reports no upcoming access window"):
+        device.get_next_window()
+    # No window is OQC's normal answer here, not a failure, so it must not log an error.
+    mock_logger.error.assert_not_called()
+    mock_logger.info.assert_called_once()
+
+
+def test_get_next_window_none_falls_back_to_execution_estimates(target_profile):
+    """A None window is resolved from the execution estimates when they carry one.
+
+    The payload is OQC Cloud's response for Toshiko Tokyo-1.
+    """
+    client = Mock()
+    client.get_next_window.return_value = None
+    client.get_qpu_execution_estimates.return_value = {
+        "qpu_wait_times": [
+            {
+                "average_processing_seconds": 0.0,
+                "estimated_availability_time": "2026-09-24 17:00:00",
+                "qpu_id": "qpu:jp:3:673b1ad43c",
+                "tasks_in_queue": 0,
+                "timestamp": "2026-09-24 15:19:00.660269",
+                "windows": [
+                    {"end_time": "2026-09-24 19:00:00", "start_time": "2026-09-24 17:00:00"}
+                ],
+            }
+        ]
+    }
+    device = OQCDevice(target_profile, client)
+    assert device.get_next_window() == datetime.datetime(
+        2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc
+    )
 
 
 @patch("qbraid.runtime.oqc.device.logger")
