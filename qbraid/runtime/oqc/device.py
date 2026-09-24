@@ -136,9 +136,7 @@ class OQCDevice(QuantumDevice):
 
         Raises:
             ResourceNotFoundError: If OQC reports no upcoming window for the device,
-                as it does for always-on devices, or the lookup fails.
-
-        Note: Currently only AWS windows are defined.
+                as it does for always-on devices, or the window lookup fails.
         """
         next_window_err: Exception | None = None
         try:
@@ -156,12 +154,19 @@ class OQCDevice(QuantumDevice):
                 start_time = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
                 # start_time will be a string of the format: '2025-12-19 00:50:00'
             except Exception as exec_est_error:  # pylint: disable=broad-exception-caught
-                logger.error(exec_est_error)
+                # Expected when OQC has already said there is no window: it rejects
+                # estimates for always-on devices. An error only if the lookup failed.
+                log = logger.info if next_window_err is None else logger.error
+                log("OQC execution estimates for %s failed: %r", self.id, exec_est_error)
 
         if not start_time:
+            if next_window_err is None:
+                raise ResourceNotFoundError(
+                    f"OQC reports no upcoming access window for device '{self.id}'."
+                )
             raise ResourceNotFoundError(
-                f"Falied to fetch next active window for device '{self.id}'. "
-                "Note: Currently only AWS windows are defined."
+                f"Could not fetch the next access window for device '{self.id}': "
+                f"{next_window_err!r}"
             ) from next_window_err
 
         return datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00")).replace(

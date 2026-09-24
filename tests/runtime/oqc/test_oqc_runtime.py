@@ -900,7 +900,9 @@ def test_device_get_next_window_raises_resource_not_found(mock_logger, target_pr
     device = OQCDevice(target_profile, client)
     with pytest.raises(ResourceNotFoundError) as excinfo:
         device.get_next_window()
-    assert "Falied to fetch next active window for device" in str(excinfo.value)
+    assert "Could not fetch the next access window for device" in str(excinfo.value)
+    assert "ReadTimeout" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, ReadTimeout)
     mock_logger.error.assert_called_once()
 
 
@@ -917,9 +919,11 @@ def test_get_next_window_none_raises_resource_not_found(mock_logger, target_prof
         '{"message":"Invalid input provided"}', 400
     )
     device = OQCDevice(target_profile, client)
-    with pytest.raises(ResourceNotFoundError, match="Falied to fetch next active window"):
+    with pytest.raises(ResourceNotFoundError, match="OQC reports no upcoming access window"):
         device.get_next_window()
-    mock_logger.error.assert_called_once()
+    # No window is OQC's normal answer here, not a failure, so it must not log an error.
+    mock_logger.error.assert_not_called()
+    mock_logger.info.assert_called_once()
 
 
 def test_get_next_window_none_falls_back_to_execution_estimates(target_profile):
