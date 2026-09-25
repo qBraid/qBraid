@@ -134,6 +134,48 @@ MOCK_RESULT = {"c": {"00": 52, "11": 48}}
 NOW = datetime.datetime.now()
 NEXT_YEAR = NOW.year + 1
 
+# OQC Cloud's /monitoring/statuses response for Toshiko Tokyo-1, captured 2026-09-25.
+TOSHIKO_SYSTEM_STATUS = {
+    "hostname": "toshiko-public-server-7bf7c685bb-85bxm",
+    "status": "success",
+    "timestamp": 1790355214.2614625,
+    "results": [
+        {
+            "checker": "_datastore_available",
+            "output": "database ok",
+            "passed": True,
+            "timestamp": 1790355212.8458488,
+            "expires": 1790355239.8458488,
+            "response_time": 0.032367,
+        },
+        {
+            "checker": "_qpu_available",
+            "output": "QPU is available. QPU with ID: qpu:jp:3:673b1ad43c, is connected to "
+            "['toshiko-aks-jp-prod-public.main'], in hardware mode HardwareMode.Connect. ",
+            "passed": True,
+            "timestamp": 1790355213.5582607,
+            "expires": 1790355240.5582607,
+            "response_time": 0.712402,
+        },
+        {
+            "checker": "_rabbit_mq_available",
+            "output": "Rpc client connected.",
+            "passed": True,
+            "timestamp": 1790355213.558,
+            "expires": 1790355240.558,
+            "response_time": 0.0,
+        },
+        {
+            "checker": "scheduler_available",
+            "output": "Scheduler OK",
+            "passed": True,
+            "timestamp": 1790355213.6,
+            "expires": 1790355240.6,
+            "response_time": 0.0,
+        },
+    ],
+}
+
 TOSHIKO_EXEC_ESTIMATE = {
     "qpu_wait_times": [
         {
@@ -248,6 +290,10 @@ class MockOQCClient:
     def get_qpus(self):
         """Get QPUs."""
         return [LUCY_SIM_MOCK_DATA.copy(), TOSHIKO_MOCK_DATA.copy()]
+
+    def get_system_status(self, qpu_id: Optional[str] = None):
+        """Get the system health checks for a QPU."""
+        return copy.deepcopy(TOSHIKO_SYSTEM_STATUS)
 
     def schedule_tasks(
         self,
@@ -488,21 +534,26 @@ def test_oqc_provider_get_device_status_offline(lucy_sim_data, toshiko_data):
         assert test_device.status() == DeviceStatus.OFFLINE
 
 
-def test_oqc_device_status_from_window_unavailable(lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
-    lucy_sim_data["feature_set"] = json.dumps(
-        {"always_on": False, "qubit_count": 8, "simulator": True}
-    )
+def test_windowed_device_is_online_while_its_next_window_is_in_the_future(
+    lucy_sim_data, toshiko_data
+):
+    """Reproduces #1446: OQC only reports the NEXT window, which is always in the future.
+
+    Toshiko reported its next window as 17:00 UTC while running tasks at 14:57 UTC, inside
+    an open window. An active device with passing health checks is ONLINE whatever the
+    window schedule says, and status() does not consult the windows at all.
+    """
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
-        provider = OQCProvider(token="fake_token")
+        mock_client.return_value.get_system_status.return_value = copy.deepcopy(
+            TOSHIKO_SYSTEM_STATUS
+        )
+        mock_client.return_value.get_next_window.return_value = "2026-09-25T17:00:00Z"
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
 
-        now = datetime.datetime.now()
-        window = f"{now.year + 1}-{now.month:02d}-{now.day:02d} 00:50:00"
-        mock_client.return_value.get_next_window.return_value = window
-        unavailable_device = provider.get_device(lucy_sim_data["id"])
-        assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
+        assert device.status() == DeviceStatus.ONLINE
+        mock_client.return_value.get_next_window.assert_not_called()
 
 
 def test_oqc_device_status_always_on(lucy_sim_data, toshiko_data):
@@ -516,17 +567,40 @@ def test_oqc_device_status_always_on(lucy_sim_data, toshiko_data):
         mock_client.get_next_window.assert_not_called()
 
 
-def test_get_next_window_read_timeout(toshiko_id):
-    """Test getting the next window with a timeout results in status unavialable."""
+@pytest.mark.parametrize("failing_check", ["_qpu_available", "scheduler_available"])
+def test_failing_health_check_makes_the_device_unavailable(
+    failing_check, lucy_sim_data, toshiko_data
+):
+    """Any failing OQC health check means the device cannot be relied on right now."""
+    health = copy.deepcopy(TOSHIKO_SYSTEM_STATUS)
+    for check in health["results"]:
+        if check["checker"] == failing_check:
+            check["passed"] = False
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
-        mock_client.return_value = MockOQCClient()
-        provider = OQCProvider(token="fake_token")
-        device = provider.get_device(toshiko_id)
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        mock_client.return_value.get_system_status.return_value = health
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
+
         assert device.status() == DeviceStatus.UNAVAILABLE
 
 
-def test_oqc_device_status_from_qpu_exec_est_unavailable(lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
+@pytest.mark.parametrize("health", [{}, {"status": "success", "results": []}, []])
+def test_unreadable_health_payload_makes_the_device_unavailable(
+    health, lucy_sim_data, toshiko_data
+):
+    """No checks to trust (an empty payload, or the [] OQC returns for an unknown QPU)."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        mock_client.return_value.get_system_status.return_value = health
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
+
+        assert device.status() == DeviceStatus.UNAVAILABLE
+
+
+def test_oqc_device_status_online_from_health_checks(lucy_sim_data, toshiko_data):
+    """An active QPU whose health checks all pass is ONLINE."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
@@ -534,19 +608,6 @@ def test_oqc_device_status_from_qpu_exec_est_unavailable(lucy_sim_data, toshiko_
         provider = OQCProvider(token="fake_token")
         qpu_device = provider.get_device(toshiko_data["id"])
         qpu_device._client = MockOQCClient(authentication_token="fake_token")
-        assert qpu_device.status() == DeviceStatus.UNAVAILABLE
-
-
-def test_oqc_device_status_from_qpu_exec_est_online(lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
-    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
-        mock_client.return_value = Mock(spec=OQCClient)
-        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
-
-        provider = OQCProvider(token="fake_token")
-        qpu_device = provider.get_device(toshiko_data["id"])
-        qpu_device._client = MockOQCClient(authentication_token="fake_token")
-        qpu_device._client._toshiko_online = True
         assert qpu_device.status() == DeviceStatus.ONLINE
         assert qpu_device.queue_depth() == 21
 
@@ -868,15 +929,16 @@ def test_oqc_provider_raises_for_no_token(monkeypatch):
     )
 
 
-@patch("qbraid.runtime.oqc.device.logger")
-@patch("qbraid.runtime.oqc.device.OQCDevice.get_next_window")
-def test_device_status_online(mock_get_next_window, mock_logger):
-    """A device with an upcoming window reports ONLINE."""
-    mock_get_next_window.return_value = datetime.datetime(2023, 10, 31, 12, 0, 0)
-    device = OQCDevice(profile=Mock(), client=Mock())
-    result = device.status()
-    assert result == DeviceStatus.ONLINE
-    mock_logger.error.assert_not_called()
+def test_inactive_flag_makes_the_device_offline(lucy_sim_data, toshiko_data):
+    """OQC's boolean ``active`` flag is honoured even when ``status`` is not INACTIVE."""
+    toshiko_data["active"] = False
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
+
+        assert device.status() == DeviceStatus.OFFLINE
+        mock_client.return_value.get_system_status.assert_not_called()
 
 
 def test_build_compiler_config_unsupported_key():
@@ -954,19 +1016,18 @@ def test_get_next_window_none_falls_back_to_execution_estimates(target_profile):
 
 
 @patch("qbraid.runtime.oqc.device.logger")
-def test_catch_device_status_resource_not_found(mock_logger, lucy_sim_data, toshiko_data):
-    """Test that device status is unavailable when get_next_window method raises error."""
+def test_health_endpoint_error_makes_the_device_unavailable(
+    mock_logger, lucy_sim_data, toshiko_data
+):
+    """If OQC's health endpoint cannot be read, availability is unknown: UNAVAILABLE."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        mock_client.return_value.get_system_status.side_effect = ReadTimeout
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
 
-        provider = OQCProvider(token="fake_token")
-        device = provider.get_device(toshiko_data["id"])
-
-        with patch.object(device, "get_next_window", side_effect=ResourceNotFoundError):
-            status = device.status()
-            assert status == DeviceStatus.UNAVAILABLE
-            mock_logger.info.assert_called_once()
+        assert device.status() == DeviceStatus.UNAVAILABLE
+        mock_logger.info.assert_called_once()
 
 
 def test_oqc_result_reports_qubit_zero_last(oqc_job):

@@ -19,7 +19,7 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 import pyqasm
 from qcaas_client.client import (
@@ -103,32 +103,42 @@ class OQCDevice(QuantumDevice):
             raise ResourceNotFoundError("Queue depth is not available for this device.") from err
 
     def status(self) -> DeviceStatus:
-        """Returns the status of the device."""
+        """Returns the status of the device.
+
+        ONLINE when OQC lists the device as active and its health checks pass. A windowed
+        QPU accepts tasks at any time and queues them for its next access window, so the
+        window schedule is not an availability signal; OQC's APIs also report only the next
+        window, never the one that is open (see :meth:`get_next_window`).
+
+        Raises:
+            ResourceNotFoundError: If OQC does not list the device.
+        """
         feature_set: dict = self.profile.get("feature_set", {})
         always_on: bool = feature_set.get("always_on", False)
         if always_on:
             return DeviceStatus.ONLINE
 
         devices = self._client.get_qpus()
-        device: Optional[dict] = next((d for d in devices if d["id"] == self.id), None)
+        device: dict | None = next((d for d in devices if d["id"] == self.id), None)
         if not device:
             raise ResourceNotFoundError(f"Device '{self.id}' not found.")
 
         status: str = device.get("status", "")
-
-        if status and status.upper() == "INACTIVE":
+        if (status and status.upper() == "INACTIVE") or device.get("active") is False:
             return DeviceStatus.OFFLINE
 
         try:
-            start_time = self.get_next_window()
-            now = datetime.datetime.now(datetime.timezone.utc)
+            health = self._client.get_system_status(qpu_id=self.id)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.info("Could not read OQC system status for %s: %r", self.id, err)
+            return DeviceStatus.UNAVAILABLE
 
-            if now > start_time:  # TODO: does this comparison correctly account for timezones?
-                return DeviceStatus.ONLINE
-        except ResourceNotFoundError as err:  # pylint: disable=broad-exception-caught
-            logger.info(err)
+        checks = health.get("results") if isinstance(health, dict) else None
+        if not checks or not all(check.get("passed") is True for check in checks):
+            logger.info("OQC health checks for %s are not all passing: %s", self.id, health)
+            return DeviceStatus.UNAVAILABLE
 
-        return DeviceStatus.UNAVAILABLE
+        return DeviceStatus.ONLINE
 
     def get_next_window(self) -> datetime.datetime:
         """
