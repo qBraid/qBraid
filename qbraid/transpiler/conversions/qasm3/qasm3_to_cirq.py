@@ -29,6 +29,7 @@ from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
 
 cirq_qasm_import = LazyLoader("cirq_contrib", globals(), "cirq.contrib.qasm_import")
+cirq_qasm_parser = LazyLoader("cirq_qasm_parser", globals(), "cirq.contrib.qasm_import._parser")
 
 if TYPE_CHECKING:
     import cirq
@@ -49,7 +50,9 @@ _GATE_ALIASES = {
 }
 
 
-def _merge_terminal_register_measurements(circuit: cirq.Circuit, qasm: str) -> cirq.Circuit:
+def _merge_terminal_register_measurements(
+    circuit: cirq.Circuit, register_sizes: dict[str, int]
+) -> cirq.Circuit:
     """Keep complete QASM 3 bit registers together in the Cirq readout.
 
     Cirq imports ``bit[n] c`` as independent keys ``c_0`` through ``c_(n-1)``. Its QASM 2
@@ -58,8 +61,6 @@ def _merge_terminal_register_measurements(circuit: cirq.Circuit, qasm: str) -> c
     coalesced. Mid-circuit readout and partial registers keep their original keys.
     """
     import cirq  # pylint: disable=import-outside-toplevel
-    import openqasm3  # pylint: disable=import-outside-toplevel
-    from openqasm3 import ast  # pylint: disable=import-outside-toplevel
 
     indexed_operations = [
         (moment_index, operation)
@@ -68,20 +69,7 @@ def _merge_terminal_register_measurements(circuit: cirq.Circuit, qasm: str) -> c
     ]
     if sum(isinstance(op.gate, cirq.MeasurementGate) for _, op in indexed_operations) < 2:
         return circuit
-    try:
-        statements = openqasm3.parse(qasm).statements
-    except openqasm3.parser.QASM3ParsingError:
-        return circuit
-
-    register_sizes = {
-        declaration.identifier.name: declaration.type.size.value
-        for declaration in statements
-        if isinstance(declaration, ast.ClassicalDeclaration)
-        and isinstance(declaration.type, ast.BitType)
-        and isinstance(declaration.type.size, ast.IntegerLiteral)
-        and declaration.type.size.value > 1
-    }
-    if not register_sizes:
+    if not any(size > 1 for size in register_sizes.values()):
         return circuit
 
     # Changing measurement keys would invalidate later classical conditions.
@@ -94,6 +82,8 @@ def _merge_terminal_register_measurements(circuit: cirq.Circuit, qasm: str) -> c
     selected: set[tuple[int, cirq.Operation]] = set()
     merged: list[cirq.Operation] = []
     for name, size in register_sizes.items():
+        if size < 2:
+            continue
         keys = {f"{name}_{index}" for index in range(size)}
         matches = [
             (moment_index, operation)
@@ -147,9 +137,8 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input OpenQASM 3 string.
     """
-    source = qasm
     try:
-        circuit = cirq_qasm_import.circuit_from_qasm(qasm)
+        parsed = cirq_qasm_parser.QasmParser().parse(qasm)
     except cirq_qasm_import.QasmException:
         try:
             qasm = replace_gate_names(qasm, _GATE_ALIASES)
@@ -162,7 +151,7 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
                 )
                 qasm_module.remove_barriers()
             qasm = normalize_if_blocks(pyqasm.dumps(qasm_module))
-            circuit = cirq_qasm_import.circuit_from_qasm(qasm)
+            parsed = cirq_qasm_parser.QasmParser().parse(qasm)
         except cirq_qasm_import.QasmException as err:
             raise QasmError(err) from err
-    return _merge_terminal_register_measurements(circuit, source)
+    return _merge_terminal_register_measurements(parsed.circuit, parsed.cregs)

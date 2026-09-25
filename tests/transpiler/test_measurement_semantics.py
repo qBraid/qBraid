@@ -23,6 +23,7 @@ bit pattern, making any permutation of the readout observable in the result.
 
 """
 import re
+from unittest.mock import patch
 
 import cirq
 import pytest
@@ -52,6 +53,25 @@ def test_qasm3_to_qasm2_keeps_joint_measurement_register():
         ("0", "0"),
         ("1", "1"),
     ]
+
+
+def test_qasm3_to_cirq_reuses_register_sizes_from_its_parse():
+    """Complete registers merge without running a second OpenQASM parser."""
+    from qbraid.transpiler.conversions.qasm3 import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[2] c;\n'
+        "c[0] = measure q[0];\nc[1] = measure q[1];\n"
+    )
+
+    with patch("openqasm3.parse", side_effect=AssertionError("second parse")):
+        circuit = qasm3_to_cirq(program)
+
+    assert [
+        op.gate.key for op in circuit.all_operations() if isinstance(op.gate, cirq.MeasurementGate)
+    ] == ["c"]
 
 
 def test_qasm3_to_qasm2_keeps_permuted_classical_bit_positions():
