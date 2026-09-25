@@ -115,8 +115,9 @@ def _resolve_access_token(
 ) -> str:
     """Resolve a bearer access token for the AQT arnica API (no explicit token given).
 
-    Resolution order (non-interactive by design — never triggers the device/QR flow): a token from
-    ``aqt-connector`` (a stored/refreshed session token, else the client-credentials flow).
+    Non-interactive by design — never triggers the device/QR flow. With client credentials, the
+    token comes from the client-credentials grant; without them, from ``aqt-connector``'s stored
+    session, else any credentials in its config file.
     ``client_id`` / ``client_secret`` default to the ``AQT_CLIENT_ID`` / ``AQT_CLIENT_SECRET`` env
     vars when not passed explicitly. ``audience`` (the arnica API root, e.g. staging vs production)
     aligns the OIDC token request and the token verifier with the target deployment.
@@ -144,7 +145,10 @@ def _resolve_access_token(
         cached = _TOKEN_CACHE.get(key)
         if cached is not None and time.time() < cached[1] - _TOKEN_REFRESH_MARGIN_SECONDS:
             return cached[0]
-        return _store_access_token(key, _mint_access_token(client_id, client_secret, audience))
+        # Skip the stored token: it may belong to another account, and caching it here would key
+        # it to these credentials. Every cached token is minted from exactly its own key.
+        token = _mint_access_token(client_id, client_secret, audience, bypass_stored=True)
+        return _store_access_token(key, token)
 
 
 def _replace_rejected_token(
@@ -180,9 +184,9 @@ def _mint_access_token(
 ) -> str:
     """Obtain a fresh token from ``aqt-connector``; see :func:`_resolve_access_token`.
 
-    ``bypass_stored`` goes straight to the client-credentials grant when credentials are available,
-    for use after a 401: both ``get_access_token`` and ``log_in`` return a stored token first,
-    which may be the one the server just rejected.
+    ``bypass_stored`` goes straight to the client-credentials grant when credentials are available.
+    Both ``get_access_token`` and ``log_in`` return a stored token first, which may belong to
+    another account or be the one the server just rejected.
     """
     config = ArnicaConfig()
     # Never persist tokens to disk: aqt-connector otherwise writes to ``~/.aqt/access_token``

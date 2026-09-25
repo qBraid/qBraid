@@ -274,7 +274,12 @@ def _patch_arnica(monkeypatch, *, stored=None, cc_token="cc-token") -> dict[str,
 
     def fake_arnica_app(config):
         captured["config"] = config
-        return types.SimpleNamespace(config=config)
+        return types.SimpleNamespace(
+            config=config,
+            oidc_service=types.SimpleNamespace(
+                authenticate_with_client_credentials=lambda credentials: cc_token
+            ),
+        )
 
     monkeypatch.setattr("qbraid.runtime.aqt.provider.ArnicaConfig", _FakeArnicaConfig)
     monkeypatch.setattr("qbraid.runtime.aqt.provider.ArnicaApp", fake_arnica_app)
@@ -540,7 +545,7 @@ def test_concurrent_misses_share_one_mint(monkeypatch):
     minted: list[int] = []
     release = threading.Event()
 
-    def slow_mint(*_args):
+    def slow_mint(*_args, **_kwargs):
         minted.append(1)
         release.wait(5)
         return _jwt(_NOW + 36_000)
@@ -641,8 +646,8 @@ def test_concurrent_401s_on_one_token_mint_one_replacement(monkeypatch):
     assert len(minted) == 2
 
 
-def test_replacement_mint_skips_the_stored_token(monkeypatch):
-    """After a 401 the replacement comes from the client-credentials grant, not the stored token."""
+def test_every_credential_backed_mint_skips_the_stored_token(monkeypatch):
+    """The first token and its post-401 replacement both come from the client-credentials grant."""
     original, replacement = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
     _freeze(monkeypatch, _NOW)
     minted = _counting_mint(monkeypatch, [original, replacement])
@@ -650,7 +655,7 @@ def test_replacement_mint_skips_the_stored_token(monkeypatch):
 
     AQTSession(client_id="cid", client_secret="cs").get("/workspaces")
 
-    assert [call[3] for call in minted] == [False, True]
+    assert [call[3] for call in minted] == [True, True]
 
 
 def _raise_401():
@@ -712,3 +717,36 @@ def test_401_names_the_token_that_request_sent(monkeypatch):
 
     assert session.get("/workspaces") == "ok"
     assert len(minted) == 1
+
+
+def test_explicit_credentials_are_never_answered_with_a_stored_token(monkeypatch):
+    """A stored session may belong to another account. Answering these credentials with it would
+    cache that account's token under their key, serving it to every request made with them."""
+    _freeze(monkeypatch, _NOW)
+    stored, minted = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    _patch_arnica(monkeypatch, stored=stored, cc_token=minted)
+
+    assert _resolve_access_token("client-b", "secret-b") == minted
+
+
+def test_401_retry_keeps_the_callers_headers(monkeypatch):
+    """The retry sends the caller's own headers again, alongside the replacement token."""
+    first, second = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [first, second])
+    seen: list[dict] = []
+
+    def request(_self, *_args, **kwargs):
+        seen.append(dict(kwargs["headers"]))
+        if len(seen) == 1:
+            raise _requests_api_error(401)
+        return "ok"
+
+    monkeypatch.setattr("qbraid_core.sessions.Session.request", request)
+    caller_headers = {"X-Trace": "abc123"}
+
+    AQTSession(client_id="cid", client_secret="cs").get("/workspaces", headers=caller_headers)
+
+    assert [h["X-Trace"] for h in seen] == ["abc123", "abc123"]
+    assert [h["Authorization"] for h in seen] == [f"Bearer {first}", f"Bearer {second}"]
+    assert caller_headers == {"X-Trace": "abc123"}
