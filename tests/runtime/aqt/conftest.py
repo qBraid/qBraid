@@ -194,8 +194,10 @@ else:
         from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
 
         provider._TOKEN_CACHE.clear()  # pylint: disable=protected-access
+        provider._TOKEN_LOCKS.clear()  # pylint: disable=protected-access
         yield
         provider._TOKEN_CACHE.clear()  # pylint: disable=protected-access
+        provider._TOKEN_LOCKS.clear()  # pylint: disable=protected-access
 
     @pytest.fixture
     def aqt_circuit():

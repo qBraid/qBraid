@@ -60,17 +60,36 @@ _TOKEN_REFRESH_MARGIN_SECONDS = 300
 # Resolved tokens, shared across every session in the process and keyed on the credentials and
 # audience that minted them. AQT meters token issuance per client: resolving per session meant a
 # caller that builds a session per request minted a token per request, and exhausted the quota.
-# The lock also collapses a burst of concurrent misses into a single mint.
-_TOKEN_CACHE: dict[tuple[str | None, str | None, str | None], tuple[str, float]] = {}
-_TOKEN_CACHE_LOCK = threading.Lock()
+_TOKEN_CACHE: dict[tuple[str, str, str | None], tuple[str, float]] = {}
+
+# One lock per cache key. Holding a key's lock through its mint makes concurrent misses on that
+# key share a single mint, while a slow mint for one set of credentials never blocks a cache hit
+# for another.
+_TOKEN_LOCKS: dict[tuple[str, str, str | None], threading.Lock] = {}
+_TOKEN_LOCKS_GUARD = threading.Lock()
 
 
 def _token_cache_key(
-    client_id: str | None, client_secret: str | None, audience: str | None
-) -> tuple[str | None, str | None, str | None]:
+    client_id: str, client_secret: str, audience: str | None
+) -> tuple[str, str, str | None]:
     """Key the cache on a digest of the secret, so the secret itself is never held as a key."""
-    digest = hashlib.sha256(client_secret.encode()).hexdigest() if client_secret else None
-    return client_id, digest, audience
+    return client_id, hashlib.sha256(client_secret.encode()).hexdigest(), audience
+
+
+def _token_lock(key: tuple[str, str, str | None]) -> threading.Lock:
+    """Return the lock guarding ``key``, creating it on first use."""
+    with _TOKEN_LOCKS_GUARD:
+        return _TOKEN_LOCKS.setdefault(key, threading.Lock())
+
+
+def _store_access_token(key: tuple[str, str, str | None], token: str) -> str:
+    """Cache ``token`` under ``key`` when its expiry can be read, and return it."""
+    expiry = _token_expiry(token)
+    if expiry is None:
+        _TOKEN_CACHE.pop(key, None)
+    else:
+        _TOKEN_CACHE[key] = (token, expiry)
+    return token
 
 
 def _token_expiry(token: str) -> float | None:
@@ -102,8 +121,11 @@ def _resolve_access_token(
     vars when not passed explicitly. ``audience`` (the arnica API root, e.g. staging vs production)
     aligns the OIDC token request and the token verifier with the target deployment.
 
-    The token is reused across the process until :data:`_TOKEN_REFRESH_MARGIN_SECONDS` before its
-    ``exp``. A token whose expiry cannot be read is returned but never cached.
+    With client credentials given as arguments or env vars, the token is reused across the process
+    until :data:`_TOKEN_REFRESH_MARGIN_SECONDS` before its ``exp``; one whose expiry cannot be read
+    is returned but never cached. Credentials that aqt-connector finds on its own (its config
+    file, or a stored interactive session) are not cached: either can change under a running
+    process without changing the key.
 
     A pre-obtained token can instead be supplied via the ``access_token`` argument of
     :class:`AQTProvider` / :class:`AQTSession`, or the ``AQT_ACCESS_TOKEN`` env var (both bypass
@@ -114,44 +136,54 @@ def _resolve_access_token(
     """
     client_id = client_id or os.getenv("AQT_CLIENT_ID")
     client_secret = client_secret or os.getenv("AQT_CLIENT_SECRET")
-    key = _token_cache_key(client_id, client_secret, audience)
+    if not (client_id and client_secret):
+        return _mint_access_token(client_id, client_secret, audience)
 
-    with _TOKEN_CACHE_LOCK:
+    key = _token_cache_key(client_id, client_secret, audience)
+    with _token_lock(key):
         cached = _TOKEN_CACHE.get(key)
         if cached is not None and time.time() < cached[1] - _TOKEN_REFRESH_MARGIN_SECONDS:
             return cached[0]
-
-        token = _mint_access_token(client_id, client_secret, audience)
-        expiry = _token_expiry(token)
-        if expiry is None:
-            _TOKEN_CACHE.pop(key, None)
-        else:
-            _TOKEN_CACHE[key] = (token, expiry)
-        return token
+        return _store_access_token(key, _mint_access_token(client_id, client_secret, audience))
 
 
-def _evict_access_token(
-    client_id: str | None, client_secret: str | None, audience: str | None, failed: str
-) -> None:
-    """Drop a cached token the server rejected, so the next resolution mints a new one.
+def _replace_rejected_token(
+    client_id: str | None, client_secret: str | None, audience: str | None, rejected: str
+) -> str:
+    """Return a token to retry with after ``rejected`` drew a 401.
 
-    Evicts only while ``failed`` is still the cached token: a burst of requests that all failed on
-    one revoked token then evicts it once, instead of each discarding a healthy replacement and
-    spending another mint — which is the traffic this cache exists to avoid.
+    A replacement is minted only while the cache still holds ``rejected``: a burst of requests that
+    all failed on one revoked token mints once, and the rest retry with that replacement instead of
+    each spending a mint. The mint skips aqt-connector's stored token, which may be the very token
+    that was rejected.
     """
     client_id = client_id or os.getenv("AQT_CLIENT_ID")
     client_secret = client_secret or os.getenv("AQT_CLIENT_SECRET")
+    if not (client_id and client_secret):
+        return _mint_access_token(client_id, client_secret, audience, bypass_stored=True)
+
     key = _token_cache_key(client_id, client_secret, audience)
-    with _TOKEN_CACHE_LOCK:
+    with _token_lock(key):
         cached = _TOKEN_CACHE.get(key)
-        if cached is not None and cached[0] == failed:
-            del _TOKEN_CACHE[key]
+        if cached is not None and cached[0] != rejected:
+            return cached[0]
+        token = _mint_access_token(client_id, client_secret, audience, bypass_stored=True)
+        return _store_access_token(key, token)
 
 
 def _mint_access_token(
-    client_id: str | None, client_secret: str | None, audience: str | None
+    client_id: str | None,
+    client_secret: str | None,
+    audience: str | None,
+    *,
+    bypass_stored: bool = False,
 ) -> str:
-    """Obtain a fresh token from ``aqt-connector``; see :func:`_resolve_access_token`."""
+    """Obtain a fresh token from ``aqt-connector``; see :func:`_resolve_access_token`.
+
+    ``bypass_stored`` goes straight to the client-credentials grant when credentials are available,
+    for use after a 401: both ``get_access_token`` and ``log_in`` return a stored token first,
+    which may be the one the server just rejected.
+    """
     config = ArnicaConfig()
     # Never persist tokens to disk: aqt-connector otherwise writes to ``~/.aqt/access_token``
     # (and crashes if the directory is absent), which is wrong for a stateless/containerized
@@ -170,12 +202,16 @@ def _mint_access_token(
         config.oidc_config.audience = audience
 
     app = ArnicaApp(config)
+    resolved_id, resolved_secret = config.client_id, config.client_secret
+
+    if bypass_stored and resolved_id and resolved_secret:
+        return app.oidc_service.authenticate_with_client_credentials((resolved_id, resolved_secret))
 
     token = get_access_token(app)
     if token:
         return token
 
-    if config.client_id and config.client_secret:
+    if resolved_id and resolved_secret:
         # Non-interactive machine-to-machine (client-credentials) grant.
         return log_in(app)
 
@@ -240,25 +276,32 @@ class AQTSession(Session):
 
         A session outlives its token, and the header is set once at construction, so the token is
         re-resolved before each request (a cache hit unless it is close to expiry). A 401 on a
-        resolved token means it was revoked early: it is evicted and the request retried once with
-        a fresh one. Retrying is safe because a 401 means the request was never processed.
+        resolved token means it was revoked early, so the request is retried once with a
+        replacement. Retrying is safe because a 401 means the request was never processed.
         """
         if self._credentials is None:
             return super().request(method, url, *args, **kwargs)
 
         token = _resolve_access_token(**self._credentials)
-        if token != self._access_token:
-            self._set_access_token(token)
-
         try:
-            return super().request(method, url, *args, **kwargs)
+            return self._send_with(token, method, url, *args, **kwargs)
         except RequestsApiError as err:
             response = getattr(err.__cause__, "response", None)
             if getattr(response, "status_code", None) != 401:
                 raise
-            _evict_access_token(failed=self._access_token, **self._credentials)
-            self._set_access_token(_resolve_access_token(**self._credentials))
-            return super().request(method, url, *args, **kwargs)
+            token = _replace_rejected_token(rejected=token, **self._credentials)
+            return self._send_with(token, method, url, *args, **kwargs)
+
+    def _send_with(self, token: str, method: str, url: str | bytes, *args: Any, **kwargs: Any):
+        """Send one request bearing ``token`` as its own header, not the session's.
+
+        Another thread may renew this session's token while the request is in flight; binding the
+        token to the request keeps ``token`` exactly what was sent, so a 401 names the right one.
+        """
+        self._set_access_token(token)
+        headers = dict(kwargs.pop("headers", None) or {})
+        headers["Authorization"] = f"Bearer {token}"
+        return super().request(method, url, *args, headers=headers, **kwargs)
 
     def get_workspaces(self) -> list[Workspace]:
         """List the workspaces (and their resources) visible to the token."""

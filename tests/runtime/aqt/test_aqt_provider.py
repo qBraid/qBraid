@@ -40,7 +40,7 @@ from qbraid_core.exceptions import RequestsApiError
 
 from qbraid.programs import ProgramSpec
 from qbraid.runtime.aqt import AQTDevice, AQTProvider, AQTSession
-from qbraid.runtime.aqt.provider import _evict_access_token, _resolve_access_token
+from qbraid.runtime.aqt.provider import _replace_rejected_token, _resolve_access_token
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 # ---------------------------------------------------------------------------
@@ -359,8 +359,8 @@ def _counting_mint(monkeypatch, tokens: list[str]) -> list[tuple]:
     """
     minted: list[tuple] = []
 
-    def mint(client_id, client_secret, audience):
-        minted.append((client_id, client_secret, audience))
+    def mint(client_id, client_secret, audience, *, bypass_stored=False):
+        minted.append((client_id, client_secret, audience, bypass_stored))
         return tokens[len(minted) - 1]
 
     monkeypatch.setattr("qbraid.runtime.aqt.provider._mint_access_token", mint)
@@ -376,8 +376,9 @@ def _fake_transport(monkeypatch, respond) -> list[str]:
     """Stand in for the HTTP layer beneath ``AQTSession.request``, recording each bearer sent."""
     sent: list[str] = []
 
-    def request(self, *_args, **_kwargs):
-        sent.append(self.headers["Authorization"])
+    def request(self, *_args, **kwargs):
+        # A resolved token is bound to the request itself; an explicit one rides on the session.
+        sent.append((kwargs.get("headers") or self.headers)["Authorization"])
         return respond(len(sent))
 
     monkeypatch.setattr("qbraid_core.sessions.Session.request", request)
@@ -521,16 +522,15 @@ def test_explicit_token_is_never_resolved_or_renewed(monkeypatch):
     assert sent == ["Bearer given", "Bearer given"]
 
 
-def test_evicting_a_stale_token_keeps_its_replacement(monkeypatch):
-    """Eviction names the token that failed, so a late eviction cannot drop a newer healthy one."""
+def test_replacing_a_token_already_replaced_reuses_the_replacement(monkeypatch):
+    """A late 401 on an old token takes the replacement already cached rather than minting again."""
     current = _jwt(_NOW + 36_000)
     _freeze(monkeypatch, _NOW)
     minted = _counting_mint(monkeypatch, [current])
 
     _resolve_access_token("cid", "cs")
-    _evict_access_token("cid", "cs", None, failed=_jwt(_NOW + 1))
 
-    assert _resolve_access_token("cid", "cs") == current
+    assert _replace_rejected_token("cid", "cs", None, rejected=_jwt(_NOW + 1)) == current
     assert len(minted) == 1
 
 
@@ -556,4 +556,159 @@ def test_concurrent_misses_share_one_mint(monkeypatch):
     for thread in threads:
         thread.join()
 
+    assert len(minted) == 1
+
+
+def test_credentials_found_by_aqt_connector_are_not_cached(monkeypatch):
+    """Credentials aqt-connector reads from its config file can change under the process, so a
+    token minted from them is never reused under a key that cannot see the change."""
+    monkeypatch.delenv("AQT_CLIENT_ID", raising=False)
+    monkeypatch.delenv("AQT_CLIENT_SECRET", raising=False)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [_jwt(_NOW + 36_000), _jwt(_NOW + 36_001)])
+
+    first = _resolve_access_token()
+    second = _resolve_access_token()
+
+    assert first != second
+    assert len(minted) == 2
+
+
+def test_slow_mint_does_not_block_other_credentials(monkeypatch):
+    """A mint in flight for one set of credentials never holds up a cache hit for another."""
+    _freeze(monkeypatch, _NOW)
+    cached, fresh = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    in_flight, release = threading.Event(), threading.Event()
+
+    def mint(client_id, _client_secret, _audience, *, bypass_stored=False):
+        del bypass_stored
+        if client_id == "slow":
+            in_flight.set()
+            release.wait(5)
+            return fresh
+        return cached
+
+    monkeypatch.setattr("qbraid.runtime.aqt.provider._mint_access_token", mint)
+    _resolve_access_token("fast", "cs")  # warm the cache for the other credentials
+
+    slow = threading.Thread(target=_resolve_access_token, args=("slow", "cs"))
+    slow.start()
+    assert in_flight.wait(5)
+    hit: list[str] = []
+    reader = threading.Thread(target=lambda: hit.append(_resolve_access_token("fast", "cs")))
+    reader.start()
+    reader.join(1)
+    blocked = reader.is_alive()
+    release.set()
+    slow.join()
+    reader.join()
+
+    assert not blocked
+    assert hit == [cached]
+
+
+def test_concurrent_401s_on_one_token_mint_one_replacement(monkeypatch):
+    """Requests racing on the same revoked token share a single replacement mint.
+
+    Every request here sends the original token and draws a 401; the first to recover installs a
+    replacement. Naming the token each request actually sent — not whatever the session holds by
+    the time it recovers — is what keeps the others from each minting their own.
+    """
+    original, replacement = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [original, replacement])
+    barrier = threading.Barrier(8)
+
+    def request(_self, *_args, **kwargs):
+        if kwargs["headers"]["Authorization"] == f"Bearer {original}":
+            barrier.wait(5)  # hold every request until all eight have sent the original
+            raise _requests_api_error(401)
+        return "ok"
+
+    monkeypatch.setattr("qbraid_core.sessions.Session.request", request)
+    session = AQTSession(client_id="cid", client_secret="cs")
+    results: list[Any] = []
+    threads = [
+        threading.Thread(target=lambda: results.append(session.get("/workspaces")))
+        for _ in range(8)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert results == ["ok"] * 8
+    assert len(minted) == 2
+
+
+def test_replacement_mint_skips_the_stored_token(monkeypatch):
+    """After a 401 the replacement comes from the client-credentials grant, not the stored token."""
+    original, replacement = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [original, replacement])
+    _fake_transport(monkeypatch, lambda attempt: _raise_401() if attempt == 1 else "ok")
+
+    AQTSession(client_id="cid", client_secret="cs").get("/workspaces")
+
+    assert [call[3] for call in minted] == [False, True]
+
+
+def _raise_401():
+    raise _requests_api_error(401)
+
+
+def test_bypassing_the_stored_token_uses_client_credentials(monkeypatch):
+    """With credentials, ``bypass_stored`` never consults the stored token or ``log_in``."""
+    from qbraid.runtime.aqt.provider import (  # pylint: disable=import-outside-toplevel
+        _mint_access_token,
+    )
+
+    grants: list[tuple] = []
+
+    def fake_arnica_app(config):
+        return types.SimpleNamespace(
+            config=config,
+            oidc_service=types.SimpleNamespace(
+                authenticate_with_client_credentials=lambda creds: grants.append(creds) or "cc"
+            ),
+        )
+
+    def _no_stored(_app):
+        raise AssertionError("the stored token must be skipped after a 401")
+
+    monkeypatch.setattr("qbraid.runtime.aqt.provider.ArnicaConfig", _FakeArnicaConfig)
+    monkeypatch.setattr("qbraid.runtime.aqt.provider.ArnicaApp", fake_arnica_app)
+    monkeypatch.setattr("qbraid.runtime.aqt.provider.get_access_token", _no_stored)
+    monkeypatch.setattr("qbraid.runtime.aqt.provider.log_in", _no_stored)
+
+    assert _mint_access_token("cid", "cs", None, bypass_stored=True) == "cc"
+    assert grants == [("cid", "cs")]
+
+
+def test_401_names_the_token_that_request_sent(monkeypatch):
+    """A renewal landing mid-request must not make the 401 blame the new token.
+
+    Deterministic form of the race above: another thread renews the session while this request is
+    in flight. Naming the renewed token as rejected would mint yet another; naming the one this
+    request actually sent finds it already replaced and reuses the replacement.
+    """
+    from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
+
+    original, renewed = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [original])
+    session = AQTSession(client_id="cid", client_secret="cs")
+
+    def request(self, *_args, **kwargs):
+        if kwargs["headers"]["Authorization"] == f"Bearer {original}":
+            # Another thread renews while this request, carrying `original`, is in flight.
+            key = provider._token_cache_key("cid", "cs", self._credentials["audience"])
+            provider._TOKEN_CACHE[key] = (renewed, _NOW + 36_001)
+            self._access_token = renewed
+            raise _requests_api_error(401)
+        return "ok"
+
+    monkeypatch.setattr("qbraid_core.sessions.Session.request", request)
+
+    assert session.get("/workspaces") == "ok"
     assert len(minted) == 1
