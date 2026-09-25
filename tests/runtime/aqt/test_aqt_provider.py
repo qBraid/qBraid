@@ -23,6 +23,10 @@ occurs.
 
 from __future__ import annotations
 
+import base64
+import json
+import threading
+import time
 import types
 from typing import Any
 from unittest.mock import MagicMock
@@ -36,7 +40,7 @@ from qbraid_core.exceptions import RequestsApiError
 
 from qbraid.programs import ProgramSpec
 from qbraid.runtime.aqt import AQTDevice, AQTProvider, AQTSession
-from qbraid.runtime.aqt.provider import _resolve_access_token
+from qbraid.runtime.aqt.provider import _evict_access_token, _resolve_access_token
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 # ---------------------------------------------------------------------------
@@ -329,3 +333,227 @@ def test_resolve_token_none_available_raises(monkeypatch):
     _patch_arnica(monkeypatch, stored=None)
     with pytest.raises(ValueError, match="No AQT access token"):
         _resolve_access_token()
+
+
+# ---------------------------------------------------------------------------
+# token reuse
+# ---------------------------------------------------------------------------
+
+_NOW = 1_800_000_000.0
+
+
+def _jwt(exp: float) -> str:
+    """An unsigned JWT carrying only ``exp`` — enough for the cache, which never verifies it."""
+
+    def _segment(claims: dict) -> str:
+        return base64.urlsafe_b64encode(json.dumps(claims).encode()).rstrip(b"=").decode()
+
+    return f"{_segment({'alg': 'RS256'})}.{_segment({'exp': int(exp)})}.sig"
+
+
+def _counting_mint(monkeypatch, tokens: list[str]) -> list[tuple]:
+    """Replace minting with one that hands out ``tokens`` in order, recording every call.
+
+    Minting more than ``len(tokens)`` times raises ``IndexError``, so an unexpected mint fails
+    the test rather than passing silently.
+    """
+    minted: list[tuple] = []
+
+    def mint(client_id, client_secret, audience):
+        minted.append((client_id, client_secret, audience))
+        return tokens[len(minted) - 1]
+
+    monkeypatch.setattr("qbraid.runtime.aqt.provider._mint_access_token", mint)
+    return minted
+
+
+def _freeze(monkeypatch, now: float) -> None:
+    """Pin the clock the token cache reads."""
+    monkeypatch.setattr("qbraid.runtime.aqt.provider.time", types.SimpleNamespace(time=lambda: now))
+
+
+def _fake_transport(monkeypatch, respond) -> list[str]:
+    """Stand in for the HTTP layer beneath ``AQTSession.request``, recording each bearer sent."""
+    sent: list[str] = []
+
+    def request(self, *_args, **_kwargs):
+        sent.append(self.headers["Authorization"])
+        return respond(len(sent))
+
+    monkeypatch.setattr("qbraid_core.sessions.Session.request", request)
+    return sent
+
+
+def test_resolved_token_is_reused_across_sessions(monkeypatch):
+    """A session per request mints one token, not one per session — the AQT quota incident."""
+    token = _jwt(_NOW + 36_000)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [token])
+
+    sessions = [AQTSession(client_id="cid", client_secret="cs") for _ in range(50)]
+
+    assert len(minted) == 1
+    assert {session.access_token for session in sessions} == {token}
+
+
+def test_token_is_reused_until_the_refresh_margin(monkeypatch):
+    """A cached token survives until 300 s before ``exp``, then is replaced."""
+    first, second = _jwt(_NOW + 36_000), _jwt(_NOW + 72_000)
+    minted = _counting_mint(monkeypatch, [first, second])
+
+    _freeze(monkeypatch, _NOW)
+    assert _resolve_access_token("cid", "cs") == first
+    _freeze(monkeypatch, _NOW + 36_000 - 301)
+    assert _resolve_access_token("cid", "cs") == first
+    _freeze(monkeypatch, _NOW + 36_000 - 299)
+    assert _resolve_access_token("cid", "cs") == second
+    assert len(minted) == 2
+
+
+def test_token_without_readable_expiry_is_never_cached(monkeypatch):
+    """With no ``exp`` to schedule renewal by, each resolution mints rather than caching forever."""
+    minted = _counting_mint(monkeypatch, ["opaque-1", "opaque-2"])
+
+    assert _resolve_access_token("cid", "cs") == "opaque-1"
+    assert _resolve_access_token("cid", "cs") == "opaque-2"
+    assert len(minted) == 2
+
+
+@pytest.mark.parametrize(
+    "change",
+    [{"client_id": "other"}, {"client_secret": "other"}, {"audience": "https://staging.test/api"}],
+)
+def test_cache_is_keyed_on_credentials_and_audience(monkeypatch, change):
+    """A token is only reused for the credentials and audience that minted it."""
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [_jwt(_NOW + 36_000), _jwt(_NOW + 36_001)])
+    base = {"client_id": "cid", "client_secret": "cs", "audience": "https://arnica.test/api"}
+
+    _resolve_access_token(**base)
+    _resolve_access_token(**{**base, **change})
+
+    assert len(minted) == 2
+
+
+def test_long_lived_session_sends_the_renewed_token(monkeypatch):
+    """A session that outlives its token sends the replacement, and masks it in errors too."""
+    first, second = _jwt(_NOW + 36_000), _jwt(_NOW + 72_000)
+    _counting_mint(monkeypatch, [first, second])
+    sent = _fake_transport(monkeypatch, lambda _: None)
+
+    _freeze(monkeypatch, _NOW)
+    session = AQTSession(client_id="cid", client_secret="cs")
+    session.get("/workspaces")
+    _freeze(monkeypatch, _NOW + 36_000 - 60)
+    session.get("/workspaces")
+
+    assert sent == [f"Bearer {first}", f"Bearer {second}"]
+    assert session.access_token == second
+    assert session.auth_headers["Authorization"] == f"Bearer {second}"
+
+
+def test_401_evicts_the_token_and_retries_once(monkeypatch):
+    """A token revoked before its ``exp`` is dropped and the request replayed with a new one."""
+    first, second = _jwt(_NOW + 36_000), _jwt(_NOW + 36_001)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [first, second])
+
+    def respond(attempt):
+        if attempt == 1:
+            raise _requests_api_error(401)
+        return "ok"
+
+    sent = _fake_transport(monkeypatch, respond)
+    session = AQTSession(client_id="cid", client_secret="cs")
+
+    assert session.get("/workspaces") == "ok"
+    assert sent == [f"Bearer {first}", f"Bearer {second}"]
+    assert len(minted) == 2
+
+
+def test_401_after_renewal_surfaces_instead_of_looping(monkeypatch):
+    """If the fresh token is rejected too, the error propagates after exactly one retry."""
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [_jwt(_NOW + 36_000), _jwt(_NOW + 36_001)])
+
+    def respond(_):
+        raise _requests_api_error(401)
+
+    sent = _fake_transport(monkeypatch, respond)
+    session = AQTSession(client_id="cid", client_secret="cs")
+
+    with pytest.raises(RequestsApiError):
+        session.get("/workspaces")
+    assert len(sent) == 2
+
+
+@pytest.mark.parametrize("status_code", [403, 404, 500])
+def test_non_401_errors_are_not_retried(monkeypatch, status_code):
+    """Only a 401 means the token is bad; anything else propagates without spending a mint."""
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [_jwt(_NOW + 36_000)])
+
+    def respond(_):
+        raise _requests_api_error(status_code)
+
+    sent = _fake_transport(monkeypatch, respond)
+    session = AQTSession(client_id="cid", client_secret="cs")
+
+    with pytest.raises(RequestsApiError):
+        session.get("/workspaces")
+    assert len(sent) == 1
+    assert len(minted) == 1
+
+
+def test_explicit_token_is_never_resolved_or_renewed(monkeypatch):
+    """An explicit token has no credentials behind it, so it is sent as given on every request."""
+
+    def _fail(**_):
+        raise AssertionError("an explicit token must never be re-resolved")
+
+    monkeypatch.setattr("qbraid.runtime.aqt.provider._resolve_access_token", _fail)
+    sent = _fake_transport(monkeypatch, lambda _: None)
+
+    session = AQTSession(access_token="given")
+    session.get("/workspaces")
+    session.get("/workspaces")
+
+    assert sent == ["Bearer given", "Bearer given"]
+
+
+def test_evicting_a_stale_token_keeps_its_replacement(monkeypatch):
+    """Eviction names the token that failed, so a late eviction cannot drop a newer healthy one."""
+    current = _jwt(_NOW + 36_000)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [current])
+
+    _resolve_access_token("cid", "cs")
+    _evict_access_token("cid", "cs", None, failed=_jwt(_NOW + 1))
+
+    assert _resolve_access_token("cid", "cs") == current
+    assert len(minted) == 1
+
+
+def test_concurrent_misses_share_one_mint(monkeypatch):
+    """A burst of first requests waits on a single mint instead of each minting its own."""
+    _freeze(monkeypatch, _NOW)
+    minted: list[int] = []
+    release = threading.Event()
+
+    def slow_mint(*_args):
+        minted.append(1)
+        release.wait(5)
+        return _jwt(_NOW + 36_000)
+
+    monkeypatch.setattr("qbraid.runtime.aqt.provider._mint_access_token", slow_mint)
+    threads = [
+        threading.Thread(target=_resolve_access_token, args=("cid", "cs")) for _ in range(20)
+    ]
+    for thread in threads:
+        thread.start()
+    time.sleep(0.1)  # let every thread reach the cache while the first mint is still in flight
+    release.set()
+    for thread in threads:
+        thread.join()
+
+    assert len(minted) == 1

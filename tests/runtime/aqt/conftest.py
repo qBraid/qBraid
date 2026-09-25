@@ -188,6 +188,15 @@ else:
         },
     }
 
+    @pytest.fixture(autouse=True)
+    def _clear_token_cache():
+        """Start every test with an empty process-wide token cache, and leave none behind."""
+        from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
+
+        provider._TOKEN_CACHE.clear()  # pylint: disable=protected-access
+        yield
+        provider._TOKEN_CACHE.clear()  # pylint: disable=protected-access
+
     @pytest.fixture
     def aqt_circuit():
         """Factory building a minimal, API-valid native AQT ``QuantumCircuit``.
