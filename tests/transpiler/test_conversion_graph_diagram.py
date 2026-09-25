@@ -68,7 +68,12 @@ def declared_function_names(diagram):
 @pytest.fixture(scope="module")
 def parsed_edges(diagram):
     """Return ``{(source, target): is_native}`` as the diagram sees it."""
-    aliases = diagram.native_aliases() | diagram.EXTERNAL_ALIASES | set(diagram.ISOLATED_TYPES)
+    aliases = (
+        diagram.native_aliases()
+        | diagram.EXTERNAL_ALIASES
+        | set(diagram.ISOLATED_TYPES)
+        | diagram.operator_aliases()
+    )
     return {(src, tgt): native for src, tgt, native in diagram.parse_conversions(aliases)}
 
 
@@ -125,7 +130,7 @@ def test_committed_svgs_match_the_current_graph(diagram, parsed_edges):
     leave the README advertising a graph the SDK no longer has.
     """
     graph, names = diagram.build_graph(
-        [(src, tgt, native) for (src, tgt), native in parsed_edges.items()]
+        diagram.diagram_edges([(src, tgt, native) for (src, tgt), native in parsed_edges.items()])
     )
     pos = diagram.layout(graph, diagram.DEFAULT_SEED)
     for theme in diagram.THEMES:
@@ -134,3 +139,14 @@ def test_committed_svgs_match_the_current_graph(diagram, parsed_edges):
         assert (
             path.read_text() == expected
         ), f"{path.name} is stale -- run `python bin/generate_conversion_graph.py`"
+
+
+def test_operators_are_accounted_for_but_not_drawn(diagram, parsed_edges):
+    """Operator conversions are real edges the scan must see, but the README diagram is
+    about programs: an operator island drawn beside the circuits would read as a gap in
+    circuit support."""
+    operators = diagram.operator_aliases()
+    assert operators, "OPERATOR_TYPES was not found in qbraid/programs/_import.py"
+    assert any(src in operators for src, _ in parsed_edges)
+    drawn = diagram.diagram_edges([(s, t, n) for (s, t), n in parsed_edges.items()])
+    assert not any(src in operators or tgt in operators for src, tgt, _ in drawn)

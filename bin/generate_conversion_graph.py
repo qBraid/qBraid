@@ -113,6 +113,25 @@ def native_aliases() -> set[str]:
     return {line.split("=", 1)[0].strip() for line in block.splitlines() if "=" in line}
 
 
+def operator_aliases() -> set[str]:
+    """Return the operator aliases declared in ``OPERATOR_TYPES`` (``qbraid/programs/_import.py``).
+
+    Operators convert among themselves only, so they are kept out of the circuit diagram.
+    """
+    tree = ast.parse((REPO / "qbraid" / "programs" / "_import.py").read_text())
+    for node in tree.body:
+        target = getattr(node, "target", None) or (getattr(node, "targets", None) or [None])[0]
+        if getattr(target, "id", None) == "OPERATOR_TYPES" and isinstance(node.value, ast.Dict):
+            return {key.value for key in node.value.keys}
+    return set()
+
+
+def diagram_edges(edges: list[tuple[str, str, bool]]) -> list[tuple[str, str, bool]]:
+    """The edges the README diagram draws: every conversion except operator-to-operator."""
+    operators = operator_aliases()
+    return [edge for edge in edges if edge[0] not in operators]
+
+
 def parse_conversions(aliases: set[str]) -> list[tuple[str, str, bool]]:
     """Return ``(source, target, is_native)`` for every conversion the SDK declares.
 
@@ -414,8 +433,8 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    aliases = native_aliases() | EXTERNAL_ALIASES | set(ISOLATED_TYPES)
-    edges = parse_conversions(aliases)
+    aliases = native_aliases() | EXTERNAL_ALIASES | set(ISOLATED_TYPES) | operator_aliases()
+    edges = diagram_edges(parse_conversions(aliases))
     graph, names = build_graph(edges)
 
     # `is not None`, not truthiness: `--search 0` is a request to score seed 0, not an
