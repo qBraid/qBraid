@@ -23,10 +23,13 @@ bit pattern, making any permutation of the readout observable in the result.
 
 """
 import re
+from unittest.mock import patch
 
 import cirq
 import pytest
 from cirq import ops as cirq_ops
+
+from qbraid.transpiler import transpile
 
 # X on these qubits, so the expected readout is 1,1,0. Every rotation and the reversal of
 # this pattern is distinct from it, so any permutation of the readout changes the result --
@@ -34,6 +37,132 @@ from cirq import ops as cirq_ops
 # all-ones and all-zeros strings a broken converter tends to produce.
 PATTERN = (1, 1, 0)
 NUM_QUBITS = len(PATTERN)
+
+
+def test_qasm3_to_qasm2_keeps_joint_measurement_register():
+    """A Bell-state readout must stay in one register for OQC joint counts."""
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[2] c;\n'
+        "h q[0];\ncx q[0], q[1];\nc = measure q;\n"
+    )
+
+    qasm2 = transpile(program, "qasm2")
+
+    assert re.findall(r"creg (\w+)\[(\d+)\];", qasm2) == [("m_c", "2")]
+    assert re.findall(r"measure q\[(\d+)\] -> m_c\[(\d+)\];", qasm2) == [
+        ("0", "0"),
+        ("1", "1"),
+    ]
+
+
+def test_qasm3_to_cirq_reuses_register_sizes_from_its_parse():
+    """Complete registers merge without running a second OpenQASM parser."""
+    from qbraid.transpiler.conversions.qasm3 import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[2] c;\n'
+        "c[0] = measure q[0];\nc[1] = measure q[1];\n"
+    )
+
+    with patch("openqasm3.parse", side_effect=AssertionError("second parse")):
+        circuit = qasm3_to_cirq(program)
+
+    assert [
+        op.gate.key for op in circuit.all_operations() if isinstance(op.gate, cirq.MeasurementGate)
+    ] == ["c"]
+
+
+def test_qasm3_to_qasm2_keeps_permuted_classical_bit_positions():
+    """Coalescing terminal measurements must follow bit indices, not operation order."""
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[3] q;\nbit[3] c;\n'
+        "c[2] = measure q[0];\nc[0] = measure q[2];\nc[1] = measure q[1];\n"
+    )
+
+    qasm2 = transpile(program, "qasm2")
+
+    assert re.findall(r"creg (\w+)\[(\d+)\];", qasm2) == [("m_c", "3")]
+    assert set(re.findall(r"measure q\[(\d+)\] -> m_c\[(\d+)\];", qasm2)) == {
+        ("0", "2"),
+        ("1", "1"),
+        ("2", "0"),
+    }
+
+
+def test_qasm3_to_qasm2_keeps_separate_complete_registers():
+    """Two source registers must not be collapsed into one histogram."""
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[4] q;\nbit[2] a;\nbit[2] b;\n'
+        "a[0] = measure q[2];\nb[0] = measure q[1];\n"
+        "a[1] = measure q[0];\nb[1] = measure q[3];\n"
+    )
+
+    qasm2 = transpile(program, "qasm2")
+
+    assert re.findall(r"creg (\w+)\[(\d+)\];", qasm2) == [("m_a", "2"), ("m_b", "2")]
+    assert set(re.findall(r"measure q\[(\d+)\] -> m_([ab])\[(\d+)\];", qasm2)) == {
+        ("2", "a", "0"),
+        ("0", "a", "1"),
+        ("1", "b", "0"),
+        ("3", "b", "1"),
+    }
+
+
+def test_qasm3_to_qasm2_does_not_invent_unmeasured_bits():
+    """A partial source register stays unmerged rather than measuring idle qubits."""
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[3] c;\n'
+        "c[0] = measure q[0];\nc[2] = measure q[1];\n"
+    )
+
+    qasm2 = transpile(program, "qasm2")
+
+    assert re.findall(r"creg (\w+)\[(\d+)\];", qasm2) == [
+        ("m_c_0", "1"),
+        ("m_c_2", "1"),
+    ]
+
+
+def test_qasm3_to_cirq_keeps_keys_used_by_classical_control():
+    """A later conditional must still see the per-bit measurement key it names."""
+    from qbraid.transpiler.conversions.qasm3 import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[3] q;\nbit[2] c;\n'
+        "c[0] = measure q[0];\nc[1] = measure q[1];\n"
+        "if (c[0] == 1) x q[2];\n"
+    )
+
+    circuit = qasm3_to_cirq(program)
+
+    assert {
+        op.gate.key for op in circuit.all_operations() if isinstance(op.gate, cirq.MeasurementGate)
+    } == {
+        "c_0",
+        "c_1",
+    }
+
+
+def test_qasm3_to_cirq_does_not_move_mid_circuit_measurements():
+    """A later gate on a measured qubit prevents register coalescing."""
+    from qbraid.transpiler.conversions.qasm3 import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[2] c;\n'
+        "c[0] = measure q[0];\nc[1] = measure q[1];\nx q[0];\n"
+    )
+
+    circuit = qasm3_to_cirq(program)
+
+    assert {
+        op.gate.key for op in circuit.all_operations() if isinstance(op.gate, cirq.MeasurementGate)
+    } == {"c_0", "c_1"}
 
 
 def _cirq_prepared(qubits) -> cirq.Circuit:
