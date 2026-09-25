@@ -1105,19 +1105,16 @@ def test_oqc_device_submit_forwards_tag(target_profile, oqc_client, program):
 
 @pytest.mark.parametrize(
     ("oqc_status", "expected"),
-    [
-        ("CREATED", JobStatus.INITIALIZING),
-        ("SUBMITTED", JobStatus.QUEUED),
-        ("RUNNING", JobStatus.RUNNING),
-    ],
+    [("CREATED", "INITIALIZING"), ("SUBMITTED", "QUEUED"), ("RUNNING", "RUNNING")],
 )
 def test_oqc_task_states_map_to_job_status(oqc_status, expected, oqc_device):
     """A SUBMITTED task has been accepted by OQC and is waiting to run, so it is QUEUED.
 
     Observed live on Toshiko Tokyo-1: a task submitted between access windows stays
-    SUBMITTED until the next window opens, which can be hours.
+    SUBMITTED until the next window opens, which can be hours. Parameters are names,
+    not ``JobStatus`` members, because this module must import without the OQC extra.
     """
     client = Mock()
     client.get_task_status.return_value = oqc_status
     job = OQCJob("046d4610-1a61-4a99-b1ef-45c9b62eeaa4", client=client, device=oqc_device)
-    assert job.status() == expected
+    assert job.status() == JobStatus[expected]
