@@ -391,7 +391,7 @@ def _fake_transport(monkeypatch, respond) -> list[str]:
 
 
 def test_resolved_token_is_reused_across_sessions(monkeypatch):
-    """A session per request mints one token, not one per session — the AQT quota incident."""
+    """Building a session per request mints one token, not one per session."""
     token = _jwt(_NOW + 36_000)
     _freeze(monkeypatch, _NOW)
     minted = _counting_mint(monkeypatch, [token])

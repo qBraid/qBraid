@@ -58,8 +58,8 @@ DEFAULT_ARNICA_URL = "https://arnica.aqt.eu/api"
 _TOKEN_REFRESH_MARGIN_SECONDS = 300
 
 # Resolved tokens, shared across every session in the process and keyed on the credentials and
-# audience that minted them. AQT meters token issuance per client: resolving per session meant a
-# caller that builds a session per request minted a token per request, and exhausted the quota.
+# audience that minted them. Resolving per session meant a caller that builds a session per
+# request minted a token per request, each one a round trip to the identity provider.
 _TOKEN_CACHE: dict[tuple[str, str, str | None], tuple[str, float]] = {}
 
 # One lock per cache key. Holding a key's lock through its mint makes concurrent misses on that
