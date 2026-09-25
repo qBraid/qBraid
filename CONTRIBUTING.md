@@ -317,6 +317,28 @@ python -c "from qbraid.runtime import get_providers; print(get_providers())"
 Then once more in a clean environment *without* the extra: the test directory must skip,
 not error.
 
+### Adding a Pauli-operator library
+
+- [ ] `qbraid/programs/_import.py`: add the type to `OPERATOR_TYPES` under its alias.
+- [ ] `qbraid/transpiler/conversions/_pauli_io.py`: `read_<alias>` and `write_<alias>`,
+  mapping the library's qubit labels to integer qubit indices and refusing anything that
+  has none.
+- [ ] `bin/generate_operator_conversions.py`: add the library to `LIBRARIES`, then run it.
+  It writes the new package and adds the edge into it to every other library's package.
+- [ ] If users usually hold a different type (a single-term product, operator
+  arithmetic), register it as a feeder alias with one hand-written edge into the canonical
+  type.
+- [ ] `tests/transpiler/operators/test_pauli_conversions.py`: a fixture for the reference
+  operator; the pairwise tests then cover every direction.
+- [ ] `docs/conf.py` mock, `pyproject.toml` extra, `CHANGELOG.md` entry.
+
+**Verify**
+
+```bash
+python bin/generate_operator_conversions.py   # must be a no-op after your commit
+pytest tests/transpiler/operators
+```
+
 ### Adding a program type
 
 - [ ] `qbraid/programs/<family>/<name>.py` wrapper class (`gate_model/`, `ahs/`, or

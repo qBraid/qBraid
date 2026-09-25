@@ -26,6 +26,7 @@ qnexus>=0.39.0,<0.48
 pytket-qiskit>=0.71.0
 autoqasm>=0.1.2,<0.3
 myqlm-interop>=2.0
+openfermion>=1.6,<2.0
 
 # optional runtime dependencies
 qiskit-ibm-runtime>=0.39.0,<0.50

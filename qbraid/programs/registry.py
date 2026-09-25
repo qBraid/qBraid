@@ -22,7 +22,13 @@ from typing import Any, Optional, Type, TypeVar, Union
 
 from qbraid._entrypoints import get_entrypoints
 
-from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
+from ._import import (
+    _QPROGRAM_ALIASES,
+    _QPROGRAM_REGISTRY,
+    _QPROGRAM_TYPES,
+    NATIVE_REGISTRY,
+    OPERATOR_TYPES,
+)
 from .experiment import ExperimentType
 from .typer import QbraidMetaType
 
@@ -216,6 +222,9 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
 
     if native_alias in native_no_ep:
         return native_no_ep[native_alias]
+
+    if native_alias in OPERATOR_TYPES:
+        return ExperimentType.OTHER
 
     entry_points = get_entrypoints(module)
     entry_point = entry_points.get(native_alias)

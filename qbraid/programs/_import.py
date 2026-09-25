@@ -161,6 +161,43 @@ dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
         "qat.core.wrappers.circuit",
     ]
 )
+
+
+def _import_by_alias(entries: dict[str, tuple[str, str]]) -> dict[str, Type[Any]]:
+    """Import types registered under an explicit alias, skipping any not installed.
+
+    ``_dynamic_importer`` derives one alias per module, which cannot name two types
+    from one package (e.g. openfermion's qubit and fermion operators) or give a type
+    an alias other than its module's.
+    """
+    imported: dict[str, Type[Any]] = {}
+    for alias, (module_path, attr_path) in entries.items():
+        try:
+            obj: Any = import_module(module_path)
+            for attr in attr_path.split("."):
+                obj = getattr(obj, attr)
+        except Exception:  # pylint: disable=broad-except
+            continue
+        imported[alias] = obj
+    return imported
+
+
+# Operator types: convertible with transpile(), never submittable to a device.
+OPERATOR_TYPES: dict[str, tuple[str, str]] = {
+    "qiskit_pauli": ("qiskit.quantum_info", "SparsePauliOp"),
+    "openfermion_qubit": ("openfermion", "QubitOperator"),
+    "cirq_pauli": ("cirq", "PauliSum"),
+    "pennylane_pauli": ("pennylane.pauli", "PauliSentence"),
+    "braket_observable": ("braket.circuits.observable", "Observable"),
+    "cudaq_spin": ("cudaq", "SpinOperator"),
+    # The types users usually hold, each feeding its library's canonical form above.
+    "cirq_pauli_string": ("cirq", "PauliString"),
+    "pennylane_op": ("pennylane.operation", "Operator"),
+    "qiskit_observable": ("qiskit.quantum_info", "SparseObservable"),
+    "cudaq_spin_term": ("cudaq", "SpinOperatorTerm"),
+}
+dynamic_operator_registry: dict[str, Type[Any]] = _import_by_alias(OPERATOR_TYPES)
+
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
 }
@@ -169,7 +206,10 @@ qbraid_meta_type_registry: dict[str, Type[Any]] = {
 }
 
 NATIVE_REGISTRY: dict[str, Type[Any]] = (
-    dynamic_type_registry | static_type_registry | qbraid_meta_type_registry
+    dynamic_type_registry
+    | dynamic_operator_registry
+    | static_type_registry
+    | qbraid_meta_type_registry
 )
 _QPROGRAM_REGISTRY: dict[str, Type[Any]] = deepcopy(NATIVE_REGISTRY) | dynamic_non_native
 _QPROGRAM_TYPES: set[Type[Any]] = set(_QPROGRAM_REGISTRY.values())

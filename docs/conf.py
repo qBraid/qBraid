@@ -71,6 +71,7 @@ autodoc_mock_imports = [
     "sympy",
     "qibo",
     "cudaq",
+    "openfermion",
     "flair_visual",
     "bloqade",
     "pasqal_cloud",

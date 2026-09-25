@@ -37,6 +37,26 @@ Submodules
    cudaq
    qrisp
 
+Pauli operators
+---------------
+
+Conversions between Pauli-operator types. They form their own component of the
+conversion graph: an operator never converts to a circuit or back.
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   qiskit_pauli
+   openfermion_qubit
+   cirq_pauli
+   pennylane_pauli
+   braket_observable
+   cudaq_spin
+   cirq_pauli_string
+   pennylane_op
+   qiskit_observable
+   cudaq_spin_term
+
 """
 import importlib
 import inspect
