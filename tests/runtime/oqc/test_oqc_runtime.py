@@ -891,6 +891,41 @@ def test_build_compiler_config_invalid_value():
         OQCDevice._build_compiler_config(optimizations="invalid_value")
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"shots": 0},
+        {"shots": -1},
+        {"shots": 0, "repeats": 1000},
+        {"repeats": 0},
+        {"repeats": -1},
+    ],
+)
+def test_oqc_run_rejects_nonpositive_repeats(oqc_device, qasm2_program, kwargs):
+    """Invalid shot counts must fail before OQC can schedule a paid task."""
+    with patch.object(oqc_device.client, "schedule_tasks") as schedule_tasks:
+        with pytest.raises(ValueError, match="shots or repeats must be at least 1"):
+            oqc_device.run(qasm2_program, **kwargs)
+
+    schedule_tasks.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected_repeats",
+    [
+        ({}, None),
+        ({"shots": 1}, 1),
+        ({"repeats": 10}, 10),
+        ({"shots": 2, "repeats": 10}, 2),
+    ],
+)
+def test_build_compiler_config_repeat_selection(kwargs, expected_repeats):
+    """Explicit shots take precedence, while omitted shots retain the repeat fallback."""
+    config = OQCDevice._build_compiler_config(**kwargs)
+
+    assert config.repeats == expected_repeats
+
+
 @patch("qbraid.runtime.oqc.device.logger")
 def test_device_get_next_window_raises_resource_not_found(mock_logger, target_profile):
     """Test that get_next_window raises ResourceNotFoundError when the window is not found."""

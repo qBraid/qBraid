@@ -219,10 +219,17 @@ class OQCDevice(QuantumDevice):
         }
 
         config_values = {key: kwargs.get(key, default) for key, default in default_values.items()}
+        repeats = (
+            config_values["shots"]
+            if config_values["shots"] is not None
+            else config_values["repeats"]
+        )
+        if repeats is not None and repeats < 1:
+            raise ValueError("OQC shots or repeats must be at least 1.")
 
         try:
             return CompilerConfig(
-                repeats=config_values["shots"] or config_values["repeats"],
+                repeats=repeats,
                 repetition_period=config_values["repetition_period"],
                 results_format=RESULTS_FORMAT[config_values["results_format"]],
                 metrics=METRICS_TYPE[config_values["metrics"]],
