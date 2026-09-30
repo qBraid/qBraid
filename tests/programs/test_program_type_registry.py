@@ -98,7 +98,7 @@ def test_error_on_duplicate_type_different_alias():
 
         expected_msg = (
             "Cannot register more than one additional 'str' type beyond "
-            "'qasm2', 'qasm3', and 'qasm2_kirin'."
+            "'qasm2', 'qasm3', 'qasm2_kirin', and 'gst'."
         )
         assert expected_msg in str(excinfo.value)
     finally:

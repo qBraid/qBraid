@@ -17,6 +17,8 @@ Module providing granular type checking for quantum programs
 that use Python's built-in types.
 
 """
+
+import re
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Type, TypeVar
 
@@ -230,6 +232,41 @@ class Qasm2KirinString(metaclass=Qasm2KirinStringMeta):
     """Marker class for strings that are valid OpenQASM 2 programs."""
 
 
+class GstStringMeta(QbraidMetaType):
+    """Metaclass for strings holding a gate-set sequence (GST) circuit.
+
+    GST is Diraq's native circuit format, e.g. ``Gxpi2:0Gcphase:0:1@(0,1)``. A string
+    qualifies when it opens with a ``G<name>`` gate token and contains nothing an
+    OpenQASM program needs (``;``), so OpenQASM is never mistaken for GST.
+    """
+
+    @property
+    def __alias__(cls) -> str:
+        return "gst"
+
+    @property
+    def __bound__(cls) -> Type[str]:
+        return str
+
+    def __instancecheck__(cls, instance: Any) -> bool:
+        """Custom instance checks for GST strings.
+
+        Args:
+            instance: The object to check.
+
+        Returns:
+            bool: True if instance is a string that looks like a GST circuit, False otherwise.
+        """
+        return isinstance(instance, str) and _GST_PATTERN.fullmatch(instance.strip()) is not None
+
+
+_GST_PATTERN = re.compile(r"[{(]*G[A-Za-z]\w*[\w:@(){}^,\s]*")
+
+
+class GstString(metaclass=GstStringMeta):
+    """Marker class for strings that are gate-set sequence (GST) circuits."""
+
+
 class QasmStringType(str):
     """Base class for OpenQASM string types, providing validation upon instantiation."""
 
@@ -278,4 +315,4 @@ def get_qasm_type_alias(qasm: str) -> str:
 
 
 QBRAID_META_TYPES = {IonQDict, QuboCoefficientsDict}
-BOUND_QBRAID_META_TYPES = {Qasm2String, Qasm3String, Qasm2KirinString}
+BOUND_QBRAID_META_TYPES = {Qasm2String, Qasm3String, Qasm2KirinString, GstString}

@@ -24,6 +24,7 @@ from pyqasm.exceptions import QasmParsingError
 
 from qbraid.programs.typer import (
     BaseQasmInstanceMeta,
+    GstString,
     IonQDict,
     IonQDictInstanceMeta,
     ProgramValidationError,
@@ -317,3 +318,22 @@ def test_qubo_coefficients_dict_instance_meta_alias():
 def test_qubo_coefficients_dictt_instance_meta_bound():
     """Test that __bound__ property returns dict."""
     assert QuboCoefficientsDict.__bound__ is dict  # pylint: disable=comparison-with-callable
+
+
+@pytest.mark.parametrize(
+    "string, expected",
+    [
+        ("Gxpi2:0Gcphase:0:1@(0,1)", True),
+        ("  Gxpi2:0@(0)\n", True),
+        ("Gxpi2:0", True),
+        ("OPENQASM 3.0;\nqubit q;", False),
+        ("rx(pi) q[0];", False),
+        ("hello world", False),
+        ("", False),
+        (42, False),
+    ],
+)
+def test_gst_string_instance_check(string, expected):
+    """Test that GstString matches GST circuits and never OpenQASM or plain text."""
+    assert isinstance(string, GstString) is expected
+    assert GstString.__alias__ == "gst"
