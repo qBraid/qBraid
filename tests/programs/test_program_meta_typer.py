@@ -336,4 +336,4 @@ def test_qubo_coefficients_dictt_instance_meta_bound():
 def test_gst_string_instance_check(string, expected):
     """Test that GstString matches GST circuits and never OpenQASM or plain text."""
     assert isinstance(string, GstString) is expected
-    assert GstString.__alias__ == "gst"
+    assert GstString.__alias__ == "gst"  # pylint: disable=comparison-with-callable
