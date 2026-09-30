@@ -337,3 +337,8 @@ def test_gst_string_instance_check(string, expected):
     """Test that GstString matches GST circuits and never OpenQASM or plain text."""
     assert isinstance(string, GstString) is expected
     assert GstString.__alias__ == "gst"  # pylint: disable=comparison-with-callable
+
+
+def test_gst_string_instance_check_rejects_long_invalid_input_quickly():
+    """Test that a long near-GST string is rejected in linear time, not by backtracking."""
+    assert not isinstance("G" + "x" * 50_000 + ";", GstString)

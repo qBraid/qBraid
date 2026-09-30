@@ -260,7 +260,7 @@ class GstStringMeta(QbraidMetaType):
         return isinstance(instance, str) and _GST_PATTERN.fullmatch(instance.strip()) is not None
 
 
-_GST_PATTERN = re.compile(r"[{(]*G[A-Za-z]\w*[\w:@(){}^,\s]*")
+_GST_PATTERN = re.compile(r"[{(]*G[A-Za-z][\w:@(){}^,\s]*")
 
 
 class GstString(metaclass=GstStringMeta):
