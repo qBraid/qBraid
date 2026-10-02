@@ -24,6 +24,20 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.13.0] - 2026-10-02
+
+### Added
 - Added runtime providers for three new backends:
   - `AQTProvider` for AQT (Alpine Quantum Technologies) arnica-cloud devices, via the new `aqt` extra. Authenticate with `AQT_ACCESS_TOKEN` or `AQT_CLIENT_ID`/`AQT_CLIENT_SECRET`, and address devices as `"<workspace>/<resource>"`. Any supported program is transpiled to AQT's native `{RZ, R, RXX}` basis, without needing `qiskit-aqt-provider` ([#1262](https://github.com/qBraid/qBraid/pull/1262), [#1350](https://github.com/qBraid/qBraid/pull/1350), [#1368](https://github.com/qBraid/qBraid/pull/1368))
   - `QudoraProvider` for the [QUDORA Cloud](https://api.qudora.com), which takes an API token and submits OpenQASM 2 or 3 directly, with no vendor SDK. Device ids are backend usernames, and a list of programs runs as one batched job ([#1292](https://github.com/qBraid/qBraid/pull/1292), [#1350](https://github.com/qBraid/qBraid/pull/1350))
@@ -69,8 +83,6 @@ Writing an entry:
 - An OQC task that is accepted and waiting to run, for example for the device's next access window, now reports `JobStatus.QUEUED` instead of `INITIALIZING` ([#1445](https://github.com/qBraid/qBraid/pull/1445))
 - `QuantinuumDeviceError` and `QuantinuumJobError` are now public, in `qbraid.runtime.quantinuum.exceptions` and exported from the package. The old import paths still work ([#1297](https://github.com/qBraid/qBraid/pull/1297))
 - `GroupJobSession`'s docstring now says that a key given to `QbraidProvider(api_key=...)` must be passed on as `client=provider.client`, and its example no longer calls `results.items()`, which does not exist ([#1390](https://github.com/qBraid/qBraid/pull/1390))
-
-### Deprecated
 
 ### Removed
 - Removed `pytket-braket` from the `braket` extra. It served only the optional IonQ-via-Braket gateset transform, which is now skipped with a hint when the package is absent; `pip install pytket-braket` restores it ([#1176](https://github.com/qBraid/qBraid/pull/1176))
