@@ -32,6 +32,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
 
 ### Dependencies
 
