@@ -531,6 +531,14 @@ def test_normalize_if_blocks_higher_bit_index():
     assert normalize_if_blocks(qasm) == "if(c[1]==1) x q[0];"
 
 
+@pytest.mark.parametrize("value", ["2", "3"])
+def test_normalize_if_blocks_rejects_non_bit_value_on_single_bit(value):
+    """A single bit can only equal 0 or 1; anything else is rejected, not truncated."""
+    qasm = f"if (c[1] == {value}) {{\n  x q[0];\n}}"
+    with pytest.raises(ValueError, match="single bit c\\[1\\]"):
+        normalize_if_blocks(qasm)
+
+
 def test_normalize_if_blocks_multiple_statements():
     """Every statement in the block stays conditional, not just the first."""
     qasm = "if (c[0] == true) {\n  x q[1];\n  x q[2];\n}"

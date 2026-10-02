@@ -217,6 +217,9 @@ def normalize_if_blocks(qasm: str) -> str:
 
     Returns:
         QASM string with if blocks normalized to QASM 2 single-line syntax.
+
+    Raises:
+        ValueError: If a single-bit condition compares against a value other than 0 or 1.
     """
 
     def _replace_if_block(match: re.Match) -> str:
@@ -226,6 +229,10 @@ def normalize_if_blocks(qasm: str) -> str:
         statements = [s.strip() for s in match.group(4).split(";") if s.strip()]
 
         val = 1 if val_str == "true" else (0 if val_str == "false" else int(val_str))
+        if idx is not None and val not in (0, 1):
+            # Cirq's parser keeps only the low bit of the value, so ``c[1]==2`` would
+            # silently become ``c[1]==0``.
+            raise ValueError(f"Cannot compare the single bit {reg}[{idx}] to {val_str}.")
         cond = reg if idx is None else f"{reg}[{idx}]"
 
         # QASM 2 conditions a single statement, so repeat the condition on each one. Exact
