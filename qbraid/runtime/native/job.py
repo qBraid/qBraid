@@ -161,11 +161,19 @@ class QbraidJob(QuantumJob):
 
         For single-circuit jobs, returns a single :class:`Result`.
         For batch jobs (``numCircuits > 1``), returns a :class:`BatchResult`.
+
+        A job that did not complete returns ``success=False`` with no data, and
+        ``details["status_message"]`` carries the platform's reason when it gave one.
         """
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
         success = job_data.status == JobStatus.COMPLETED
         num_circuits = job_data.numCircuits or 1
+        failure_details = (
+            {"status_message": job_data.statusMsg}
+            if not success and job_data.statusMsg is not None
+            else {}
+        )
 
         if success:
             raw_result = self.client.get_job_result(self.id)
@@ -197,6 +205,7 @@ class QbraidJob(QuantumJob):
                 cost=core_result.cost,
                 status=core_result.status,
                 **data.extra,
+                **failure_details,
             )
 
         if isinstance(raw_result, CoreBatchResult):
@@ -209,6 +218,7 @@ class QbraidJob(QuantumJob):
                 time_stamps=raw_result.timeStamps,
                 cost=raw_result.cost,
                 status=raw_result.status,
+                **failure_details,
             )
 
         return _build_result(raw_result)
