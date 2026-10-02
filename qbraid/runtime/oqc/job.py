@@ -101,7 +101,8 @@ class OQCJob(QuantumJob):
 
         status_map = {
             "CREATED": JobStatus.INITIALIZING,
-            "SUBMITTED": JobStatus.INITIALIZING,
+            # Accepted by OQC and waiting to run, e.g. for the device's next access window.
+            "SUBMITTED": JobStatus.QUEUED,
             "RUNNING": JobStatus.RUNNING,
             "FAILED": JobStatus.FAILED,
             "CANCELLED": JobStatus.CANCELLED,
