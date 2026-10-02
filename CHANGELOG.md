@@ -32,6 +32,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
 
 ### Dependencies
 
