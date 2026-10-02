@@ -219,7 +219,7 @@ class TestBatchResult:
             JOB_DATA_BATCH_EQUAL1["statusMsg"] = None
 
     def test_single_circuit_failed_result(self, device, client):
-        """A failed single-circuit job returns a Result with success=False and the failure reason."""
+        """A failed single-circuit job returns success=False and carries the failure reason."""
         original_status = JOB_DATA_EQUAL1["status"]
         JOB_DATA_EQUAL1["status"] = "FAILED"
         JOB_DATA_EQUAL1["statusMsg"] = "SVS: Not enough memory to execute circuit 1."
