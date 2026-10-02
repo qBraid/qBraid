@@ -232,6 +232,51 @@ if (c[0] == false) {
     assert controlled_qubits == {cirq.NamedQubit("q_1"), cirq.NamedQubit("q_2")}
 
 
+@pytest.mark.parametrize(
+    "qasm, converter",
+    [
+        (
+            """OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+creg c0[2];
+creg r[1];
+x q[0];
+x q[1];
+measure q[0] -> c0[0];
+measure q[1] -> c0[1];
+if (c0[1] == 1) x q[2];
+measure q[2] -> r[0];
+""",
+            qasm2_to_cirq,
+        ),
+        (
+            """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[3] q;
+bit[2] c0;
+bit[1] r;
+x q[0];
+x q[1];
+c0[0] = measure q[0];
+c0[1] = measure q[1];
+if (c0[1]) {
+  x q[2];
+}
+r[0] = measure q[2];
+""",
+            qasm3_to_cirq,
+        ),
+    ],
+    ids=["qasm2", "qasm3"],
+)
+def test_single_bit_condition_ignores_other_bits(qasm, converter):
+    """A gate conditioned on c0[1] fires even when c0[0] is also set."""
+    circuit = converter(qasm)
+    result = cirq.Simulator().run(circuit, repetitions=10)
+    assert result.histogram(key="r_0") == {1: 10}
+
+
 def test_qasm3_to_cirq_without_conditionals():
     """Test QASM 3 to Cirq conversion without conditionals still works."""
     qasm = """OPENQASM 3.0;

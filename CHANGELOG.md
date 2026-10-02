@@ -33,6 +33,7 @@ Writing an entry:
 
 ### Fixed
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
+- Converting OpenQASM to Cirq no longer drops gates conditioned on a single classical bit, such as `if (c[1]) x q[0];`, when another bit of the same register is also set ([#PR](https://github.com/qBraid/qBraid/pull/PR))
 
 ### Dependencies
 

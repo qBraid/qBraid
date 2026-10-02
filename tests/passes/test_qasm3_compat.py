@@ -510,13 +510,13 @@ def test_replace_gate_names_inside_if_else_block():
 def test_normalize_if_blocks_true():
     """Test normalizing if blocks with true value."""
     qasm = "if (c0[0] == true) {\n  z q[2];\n}"
-    assert normalize_if_blocks(qasm) == "if(c0==1) z q[2];"
+    assert normalize_if_blocks(qasm) == "if(c0[0]==1) z q[2];"
 
 
 def test_normalize_if_blocks_false():
     """Test normalizing if blocks with false value."""
     qasm = "if (c0[0] == false) {\n  x q[1];\n}"
-    assert normalize_if_blocks(qasm) == "if(c0==0) x q[1];"
+    assert normalize_if_blocks(qasm) == "if(c0[0]==0) x q[1];"
 
 
 def test_normalize_if_blocks_no_index():
@@ -526,15 +526,15 @@ def test_normalize_if_blocks_no_index():
 
 
 def test_normalize_if_blocks_higher_bit_index():
-    """Test normalizing if blocks with higher bit index shifts value."""
+    """A single-bit condition stays on that bit, not a whole-register value."""
     qasm = "if (c[1] == true) {\n  x q[0];\n}"
-    assert normalize_if_blocks(qasm) == "if(c==2) x q[0];"
+    assert normalize_if_blocks(qasm) == "if(c[1]==1) x q[0];"
 
 
 def test_normalize_if_blocks_multiple_statements():
     """Every statement in the block stays conditional, not just the first."""
     qasm = "if (c[0] == true) {\n  x q[1];\n  x q[2];\n}"
-    assert normalize_if_blocks(qasm) == "if(c==1) x q[1];\nif(c==1) x q[2];"
+    assert normalize_if_blocks(qasm) == "if(c[0]==1) x q[1];\nif(c[0]==1) x q[2];"
 
 
 def test_normalize_if_blocks_no_change():

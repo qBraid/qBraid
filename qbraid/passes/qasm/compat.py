@@ -205,10 +205,12 @@ def normalize_if_blocks(qasm: str) -> str:
 
     into::
 
-        if(c0==1) z q[2];
+        if(c0[0]==1) z q[2];
 
     This is needed because pyqasm's ``dumps()`` emits QASM 3-style if blocks,
     but Cirq's QASM parser only understands QASM 2 single-line ``if()`` syntax.
+    A single-bit condition must stay single-bit: ``if(c0==1)`` would also
+    require every other bit of ``c0`` to be 0.
 
     Args:
         qasm: QASM program string potentially containing QASM 3-style if blocks.
@@ -224,13 +226,11 @@ def normalize_if_blocks(qasm: str) -> str:
         statements = [s.strip() for s in match.group(4).split(";") if s.strip()]
 
         val = 1 if val_str == "true" else (0 if val_str == "false" else int(val_str))
+        cond = reg if idx is None else f"{reg}[{idx}]"
 
-        if idx is not None:
-            bit_index = int(idx)
-            val = val << bit_index
-
-        # QASM 2 conditions a single statement, so repeat the condition on each one.
-        return "\n".join(f"if({reg}=={val}) {stmt};" for stmt in statements)
+        # QASM 2 conditions a single statement, so repeat the condition on each one. Exact
+        # because Cirq accepts only gates there, and gates cannot change the condition bit.
+        return "\n".join(f"if({cond}=={val}) {stmt};" for stmt in statements)
 
     pattern = re.compile(
         r"if\s*\(\s*(\w+)(?:\[(\d+)\])?\s*==\s*(\w+)\s*\)\s*\{\s*\n\s*(.+?)\n\s*\}",
