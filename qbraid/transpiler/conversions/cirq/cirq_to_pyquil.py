@@ -17,6 +17,7 @@ Module containing function to convert from Cirq's circuit
 representation to pyQuil's circuit representation (Quil programs).
 
 """
+
 from __future__ import annotations
 
 import re
@@ -60,14 +61,16 @@ def _declared_registers(circuit: cirq.circuits.Circuit) -> dict[str, int]:
 _BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 
-def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Operation]:
+def _classical_bit_order(
+    terminal: list[cirq_ops.Operation],
+) -> list[cirq_ops.Operation]:
     """Order terminal measurements by the classical bit their key names.
 
     QASM-derived circuits key single-qubit measurements ``c_0``, ``c_1``, ..., and that
     suffix -- not the moment the operation happens to sit in -- is the bit position the
     result belongs at: ``measure q[2] -> c[0]`` must land q_2 in bit 0 even though a
-    measurement on q_0 may appear earlier. Keys without an index fall back to qubit order,
-    matching the readout convention the Braket converters document.
+    measurement on q_0 may appear earlier. A key without an index names a complete
+    register; its qubits already follow the register's bit order.
 
     A circuit measuring into multiple registers merges them in register-name order, since
     cirq keys do not record declaration order. ``cirq -> qasm2`` sorts cregs by the same key
@@ -76,9 +79,8 @@ def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Op
     indexed = []
     for op in terminal:
         match = _BIT_INDEX.match(op.gate.key)
-        if match is None or len(op.qubits) != 1:
-            return sorted(terminal, key=lambda op: min(op.qubits))
-        indexed.append(((match["register"], int(match["index"])), op))
+        key = (match["register"], int(match["index"])) if match else (op.gate.key, 0)
+        indexed.append((key, op))
     return [op for _, op in sorted(indexed, key=lambda pair: pair[0])]
 
 
@@ -92,7 +94,9 @@ def _unused_key(existing: set[str], preferred: str = "m") -> str:
     return f"{preferred}_{index}"
 
 
-def _merge_terminal_measurements(circuit: cirq.circuits.Circuit) -> cirq.circuits.Circuit:
+def _merge_terminal_measurements(
+    circuit: cirq.circuits.Circuit,
+) -> cirq.circuits.Circuit:
     """Merge terminal measurements into one keyed measurement operation.
 
     QASM-derived circuits measure into per-bit keys (``c_0``, ``c_1``, ...), which the

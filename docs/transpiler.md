@@ -99,6 +99,10 @@ a returned program means "correct". Therefore:
   an asymmetric bit pattern so any permutation changes the result;
   `tests/transpiler/test_measurement_coverage.py` sweeps every reachable pair with a
   measured GHZ circuit and asserts the qubit-to-bit mapping is the identity.
+  Complete terminal QASM 3 registers use one Cirq key per register; partial registers
+  keep per-bit keys. Classical control disables this merging. Both Cirq-to-pyQuil
+  routes sort complete registers as `(name, 0)` alongside indexed keys, preserving
+  each register's internal bit order. QASM 2 input keeps its per-bit keys.
 
 ## Weight governance
 
