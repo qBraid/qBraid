@@ -134,23 +134,40 @@ class OQCDevice(QuantumDevice):
         """
         Returns the start time of the next active window for the device.
 
-        Note: Currently only AWS windows are defined.
+        Raises:
+            ResourceNotFoundError: If OQC reports no upcoming window for the device,
+                as it does for always-on devices, or the window lookup fails.
         """
+        next_window_err: Exception | None = None
         try:
             # NOTE: get_next_window returns str not datetime.datetime
-            start_time = self._client.get_next_window(self.id)
+            start_time: str | None = self._client.get_next_window(self.id)
             # start_time will be a string of the format: '2025-12-19T00:50:00Z'
-        except Exception as next_window_err:  # pylint: disable=broad-exception-caught
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            next_window_err = err
+            start_time = None
+
+        # OQC answers None, rather than raising, for a device with no window.
+        if start_time is None:
             try:
                 exec_estimates = self._client.get_qpu_execution_estimates(qpu_ids=self.id)
-                start_time: str = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
+                start_time = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
                 # start_time will be a string of the format: '2025-12-19 00:50:00'
             except Exception as exec_est_error:  # pylint: disable=broad-exception-caught
-                logger.error(exec_est_error)
+                # Expected when OQC has already said there is no window: it rejects
+                # estimates for always-on devices. An error only if the lookup failed.
+                log = logger.info if next_window_err is None else logger.error
+                log("OQC execution estimates for %s failed: %r", self.id, exec_est_error)
+
+        if not start_time:
+            if next_window_err is None:
                 raise ResourceNotFoundError(
-                    f"Falied to fetch next active window for device '{self.id}'. "
-                    "Note: Currently only AWS windows are defined."
-                ) from next_window_err
+                    f"OQC reports no upcoming access window for device '{self.id}'."
+                )
+            raise ResourceNotFoundError(
+                f"Could not fetch the next access window for device '{self.id}': "
+                f"{next_window_err!r}"
+            ) from next_window_err
 
         return datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00")).replace(
             tzinfo=datetime.timezone.utc

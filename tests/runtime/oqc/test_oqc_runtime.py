@@ -201,18 +201,39 @@ def program():
 
 
 @pytest.fixture
-def optimized_program():
-    """Return a QASM3 program."""
-    qasm3 = """
-    OPENQASM 3.0;
-    qubit[2] q;
-    bit[2] c;
+def qasm2_program():
+    """Return a QASM2 Bell program, the format OQC devices target."""
+    qasm2 = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c[2];
+
     h q[0];
     cx q[0], q[1];
-    c = measure q;
+
+    measure q -> c;
     """
-    qasm3_compat = textwrap.dedent(qasm3).strip()
-    return qasm3_compat
+    return textwrap.dedent(qasm2).strip()
+
+
+def _measured_distribution(qasm2: str):
+    """Exact probability of each classical-register outcome, by statevector simulation.
+
+    Follows every ``measure`` to the physical qubit it reads, so circuits that place
+    the same logical qubits differently compare equal.
+    """
+    qiskit_qasm2 = pytest.importorskip("qiskit.qasm2")
+    quantum_info = pytest.importorskip("qiskit.quantum_info")
+    circuit = qiskit_qasm2.loads(qasm2)
+    measured = {
+        circuit.find_bit(instruction.clbits[0]).index: circuit.find_bit(instruction.qubits[0]).index
+        for instruction in circuit.data
+        if instruction.operation.name == "measure"
+    }
+    qargs = [measured[clbit] for clbit in range(circuit.num_clbits)]
+    state = quantum_info.Statevector(circuit.remove_final_measurements(inplace=False))
+    return state.probabilities(qargs)
 
 
 class MockOQCClient:
@@ -683,7 +704,7 @@ def test_remote_provider_reraises_non_auth_errors():
 
 
 @pytest.mark.remote
-def test_oqc_runtime_remote_execution(program, optimized_program):
+def test_oqc_runtime_remote_execution(qasm2_program):
     """Test OQC runtime with remote execution."""
     token = os.getenv("OQC_AUTH_TOKEN")
     if token is None:
@@ -697,7 +718,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
 
     shots = 100
     timeout = 120
-    job = device.run(program, shots=shots)
+    job = device.run(qasm2_program, shots=shots)
     assert isinstance(job, OQCJob)
 
     try:
@@ -717,8 +738,14 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     assert result.details["errors"] is None
     assert result.details["shots"] == shots
 
+    # OQC compiles OpenQASM 2 with TKET, which picks the physical qubits and may
+    # rewrite gates (e.g. reversing a CX against its native direction), so the
+    # compiled text varies between runs. Compare what it computes instead.
     optimized_out = result.details["metrics"]["optimized_circuit"]
-    assert optimized_out.strip() == optimized_program.strip()
+    assert optimized_out.lstrip().startswith("OPENQASM 2.0;")
+    assert _measured_distribution(optimized_out) == pytest.approx(
+        _measured_distribution(qasm2_program)
+    )
 
     data = result.data
     assert isinstance(data, GateModelResultData)
@@ -881,8 +908,57 @@ def test_device_get_next_window_raises_resource_not_found(mock_logger, target_pr
     device = OQCDevice(target_profile, client)
     with pytest.raises(ResourceNotFoundError) as excinfo:
         device.get_next_window()
-    assert "Falied to fetch next active window for device" in str(excinfo.value)
+    assert "Could not fetch the next access window for device" in str(excinfo.value)
+    assert "ReadTimeout" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, ReadTimeout)
     mock_logger.error.assert_called_once()
+
+
+@patch("qbraid.runtime.oqc.device.logger")
+def test_get_next_window_none_raises_resource_not_found(mock_logger, target_profile):
+    """Reproduces #1436: OQC returns None for an always-on device, which crashed with AttributeError.
+
+    Both responses are the ones OQC Cloud gives for the Lucy Simulator: no next window, and a
+    rejected execution-estimates request.
+    """
+    client = Mock()
+    client.get_next_window.return_value = None
+    client.get_qpu_execution_estimates.side_effect = ServerException(
+        '{"message":"Invalid input provided"}', 400
+    )
+    device = OQCDevice(target_profile, client)
+    with pytest.raises(ResourceNotFoundError, match="OQC reports no upcoming access window"):
+        device.get_next_window()
+    # No window is OQC's normal answer here, not a failure, so it must not log an error.
+    mock_logger.error.assert_not_called()
+    mock_logger.info.assert_called_once()
+
+
+def test_get_next_window_none_falls_back_to_execution_estimates(target_profile):
+    """A None window is resolved from the execution estimates when they carry one.
+
+    The payload is OQC Cloud's response for Toshiko Tokyo-1.
+    """
+    client = Mock()
+    client.get_next_window.return_value = None
+    client.get_qpu_execution_estimates.return_value = {
+        "qpu_wait_times": [
+            {
+                "average_processing_seconds": 0.0,
+                "estimated_availability_time": "2026-09-24 17:00:00",
+                "qpu_id": "qpu:jp:3:673b1ad43c",
+                "tasks_in_queue": 0,
+                "timestamp": "2026-09-24 15:19:00.660269",
+                "windows": [
+                    {"end_time": "2026-09-24 19:00:00", "start_time": "2026-09-24 17:00:00"}
+                ],
+            }
+        ]
+    }
+    device = OQCDevice(target_profile, client)
+    assert device.get_next_window() == datetime.datetime(
+        2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc
+    )
 
 
 @patch("qbraid.runtime.oqc.device.logger")
@@ -1033,3 +1109,20 @@ def test_oqc_device_submit_forwards_tag(target_profile, oqc_client, program):
     device.submit(program, tag="user-42")
 
     assert [task.tag for task in scheduled] == ["user-42"]
+
+
+@pytest.mark.parametrize(
+    ("oqc_status", "expected"),
+    [("CREATED", "INITIALIZING"), ("SUBMITTED", "QUEUED"), ("RUNNING", "RUNNING")],
+)
+def test_oqc_task_states_map_to_job_status(oqc_status, expected, oqc_device):
+    """A SUBMITTED task has been accepted by OQC and is waiting to run, so it is QUEUED.
+
+    Observed live on Toshiko Tokyo-1: a task submitted between access windows stays
+    SUBMITTED until the next window opens, which can be hours. Parameters are names,
+    not ``JobStatus`` members, because this module must import without the OQC extra.
+    """
+    client = Mock()
+    client.get_task_status.return_value = oqc_status
+    job = OQCJob("046d4610-1a61-4a99-b1ef-45c9b62eeaa4", client=client, device=oqc_device)
+    assert job.status() == JobStatus[expected]

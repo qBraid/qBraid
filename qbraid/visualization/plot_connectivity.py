@@ -24,6 +24,8 @@ from typing import TYPE_CHECKING, Iterable
 
 from qbraid_core._import import LazyLoader
 
+from qbraid.runtime.native.calibrations import _is_error_rate
+
 from .exceptions import VisualizationError
 
 if TYPE_CHECKING:
@@ -84,7 +86,7 @@ def _fallback_positions(coupling_map) -> dict:
 
 def _usable_error(value: float | None) -> float | None:
     """Keep physical error rates and mark missing or out-of-range values unavailable."""
-    return value if value is not None and 0.0 <= value <= 1.0 else None
+    return value if value is not None and _is_error_rate(value) else None
 
 
 # pylint: disable-next=too-many-locals,too-many-statements,too-many-arguments
@@ -172,9 +174,11 @@ def plot_connectivity_graph(
     nodes = sorted({q for edge in coupling_map for q in edge})
     pos = lattice_positions(topology, nodes) or _fallback_positions(coupling_map)
 
-    edge_vals = [
-        _usable_error(edge_error.get((a, b), edge_error.get((b, a)))) for a, b in coupling_map
-    ]
+    edge_vals = []
+    for a, b in coupling_map:
+        forward = _usable_error(edge_error.get((a, b)))
+        reverse = _usable_error(edge_error.get((b, a)))
+        edge_vals.append(forward if forward is not None else reverse)
     node_vals = [_usable_error(readout_error.get(q)) for q in nodes]
     valid_edges = [value for value in edge_vals if value is not None]
     valid_nodes = [value for value in node_vals if value is not None]

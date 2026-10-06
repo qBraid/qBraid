@@ -81,11 +81,22 @@ class TestLatticePositions:
     def test_square_lattice_row_major(self):
         """square-lattice ids map row-major: id = cols * row + col, y negated."""
         pos = lattice_positions({"type": "square-lattice", "rows": 2, "cols": 3}, range(6))
-        assert pos == {0: (0, 0), 1: (1, 0), 2: (2, 0), 3: (0, -1), 4: (1, -1), 5: (2, -1)}
+        assert pos == {
+            0: (0, 0),
+            1: (1, 0),
+            2: (2, 0),
+            3: (0, -1),
+            4: (1, -1),
+            5: (2, -1),
+        }
 
     def test_square_lattice_clipped_sequential_over_spans(self):
         """Clipped lattices number qubits sequentially across populated cells."""
-        topology = {"type": "square-lattice-clipped", "gridCols": 3, "rowSpans": [[1, 2], [0, 2]]}
+        topology = {
+            "type": "square-lattice-clipped",
+            "gridCols": 3,
+            "rowSpans": [[1, 2], [0, 2]],
+        }
         pos = lattice_positions(topology, range(5))
         assert pos == {0: (1, 0), 1: (2, 0), 2: (0, -1), 3: (1, -1), 4: (2, -1)}
 
@@ -187,21 +198,23 @@ class TestPlotConnectivityGraph:
         plot_connectivity_graph(device, show=True)
         assert shown == [True]
 
-    def test_invalid_errors_do_not_rescale_the_plot(self, monkeypatch):
+    @pytest.mark.parametrize("reverse_error", [None, 0.02])
+    def test_invalid_errors_do_not_rescale_the_plot(self, monkeypatch, reverse_error):
         """A negative error is unavailable, not the best value on either colorbar."""
         import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
 
         figures = []
         original_close = mpl_plt.close
         monkeypatch.setattr(mpl_plt, "close", figures.append)
+        gate_errors = [
+            {"source": 0, "target": 1, "value": -0.1},
+            {"source": 1, "target": 2, "value": 0.02},
+            {"source": 0, "target": 2, "value": 0.03},
+        ]
+        if reverse_error is not None:
+            gate_errors.append({"source": 1, "target": 0, "value": reverse_error})
         calibration = _calibration(
-            edges={
-                "cz": [
-                    {"source": 0, "target": 1, "value": -0.1},
-                    {"source": 1, "target": 2, "value": 0.02},
-                    {"source": 0, "target": 2, "value": 0.03},
-                ]
-            },
+            edges={"cz": gate_errors},
             qubits={
                 "0": {"readoutError": -0.1},
                 "1": {"readoutError": 0.04},
@@ -220,7 +233,10 @@ class TestPlotConnectivityGraph:
         ax = figure.axes[0]
         assert figure.axes[1].get_ylim()[0] == pytest.approx(0.02)
         assert figure.axes[2].get_ylim()[0] == pytest.approx(0.04)
-        assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+        expected_edge_color = (
+            to_rgba("#9ca3af") if reverse_error is None else mpl_plt.cm.Purples_r(0.0)
+        )
+        assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(expected_edge_color)
         assert tuple(ax.collections[1].get_facecolors()[0]) == pytest.approx(to_rgba("#9ca3af"))
         assert ax.get_legend().get_texts()[0].get_text() == "No usable calibration"
         original_close(figure)
