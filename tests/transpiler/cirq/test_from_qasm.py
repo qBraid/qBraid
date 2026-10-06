@@ -232,6 +232,29 @@ if (c[0] == false) {
     assert controlled_qubits == {cirq.NamedQubit("q_1"), cirq.NamedQubit("q_2")}
 
 
+_SINGLE_BIT_CONDITION_QASM3 = """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[3] q;
+bit[2] c0;
+bit[1] r;
+x q[0];
+x q[1];
+c0[0] = measure q[0];
+c0[1] = measure q[1];
+if (c0[1]) {
+  x q[2];
+}
+r[0] = measure q[2];
+"""
+
+
+def test_single_bit_condition_ignores_other_bits():
+    """A gate conditioned on c0[1] fires even when c0[0] is also set."""
+    circuit = qasm3_to_cirq(_SINGLE_BIT_CONDITION_QASM3)
+    result = cirq.Simulator().run(circuit, repetitions=10)
+    assert result.histogram(key="r_0") == {1: 10}
+
+
 def test_qasm3_to_cirq_without_conditionals():
     """Test QASM 3 to Cirq conversion without conditionals still works."""
     qasm = """OPENQASM 3.0;
