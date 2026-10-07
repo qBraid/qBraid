@@ -179,6 +179,38 @@ def test_qasm3_register_merging_does_not_rescan_every_measurement():
     assert key_reads < 100 * num_registers
 
 
+def test_qasm3_to_cirq_keeps_per_bit_keys_for_qasm2_input():
+    """QASM 2 text passed to qasm3_to_cirq keeps its per-bit measurement keys."""
+    from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    program = (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n'
+        "h q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    circuit = qasm3_to_cirq(program)
+
+    assert {op.gate.key for op in circuit.all_operations() if cirq.is_measurement(op)} == {
+        "c_0",
+        "c_1",
+    }
+
+
+def test_qasm3_register_named_like_a_bit_of_another_register_is_not_merged():
+    """Register ``r_1`` keeps per-bit keys so it cannot sort between register ``r``'s bits."""
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[4] q;\nbit[3] r;\nbit[2] r_1;\n'
+        "r[0] = measure q[0];\nr[2] = measure q[1];\n"
+        "r_1[0] = measure q[2];\nr_1[1] = measure q[3];\n"
+    )
+
+    cregs = re.findall(r"^creg (\w+)\[", transpile(program, "qasm2"), flags=re.MULTILINE)
+
+    assert cregs == ["m_r_0", "m_r_2", "m_r_1_0", "m_r_1_1"]
+
+
 def test_qasm3_register_merging_keeps_per_bit_keys_when_register_key_is_taken():
     """A register is not merged if its name is already used as a measurement key."""
     from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import (  # pylint: disable=import-outside-toplevel

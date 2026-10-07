@@ -19,6 +19,7 @@ Module for conversions from QASM 3 to Cirq Circuits
 
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 import pyqasm
@@ -37,6 +38,10 @@ if TYPE_CHECKING:
 
     from qbraid.programs.typer import Qasm3StringType
 
+
+# Register merging is a QASM 3 behaviour; QASM 2 input keeps its per-bit keys.
+_QASM2_HEADER = re.compile(r"\s*(?://[^\n]*\n\s*)*OPENQASM\s+2(?:\.\d+)?\s*;")
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 # Gate aliases that Cirq's built-in QASM parser does not recognize, mapped to
 # their Cirq-supported equivalents.
@@ -87,6 +92,11 @@ def _merge_terminal_register_measurements(
     for name, size in register_sizes.items():
         if any(f"{name}_{index}" in conditioned for index in range(size)):
             continue
+        # A merged key ``r_1`` would read as bit 1 of register ``r`` wherever keys are
+        # ordered by ``(register, index)``, interleaving it with ``r``'s bits.
+        suffixed = _BIT_INDEX.match(name)
+        if suffixed and suffixed["register"] in register_sizes:
+            continue
         matches = [
             match
             for index in range(size)
@@ -136,6 +146,7 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input OpenQASM 3 string.
     """
+    is_qasm2 = _QASM2_HEADER.match(qasm) is not None
     try:
         parsed = cirq_qasm_parser.QasmParser().parse(qasm)
     except cirq_qasm_import.QasmException:
@@ -153,4 +164,6 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
             parsed = cirq_qasm_parser.QasmParser().parse(qasm)
         except cirq_qasm_import.QasmException as err:
             raise QasmError(err) from err
+    if is_qasm2:
+        return parsed.circuit
     return _merge_terminal_register_measurements(parsed.circuit, parsed.cregs)
