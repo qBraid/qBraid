@@ -179,6 +179,24 @@ def test_qasm3_register_merging_does_not_rescan_every_measurement():
     assert key_reads < 100 * num_registers
 
 
+def test_qasm3_register_merging_keeps_per_bit_keys_when_register_key_is_taken():
+    """A register is not merged if its name is already used as a measurement key."""
+    from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import (  # pylint: disable=import-outside-toplevel
+        _merge_terminal_register_measurements,
+    )
+
+    q = cirq.LineQubit.range(3)
+    circuit = cirq.Circuit(
+        cirq.measure(q[0], key="c_0"),
+        cirq.measure(q[1], key="c_1"),
+        cirq.measure(q[2], key="c"),
+    )
+
+    merged = _merge_terminal_register_measurements(circuit, {"c": 2})
+
+    assert {op.gate.key for op in merged.all_operations()} == {"c_0", "c_1", "c"}
+
+
 def test_qasm3_to_qasm2_does_not_invent_unmeasured_bits():
     """A partial source register stays unmerged rather than measuring idle qubits."""
     program = (
