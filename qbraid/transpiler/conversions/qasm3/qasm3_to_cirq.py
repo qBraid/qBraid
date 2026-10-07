@@ -59,7 +59,8 @@ def _merge_terminal_register_measurements(
     Cirq imports ``bit[n] c`` as independent keys ``c_0`` through ``c_(n-1)``. Its QASM 2
     exporter then declares one classical register per key, which loses joint counts on
     backends that report results per register. Only complete terminal registers are
-    coalesced. Mid-circuit readout and partial registers keep their original keys.
+    coalesced. Mid-circuit readout, partial registers and registers read by a classical
+    condition keep their original keys.
     """
     import cirq  # pylint: disable=import-outside-toplevel
 
@@ -68,14 +69,11 @@ def _merge_terminal_register_measurements(
         for moment_index, moment in enumerate(circuit)
         for operation in moment.operations
     ]
-    if sum(isinstance(op.gate, cirq.MeasurementGate) for _, op in indexed_operations) < 2:
-        return circuit
-    if not any(size > 1 for size in register_sizes.values()):
+    if not any(isinstance(op.gate, cirq.MeasurementGate) for _, op in indexed_operations):
         return circuit
 
-    # Changing measurement keys would invalidate later classical conditions.
-    if any(isinstance(op, cirq.ClassicallyControlledOperation) for _, op in indexed_operations):
-        return circuit
+    # Renaming a key a condition reads would break that condition.
+    conditioned = {key.name for _, op in indexed_operations for key in cirq.control_keys(op)}
 
     last_on_qubit = {
         qubit: operation for _, operation in indexed_operations for qubit in operation.qubits
@@ -87,7 +85,7 @@ def _merge_terminal_register_measurements(
     selected: set[tuple[int, cirq.Operation]] = set()
     merged: list[cirq.Operation] = []
     for name, size in register_sizes.items():
-        if size < 2:
+        if any(f"{name}_{index}" in conditioned for index in range(size)):
             continue
         matches = [
             match
