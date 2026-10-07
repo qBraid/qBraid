@@ -310,6 +310,14 @@ def test_public_endpoints_use_the_session_without_auth_header():
     mock_get.assert_called_once_with("/backends", timeout=30, headers={"Authorization": None})
 
 
+def test_public_endpoints_accept_explicit_none_headers():
+    """``headers=None`` from a caller is treated as no extra headers, as requests does."""
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        IonQSession(api_key="fake_api_key").get_devices(headers=None)
+
+    mock_get.assert_called_once_with("/backends", timeout=30, headers={"Authorization": None})
+
+
 def test_ionq_provider_device_unavailable():
     """Test getting IonQ provider and different status devices."""
 

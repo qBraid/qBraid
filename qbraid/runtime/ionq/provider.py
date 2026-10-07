@@ -72,7 +72,7 @@ class IonQSession(Session):
         """
         kwargs.setdefault("timeout", 30)
         # A header set to None is dropped from the session's defaults for this request.
-        kwargs["headers"] = {"Authorization": None, **kwargs.get("headers", {})}
+        kwargs["headers"] = {"Authorization": None, **(kwargs.get("headers") or {})}
         return self.get(path, **kwargs)
 
     def get_devices(self, **kwargs) -> dict[str, dict[str, Any]]:
