@@ -148,6 +148,8 @@ def _token_expiry(token: str) -> float | None:
     ``exp`` only decides when to mint a replacement. ``aqt-connector``'s verifier would re-fetch
     the issuer's JWKS on every call, trading one network round trip for another.
     """
+    if not isinstance(token, str):  # a shared store can hand back anything
+        return None
     try:
         segment = token.split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(segment + "=" * (-len(segment) % 4)))

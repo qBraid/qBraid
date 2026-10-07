@@ -981,3 +981,17 @@ def test_a_failed_claim_call_is_not_remembered_as_lost(monkeypatch):
     assert _resolve_access_token("cid", "cs") == current
     assert _resolve_access_token("cid", "cs") == current
     assert calls == [current, current]
+
+
+@pytest.mark.parametrize("stored", [12345, {"exp": 1}, b"a.b.c", "not-a-jwt"])
+def test_a_malformed_shared_value_falls_back_to_minting(monkeypatch, stored):
+    """Whatever a store hands back, an unreadable value is ignored rather than breaking auth."""
+    token = _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [token])
+    store = _FakeStore()
+    store.token = stored
+    set_token_store(store)
+
+    assert _resolve_access_token("cid", "cs") == token
+    assert len(minted) == 1 and store.saved == [token]
