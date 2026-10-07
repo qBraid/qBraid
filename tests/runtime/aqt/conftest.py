@@ -195,10 +195,12 @@ else:
 
         provider._TOKEN_CACHE.clear()  # pylint: disable=protected-access
         provider._TOKEN_LOCKS.clear()  # pylint: disable=protected-access
+        provider._LOST_CLAIMS.clear()  # pylint: disable=protected-access
         provider.set_token_store(None)
         yield
         provider._TOKEN_CACHE.clear()  # pylint: disable=protected-access
         provider._TOKEN_LOCKS.clear()  # pylint: disable=protected-access
+        provider._LOST_CLAIMS.clear()  # pylint: disable=protected-access
         provider.set_token_store(None)
 
     @pytest.fixture

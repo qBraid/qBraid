@@ -75,6 +75,11 @@ _TOKEN_LOCKS_GUARD = threading.Lock()
 # ``claim_renewal`` and mints; the rest keep using the current token, which is still valid.
 _TOKEN_RENEW_AHEAD_SECONDS = 3600
 
+# A lost renewal claim, remembered per key as (token, when) so the losers don't ask the store
+# again on every request. It expires so a claim whose winner died before minting is retried.
+_LOST_CLAIMS: dict[tuple[str, str, str | None], tuple[str, float]] = {}
+_LOST_CLAIM_RETRY_SECONDS = 300
+
 
 class AQTTokenStore(Protocol):
     """Shares resolved tokens beyond this process, e.g. across a service's instances.
@@ -200,9 +205,16 @@ def _resolve_access_token(
                 return cached[0]
             if cached is not None and time.time() < cached[1] - _TOKEN_REFRESH_MARGIN_SECONDS:
                 current = cached[0]
-                if not _call_store(
+                lost = _LOST_CLAIMS.get(key)
+                if lost is not None and lost[0] == current:
+                    if time.time() < lost[1] + _LOST_CLAIM_RETRY_SECONDS:
+                        return current
+                claimed = _call_store(
                     "claim_renewal", lambda: store.claim_renewal(client_id, audience, current)
-                ):
+                )
+                if claimed is False:
+                    _LOST_CLAIMS[key] = (current, time.time())
+                if not claimed:
                     return current
         # Skip the stored token: it may belong to another account, and caching it here would key
         # it to these credentials. Every cached token is minted from exactly its own key.
@@ -246,6 +258,7 @@ def _keep_minted_token(
     key: tuple[str, str, str | None], client_id: str, audience: str | None, token: str
 ) -> str:
     """Cache a freshly minted ``token`` and share it through the store, then return it."""
+    _LOST_CLAIMS.pop(key, None)
     _store_access_token(key, token)
     store = _TOKEN_STORE
     if store is not None and _token_expiry(token) is not None:

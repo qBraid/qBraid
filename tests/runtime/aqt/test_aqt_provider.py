@@ -820,6 +820,10 @@ def test_only_the_claim_winner_renews_ahead_of_expiry(monkeypatch):
     assert _resolve_access_token("cid", "cs") == current
     assert minted == [] and loser.claims == [current]
 
+    # A separate process: it shares the store, not this one's memory of the lost claim.
+    from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
+
+    provider._LOST_CLAIMS.clear()  # pylint: disable=protected-access
     winner = _FakeStore(current, wins_claim=True)
     set_token_store(winner)
     assert _resolve_access_token("cid", "cs") == renewed
@@ -912,3 +916,68 @@ def test_a_token_without_a_readable_expiry_is_not_shared(monkeypatch):
 
     assert _resolve_access_token("cid", "cs") == "opaque-token"
     assert store.saved == []
+
+
+def test_a_lost_claim_is_not_repeated_on_every_request(monkeypatch):
+    """A process that lost the renewal claim keeps its token without asking the store again."""
+    current = _jwt(_NOW + 1_800)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+
+    for _ in range(5):
+        assert _resolve_access_token("cid", "cs") == current
+    assert store.claims == [current] and minted == []
+
+
+def test_a_lost_claim_is_retried_after_the_retry_window(monkeypatch):
+    """If the winner died before minting, a later request claims again and renews."""
+    current, renewed = _jwt(_NOW + 3_000), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [renewed])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current
+
+    store.wins_claim = True
+    _freeze(monkeypatch, _NOW + 301)
+    assert _resolve_access_token("cid", "cs") == renewed
+    assert store.claims == [current, current] and store.saved == [renewed]
+
+
+def test_a_lost_claim_still_picks_up_the_winners_token(monkeypatch):
+    """The store is read before the lost claim is consulted, so the renewal reaches everyone."""
+    current, renewed = _jwt(_NOW + 1_800), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current
+
+    store.token = renewed
+    assert _resolve_access_token("cid", "cs") == renewed
+
+
+def test_a_failed_claim_call_is_not_remembered_as_lost(monkeypatch):
+    """Only a literal False is cached; a store error is retried on the next request."""
+    current = _jwt(_NOW + 1_800)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current  # adopted, claim lost and remembered
+
+    calls = []
+
+    def flaky_claim(client_id, audience, token):
+        calls.append(token)
+        raise ConnectionError("store unreachable")
+
+    from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
+
+    provider._LOST_CLAIMS.clear()  # pylint: disable=protected-access
+    store.claim_renewal = flaky_claim
+    assert _resolve_access_token("cid", "cs") == current
+    assert _resolve_access_token("cid", "cs") == current
+    assert calls == [current, current]
