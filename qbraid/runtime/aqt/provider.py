@@ -28,10 +28,11 @@ import base64
 import binascii
 import hashlib
 import json
+import logging
 import os
 import threading
 import time
-from typing import Any
+from typing import Any, Callable, Protocol
 
 from aqt_connector import ArnicaApp, ArnicaConfig, get_access_token, log_in
 from aqt_connector.models.arnica.resources import ResourceType
@@ -53,6 +54,8 @@ from .device import AQTDevice
 
 DEFAULT_ARNICA_URL = "https://arnica.aqt.eu/api"
 
+logger = logging.getLogger(__name__)
+
 # Mint a replacement this long before the cached token expires, so a request already in flight
 # is not sent with a token that lapses on the way.
 _TOKEN_REFRESH_MARGIN_SECONDS = 300
@@ -67,6 +70,52 @@ _TOKEN_CACHE: dict[tuple[str, str, str | None], tuple[str, float]] = {}
 # for another.
 _TOKEN_LOCKS: dict[tuple[str, str, str | None], threading.Lock] = {}
 _TOKEN_LOCKS_GUARD = threading.Lock()
+
+# With a shared store, a token this close to expiry is due for renewal. One process wins
+# ``claim_renewal`` and mints; the rest keep using the current token, which is still valid.
+_TOKEN_RENEW_AHEAD_SECONDS = 3600
+
+# A lost renewal claim, remembered per key as (token, when) so the losers don't ask the store
+# again on every request. It expires so a claim whose winner died before minting is retried.
+_LOST_CLAIMS: dict[tuple[str, str, str | None], tuple[str, float]] = {}
+_LOST_CLAIM_RETRY_SECONDS = 300
+
+
+class AQTTokenStore(Protocol):
+    """Shares resolved tokens beyond this process, e.g. across a service's instances.
+
+    Registered with :func:`set_token_store`. The SDK still caches in memory and decides when to
+    mint; the store only lets other processes reuse the result instead of minting their own.
+    ``audience`` is the arnica API root the token was minted for. Implementations must never log
+    a token.
+    """
+
+    def load(self, client_id: str, audience: str | None) -> str | None:
+        """Return the shared token, or ``None`` when there is none."""
+
+    def save(self, client_id: str, audience: str | None, token: str) -> None:
+        """Make ``token`` the shared token."""
+
+    def claim_renewal(self, client_id: str, audience: str | None, token: str) -> bool:
+        """Return ``True`` to exactly one caller per ``token``; that caller mints its successor."""
+
+
+_TOKEN_STORE: AQTTokenStore | None = None
+
+
+def set_token_store(store: AQTTokenStore | None) -> None:
+    """Share client-credentials tokens through ``store``; ``None`` keeps them in this process."""
+    global _TOKEN_STORE  # pylint: disable=global-statement
+    _TOKEN_STORE = store
+
+
+def _call_store(action: str, call: Callable[[], Any]) -> Any:
+    """Run a store call, answering ``None`` if it fails: a broken store must not break auth."""
+    try:
+        return call()
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        logger.warning("AQT token store %s failed: %s", action, type(exc).__name__)
+        return None
 
 
 def _token_cache_key(
@@ -99,6 +148,8 @@ def _token_expiry(token: str) -> float | None:
     ``exp`` only decides when to mint a replacement. ``aqt-connector``'s verifier would re-fetch
     the issuer's JWKS on every call, trading one network round trip for another.
     """
+    if not isinstance(token, str):  # a shared store can hand back anything
+        return None
     try:
         segment = token.split(".")[1]
         claims = json.loads(base64.urlsafe_b64decode(segment + "=" * (-len(segment) % 4)))
@@ -142,13 +193,35 @@ def _resolve_access_token(
 
     key = _token_cache_key(client_id, client_secret, audience)
     with _token_lock(key):
+        store = _TOKEN_STORE
+        renew_at = _TOKEN_REFRESH_MARGIN_SECONDS + (_TOKEN_RENEW_AHEAD_SECONDS if store else 0)
         cached = _TOKEN_CACHE.get(key)
-        if cached is not None and time.time() < cached[1] - _TOKEN_REFRESH_MARGIN_SECONDS:
+        if cached is not None and time.time() < cached[1] - renew_at:
             return cached[0]
+        if store is not None:
+            shared = _call_store("load", lambda: store.load(client_id, audience))
+            expiry = _token_expiry(shared) if shared else None
+            if expiry is not None and (cached is None or expiry > cached[1]):
+                cached = _TOKEN_CACHE[key] = (shared, expiry)
+            if cached is not None and time.time() < cached[1] - renew_at:
+                return cached[0]
+            if cached is not None and time.time() < cached[1] - _TOKEN_REFRESH_MARGIN_SECONDS:
+                current = cached[0]
+                lost = _LOST_CLAIMS.get(key)
+                if lost is not None and lost[0] == current:
+                    if time.time() < lost[1] + _LOST_CLAIM_RETRY_SECONDS:
+                        return current
+                claimed = _call_store(
+                    "claim_renewal", lambda: store.claim_renewal(client_id, audience, current)
+                )
+                if claimed is False:
+                    _LOST_CLAIMS[key] = (current, time.time())
+                if not claimed:
+                    return current
         # Skip the stored token: it may belong to another account, and caching it here would key
         # it to these credentials. Every cached token is minted from exactly its own key.
         token = _mint_access_token(client_id, client_secret, audience, bypass_stored=True)
-        return _store_access_token(key, token)
+        return _keep_minted_token(key, client_id, audience, token)
 
 
 def _replace_rejected_token(
@@ -171,8 +244,28 @@ def _replace_rejected_token(
         cached = _TOKEN_CACHE.get(key)
         if cached is not None and cached[0] != rejected:
             return cached[0]
+        store = _TOKEN_STORE
+        if store is not None:
+            # Another process may already have replaced the rejected token.
+            shared = _call_store("load", lambda: store.load(client_id, audience))
+            expiry = _token_expiry(shared) if shared and shared != rejected else None
+            if expiry is not None and time.time() < expiry - _TOKEN_REFRESH_MARGIN_SECONDS:
+                _TOKEN_CACHE[key] = (shared, expiry)
+                return shared
         token = _mint_access_token(client_id, client_secret, audience, bypass_stored=True)
-        return _store_access_token(key, token)
+        return _keep_minted_token(key, client_id, audience, token)
+
+
+def _keep_minted_token(
+    key: tuple[str, str, str | None], client_id: str, audience: str | None, token: str
+) -> str:
+    """Cache a freshly minted ``token`` and share it through the store, then return it."""
+    _LOST_CLAIMS.pop(key, None)
+    _store_access_token(key, token)
+    store = _TOKEN_STORE
+    if store is not None and _token_expiry(token) is not None:
+        _call_store("save", lambda: store.save(client_id, audience, token))
+    return token
 
 
 def _mint_access_token(
