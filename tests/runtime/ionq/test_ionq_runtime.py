@@ -29,6 +29,7 @@ from unittest.mock import ANY, Mock, call, patch
 import pytest
 import qiskit
 from packaging.version import parse
+from qbraid_core.exceptions import RequestsApiError
 from qiskit import QuantumCircuit
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
@@ -281,14 +282,32 @@ def test_get_device_characterization_from_data():
 
 
 def test_provider_session_device_not_found_error():
-    """Test that a ValueError is raised if the device is not found."""
-    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
-        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
-
+    """A 404 for the device is reported as a missing device."""
+    missing = RequestsApiError("Not Found.", status_code=404)
+    with patch("qbraid_core.sessions.Session.get", side_effect=missing):
         provider = IonQProvider(api_key="fake_api_key")
 
         with pytest.raises(ResourceNotFoundError, match="Device 'fake_device' not found."):
             provider.get_device("fake_device")
+
+
+def test_provider_session_connection_error_is_not_a_missing_device():
+    """A failure to reach IonQ surfaces as itself, not as "Device not found"."""
+    unreachable = RequestsApiError("[Errno 101] Network is unreachable.", status_code=None)
+    with patch("qbraid_core.sessions.Session.get", side_effect=unreachable):
+        provider = IonQProvider(api_key="fake_api_key")
+
+        with pytest.raises(RequestsApiError, match="Network is unreachable"):
+            provider.session.get_device("simulator")
+
+
+def test_public_endpoints_use_the_session_without_auth_header():
+    """Device lookups reuse the session's connections and still omit the API key."""
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        session = IonQSession(api_key="fake_api_key")
+        session.get_devices()
+
+    mock_get.assert_called_once_with("/backends", timeout=30, headers={"Authorization": None})
 
 
 def test_ionq_provider_device_unavailable():

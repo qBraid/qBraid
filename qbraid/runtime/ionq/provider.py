@@ -21,6 +21,7 @@ import os
 from typing import Any, Optional
 
 import requests as http_requests
+from qbraid_core.exceptions import RequestsApiError
 from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
@@ -63,12 +64,16 @@ class IonQSession(Session):
         self.add_user_agent(f"QbraidSDK/{qbraid_version}")
 
     def _get_public(self, path: str, **kwargs) -> http_requests.Response:
-        """Make a GET request without auth headers for public endpoints."""
-        url = self.base_url.rstrip("/") + "/" + path.lstrip("/")
-        timeout = kwargs.pop("timeout", 30)
-        response = http_requests.get(url, timeout=timeout, **kwargs)
-        response.raise_for_status()
-        return response
+        """Make a GET request without auth headers for public endpoints.
+
+        Sent through the session so it reuses pooled connections and the retry policy: a
+        bare ``requests.get`` opened a new connection for every device lookup, including
+        the status check ``device.run`` makes before each submit.
+        """
+        kwargs.setdefault("timeout", 30)
+        # A header set to None is dropped from the session's defaults for this request.
+        kwargs["headers"] = {"Authorization": None, **kwargs.get("headers", {})}
+        return self.get(path, **kwargs)
 
     def get_devices(self, **kwargs) -> dict[str, dict[str, Any]]:
         """Get all IonQ devices."""
@@ -80,8 +85,12 @@ class IonQSession(Session):
         """Get a specific IonQ device."""
         try:
             return self._get_public(f"/backends/{device_id}").json()
-        except Exception as err:
-            raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+        except RequestsApiError as err:
+            # Only a 404 means the device is missing. A connection error or an IonQ
+            # outage must surface as itself, not as a missing device.
+            if err.status_code == 404:
+                raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+            raise
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job on the IonQ API."""
