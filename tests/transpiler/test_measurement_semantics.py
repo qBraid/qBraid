@@ -154,8 +154,11 @@ def test_qasm3_register_merging_does_not_rescan_every_measurement():
     key_reads = 0
 
     class CountingMeasurementGate(cirq.MeasurementGate):
+        """Measurement gate that counts how often its key is read."""
+
         @property
         def key(self):
+            """The measurement key, counted on every read."""
             nonlocal key_reads
             key_reads += 1
             return super().key
