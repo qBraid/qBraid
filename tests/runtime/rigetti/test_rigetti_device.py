@@ -254,6 +254,44 @@ class TestRigettiDeviceMaintenance:
         with patch("qbraid.runtime.rigetti.device.requests.get", return_value=mock_response):
             assert rigetti_device.maintenance_calendar() == ""
 
+    def test_maintenance_calendar_follows_a_linked_feed(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A maintenanceICal that is an https link is fetched, without the QCS bearer token.
+
+        Cepheus-1-108Q publishes a Google Calendar URL here; parsing the URL itself as iCal
+        failed and reported the device ONLINE through every maintenance window.
+        """
+        feed_url = "https://calendar.google.com/calendar/ical/abc/public/basic.ics"
+        qcs_response = MagicMock()
+        qcs_response.json.return_value = {"maintenanceICal": feed_url}
+        feed_response = MagicMock(text=MAINTENANCE_ICAL)
+        with patch(
+            "qbraid.runtime.rigetti.device.requests.get",
+            side_effect=[qcs_response, feed_response],
+        ) as mock_get:
+            result = rigetti_device.maintenance_calendar()
+
+        assert result == MAINTENANCE_ICAL
+        feed_call = mock_get.call_args_list[1]
+        assert feed_call.args[0] == feed_url
+        assert "Authorization" not in feed_call.kwargs["headers"]
+        assert feed_call.kwargs.get("timeout") is not None
+        feed_response.raise_for_status.assert_called_once()
+
+    def test_maintenance_calendar_wraps_linked_feed_error(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """A linked feed that cannot be fetched raises RigettiDeviceError, so status() degrades."""
+        qcs_response = MagicMock()
+        qcs_response.json.return_value = {"maintenanceICal": "https://example.com/m.ics"}
+        with patch(
+            "qbraid.runtime.rigetti.device.requests.get",
+            side_effect=[qcs_response, requests.ConnectionError("boom")],
+        ):
+            with pytest.raises(RigettiDeviceError, match="Failed to fetch maintenance calendar"):
+                rigetti_device.maintenance_calendar()
+
     def test_maintenance_calendar_wraps_http_error(self, rigetti_device: RigettiDevice) -> None:
         """A failed QCS request must be wrapped in RigettiDeviceError."""
         with patch(

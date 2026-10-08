@@ -22,9 +22,11 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import icalendar
 import recurring_ical_events
+import requests
 
 from qbraid.runtime.enums import DeviceStatus
 
@@ -40,6 +42,24 @@ _MAINTENANCE_HORIZON = datetime.timedelta(weeks=1)
 def _current_utc_datetime() -> datetime.datetime:
     """Return the current UTC datetime."""
     return datetime.datetime.now(datetime.timezone.utc)
+
+
+def follow_feed_link(ical: str, timeout: float) -> str:
+    """Return ``ical``, or the calendar it links to when it is an ``https`` URL.
+
+    QCS publishes some processors' maintenance (Cepheus-1-108Q's, for one) as a link to a
+    Google Calendar feed rather than inline. The feed is public, so it is fetched without
+    the QCS bearer token, which must not be sent to a third party.
+
+    Raises:
+        requests.RequestException: If the linked feed cannot be fetched.
+    """
+    url = ical.strip()
+    if urlparse(url).scheme != "https":
+        return ical
+    response = requests.get(url, headers={"Accept": "text/calendar"}, timeout=timeout)
+    response.raise_for_status()
+    return response.text
 
 
 def _parse_calendar(ical_text: str) -> icalendar.Calendar | None:
