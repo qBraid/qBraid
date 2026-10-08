@@ -44,11 +44,14 @@ try:
     )
 
     from qbraid.programs import NATIVE_REGISTRY, ExperimentType, ProgramSpec
-    from qbraid.runtime import GateModelResultData, QuantumDevice, Result, TargetProfile
+    from qbraid.programs.exceptions import ProgramTypeError
+    from qbraid.runtime import GateModelResultData, Result, TargetProfile
     from qbraid.runtime.enums import DeviceStatus, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
+    from qbraid.runtime.oqc.device import _uses_physical_qubits
     from qbraid.runtime.postprocess import counts_to_probabilities
+    from qbraid.transpiler.exceptions import ProgramConversionError
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -1017,8 +1020,8 @@ def test_oqc_result_names_each_register(oqc_job):
 def test_qasm3_reaches_oqc_with_its_registers_whole(target_profile, oqc_client):
     """A partly measured register stays one ``creg`` under its own name.
 
-    The default conversion goes through Cirq, which split ``c`` into ``m_c_0`` and
-    ``m_c_2``; OQC then counted each bit separately and their correlation was lost.
+    Conversion through Cirq split ``c`` into ``m_c_0`` and ``m_c_2``; OQC then counted
+    each bit separately and their correlation was lost.
     """
     device = OQCDevice(profile=target_profile, client=oqc_client)
     qasm3 = (
@@ -1033,35 +1036,6 @@ def test_qasm3_reaches_oqc_with_its_registers_whole(target_profile, oqc_client):
     assert program.startswith("OPENQASM 2.0;")
     assert "creg c[3];" in program
     assert "m_c" not in program
-
-
-def test_qasm3_with_physical_qubits_is_submitted_as_written(target_profile, oqc_client):
-    """OpenQASM 2 cannot name a physical qubit, so ``$n`` programs stay OpenQASM 3."""
-    device = OQCDevice(profile=target_profile, client=oqc_client)
-    qasm3 = (
-        "OPENQASM 3.0;\nbit[2] c;\nh $2;\ncx $2, $1;\n" "c[0] = measure $1;\nc[1] = measure $2;\n"
-    )
-
-    with patch.object(oqc_client, "schedule_tasks", wraps=oqc_client.schedule_tasks) as schedule:
-        device.run(qasm3, shots=10)
-
-    program = schedule.call_args.args[0][0].program
-    assert program.startswith("OPENQASM 3")
-    assert "cx $2, $1;" in program
-
-
-def test_qasm3_that_qasm2_cannot_express_takes_the_default_conversion(target_profile):
-    """A bit-level condition has no OpenQASM 2 form here, so the default path handles it."""
-    device = OQCDevice(profile=target_profile, client=Mock())
-    qasm3 = (
-        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[2] c;\n'
-        "h q[0];\nc[0] = measure q[0];\nif (c[0]) { x q[1]; }\nc[1] = measure q[1];\n"
-    )
-    spec = ProgramSpec(str, alias="qasm3")
-
-    with patch.object(QuantumDevice, "transpile", return_value="default") as default:
-        assert device.transpile(qasm3, spec) == "default"
-    default.assert_called_once()
 
 
 def test_transform_preserves_qasm2_includes(target_profile, oqc_client):
@@ -1117,6 +1091,54 @@ def test_transform_strips_qasm3_includes(target_profile, oqc_client):
 
     assert "stdgates.inc" not in transformed
     assert "h q[0];" in transformed
+
+
+def test_qasm3_with_physical_qubits_is_submitted_as_written(target_profile, oqc_client):
+    """OpenQASM 2 cannot name a physical qubit, so ``$n`` programs stay OpenQASM 3."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm3 = (
+        "OPENQASM 3.0;\nbit[2] c;\nh $2;\ncx $2, $1;\n" "c[0] = measure $1;\nc[1] = measure $2;\n"
+    )
+
+    with patch.object(oqc_client, "schedule_tasks", wraps=oqc_client.schedule_tasks) as schedule:
+        device.run(qasm3, shots=10)
+
+    program = schedule.call_args.args[0][0].program
+    assert program.startswith("OPENQASM 3")
+    assert "cx $2, $1;" in program
+
+
+def test_logical_qasm3_is_still_rejected_without_transpile(target_profile, oqc_client):
+    """Only physical-qubit programs may reach OQC as OpenQASM 3."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    device.set_options(transpile=False)
+
+    with pytest.raises(ProgramTypeError):
+        device.run('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nh q[0];\n', shots=10)
+
+
+def test_unparsable_qasm3_keeps_the_default_conversion_error(target_profile, oqc_client):
+    """A syntax error must surface as qBraid's conversion error, not the parser's."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+
+    with pytest.raises(ProgramConversionError):
+        device.run("OPENQASM 3.0;\nqubit[1] q;\nh q[0]\n", shots=10)
+
+
+@pytest.mark.parametrize(
+    ("program", "expected"),
+    [
+        ("OPENQASM 3.0;\nbit[1] c;\nh $1;\nc[0] = measure $1;\n", True),
+        ("OPENQASM 3.0;\nbit[1] c;\nwhile (c[0]) { x $1; c[0] = measure $1; }\n", True),
+        ('OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nh q[0];\n', False),
+        ("OPENQASM 3.0;\n// on $5\npragma note $9\nqubit[1] q;\nh q[0];\n", False),
+        ('OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[1];\nh q[0];\n', False),
+    ],
+    ids=["physical", "physical-in-loop", "logical", "dollar-in-comment-and-pragma", "qasm2"],
+)
+def test_uses_physical_qubits(program, expected):
+    """Only ``$n`` operands in OpenQASM 3 count; comments, pragmas and QASM 2 do not."""
+    assert _uses_physical_qubits(program) is expected
 
 
 def test_oqc_job_execution_time(oqc_job):

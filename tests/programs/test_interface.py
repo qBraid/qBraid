@@ -123,7 +123,7 @@ def test_raise_value_error_no_valid_generators():
     with pytest.raises(
         ValueError, match="No registered generator that can create a random circuit for 'qasm2'"
     ):
-        random_circuit("qasm2", graph=ConversionGraph(nodes=["qasm2", "qasm3"]))
+        random_circuit("qasm2", graph=ConversionGraph(nodes=["qasm2", "braket"]))
 
 
 def test_cirq_random_raises_for_bad_param():
