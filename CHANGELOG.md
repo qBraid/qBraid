@@ -38,7 +38,7 @@ Writing an entry:
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
 - Converting OpenQASM to Cirq no longer drops gates conditioned on a single classical bit, such as `if (c[1]) x q[0];`, when another bit of the same register is also set ([#1460](https://github.com/qBraid/qBraid/pull/1460))
 - `IonQProvider` no longer reports a failure to reach IonQ as "Device '<x>' not found"; that error is now raised only when IonQ returns 404, and device lookups reuse the session's connections ([#1463](https://github.com/qBraid/qBraid/pull/1463))
-- `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#PR](https://github.com/qBraid/qBraid/pull/PR))
+- `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
 
