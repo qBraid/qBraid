@@ -911,13 +911,22 @@ def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
     oqc_client.get_task_metadata.assert_called_once()
 
 
-def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client):
-    """A QPU that times out may not hold the task, so the lookup tries the rest."""
+@pytest.mark.parametrize(
+    "error",
+    [
+        ConnectionFailureException(503),
+        ConnectionFailureException("Timeout error"),
+        ServerException("Not Implemented", 501),
+    ],
+    ids=["retryable-5xx", "timeout", "other-5xx"],
+)
+def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client, error):
+    """A QPU that times out or fails may not hold the task, so the lookup tries the rest."""
     find_on_toshiko = _metadata_only_on(toshiko_id)
 
     def get_task_metadata(task_id, qpu_id=None):
         if qpu_id != toshiko_id:
-            raise ConnectionFailureException(503)
+            raise error
         return find_on_toshiko(task_id, qpu_id)
 
     oqc_job._qpu_id = None

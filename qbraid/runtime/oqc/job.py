@@ -103,11 +103,15 @@ class OQCJob(QuantumJob):
         for qpu in self._client.get_qpus():
             try:
                 self._client.get_task_metadata(task_id=self.id, qpu_id=qpu["id"])
-            except qcaas_client.ConnectionFailureException as err:
-                unreachable = err
-                continue
             except qcaas_client.ServerException as err:
                 if err.server_error_code == 404:
+                    continue
+                # qcaas raises ConnectionFailureException for 500-504 and timeouts, and a
+                # plain ServerException for any other 5xx.
+                if isinstance(err, qcaas_client.ConnectionFailureException) or (
+                    isinstance(err.server_error_code, int) and err.server_error_code >= 500
+                ):
+                    unreachable = err
                     continue
                 raise
             return qpu["id"]
