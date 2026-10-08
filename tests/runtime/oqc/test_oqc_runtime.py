@@ -31,6 +31,7 @@ from typing import ClassVar, Optional, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from requests import ConnectionError as RequestsConnectionError
 from requests import ReadTimeout
 
 try:
@@ -917,8 +918,9 @@ def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
         ConnectionFailureException(503),
         ConnectionFailureException("Timeout error"),
         ServerException("Not Implemented", 501),
+        RequestsConnectionError("Failed to resolve 'jp.cloud.oqc.app'"),
     ],
-    ids=["retryable-5xx", "timeout", "other-5xx"],
+    ids=["retryable-5xx", "timeout", "other-5xx", "no-connection"],
 )
 def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client, error):
     """A QPU that times out or fails may not hold the task, so the lookup tries the rest."""

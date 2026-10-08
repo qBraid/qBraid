@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+import requests
 from qbraid_core._import import LazyLoader
 
 from qbraid.runtime.enums import JobStatus
@@ -114,6 +115,9 @@ class OQCJob(QuantumJob):
                     unreachable = err
                     continue
                 raise
+            except requests.exceptions.ConnectionError as err:  # e.g. a failed DNS lookup
+                unreachable = err
+                continue
             return qpu["id"]
         if unreachable is not None:
             raise unreachable
