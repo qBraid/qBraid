@@ -865,6 +865,51 @@ def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):
     oqc_client.get_task_metadata.assert_called_once()
 
 
+def _metadata_only_on(home_qpu_id: str):
+    """A get_task_metadata stand-in that, like OQC, 404s on every QPU but the task's own."""
+
+    def get_task_metadata(task_id, qpu_id=None):
+        if qpu_id != home_qpu_id:
+            raise ServerException("404 Not Found", 404)
+        return {"qpu_id": qpu_id, "id": task_id}
+
+    return get_task_metadata
+
+
+def test_job_without_device_finds_its_qpu_past_a_404(toshiko_id, oqc_job, oqc_client):
+    """A task on Toshiko 404s on Lucy, which is listed first, so the lookup moves on."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=_metadata_only_on(toshiko_id))
+    oqc_job._client = oqc_client
+
+    assert oqc_job.qpu_id == toshiko_id
+    assert oqc_client.get_task_metadata.call_count == 2
+
+
+def test_job_without_device_raises_when_no_qpu_has_the_task(oqc_job, oqc_client):
+    """A task no QPU knows is reported as not found, not as a raw 404."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=_metadata_only_on("qpu:none"))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ResourceNotFoundError, match="not found on any OQC QPU"):
+        _ = oqc_job.qpu_id
+
+
+def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
+    """Only a 404 means "not on this QPU"; anything else is a real failure."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=ServerException("Forbidden", 403))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ServerException, match="Forbidden"):
+        _ = oqc_job.qpu_id
+    oqc_client.get_task_metadata.assert_called_once()
+
+
 def test_oqc_provider_raises_for_no_token(monkeypatch):
     """Test that the OQCProvider raises an error when no token is provided."""
     monkeypatch.setenv("OQC_AUTH_TOKEN", "")
