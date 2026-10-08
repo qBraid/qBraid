@@ -36,6 +36,7 @@ Writing an entry:
 - Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
 - Converting OpenQASM to Cirq no longer drops gates conditioned on a single classical bit, such as `if (c[1]) x q[0];`, when another bit of the same register is also set ([#1460](https://github.com/qBraid/qBraid/pull/1460))
+- `IonQProvider` no longer reports a failure to reach IonQ as "Device '<x>' not found"; that error is now raised only when IonQ returns 404, and device lookups reuse the session's connections ([#1463](https://github.com/qBraid/qBraid/pull/1463))
 
 ### Dependencies
 
