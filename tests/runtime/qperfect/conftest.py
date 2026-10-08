@@ -37,6 +37,7 @@ else:
 
     import mimiqcircuits as mc
     import pytest
+    from mimiqcircuits.proto.qcsrproto import fromproto_qcsr, toproto_qcsr
 
     from qbraid.runtime.qperfect import QPerfectProvider
 
@@ -60,16 +61,27 @@ else:
         conn.connection.requestInfo.return_value = info
         return conn
 
-    @pytest.fixture
-    def fake_result() -> MagicMock:
-        """A fake ``QCSResults`` whose ``histogram()`` maps ``BitString`` keys to counts.
+    def _qcs_results(
+        fidelities=(1.0,), avggateerrors=(), simulator="MIMIQ-MPS", version="0.18.3"
+    ) -> mc.QCSResults:
+        """A real ``QCSResults`` decoded from MIMIQ's protobuf, as remote results arrive.
 
-        ``BitString([1, 0])`` renders ``to01() == "10"`` (qubit 0 first); the job reverses it to
-        qBraid's little-endian ``"01"``.
+        Samples are 60 of ``BitString([1, 0])`` and 40 of ``BitString([0, 0])``. ``to01()``
+        renders the first as ``"10"`` (qubit 0 first); the job reverses it to qBraid's ``"01"``.
         """
-        result = MagicMock()
-        result.histogram.return_value = {mc.BitString([1, 0]): 60, mc.BitString([0, 0]): 40}
-        return result
+        samples = [mc.BitString([1, 0])] * 60 + [mc.BitString([0, 0])] * 40
+        local = mc.QCSResults(simulator, version, list(fidelities), list(avggateerrors), samples)
+        return fromproto_qcsr(toproto_qcsr(local))
+
+    @pytest.fixture
+    def qcs_results():
+        """Build a real ``QCSResults`` with the given fidelities, gate errors and backend."""
+        return _qcs_results
+
+    @pytest.fixture
+    def fake_result() -> mc.QCSResults:
+        """An exact (fidelity 1.0) single-circuit MIMIQ result."""
+        return _qcs_results()
 
     @pytest.fixture
     def provider(mock_connection) -> QPerfectProvider:

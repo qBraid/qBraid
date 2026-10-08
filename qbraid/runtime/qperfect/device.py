@@ -100,6 +100,9 @@ class QPerfectDevice(QuantumDevice):
             run_input: A native ``mimiqcircuits.Circuit`` (or a list of them for a batch), as
                 produced by the ``qiskit -> mimiqcircuits`` conversion during ``run``. A batch is
                 executed as a single job; results come back per circuit in submission order.
+                MIMIQ takes one ``seed`` per job, drawn at random when none is given, so every
+                circuit in a batch is sampled from the same random stream: their counts are not
+                independent, and circuits with the same distribution return identical counts.
             shots: Number of samples per circuit (MIMIQ ``nsamples``). Defaults to 100.
             name: Optional human-readable label for the job.
             **options: MIMIQ submit options forwarded to the emulator, e.g. ``algorithm``

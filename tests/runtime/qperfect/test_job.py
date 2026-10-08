@@ -17,6 +17,7 @@ Unit tests for the QPerfect (MIMIQ) job.
 
 """
 
+import math
 from unittest.mock import patch
 
 import pytest
@@ -24,6 +25,7 @@ import pytest
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.qperfect import QPerfectJob, QPerfectJobError
+from qbraid.runtime.qperfect.job import accuracy_report
 
 
 def _job(connection, device=None) -> QPerfectJob:
@@ -158,3 +160,48 @@ def test_result_normalizes_a_single_unlisted_result(mock_connection, fake_result
     mock_connection.get_results.return_value = fake_result
     result = _job(mock_connection, device=device).result()
     assert result.data.get_counts() == {"01": 60, "00": 40}
+
+
+def test_result_carries_mimiq_accuracy_report(mock_connection, qcs_results, device):
+    """An approximate MPS result reports its fidelity next to the counts."""
+    mock_connection.get_results.return_value = [qcs_results([0.83], [0.021])]
+    data = _job(mock_connection, device=device).result().data
+    assert data.get_counts() == {"01": 60, "00": 40}
+    assert data.extra == {
+        "fidelity": 0.83,
+        "avgGateError": 0.021,
+        "simulator": "MIMIQ-MPS",
+        "simulatorVersion": "0.18.3",
+    }
+
+
+def test_accuracy_report_keeps_the_conservative_end(qcs_results):
+    """The lowest fidelity is the bound that holds for every execution, not the mean."""
+    report = accuracy_report(qcs_results([0.99, 0.91, 0.95], [0.01, 0.03, 0.02]))
+    assert report["fidelity"] == 0.91
+    assert report["fidelityMean"] == pytest.approx(0.95)
+    assert report["avgGateError"] == 0.03
+
+
+def test_accuracy_report_omits_unreported_values(qcs_results):
+    """NaN is MIMIQ's "unknown"; writing it as None would let a UI read unknown as low."""
+    assert not accuracy_report(qcs_results([math.nan], [], simulator="", version=""))
+
+
+def test_accuracy_report_omits_aggregates_over_partly_unreported_executions(qcs_results):
+    """An execution with no estimate could be worse than every reported one, so the reported
+    ones alone are not a bound for the run."""
+    report = accuracy_report(qcs_results([0.99, math.nan], [0.01, math.nan]))
+    assert "fidelity" not in report
+    assert "fidelityMean" not in report
+    assert "avgGateError" not in report
+    assert report["simulator"] == "MIMIQ-MPS"
+    assert report["simulatorVersion"] == "0.18.3"
+
+
+def test_batch_result_reports_accuracy_per_circuit(mock_connection, qcs_results, device):
+    """Circuits in one batch can differ a lot in entanglement, so each keeps its own report."""
+    mock_connection.get_results.return_value = [qcs_results([0.97]), qcs_results([0.42])]
+    data = _job(mock_connection, device=device).result().data
+    assert data.get_counts() == [{"01": 60, "00": 40}, {"01": 60, "00": 40}]
+    assert [report["fidelity"] for report in data.extra["accuracyReports"]] == [0.97, 0.42]
