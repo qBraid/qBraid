@@ -34,7 +34,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- OQC devices now receive an OpenQASM 3 program with each classical register whole and under its own name. Conversion previously went through Cirq, which split a partly measured register into one-bit registers named `m_c_0`, `m_c_2`, …; OQC counts each register separately, so the correlations between those bits were lost. OQC results also carry `data.extra["registerCounts"]`, each register's counts keyed by its name, alongside the unnamed list `get_counts()` returns for a program with several registers ([#1468](https://github.com/qBraid/qBraid/pull/1468))
+- Running OpenQASM 3 on an OQC device no longer splits a partly measured register into one-bit registers, which lost the correlations between its bits. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
 - Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
 - Converting OpenQASM to Cirq no longer drops gates conditioned on a single classical bit, such as `if (c[1]) x q[0];`, when another bit of the same register is also set ([#1460](https://github.com/qBraid/qBraid/pull/1460))
