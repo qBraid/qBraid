@@ -28,7 +28,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
-- OpenQASM 3 that addresses physical qubits (`$1`) now runs on OQC devices as written, on exactly those qubits, instead of being converted to OpenQASM 2 and placed by OQC. Each CX must then follow its coupler's calibrated direction ([#PR](https://github.com/qBraid/qBraid/pull/PR))
+- OpenQASM 3 that addresses physical qubits (`$1`) now runs on OQC devices as written, on exactly those qubits, instead of being converted to OpenQASM 2 and placed by OQC. Each CX must then follow its coupler's calibrated direction ([#1469](https://github.com/qBraid/qBraid/pull/1469))
 
 ### Deprecated
 
