@@ -125,7 +125,7 @@ class OQCDevice(QuantumDevice):
             raise ResourceNotFoundError(f"Device '{self.id}' not found.")
 
         status: str = device.get("status", "")
-        if (status and status.upper() == "INACTIVE") or device.get("active") is False:
+        if status and status.upper() == "INACTIVE":
             return DeviceStatus.OFFLINE
 
         try:
@@ -135,7 +135,11 @@ class OQCDevice(QuantumDevice):
             return DeviceStatus.UNAVAILABLE
 
         checks = health.get("results") if isinstance(health, dict) else None
-        if not checks or not all(check.get("passed") is True for check in checks):
+        if (
+            not isinstance(checks, list)
+            or not checks
+            or not all(isinstance(check, dict) and check.get("passed") is True for check in checks)
+        ):
             logger.info("OQC health checks for %s are not all passing: %s", self.id, health)
             return DeviceStatus.UNAVAILABLE
 

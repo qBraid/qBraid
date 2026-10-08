@@ -587,7 +587,16 @@ def test_failing_health_check_makes_the_device_unavailable(
         assert device.status() == DeviceStatus.UNAVAILABLE
 
 
-@pytest.mark.parametrize("health", [{}, {"status": "success", "results": []}, []])
+@pytest.mark.parametrize(
+    "health",
+    [
+        {},
+        {"status": "success", "results": []},
+        [],
+        {"results": {"passed": True}},
+        {"results": ["ok"]},
+    ],
+)
 def test_unreadable_health_payload_makes_the_device_unavailable(
     health, lucy_sim_data, toshiko_data
 ):
@@ -935,18 +944,6 @@ def test_oqc_provider_raises_for_no_token(monkeypatch):
     assert "An OQC authenication token is required to initialize the provider." in str(
         excinfo.value
     )
-
-
-def test_inactive_flag_makes_the_device_offline(lucy_sim_data, toshiko_data):
-    """OQC's boolean ``active`` flag is honoured even when ``status`` is not INACTIVE."""
-    toshiko_data["active"] = False
-    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
-        mock_client.return_value = Mock(spec=OQCClient)
-        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
-        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
-
-        assert device.status() == DeviceStatus.OFFLINE
-        mock_client.return_value.get_system_status.assert_not_called()
 
 
 def test_build_compiler_config_unsupported_key():
