@@ -188,6 +188,17 @@ def test_accuracy_report_omits_unreported_values(qcs_results):
     assert not accuracy_report(qcs_results([math.nan], [], simulator="", version=""))
 
 
+def test_accuracy_report_omits_aggregates_over_partly_unreported_executions(qcs_results):
+    """An execution with no estimate could be worse than every reported one, so the reported
+    ones alone are not a bound for the run."""
+    report = accuracy_report(qcs_results([0.99, math.nan], [0.01, math.nan]))
+    assert "fidelity" not in report
+    assert "fidelityMean" not in report
+    assert "avgGateError" not in report
+    assert report["simulator"] == "MIMIQ-MPS"
+    assert report["simulatorVersion"] == "0.18.3"
+
+
 def test_batch_result_reports_accuracy_per_circuit(mock_connection, qcs_results, device):
     """Circuits in one batch can differ a lot in entanglement, so each keeps its own report."""
     mock_connection.get_results.return_value = [qcs_results([0.97]), qcs_results([0.42])]

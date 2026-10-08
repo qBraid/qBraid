@@ -68,16 +68,17 @@ def accuracy_report(result: QCSResults) -> dict[str, Any]:
     An MPS run compresses the state to the job's bond dimension, so its counts can be approximate
     with nothing in them to say so. ``fidelity`` is the lowest of MIMIQ's per-execution fidelity
     lower bounds (1.0 is exact) and ``avgGateError`` the highest gate-error estimate. A value MIMIQ
-    left unreported (NaN, or an empty name) is omitted rather than set to ``None``.
+    left unreported (NaN, or an empty name) is omitted rather than set to ``None``, and so is an
+    aggregate when any execution's estimate is unreported: the rest would bound only some runs.
     """
     report: dict[str, Any] = {}
-    fidelities = [value for value in result.fidelities if math.isfinite(value)]
-    if fidelities:
+    fidelities = list(result.fidelities)
+    if fidelities and all(math.isfinite(value) for value in fidelities):
         report["fidelity"] = min(fidelities)
         if len(fidelities) > 1:
             report["fidelityMean"] = sum(fidelities) / len(fidelities)
-    gate_errors = [value for value in result.avggateerrors if math.isfinite(value)]
-    if gate_errors:
+    gate_errors = list(result.avggateerrors)
+    if gate_errors and all(math.isfinite(value) for value in gate_errors):
         report["avgGateError"] = max(gate_errors)
     if result.simulator:
         report["simulator"] = result.simulator
