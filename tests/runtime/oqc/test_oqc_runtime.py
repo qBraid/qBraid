@@ -989,11 +989,50 @@ def test_oqc_result_reports_qubit_zero_last(oqc_job):
     with (
         patch.object(OQCJob, "status", return_value=JobStatus.COMPLETED),
         patch.object(OQCJob, "_get_counts", return_value=vendor_counts),
-        patch.object(oqc_job._client, "get_task_results", return_value=MagicMock(result={"x": 1})),
+        patch.object(
+            oqc_job._client, "get_task_results", return_value=MagicMock(result={"c": vendor_counts})
+        ),
     ):
         result = oqc_job.result()
 
     assert result.data.measurement_counts == {"001": 90, "011": 10}
+
+
+def test_oqc_result_names_each_register(oqc_job):
+    """OQC counts each register on its own; the names must survive, not just a list."""
+    vendor_result = {"a": {"10": 100}, "b": {"1": 100}}
+
+    with (
+        patch.object(OQCJob, "status", return_value=JobStatus.COMPLETED),
+        patch.object(
+            oqc_job._client, "get_task_results", return_value=MagicMock(result=vendor_result)
+        ),
+    ):
+        result = oqc_job.result()
+
+    assert result.data.measurement_counts == [{"01": 100}, {"1": 100}]
+    assert result.data.extra["registerCounts"] == {"a": {"01": 100}, "b": {"1": 100}}
+
+
+def test_qasm3_reaches_oqc_with_its_registers_whole(target_profile, oqc_client):
+    """A partly measured register stays one ``creg`` under its own name.
+
+    Conversion through Cirq split ``c`` into ``m_c_0`` and ``m_c_2``; OQC then counted
+    each bit separately and their correlation was lost.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm3 = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[3] q;\nbit[3] c;\n'
+        "h q[0];\ncx q[0], q[2];\nc[0] = measure q[0];\nc[2] = measure q[2];\n"
+    )
+
+    with patch.object(oqc_client, "schedule_tasks", wraps=oqc_client.schedule_tasks) as schedule:
+        device.run(qasm3, shots=10)
+
+    program = schedule.call_args.args[0][0].program
+    assert program.startswith("OPENQASM 2.0;")
+    assert "creg c[3];" in program
+    assert "m_c" not in program
 
 
 def test_transform_preserves_qasm2_includes(target_profile, oqc_client):

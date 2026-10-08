@@ -194,7 +194,12 @@ class OQCJob(QuantumJob):
         # OQC writes classical bit 0 first; qBraid's convention is bit 0 last (little-endian,
         # as Qiskit and IonQ already use), so the key is reversed here.
         counts = reverse_bit_order(self._get_counts(task_results.result))
-        data = GateModelResultData(measurement_counts=counts)
+        # OQC counts each register separately, so the list above has no names; these do.
+        register_counts = {
+            register: reverse_bit_order(register_result)
+            for register, register_result in task_results.result.items()
+        }
+        data = GateModelResultData(measurement_counts=counts, registerCounts=register_counts)
         return Result(device_id=self.qpu_id, job_id=job_id, success=True, data=data, **task_data)
 
     def metadata(self) -> dict[str, Any]:
