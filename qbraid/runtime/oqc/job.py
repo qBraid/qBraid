@@ -96,16 +96,23 @@ class OQCJob(QuantumJob):
         """Return the ID of the QPU that holds this task.
 
         Each QPU serves only its own tasks, so a lookup on any other QPU, including the
-        client's default when no ID is given, returns 404.
+        client's default when no ID is given, returns 404. An unreachable QPU is skipped
+        too, and its error raised only if no other QPU has the task.
         """
+        unreachable: Optional[Exception] = None
         for qpu in self._client.get_qpus():
             try:
-                metadata = self._client.get_task_metadata(task_id=self.id, qpu_id=qpu["id"])
+                self._client.get_task_metadata(task_id=self.id, qpu_id=qpu["id"])
+            except qcaas_client.ConnectionFailureException as err:
+                unreachable = err
+                continue
             except qcaas_client.ServerException as err:
                 if err.server_error_code == 404:
                     continue
                 raise
-            return metadata["qpu_id"]
+            return qpu["id"]
+        if unreachable is not None:
+            raise unreachable
         raise ResourceNotFoundError(f"Task '{self.id}' was not found on any OQC QPU.")
 
     def status(self) -> JobStatus:

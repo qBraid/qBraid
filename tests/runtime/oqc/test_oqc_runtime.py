@@ -36,6 +36,7 @@ from requests import ReadTimeout
 try:
     from qbraid_core.decimal import USD
     from qcaas_client.client import (  # type: ignore
+        ConnectionFailureException,
         OQCClient,
         QPUTask,
         QPUTaskErrors,
@@ -908,6 +909,36 @@ def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
     with pytest.raises(ServerException, match="Forbidden"):
         _ = oqc_job.qpu_id
     oqc_client.get_task_metadata.assert_called_once()
+
+
+def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client):
+    """A QPU that times out may not hold the task, so the lookup tries the rest."""
+    find_on_toshiko = _metadata_only_on(toshiko_id)
+
+    def get_task_metadata(task_id, qpu_id=None):
+        if qpu_id != toshiko_id:
+            raise ConnectionFailureException(503)
+        return find_on_toshiko(task_id, qpu_id)
+
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=get_task_metadata)
+    oqc_job._client = oqc_client
+
+    assert oqc_job.qpu_id == toshiko_id
+
+
+def test_job_without_device_reports_an_unreachable_qpu_if_no_other_has_the_task(
+    oqc_job, oqc_client
+):
+    """With the task nowhere else, the connection failure is the useful error."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=ConnectionFailureException(503))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ConnectionFailureException):
+        _ = oqc_job.qpu_id
 
 
 def test_oqc_provider_raises_for_no_token(monkeypatch):
