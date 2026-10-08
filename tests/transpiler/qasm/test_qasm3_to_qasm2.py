@@ -57,8 +57,8 @@ def test_whole_register_measurement_and_scalar_declarations():
     assert "measure r[0] -> d[0];" in qasm2
 
 
-def test_gate_outside_qelib1_rebases_the_program():
-    """``cp`` has no OpenQASM 2 form on every backend, so the circuit is rebased."""
+def test_gate_outside_qelib1_is_unrolled_into_qelib1_gates():
+    """``cp`` has no OpenQASM 2 form on every backend, so unrolling decomposes it."""
     qasm2 = qasm3_to_qasm2(HEADER + "qubit[2] q;\nbit[2] c;\ncp(0.2) q[0], q[1];\nc = measure q;\n")
 
     assert "cp" not in qasm2
@@ -101,6 +101,7 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
         "qubit[1] Q;\nh Q[0];\n",
         "qubit[1] _q;\nh _q[0];\n",
         "qubit[1] q;\nbit[1] rzz;\nrzz[0] = measure q[0];\n",
+        "qubit[1] q;\nbit[1] exp;\nexp[0] = measure q[0];\n",
     ],
     ids=[
         "bit-condition",
@@ -109,6 +110,7 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
         "uppercase-name",
         "underscore-name",
         "gate-name",
+        "keyword-name",
     ],
 )
 def test_statement_qasm2_cannot_express_raises(body):

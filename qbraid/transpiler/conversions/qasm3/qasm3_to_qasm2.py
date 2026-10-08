@@ -21,13 +21,13 @@ from __future__ import annotations
 import re
 
 import pyqasm
-from pyqasm.elements import BasisSet
 
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.transpiler.annotations import weight
 
 # The original qelib1.inc gates, plus the extended ones the Cirq-based conversion
-# already emits. Any other gate is rebased onto rx, ry, rz and cx.
+# already emits. Unrolling reduces every standard gate to these, so any other gate
+# raises and the transpiler takes the Cirq path.
 QELIB1_GATES = frozenset(
     {
         "u3", "u2", "u1", "cx", "id", "x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry",
@@ -35,11 +35,11 @@ QELIB1_GATES = frozenset(
     }
 )  # fmt: skip
 
-# Names qelib1.inc defines (including its extended gates) or QASM 2 reserves; a register
-# with one of these names would not parse.
+# Names qelib1.inc defines (including its extended gates) or QASM 2 keeps as keywords; a
+# register with one of these names would not parse.
 _RESERVED_NAMES = QELIB1_GATES | {
     "u", "cp", "crx", "cry", "cu", "csx", "rxx", "rzz", "rccx", "rc3x", "c3x", "c3sqrtx", "c4x",
-    "u0", "opaque",
+    "u0", "opaque", "sin", "cos", "tan", "exp", "ln", "sqrt",
 }  # fmt: skip
 _QASM2_IDENTIFIER = re.compile(r"[a-z][A-Za-z0-9_]*")
 
@@ -47,10 +47,6 @@ _DECLARATION = re.compile(r"^(qubit|bit)\[(\d+)\] (\w+);$")
 _MEASUREMENT = re.compile(r"^(\w+\[\d+\]) = measure (\w+\[\d+\]);$")
 _GATE = re.compile(r"^(\w+)(?:\([^)]*\))? [^;]+;$")
 _EXPONENT_WITHOUT_POINT = re.compile(r"(?<![\w.])(\d+)([eE][-+]?\d+)")
-
-
-def _gate_names(qasm: str) -> set[str]:
-    return {match.group(1) for line in qasm.splitlines() if (match := _GATE.match(line.strip()))}
 
 
 @weight(1)
@@ -72,9 +68,6 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
     unrolled = pyqasm.dumps(module)
     if "$" in unrolled:
         raise ValueError("OpenQASM 2 cannot express a physical qubit.")
-    if _gate_names(unrolled) - QELIB1_GATES - {"OPENQASM", "include", "reset", "barrier", "gphase"}:
-        module.rebase(BasisSet.ROTATIONAL_CX)
-        unrolled = pyqasm.dumps(module)
 
     lines = ["OPENQASM 2.0;", 'include "qelib1.inc";']
     for statement in unrolled.splitlines():
