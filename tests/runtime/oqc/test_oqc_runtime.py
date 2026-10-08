@@ -1035,6 +1035,21 @@ def test_qasm3_reaches_oqc_with_its_registers_whole(target_profile, oqc_client):
     assert "m_c" not in program
 
 
+def test_qasm3_with_physical_qubits_is_submitted_as_written(target_profile, oqc_client):
+    """OpenQASM 2 cannot name a physical qubit, so ``$n`` programs stay OpenQASM 3."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm3 = (
+        "OPENQASM 3.0;\nbit[2] c;\nh $2;\ncx $2, $1;\n" "c[0] = measure $1;\nc[1] = measure $2;\n"
+    )
+
+    with patch.object(oqc_client, "schedule_tasks", wraps=oqc_client.schedule_tasks) as schedule:
+        device.run(qasm3, shots=10)
+
+    program = schedule.call_args.args[0][0].program
+    assert program.startswith("OPENQASM 3")
+    assert "cx $2, $1;" in program
+
+
 def test_qasm3_that_qasm2_cannot_express_takes_the_default_conversion(target_profile):
     """A bit-level condition has no OpenQASM 2 form here, so the default path handles it."""
     device = OQCDevice(profile=target_profile, client=Mock())

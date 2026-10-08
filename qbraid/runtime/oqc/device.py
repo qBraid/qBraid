@@ -32,13 +32,13 @@ from qcaas_client.client import (
 from qcaas_client.compiler_config import MetricsType  # type: ignore
 
 from qbraid._logging import logger
-from qbraid.programs import Qasm2String
+from qbraid.programs import ProgramSpec, Qasm2String, get_program_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .job import OQCJob
-from .qasm import qasm3_to_qasm2
+from .qasm import qasm3_to_qasm2, uses_physical_qubits
 
 if TYPE_CHECKING:
     import qcaas_client.client
@@ -184,14 +184,24 @@ class OQCDevice(QuantumDevice):
 
         OpenQASM 3 is converted directly so each classical register reaches OQC whole and
         under its own name; other inputs, and OpenQASM 3 that OpenQASM 2 cannot express,
-        take the default conversion.
+        take the default conversion. A program that addresses physical qubits (``$1``) is
+        submitted as written: OpenQASM 2 cannot name a physical qubit, and OQC runs
+        OpenQASM 3 without placement, so each CX must follow its coupler's direction.
         """
         if run_input_spec.alias == "qasm3":
+            if uses_physical_qubits(run_input):
+                return run_input
             try:
                 return qasm3_to_qasm2(run_input)
             except (ValueError, pyqasm.exceptions.PyQasmError) as err:
                 logger.info("Using the default OpenQASM 3 conversion: %s", err)
         return super().transpile(run_input, run_input_spec)
+
+    def _get_target_spec(self, run_input: qbraid.programs.QPROGRAM) -> ProgramSpec:
+        # OQC also accepts OpenQASM 3, which transpile() keeps for physical-qubit programs.
+        if get_program_type_alias(run_input, safe=True) == "qasm3":
+            return ProgramSpec(str, alias="qasm3")
+        return super()._get_target_spec(run_input)
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device.

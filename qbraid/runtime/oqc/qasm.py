@@ -20,7 +20,9 @@ from __future__ import annotations
 
 import re
 
+import openqasm3
 import pyqasm
+from openqasm3.visitor import QASMVisitor
 
 # The original qelib1.inc gates, plus the extended ones OQC's parser also resolves.
 QELIB1_GATES = frozenset(
@@ -35,6 +37,24 @@ _DECLARATION = re.compile(r"^(qubit|bit)\[(\d+)\] (\w+);$")
 _MEASUREMENT = re.compile(r"^(\w+\[\d+\]) = measure (\w+\[\d+\]);$")
 _GATE = re.compile(r"^(\w+)(?:\([^)]*\))? [^;]+;$")
 _EXPONENT_WITHOUT_POINT = re.compile(r"(?<![\w.])(\d+)([eE][-+]?\d+)")
+
+
+class _PhysicalQubitFinder(QASMVisitor):
+    """Records whether any identifier names a physical qubit."""
+
+    def __init__(self):
+        self.found = False
+
+    def visit_Identifier(self, node, context=None):  # pylint: disable=invalid-name,unused-argument
+        """Physical qubits are identifiers spelled ``$n``."""
+        self.found = self.found or node.name.startswith("$")
+
+
+def uses_physical_qubits(qasm: str) -> bool:
+    """Return whether an OpenQASM 3 program addresses physical qubits, such as ``$1``."""
+    finder = _PhysicalQubitFinder()
+    finder.visit(openqasm3.parse(qasm))
+    return finder.found
 
 
 def qasm3_to_qasm2(qasm: str) -> str:

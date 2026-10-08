@@ -95,3 +95,18 @@ def test_statement_qasm2_cannot_express_raises(body):
     """The caller falls back to the default conversion on ValueError."""
     with pytest.raises(ValueError, match="OpenQASM 2 cannot express"):
         qasm.qasm3_to_qasm2(HEADER + body)
+
+
+@pytest.mark.parametrize(
+    ("program", "expected"),
+    [
+        ("OPENQASM 3.0;\nbit[1] c;\nh $1;\nc[0] = measure $1;\n", True),
+        ("OPENQASM 3.0;\nbit[1] c;\nwhile (c[0]) { x $1; c[0] = measure $1; }\n", True),
+        (HEADER + "qubit[1] q;\nh q[0];\n", False),
+        (HEADER + "// on $5\npragma note $9\nqubit[1] q;\nh q[0];\n", False),
+    ],
+    ids=["physical", "physical-in-loop", "logical", "dollar-in-comment-and-pragma"],
+)
+def test_uses_physical_qubits(program, expected):
+    """Only ``$n`` operands count, wherever they appear; comments and pragmas do not."""
+    assert qasm.uses_physical_qubits(program) is expected
