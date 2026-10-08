@@ -38,12 +38,10 @@ from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .job import OQCJob
-from .qasm import qasm3_to_qasm2
 
 if TYPE_CHECKING:
     import qcaas_client.client
 
-    import qbraid.programs
     import qbraid.runtime
 
 RESULTS_FORMAT = {
@@ -174,24 +172,6 @@ class OQCDevice(QuantumDevice):
         return datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00")).replace(
             tzinfo=datetime.timezone.utc
         )
-
-    def transpile(
-        self,
-        run_input: qbraid.programs.QPROGRAM,
-        run_input_spec: qbraid.programs.ProgramSpec,
-    ) -> qbraid.programs.QPROGRAM:
-        """Convert a program to the OpenQASM OQC runs.
-
-        OpenQASM 3 is converted directly so each classical register reaches OQC whole and
-        under its own name; other inputs, and OpenQASM 3 that OpenQASM 2 cannot express,
-        take the default conversion.
-        """
-        if run_input_spec.alias == "qasm3":
-            try:
-                return qasm3_to_qasm2(run_input)
-            except (ValueError, pyqasm.exceptions.PyQasmError) as err:
-                logger.info("Using the default OpenQASM 3 conversion: %s", err)
-        return super().transpile(run_input, run_input_spec)
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device.

@@ -44,7 +44,7 @@ try:
     )
 
     from qbraid.programs import NATIVE_REGISTRY, ExperimentType, ProgramSpec
-    from qbraid.runtime import GateModelResultData, QuantumDevice, Result, TargetProfile
+    from qbraid.runtime import GateModelResultData, Result, TargetProfile
     from qbraid.runtime.enums import DeviceStatus, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
@@ -1017,8 +1017,8 @@ def test_oqc_result_names_each_register(oqc_job):
 def test_qasm3_reaches_oqc_with_its_registers_whole(target_profile, oqc_client):
     """A partly measured register stays one ``creg`` under its own name.
 
-    The default conversion goes through Cirq, which split ``c`` into ``m_c_0`` and
-    ``m_c_2``; OQC then counted each bit separately and their correlation was lost.
+    Conversion through Cirq split ``c`` into ``m_c_0`` and ``m_c_2``; OQC then counted
+    each bit separately and their correlation was lost.
     """
     device = OQCDevice(profile=target_profile, client=oqc_client)
     qasm3 = (
@@ -1033,20 +1033,6 @@ def test_qasm3_reaches_oqc_with_its_registers_whole(target_profile, oqc_client):
     assert program.startswith("OPENQASM 2.0;")
     assert "creg c[3];" in program
     assert "m_c" not in program
-
-
-def test_qasm3_that_qasm2_cannot_express_takes_the_default_conversion(target_profile):
-    """A bit-level condition has no OpenQASM 2 form here, so the default path handles it."""
-    device = OQCDevice(profile=target_profile, client=Mock())
-    qasm3 = (
-        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[2] c;\n'
-        "h q[0];\nc[0] = measure q[0];\nif (c[0]) { x q[1]; }\nc[1] = measure q[1];\n"
-    )
-    spec = ProgramSpec(str, alias="qasm3")
-
-    with patch.object(QuantumDevice, "transpile", return_value="default") as default:
-        assert device.transpile(qasm3, spec) == "default"
-    default.assert_called_once()
 
 
 def test_transform_preserves_qasm2_includes(target_profile, oqc_client):
