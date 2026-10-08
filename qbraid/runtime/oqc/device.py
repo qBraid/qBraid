@@ -105,10 +105,11 @@ class OQCDevice(QuantumDevice):
     def status(self) -> DeviceStatus:
         """Returns the status of the device.
 
-        ONLINE when OQC lists the device as active and its health checks pass. A windowed
-        QPU accepts tasks at any time and queues them for its next access window, so the
-        window schedule is not an availability signal; OQC's APIs also report only the next
-        window, never the one that is open (see :meth:`get_next_window`).
+        ONLINE when OQC lists the device as active and its health checks pass, meaning it
+        accepts tasks. A windowed QPU queues them for its next access window, and the health
+        checks also pass between windows, so ONLINE does not mean a task will run now. OQC's
+        APIs report only the next window, never the one that is open (see
+        :meth:`get_next_window`).
 
         Raises:
             ResourceNotFoundError: If OQC does not list the device.
