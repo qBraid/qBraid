@@ -28,6 +28,7 @@ from qbraid_core._import import LazyLoader
 from qbraid._logging import logger
 from qbraid.passes.qasm.compat import normalize_if_blocks, replace_gate_names
 from qbraid.programs.exceptions import QasmError
+from qbraid.programs.typer import Qasm2String
 from qbraid.transpiler.annotations import weight
 
 cirq_qasm_import = LazyLoader("cirq_contrib", globals(), "cirq.contrib.qasm_import")
@@ -39,8 +40,6 @@ if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm3StringType
 
 
-# Register merging is a QASM 3 behaviour; QASM 2 input keeps its per-bit keys.
-_QASM2_HEADER = re.compile(r"\s*(?://[^\n]*\n\s*)*OPENQASM\s+2(?:\.\d+)?\s*;")
 _BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 # Gate aliases that Cirq's built-in QASM parser does not recognize, mapped to
@@ -146,7 +145,8 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input OpenQASM 3 string.
     """
-    is_qasm2 = _QASM2_HEADER.match(qasm) is not None
+    # Register merging is a QASM 3 behaviour; QASM 2 input keeps its per-bit keys.
+    is_qasm2 = isinstance(qasm, Qasm2String)
     try:
         parsed = cirq_qasm_parser.QasmParser().parse(qasm)
     except cirq_qasm_import.QasmException:

@@ -179,13 +179,14 @@ def test_qasm3_register_merging_does_not_rescan_every_measurement():
     assert key_reads < 100 * num_registers
 
 
-def test_qasm3_to_cirq_keeps_per_bit_keys_for_qasm2_input():
+@pytest.mark.parametrize("preamble", ["", "/* generated\n   by a tool */\n"])
+def test_qasm3_to_cirq_keeps_per_bit_keys_for_qasm2_input(preamble):
     """QASM 2 text passed to qasm3_to_cirq keeps its per-bit measurement keys."""
     from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import (  # pylint: disable=import-outside-toplevel
         qasm3_to_cirq,
     )
 
-    program = (
+    program = preamble + (
         'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\ncreg c[2];\n'
         "h q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
     )
