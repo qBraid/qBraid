@@ -19,6 +19,7 @@ Module defining QPerfect (MIMIQ) job class.
 
 from __future__ import annotations
 
+import math
 from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
@@ -30,7 +31,7 @@ from qbraid.runtime.result_data import GateModelResultData, MeasCount
 from .client import build_connection
 
 if TYPE_CHECKING:
-    from mimiqcircuits import MimiqConnection
+    from mimiqcircuits import MimiqConnection, QCSResults
 
 # MIMIQ execution status (mimiqlink ``RequestInfo.status``) -> qBraid ``JobStatus``. Covers the
 # full vocabulary mimiqlink publishes in ``RequestInfo.STATUS_COLORS``.
@@ -59,6 +60,30 @@ def _histogram_to_counts(histogram: dict[Any, Any]) -> MeasCount:
         key = bitstring.to01()[::-1]
         counts[key] = counts.get(key, 0) + int(count)
     return counts
+
+
+def accuracy_report(result: QCSResults) -> dict[str, Any]:
+    """Return MIMIQ's account of how exact one circuit's counts are.
+
+    An MPS run compresses the state to the job's bond dimension, so its counts can be approximate
+    with nothing in them to say so. ``fidelity`` is the lowest of MIMIQ's per-execution fidelity
+    lower bounds (1.0 is exact) and ``avgGateError`` the highest gate-error estimate. A value MIMIQ
+    left unreported (NaN, or an empty name) is omitted rather than set to ``None``.
+    """
+    report: dict[str, Any] = {}
+    fidelities = [value for value in result.fidelities if math.isfinite(value)]
+    if fidelities:
+        report["fidelity"] = min(fidelities)
+        if len(fidelities) > 1:
+            report["fidelityMean"] = sum(fidelities) / len(fidelities)
+    gate_errors = [value for value in result.avggateerrors if math.isfinite(value)]
+    if gate_errors:
+        report["avgGateError"] = max(gate_errors)
+    if result.simulator:
+        report["simulator"] = result.simulator
+    if result.version:
+        report["simulatorVersion"] = result.version
+    return report
 
 
 class QPerfectJob(QuantumJob):
@@ -132,6 +157,9 @@ class QPerfectJob(QuantumJob):
         A circuit carrying no measurement instructions still returns counts: the emulator samples
         the final state over every qubit rather than rejecting the job.
 
+        MIMIQ's :func:`accuracy_report` is in ``result.data.extra``. A batch carries one report per
+        circuit, in submission order, under ``extra["accuracyReports"]``.
+
         Raises:
             QPerfectJobError: If the job reached a terminal state other than ``COMPLETED``. MIMIQ's
                 own explanation (e.g. a backend that ran out of memory) is included when it gives
@@ -151,7 +179,10 @@ class QPerfectJob(QuantumJob):
         if not isinstance(results, list):
             results = [results]
         counts = [_histogram_to_counts(result.histogram()) for result in results]
-        measurement_counts: MeasCount | list[MeasCount] = counts[0] if len(counts) == 1 else counts
-        data = GateModelResultData(measurement_counts=measurement_counts)
+        reports = [accuracy_report(result) for result in results]
+        if len(results) == 1:
+            data = GateModelResultData(measurement_counts=counts[0], **reports[0])
+        else:
+            data = GateModelResultData(measurement_counts=counts, accuracyReports=reports)
         device_id = self._device.id if self._device is not None else ""
         return Result(device_id=device_id, job_id=self.id, success=True, data=data)
