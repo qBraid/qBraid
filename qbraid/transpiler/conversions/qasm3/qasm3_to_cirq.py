@@ -16,8 +16,10 @@
 Module for conversions from QASM 3 to Cirq Circuits
 
 """
+
 from __future__ import annotations
 
+import re
 from typing import TYPE_CHECKING
 
 import pyqasm
@@ -26,15 +28,19 @@ from qbraid_core._import import LazyLoader
 from qbraid._logging import logger
 from qbraid.passes.qasm.compat import normalize_if_blocks, replace_gate_names
 from qbraid.programs.exceptions import QasmError
+from qbraid.programs.typer import Qasm2String
 from qbraid.transpiler.annotations import weight
 
 cirq_qasm_import = LazyLoader("cirq_contrib", globals(), "cirq.contrib.qasm_import")
+cirq_qasm_parser = LazyLoader("cirq_qasm_parser", globals(), "cirq.contrib.qasm_import._parser")
 
 if TYPE_CHECKING:
     import cirq
 
     from qbraid.programs.typer import Qasm3StringType
 
+
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 # Gate aliases that Cirq's built-in QASM parser does not recognize, mapped to
 # their Cirq-supported equivalents.
@@ -47,6 +53,80 @@ _GATE_ALIASES = {
     "phaseshift": "p",
     "cphaseshift": "cp",
 }
+
+
+def _merge_terminal_register_measurements(
+    circuit: cirq.Circuit, register_sizes: dict[str, int]
+) -> cirq.Circuit:
+    """Keep complete QASM 3 bit registers together in the Cirq readout.
+
+    Cirq imports ``bit[n] c`` as independent keys ``c_0`` through ``c_(n-1)``. Its QASM 2
+    exporter then declares one classical register per key, which loses joint counts on
+    backends that report results per register. Only complete terminal registers are
+    coalesced. Mid-circuit readout, partial registers and registers read by a classical
+    condition keep their original keys.
+    """
+    import cirq  # pylint: disable=import-outside-toplevel
+
+    indexed_operations = [
+        (moment_index, operation)
+        for moment_index, moment in enumerate(circuit)
+        for operation in moment.operations
+    ]
+    if not any(isinstance(op.gate, cirq.MeasurementGate) for _, op in indexed_operations):
+        return circuit
+
+    # Renaming a key a condition reads would break that condition.
+    conditioned = {key.name for _, op in indexed_operations for key in cirq.control_keys(op)}
+
+    last_on_qubit = {
+        qubit: operation for _, operation in indexed_operations for qubit in operation.qubits
+    }
+    measurements_by_key: dict[str, list[tuple[int, cirq.Operation]]] = {}
+    for moment_index, operation in indexed_operations:
+        if isinstance(operation.gate, cirq.MeasurementGate):
+            measurements_by_key.setdefault(operation.gate.key, []).append((moment_index, operation))
+    selected: set[tuple[int, cirq.Operation]] = set()
+    merged: list[cirq.Operation] = []
+    for name, size in register_sizes.items():
+        if any(f"{name}_{index}" in conditioned for index in range(size)):
+            continue
+        # A merged key ``r_1`` would read as bit 1 of register ``r`` wherever keys are
+        # ordered by ``(register, index)``, interleaving it with ``r``'s bits.
+        suffixed = _BIT_INDEX.match(name)
+        if suffixed and suffixed["register"] in register_sizes:
+            continue
+        matches = [
+            match
+            for index in range(size)
+            for match in measurements_by_key.get(f"{name}_{index}", ())
+        ]
+        if len(matches) != size or len({op.gate.key for _, op in matches}) != size:
+            continue
+        if any(
+            len(op.qubits) != 1 or last_on_qubit[op.qubits[0]] is not op or op.gate.confusion_map
+            for _, op in matches
+        ):
+            continue
+        if name in measurements_by_key:
+            continue
+
+        matches_by_key = {op.gate.key: (moment_index, op) for moment_index, op in matches}
+        ordered = [matches_by_key[f"{name}_{index}"] for index in range(size)]
+        qubits = [op.qubits[0] for _, op in ordered]
+        invert_mask = tuple(
+            bool(op.gate.invert_mask and op.gate.invert_mask[0]) for _, op in ordered
+        )
+        merged.append(cirq.MeasurementGate(size, key=name, invert_mask=invert_mask).on(*qubits))
+        selected.update(matches)
+
+    if not merged:
+        return circuit
+    remaining = [
+        cirq.Moment(op for op in moment.operations if (index, op) not in selected)
+        for index, moment in enumerate(circuit)
+    ]
+    return cirq.Circuit([*remaining, cirq.Moment(merged)])
 
 
 @weight(1)
@@ -65,22 +145,25 @@ def qasm3_to_cirq(qasm: Qasm3StringType) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input OpenQASM 3 string.
     """
+    # Register merging is a QASM 3 behaviour; QASM 2 input keeps its per-bit keys.
+    is_qasm2 = isinstance(qasm, Qasm2String)
     try:
-        return cirq_qasm_import.circuit_from_qasm(qasm)
+        parsed = cirq_qasm_parser.QasmParser().parse(qasm)
     except cirq_qasm_import.QasmException:
-        pass
-
-    try:
-        qasm = replace_gate_names(qasm, _GATE_ALIASES)
-        qasm_module = pyqasm.loads(qasm)
-        qasm_module.unroll()
-        if qasm_module.has_barriers():
-            logger.warning(
-                "Barriers are not supported in Cirq, "
-                "and will be removed during program conversion."
-            )
-            qasm_module.remove_barriers()
-        qasm = normalize_if_blocks(pyqasm.dumps(qasm_module))
-        return cirq_qasm_import.circuit_from_qasm(qasm)
-    except cirq_qasm_import.QasmException as err:
-        raise QasmError(err) from err
+        try:
+            qasm = replace_gate_names(qasm, _GATE_ALIASES)
+            qasm_module = pyqasm.loads(qasm)
+            qasm_module.unroll()
+            if qasm_module.has_barriers():
+                logger.warning(
+                    "Barriers are not supported in Cirq, "
+                    "and will be removed during program conversion."
+                )
+                qasm_module.remove_barriers()
+            qasm = normalize_if_blocks(pyqasm.dumps(qasm_module))
+            parsed = cirq_qasm_parser.QasmParser().parse(qasm)
+        except cirq_qasm_import.QasmException as err:
+            raise QasmError(err) from err
+    if is_qasm2:
+        return parsed.circuit
+    return _merge_terminal_register_measurements(parsed.circuit, parsed.cregs)
