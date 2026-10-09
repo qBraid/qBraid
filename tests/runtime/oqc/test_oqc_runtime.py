@@ -913,22 +913,23 @@ def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
 
 
 @pytest.mark.parametrize(
-    "error",
+    "make_error",
+    # Built in the test, since qcaas_client may not be installed when this module is collected.
     [
-        ConnectionFailureException(503),
-        ConnectionFailureException("Timeout error"),
-        ServerException("Not Implemented", 501),
-        RequestsConnectionError("Failed to resolve 'jp.cloud.oqc.app'"),
+        lambda: ConnectionFailureException(503),
+        lambda: ConnectionFailureException("Timeout error"),
+        lambda: ServerException("Not Implemented", 501),
+        lambda: RequestsConnectionError("Failed to resolve 'jp.cloud.oqc.app'"),
     ],
     ids=["retryable-5xx", "timeout", "other-5xx", "no-connection"],
 )
-def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client, error):
+def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client, make_error):
     """A QPU that times out or fails may not hold the task, so the lookup tries the rest."""
     find_on_toshiko = _metadata_only_on(toshiko_id)
 
     def get_task_metadata(task_id, qpu_id=None):
         if qpu_id != toshiko_id:
-            raise error
+            raise make_error()
         return find_on_toshiko(task_id, qpu_id)
 
     oqc_job._qpu_id = None
