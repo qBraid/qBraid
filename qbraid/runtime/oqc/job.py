@@ -222,7 +222,7 @@ class OQCJob(QuantumJob):
         if not task_results or not task_results.result:
             raise ResourceNotFoundError("No result found for the task")
 
-        # OQC reports qubit 0 first; qBraid's convention is qubit 0 last (little-endian,
+        # OQC writes classical bit 0 first; qBraid's convention is bit 0 last (little-endian,
         # as Qiskit and IonQ already use), so the key is reversed here.
         counts = reverse_bit_order(self._get_counts(task_results.result))
         data = GateModelResultData(measurement_counts=counts)
