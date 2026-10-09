@@ -38,6 +38,10 @@ if TYPE_CHECKING:
 # unbounded recurrence expansion for indefinitely-repeating rules.
 _MAINTENANCE_HORIZON = datetime.timedelta(weeks=1)
 
+# Hosts a linked maintenance feed may be fetched from. This runs server-side too, so a
+# link anywhere else (an internal address, say) is refused rather than requested.
+_FEED_HOSTS = frozenset({"calendar.google.com"})
+
 
 def _current_utc_datetime() -> datetime.datetime:
     """Return the current UTC datetime."""
@@ -52,12 +56,20 @@ def follow_feed_link(ical: str, timeout: float) -> str:
     the QCS bearer token, which must not be sent to a third party.
 
     Raises:
+        ValueError: If the link is to a host outside ``_FEED_HOSTS``, or redirects.
         requests.RequestException: If the linked feed cannot be fetched.
     """
     url = ical.strip()
-    if urlparse(url).scheme != "https":
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
         return ical
-    response = requests.get(url, headers={"Accept": "text/calendar"}, timeout=timeout)
+    if parsed.hostname not in _FEED_HOSTS:
+        raise ValueError(f"Refusing to fetch a maintenance feed from {parsed.hostname!r}.")
+    response = requests.get(
+        url, headers={"Accept": "text/calendar"}, timeout=timeout, allow_redirects=False
+    )
+    if response.is_redirect:
+        raise ValueError("Refusing to follow a redirect from the maintenance feed.")
     response.raise_for_status()
     return response.text
 

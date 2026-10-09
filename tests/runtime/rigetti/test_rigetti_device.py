@@ -265,7 +265,7 @@ class TestRigettiDeviceMaintenance:
         feed_url = "https://calendar.google.com/calendar/ical/abc/public/basic.ics"
         qcs_response = MagicMock()
         qcs_response.json.return_value = {"maintenanceICal": feed_url}
-        feed_response = MagicMock(text=MAINTENANCE_ICAL)
+        feed_response = MagicMock(text=MAINTENANCE_ICAL, is_redirect=False)
         with patch(
             "qbraid.runtime.rigetti.device.requests.get",
             side_effect=[qcs_response, feed_response],
@@ -284,13 +284,53 @@ class TestRigettiDeviceMaintenance:
     ) -> None:
         """A linked feed that cannot be fetched raises RigettiDeviceError, so status() degrades."""
         qcs_response = MagicMock()
-        qcs_response.json.return_value = {"maintenanceICal": "https://example.com/m.ics"}
+        qcs_response.json.return_value = {
+            "maintenanceICal": "https://calendar.google.com/calendar/ical/abc/public/basic.ics"
+        }
         with patch(
             "qbraid.runtime.rigetti.device.requests.get",
             side_effect=[qcs_response, requests.ConnectionError("boom")],
         ):
             with pytest.raises(RigettiDeviceError, match="Failed to fetch maintenance calendar"):
                 rigetti_device.maintenance_calendar()
+
+    @pytest.mark.parametrize(
+        "feed_url",
+        [
+            "https://169.254.169.254/computeMetadata/v1/",
+            "https://10.0.0.5/m.ics",
+            "https://calendar.google.com.attacker.example/m.ics",
+            "https://user@internal.example/m.ics",
+        ],
+    )
+    def test_maintenance_calendar_refuses_a_feed_off_the_allowed_hosts(
+        self, rigetti_device: RigettiDevice, feed_url: str
+    ) -> None:
+        """A link to any host but Google Calendar is never requested."""
+        qcs_response = MagicMock()
+        qcs_response.json.return_value = {"maintenanceICal": feed_url}
+        with patch(
+            "qbraid.runtime.rigetti.device.requests.get", side_effect=[qcs_response]
+        ) as mock_get:
+            with pytest.raises(RigettiDeviceError, match="Failed to fetch maintenance calendar"):
+                rigetti_device.maintenance_calendar()
+        assert mock_get.call_count == 1
+
+    def test_maintenance_calendar_refuses_a_feed_redirect(
+        self, rigetti_device: RigettiDevice
+    ) -> None:
+        """The feed is fetched without following redirects, and a redirect is an error."""
+        qcs_response = MagicMock()
+        qcs_response.json.return_value = {
+            "maintenanceICal": "https://calendar.google.com/calendar/ical/abc/public/basic.ics"
+        }
+        redirect = MagicMock(is_redirect=True, headers={"Location": "http://10.0.0.5/"})
+        with patch(
+            "qbraid.runtime.rigetti.device.requests.get", side_effect=[qcs_response, redirect]
+        ) as mock_get:
+            with pytest.raises(RigettiDeviceError, match="Failed to fetch maintenance calendar"):
+                rigetti_device.maintenance_calendar()
+        assert mock_get.call_args_list[1].kwargs["allow_redirects"] is False
 
     def test_maintenance_calendar_wraps_http_error(self, rigetti_device: RigettiDevice) -> None:
         """A failed QCS request must be wrapped in RigettiDeviceError."""
