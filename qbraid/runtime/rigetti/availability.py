@@ -22,9 +22,11 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 import icalendar
 import recurring_ical_events
+import requests
 
 from qbraid.runtime.enums import DeviceStatus
 
@@ -36,10 +38,40 @@ if TYPE_CHECKING:
 # unbounded recurrence expansion for indefinitely-repeating rules.
 _MAINTENANCE_HORIZON = datetime.timedelta(weeks=1)
 
+# Hosts a linked maintenance feed may be fetched from. This runs server-side too, so a
+# link anywhere else (an internal address, say) is refused rather than requested.
+_FEED_HOSTS = frozenset({"calendar.google.com"})
+
 
 def _current_utc_datetime() -> datetime.datetime:
     """Return the current UTC datetime."""
     return datetime.datetime.now(datetime.timezone.utc)
+
+
+def follow_feed_link(ical: str, timeout: float) -> str:
+    """Return ``ical``, or the calendar it links to when it is an ``https`` URL.
+
+    QCS publishes some processors' maintenance (Cepheus-1-108Q's, for one) as a link to a
+    Google Calendar feed rather than inline. The feed is public, so it is fetched without
+    the QCS bearer token, which must not be sent to a third party.
+
+    Raises:
+        ValueError: If the link is to a host outside ``_FEED_HOSTS``, or redirects.
+        requests.RequestException: If the linked feed cannot be fetched.
+    """
+    url = ical.strip()
+    parsed = urlparse(url)
+    if parsed.scheme != "https":
+        return ical
+    if parsed.hostname not in _FEED_HOSTS:
+        raise ValueError(f"Refusing to fetch a maintenance feed from {parsed.hostname!r}.")
+    response = requests.get(
+        url, headers={"Accept": "text/calendar"}, timeout=timeout, allow_redirects=False
+    )
+    if response.is_redirect:
+        raise ValueError("Refusing to follow a redirect from the maintenance feed.")
+    response.raise_for_status()
+    return response.text
 
 
 def _parse_calendar(ical_text: str) -> icalendar.Calendar | None:
