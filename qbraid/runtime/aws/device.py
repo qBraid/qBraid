@@ -32,6 +32,7 @@ from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.options import RuntimeOptions
 from qbraid.transpiler import transpile
 
 from .availability import next_available_time
@@ -44,7 +45,12 @@ if TYPE_CHECKING:
 
 
 class BraketDevice(QuantumDevice):
-    """Wrapper class for Amazon Braket ``Device`` objects."""
+    """Wrapper class for Amazon Braket ``Device`` objects.
+
+    Configure default quantum task tags with ``device.set_options(tags={"project": "example"})``.
+    Tags passed to ``run`` or ``submit`` override matching default keys. Clear the defaults
+    with ``device.set_options(tags=None)``.
+    """
 
     def __init__(
         self,
@@ -52,7 +58,18 @@ class BraketDevice(QuantumDevice):
         session: braket.aws.AwsSession | None = None,
     ):
         """Create a BraketDevice."""
-        super().__init__(profile=profile)
+        options = RuntimeOptions(tags=None)
+        options.set_validator(
+            "tags",
+            lambda tags: tags is None
+            or (
+                isinstance(tags, dict)
+                and all(
+                    isinstance(key, str) and isinstance(value, str) for key, value in tags.items()
+                )
+            ),
+        )
+        super().__init__(profile=profile, options=options)
         self._device = AwsDevice(arn=self.id, aws_session=session)
         self._provider_name = self.profile.get("provider_name")
 
@@ -191,7 +208,9 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
-            tags (dict[str, str]): A dictionary of tags to associate with the job.
+            tags (dict[str, str]): Tags to associate with the job, merged with defaults
+                configured via ``set_options(tags=...)``. Per-submission values take
+                precedence. Passing ``None`` or an empty dictionary uses the defaults.
             shots (int): The number of times to run the task on the device.
 
         Returns:
@@ -200,6 +219,10 @@ class BraketDevice(QuantumDevice):
         """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
+
+        default_tags = self._options["tags"]
+        if default_tags is not None:
+            tags = {**default_tags, **(tags or {})}
 
         if any(hasattr(circuit, "partial_measurement_qubits") for circuit in run_input):
             # Extract partial measurement qubit information and add as tags for job tracking

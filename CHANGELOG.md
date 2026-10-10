@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added default AWS quantum task tags through `BraketDevice.set_options(tags=...)`. Defaults apply to single and batch submissions, and per-submission tags override matching keys.
 - Added `qbraid.runtime.aqt.set_token_store` and the `AQTTokenStore` protocol, so a service running several processes can share one AQT access token instead of each minting its own. The store loads and saves the token; the SDK still caches in memory, and within the last hour before expiry only the process that wins `claim_renewal` mints the replacement. A failing store falls back to the in-process cache rather than breaking authentication ([#1461](https://github.com/qBraid/qBraid/pull/1461))
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
