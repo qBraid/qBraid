@@ -16,6 +16,7 @@
 Module for conversions between Cirq Circuits and QASM strings
 
 """
+
 from __future__ import annotations
 
 import re
@@ -51,8 +52,8 @@ def _order_cregs_by_key(qasm: str) -> str:
 
     Registers are sorted the way ``cirq_to_pyquil`` orders its merged measurements: by the
     ``(register, index)`` parsed from the key, so ``m_c_0`` precedes ``m_c_2``. Names that
-    do not carry an index keep their relative order, and the declarations are rewritten in
-    place so surrounding statements are untouched.
+    do not carry an index name a complete register and sort as ``(name, 0)``. The
+    declarations are rewritten in place so surrounding statements are untouched.
     """
     lines = qasm.splitlines(keepends=True)
     positions = [i for i, line in enumerate(lines) if _CREG.match(line)]
@@ -63,8 +64,8 @@ def _order_cregs_by_key(qasm: str) -> str:
         name = _CREG.match(lines[index])["name"]
         match = _BIT_INDEX.match(name)
         if match is None:
-            return (1, "", 0, index)
-        return (0, match["register"], int(match["index"]), index)
+            return (name, 0, index)
+        return (match["register"], int(match["index"]), index)
 
     reordered = [lines[i] for i in sorted(positions, key=sort_key)]
     for slot, line in zip(positions, reordered, strict=True):

@@ -252,7 +252,10 @@ def test_single_bit_condition_ignores_other_bits():
     """A gate conditioned on c0[1] fires even when c0[0] is also set."""
     circuit = qasm3_to_cirq(_SINGLE_BIT_CONDITION_QASM3)
     result = cirq.Simulator().run(circuit, repetitions=10)
-    assert result.histogram(key="r_0") == {1: 10}
+    # r is a complete terminal register no condition reads, so it keeps its register key;
+    # c0 is read by the condition and keeps its per-bit keys.
+    assert result.histogram(key="r") == {1: 10}
+    assert set(result.measurements) == {"c0_0", "c0_1", "r"}
 
 
 def test_qasm3_to_cirq_without_conditionals():
