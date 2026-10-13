@@ -25,6 +25,7 @@ Writing an entry:
 
 ### Added
 - Added `qbraid.runtime.aqt.set_token_store` and the `AQTTokenStore` protocol, so a service running several processes can share one AQT access token instead of each minting its own. The store loads and saves the token; the SDK still caches in memory, and within the last hour before expiry only the process that wins `claim_renewal` mints the replacement. A failing store falls back to the in-process cache rather than breaking authentication ([#1461](https://github.com/qBraid/qBraid/pull/1461))
+- `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
 
@@ -34,9 +35,12 @@ Writing an entry:
 
 ### Fixed
 - QASM 3 to Cirq conversion now measures each complete terminal register under one key (`c` instead of `c_0`, `c_1`), so per-register results such as OQC's keep their joint counts. Partial, mid-circuit and condition-read registers, and QASM 2 input, keep per-bit keys. Merged measurements move to the end of the circuit, so flat readouts reached through Cirq (Braket, pyQuil) can list bits in a different order, and unindexed keys in native Cirq circuits now sort by name in `cirq_to_qasm2` and `cirq_to_pyquil` ([#1443](https://github.com/qBraid/qBraid/pull/1443))
+- `OQCDevice.status()` no longer reports a windowed QPU such as Toshiko as `UNAVAILABLE` while its access window is open. OQC only reports the next window, so status now comes from whether the device is active and its health checks pass ([#1447](https://github.com/qBraid/qBraid/pull/1447))
 - Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
 - Converting OpenQASM to Cirq no longer drops gates conditioned on a single classical bit, such as `if (c[1]) x q[0];`, when another bit of the same register is also set ([#1460](https://github.com/qBraid/qBraid/pull/1460))
+- `IonQProvider` no longer reports a failure to reach IonQ as "Device '<x>' not found"; that error is now raised only when IonQ returns 404, and device lookups reuse the session's connections ([#1463](https://github.com/qBraid/qBraid/pull/1463))
+- `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
 
