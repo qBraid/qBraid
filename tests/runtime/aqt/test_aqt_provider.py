@@ -39,7 +39,7 @@ from aqt_connector.models.arnica.response_bodies.workspaces import Workspace
 from qbraid_core.exceptions import RequestsApiError
 
 from qbraid.programs import ProgramSpec
-from qbraid.runtime.aqt import AQTDevice, AQTProvider, AQTSession
+from qbraid.runtime.aqt import AQTDevice, AQTProvider, AQTSession, set_token_store
 from qbraid.runtime.aqt.provider import _replace_rejected_token, _resolve_access_token
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
@@ -750,3 +750,248 @@ def test_401_retry_keeps_the_callers_headers(monkeypatch):
     assert [h["X-Trace"] for h in seen] == ["abc123", "abc123"]
     assert [h["Authorization"] for h in seen] == [f"Bearer {first}", f"Bearer {second}"]
     assert caller_headers == {"X-Trace": "abc123"}
+
+
+# ---------------------------------------------------------------------------
+# shared token store
+# ---------------------------------------------------------------------------
+
+
+class _FakeStore:
+    """An in-memory stand-in for a store shared across processes."""
+
+    def __init__(self, token: str | None = None, *, wins_claim: bool = True, broken: bool = False):
+        self.token = token
+        self.wins_claim = wins_claim
+        self.broken = broken
+        self.saved: list[str] = []
+        self.claims: list[str] = []
+
+    def _check(self) -> None:
+        if self.broken:
+            raise ConnectionError("store unreachable")
+
+    def load(self, client_id, audience):
+        self._check()
+        return self.token
+
+    def save(self, client_id, audience, token):
+        self._check()
+        self.token = token
+        self.saved.append(token)
+
+    def claim_renewal(self, client_id, audience, token):
+        self._check()
+        self.claims.append(token)
+        return self.wins_claim
+
+
+def test_a_new_process_reuses_the_shared_token(monkeypatch):
+    """A restarted instance starts with an empty cache but reads the token another one minted."""
+    shared = _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [])
+    set_token_store(_FakeStore(shared))
+
+    assert _resolve_access_token("cid", "cs") == shared
+    assert minted == []
+
+
+def test_the_first_mint_is_shared(monkeypatch):
+    """With nothing shared yet, the mint is saved for every other process to reuse."""
+    token = _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [token])
+    store = _FakeStore()
+    set_token_store(store)
+
+    assert _resolve_access_token("cid", "cs") == token
+    assert store.saved == [token]
+
+
+def test_only_the_claim_winner_renews_ahead_of_expiry(monkeypatch):
+    """Inside the last hour one process mints; the others keep the still-valid token."""
+    current, renewed = _jwt(_NOW + 1_800), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [renewed])
+
+    loser = _FakeStore(current, wins_claim=False)
+    set_token_store(loser)
+    assert _resolve_access_token("cid", "cs") == current
+    assert minted == [] and loser.claims == [current]
+
+    # A separate process: it shares the store, not this one's memory of the lost claim.
+    from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
+
+    provider._LOST_CLAIMS.clear()  # pylint: disable=protected-access
+    winner = _FakeStore(current, wins_claim=True)
+    set_token_store(winner)
+    assert _resolve_access_token("cid", "cs") == renewed
+    assert len(minted) == 1 and winner.saved == [renewed]
+
+
+def test_an_expired_shared_token_is_replaced_without_a_claim(monkeypatch):
+    """Past the refresh margin there is nothing to keep using, so the caller mints."""
+    expired, fresh = _jwt(_NOW + 60), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [fresh])
+    store = _FakeStore(expired, wins_claim=False)
+    set_token_store(store)
+
+    assert _resolve_access_token("cid", "cs") == fresh
+    assert store.claims == [] and store.saved == [fresh]
+
+
+def test_a_newer_shared_token_replaces_the_cached_one(monkeypatch):
+    """A process holding an older token adopts the one another process renewed."""
+    older, newer = _jwt(_NOW + 7 * 86_400), _jwt(_NOW + 14 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [older])
+    store = _FakeStore(wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == older
+
+    store.token = newer
+    _freeze(monkeypatch, _NOW + 7 * 86_400 - 1_800)  # older is due for renewal
+    assert _resolve_access_token("cid", "cs") == newer
+
+
+def test_a_broken_store_never_breaks_auth(monkeypatch):
+    """Store errors fall back to the in-process cache: the caller still gets a token."""
+    token = _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [token])
+    set_token_store(_FakeStore(broken=True))
+
+    assert _resolve_access_token("cid", "cs") == token
+    assert _resolve_access_token("cid", "cs") == token
+    assert len(minted) == 1
+
+
+def test_a_failed_claim_keeps_the_valid_token(monkeypatch):
+    """An unreachable store during the renewal window must not turn every call into a mint."""
+    current = _jwt(_NOW + 1_800)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current  # adopted while the store worked
+
+    store.broken = True
+    assert _resolve_access_token("cid", "cs") == current
+    assert minted == []
+
+
+def test_a_401_reuses_another_processes_replacement(monkeypatch):
+    """If another process already replaced the rejected token, retry with it instead of minting."""
+    rejected, replacement = _jwt(_NOW + 36_000), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [rejected])
+    store = _FakeStore()
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == rejected
+
+    store.token = replacement
+    assert _replace_rejected_token("cid", "cs", None, rejected=rejected) == replacement
+    assert len(minted) == 1
+
+
+def test_a_401_on_the_shared_token_mints_and_shares_its_replacement(monkeypatch):
+    rejected, replacement = _jwt(_NOW + 36_000), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [rejected, replacement])
+    store = _FakeStore()
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == rejected
+
+    assert _replace_rejected_token("cid", "cs", None, rejected=rejected) == replacement
+    assert store.saved == [rejected, replacement]
+
+
+def test_a_token_without_a_readable_expiry_is_not_shared(monkeypatch):
+    """The cache never keeps such a token, so the store must not hand it to other processes."""
+    _counting_mint(monkeypatch, ["opaque-token"])
+    store = _FakeStore()
+    set_token_store(store)
+
+    assert _resolve_access_token("cid", "cs") == "opaque-token"
+    assert store.saved == []
+
+
+def test_a_lost_claim_is_not_repeated_on_every_request(monkeypatch):
+    """A process that lost the renewal claim keeps its token without asking the store again."""
+    current = _jwt(_NOW + 1_800)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+
+    for _ in range(5):
+        assert _resolve_access_token("cid", "cs") == current
+    assert store.claims == [current] and minted == []
+
+
+def test_a_lost_claim_is_retried_after_the_retry_window(monkeypatch):
+    """If the winner died before minting, a later request claims again and renews."""
+    current, renewed = _jwt(_NOW + 3_000), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [renewed])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current
+
+    store.wins_claim = True
+    _freeze(monkeypatch, _NOW + 301)
+    assert _resolve_access_token("cid", "cs") == renewed
+    assert store.claims == [current, current] and store.saved == [renewed]
+
+
+def test_a_lost_claim_still_picks_up_the_winners_token(monkeypatch):
+    """The store is read before the lost claim is consulted, so the renewal reaches everyone."""
+    current, renewed = _jwt(_NOW + 1_800), _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current
+
+    store.token = renewed
+    assert _resolve_access_token("cid", "cs") == renewed
+
+
+def test_a_failed_claim_call_is_not_remembered_as_lost(monkeypatch):
+    """Only a literal False is cached; a store error is retried on the next request."""
+    current = _jwt(_NOW + 1_800)
+    _freeze(monkeypatch, _NOW)
+    _counting_mint(monkeypatch, [])
+    store = _FakeStore(current, wins_claim=False)
+    set_token_store(store)
+    assert _resolve_access_token("cid", "cs") == current  # adopted, claim lost and remembered
+
+    calls = []
+
+    def flaky_claim(client_id, audience, token):
+        calls.append(token)
+        raise ConnectionError("store unreachable")
+
+    from qbraid.runtime.aqt import provider  # pylint: disable=import-outside-toplevel
+
+    provider._LOST_CLAIMS.clear()  # pylint: disable=protected-access
+    store.claim_renewal = flaky_claim
+    assert _resolve_access_token("cid", "cs") == current
+    assert _resolve_access_token("cid", "cs") == current
+    assert calls == [current, current]
+
+
+@pytest.mark.parametrize("stored", [12345, {"exp": 1}, b"a.b.c", "not-a-jwt"])
+def test_a_malformed_shared_value_falls_back_to_minting(monkeypatch, stored):
+    """Whatever a store hands back, an unreadable value is ignored rather than breaking auth."""
+    token = _jwt(_NOW + 7 * 86_400)
+    _freeze(monkeypatch, _NOW)
+    minted = _counting_mint(monkeypatch, [token])
+    store = _FakeStore()
+    store.token = stored
+    set_token_store(store)
+
+    assert _resolve_access_token("cid", "cs") == token
+    assert len(minted) == 1 and store.saved == [token]
