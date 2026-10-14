@@ -23,6 +23,8 @@ transpiler's ``qiskit -> mimiqcircuits`` edge.
 
 from __future__ import annotations
 
+import threading
+
 from mimiqcircuits import Circuit as MimiqCircuit
 from mimiqcircuits import MimiqConnection
 
@@ -75,18 +77,29 @@ class QPerfectProvider(QuantumProvider):
         self._username = username
         self._password = password
         self._connection: MimiqConnection | None = None
+        self._connection_lock = threading.Lock()
 
     @property
     def connection(self) -> MimiqConnection:
-        """Return an authenticated MIMIQ connection, establishing it on first use."""
-        if self._connection is None:
-            self._connection = build_connection(
-                self._token,
-                url=self._url,
-                username=self._username,
-                password=self._password,
-            )
-        return self._connection
+        """Return an authenticated MIMIQ connection, establishing it on first use.
+
+        A connection that is no longer open is replaced. mimiqlink's token refresher has no error
+        handling, so one failed refresh ends the thread and the connection stays closed for good.
+        The lock gives concurrent callers one login: each login starts a refresher thread that
+        runs for the life of the process.
+        """
+        with self._connection_lock:
+            if self._connection is None or not self._connection.connection.isOpen():
+                # MIMIQ rotates the refresh token on every refresh, so the closed connection
+                # holds a newer one than the provider was built with.
+                stale = self._connection.connection if self._connection is not None else None
+                self._connection = build_connection(
+                    getattr(stale, "refresh_token", None) or self._token,
+                    url=self._url,
+                    username=self._username,
+                    password=self._password,
+                )
+            return self._connection
 
     @staticmethod
     def _build_profile() -> TargetProfile:
