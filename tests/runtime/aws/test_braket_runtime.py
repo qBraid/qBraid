@@ -659,6 +659,7 @@ def test_device_submission_with_default_tags(
     assert [job.id for job in jobs] == [task.id for task in tasks]
     assert default_tags == {"project": "benchmarks", "environment": "dev"}
     assert device._options["tags"] == default_tags
+    assert device._options["tags"] is not default_tags
     if call_tags:
         assert call_tags == {"environment": "prod", "run": "trial-1"}
 

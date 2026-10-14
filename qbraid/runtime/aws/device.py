@@ -73,6 +73,12 @@ class BraketDevice(QuantumDevice):
         self._device = AwsDevice(arn=self.id, aws_session=session)
         self._provider_name = self.profile.get("provider_name")
 
+    def set_options(self, **fields):
+        """Update runtime options, storing ``tags`` as a copy of the caller's dict."""
+        if isinstance(fields.get("tags"), dict):
+            fields["tags"] = dict(fields["tags"])
+        super().set_options(**fields)
+
     @property
     def name(self) -> str:
         """Return the name of this Device."""
