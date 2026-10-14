@@ -90,11 +90,8 @@ class QPerfectProvider(QuantumProvider):
         """
         with self._connection_lock:
             if self._connection is None or not self._connection.connection.isOpen():
-                # MIMIQ rotates the refresh token on every refresh, so the closed connection
-                # holds a newer one than the provider was built with.
-                stale = self._connection.connection if self._connection is not None else None
                 self._connection = build_connection(
-                    getattr(stale, "refresh_token", None) or self._token,
+                    self._token,
                     url=self._url,
                     username=self._username,
                     password=self._password,

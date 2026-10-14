@@ -134,26 +134,3 @@ def test_concurrent_rebuild_logs_in_once(monkeypatch, mock_connection):
 
     assert len(logins) == 1
     assert all(connection is mock_connection for connection in connections)
-
-
-def test_rebuild_uses_the_latest_refresh_token(monkeypatch, mock_connection):
-    """A rebuild starts from the refresh token the dead connection last rotated to.
-
-    MIMIQ issues a new refresh token on every refresh, so the token the provider was built with
-    may be days older than the one the dead connection holds.
-    """
-    tokens = []
-
-    def login(token=None, **kwargs):
-        tokens.append(token)
-        return mock_connection
-
-    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", login)
-    provider = QPerfectProvider(token="original-token")
-    dead = _connection_with_dead_refresher()
-    dead.connection.refresh_token = "rotated-token"
-    provider._connection = dead  # pylint: disable=protected-access
-
-    _ = provider.connection
-
-    assert tokens == ["rotated-token"]
