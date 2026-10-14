@@ -34,7 +34,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- `QPerfectProvider` now reconnects when its MIMIQ connection has closed, so the emulator no longer stays `OFFLINE` until the process restarts after one failed token refresh ([#TBD](https://github.com/qBraid/qBraid/pull/TBD))
+- `QPerfectProvider` now reconnects when its MIMIQ connection has closed, so the emulator no longer stays `OFFLINE` until the process restarts after one failed token refresh ([#1476](https://github.com/qBraid/qBraid/pull/1476))
 - `OQCDevice.status()` no longer reports a windowed QPU such as Toshiko as `UNAVAILABLE` while its access window is open. OQC only reports the next window, so status now comes from whether the device is active and its health checks pass ([#1447](https://github.com/qBraid/qBraid/pull/1447))
 - Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
