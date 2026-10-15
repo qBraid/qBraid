@@ -96,6 +96,14 @@ def test_submit_batch_defaults_to_mps_algorithm(device, mock_connection):
     assert kwargs["algorithm"] == "mps"
 
 
+def test_run_accepts_circuits_wider_than_256_qubits(device, mock_connection):
+    """A 300-qubit GHZ reaches MIMIQ; the device sets no qubit cap of its own."""
+    lines = ["OPENQASM 2.0;", 'include "qelib1.inc";', "qreg q[300];", "h q[0];"]
+    lines += [f"cx q[{i}],q[{i + 1}];" for i in range(299)]
+    device.run("\n".join(lines), shots=10)
+    mock_connection.submit.assert_called_once()
+
+
 def test_str_names_the_device(device):
     """``str()`` shows the class and device id."""
     assert str(device) == "QPerfectDevice('mimiq-emulator')"

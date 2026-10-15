@@ -36,6 +36,7 @@ Writing an entry:
 
 ### Fixed
 - Toffoli gates (`ccx`, `ccnot`, `toffoli`) in OpenQASM programs sent to IonQ no longer fail with "Failed to parse circuit" ([#1472](https://github.com/qBraid/qBraid/pull/1472))
+- `QPerfectProvider`'s `mimiq-emulator` no longer rejects circuits over 256 qubits before submission. The cap was a placeholder; MPS reach depends on entanglement rather than width, so MIMIQ now decides what it can run ([#PR](https://github.com/qBraid/qBraid/pull/PR))
 - `QPerfectProvider` now reconnects when its MIMIQ connection has closed, so the emulator no longer stays `OFFLINE` until the process restarts after one failed token refresh ([#1476](https://github.com/qBraid/qBraid/pull/1476))
 - `OQCDevice.status()` no longer reports a windowed QPU such as Toshiko as `UNAVAILABLE` while its access window is open. OQC only reports the next window, so status now comes from whether the device is active and its health checks pass ([#1447](https://github.com/qBraid/qBraid/pull/1447))
 - Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
