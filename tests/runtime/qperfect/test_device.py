@@ -29,9 +29,14 @@ def test_status_online_when_connection_open(device):
     assert device.status() == DeviceStatus.ONLINE
 
 
-def test_status_offline_when_connection_not_open(device, mock_connection):
-    """A connection that is not open reports OFFLINE."""
+def test_status_offline_when_connection_cannot_reopen(device, mock_connection, monkeypatch):
+    """A closed connection that fails to log in again reports OFFLINE."""
     mock_connection.connection.isOpen.return_value = False
+
+    def fail_login(*args, **kwargs):
+        raise ConnectionError("Authentication failed")
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", fail_login)
     assert device.status() == DeviceStatus.OFFLINE
 
 

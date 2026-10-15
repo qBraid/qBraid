@@ -89,10 +89,12 @@ IONQ_TWO_QUBIT_GATE_MAP = {
     **TWO_QUBIT_PARAM_ANGLE_PHASE,
 }
 
+# IonQ writes a Toffoli as "not" with a "controls" list; "cnot" takes a single
+# "control", and IonQ's preflight rejects it with "Failed to parse circuit".
 IONQ_THREE_QUBIT_GATE_MAP = {
-    "ccnot": "cnot",
-    "ccx": "cnot",
-    "toffoli": "cnot",
+    "ccnot": "not",
+    "ccx": "not",
+    "toffoli": "not",
 }
 
 IONQ_THREE_QUBIT_GATE_ALIASES = {

@@ -17,8 +17,14 @@ Unit tests for the QPerfect (MIMIQ) provider.
 
 """
 
-import pytest
+import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 
+import pytest
+from mimiqcircuits import MimiqConnection
+
+from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.qperfect import QPerfectDevice, QPerfectProvider
 
@@ -66,3 +72,65 @@ def test_program_spec_targets_mimiqcircuits(provider):
 def test_provider_is_hashable(provider):
     """The provider is hashable (it is cached by qBraid)."""
     assert isinstance(hash(provider), int)
+
+
+def _connection_with_dead_refresher() -> MimiqConnection:
+    """A real MIMIQ connection that authenticated once and whose token refresher has since died.
+
+    mimiqlink's refresher loop has no error handling, so a single failed token refresh (a TLS
+    EOF from mimiq.qperfect.io, for example) ends the thread, and ``isOpen()`` is False from then
+    on even though the access token is still set.
+    """
+    connection = MimiqConnection("https://mimiq.qperfect.invalid")
+    finished = threading.Thread(target=lambda: None)
+    finished.start()
+    finished.join()
+    connection.connection.refresher_task = finished
+    connection.connection.access_token = "stale-access-token"
+    return connection
+
+
+def test_connection_rebuilds_when_refresher_died(monkeypatch, mock_connection):
+    """A connection whose refresher died is replaced on next use, so the device recovers."""
+    monkeypatch.setattr(
+        "qbraid.runtime.qperfect.provider.build_connection", lambda *args, **kwargs: mock_connection
+    )
+    provider = QPerfectProvider(token="fake-token")
+    provider._connection = _connection_with_dead_refresher()  # pylint: disable=protected-access
+
+    assert provider.get_device("mimiq-emulator").status() == DeviceStatus.ONLINE
+    assert provider.connection is mock_connection
+
+
+def test_open_connection_is_reused(monkeypatch, provider, mock_connection):
+    """An open connection is kept: rebuilding it would cost a login and a refresher thread."""
+
+    def fail_build(*args, **kwargs):
+        raise AssertionError("an open connection must not be rebuilt")
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", fail_build)
+    assert provider.connection is mock_connection
+
+
+def test_concurrent_rebuild_logs_in_once(monkeypatch, mock_connection):
+    """Callers that find the connection closed at the same time share one new login.
+
+    Each login starts a refresher thread that runs for the life of the process, so a rebuild per
+    caller would leave all but the last connection unreachable and still calling MIMIQ.
+    """
+    logins = []
+
+    def slow_login(*args, **kwargs):
+        time.sleep(0.05)
+        logins.append(1)
+        return mock_connection
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", slow_login)
+    provider = QPerfectProvider(token="fake-token")
+    provider._connection = _connection_with_dead_refresher()  # pylint: disable=protected-access
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        connections = list(pool.map(lambda _: provider.connection, range(8)))
+
+    assert len(logins) == 1
+    assert all(connection is mock_connection for connection in connections)
