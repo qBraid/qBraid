@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- Added the `Publish qBraid Lab environment` workflow (`publish-lab-env.yml`), run by hand for a released version. It builds a `qBraid-SDK (vX.Y.Z)` Lab environment with the main framework extras, smoke tests it, and publishes it on qBraid staging or production, as pyqasm does ([#1477](https://github.com/qBraid/qBraid/pull/1477))
 - Added `qbraid.runtime.aqt.set_token_store` and the `AQTTokenStore` protocol, so a service running several processes can share one AQT access token instead of each minting its own. The store loads and saves the token; the SDK still caches in memory, and within the last hour before expiry only the process that wins `claim_renewal` mints the replacement. A failing store falls back to the in-process cache rather than breaking authentication ([#1461](https://github.com/qBraid/qBraid/pull/1461))
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
@@ -35,6 +36,7 @@ Writing an entry:
 
 ### Fixed
 - Toffoli gates (`ccx`, `ccnot`, `toffoli`) in OpenQASM programs sent to IonQ no longer fail with "Failed to parse circuit" ([#1472](https://github.com/qBraid/qBraid/pull/1472))
+- `QPerfectProvider` now reconnects when its MIMIQ connection has closed, so the emulator no longer stays `OFFLINE` until the process restarts after one failed token refresh ([#1476](https://github.com/qBraid/qBraid/pull/1476))
 - `OQCDevice.status()` no longer reports a windowed QPU such as Toshiko as `UNAVAILABLE` while its access window is open. OQC only reports the next window, so status now comes from whether the device is active and its health checks pass ([#1447](https://github.com/qBraid/qBraid/pull/1447))
 - Fixed `AQTProvider` requesting a new AQT access token for every session, which could exhaust AQT's token quota. Tokens are now reused until shortly before they expire, long-lived sessions renew theirs instead of failing, and explicit credentials take precedence over a stored `aqt_connector` login ([#1444](https://github.com/qBraid/qBraid/pull/1444))
 - `QbraidJob.result()` on a job that did not complete now carries the platform's failure reason in `Result.details["status_message"]`, so printing the result shows why the job failed instead of only an empty result ([#1458](https://github.com/qBraid/qBraid/pull/1458))
