@@ -71,6 +71,9 @@ class QPerfectProvider(QuantumProvider):
         self._password = password
         self._connection: MimiqConnection | None = None
         self._connection_lock = threading.Lock()
+        # The refresh token a discarded connection last held. MIMIQ rotates it on every refresh,
+        # so after the first 15 minutes the one passed in has stopped working.
+        self._latest_token: str | None = None
 
     @property
     def connection(self) -> MimiqConnection:
@@ -83,13 +86,43 @@ class QPerfectProvider(QuantumProvider):
         """
         with self._connection_lock:
             if self._connection is None or not self._connection.connection.isOpen():
+                if self._connection is not None:
+                    self._remember_token(self._connection)
                 self._connection = build_connection(
-                    self._token,
+                    self._latest_token or self._token,
                     url=self._url,
                     username=self._username,
                     password=self._password,
                 )
             return self._connection
+
+    def invalidate_connection(self, connection: MimiqConnection | None = None) -> None:
+        """Discard the connection so the next access logs in again, stopping its refresher.
+
+        For a session MIMIQ no longer accepts while it still reports open. Pass the connection the
+        failed call used: if it has already been replaced, nothing happens, so concurrent failures
+        on one session cost one login. ``None`` discards whatever connection is current.
+
+        Jobs created on the discarded connection keep it, and its access token expires without
+        the refresher.
+        """
+        with self._connection_lock:
+            current = self._connection
+            if current is None or (connection is not None and current is not connection):
+                return
+            self._remember_token(current)
+            self._connection = None
+        _stop_refresher(current)
+
+    def _remember_token(self, connection: MimiqConnection) -> None:
+        """Keep a discarded connection's refresh token for the next login.
+
+        Without it, a provider built from a token alone could not log in again once MIMIQ had
+        rotated that token, and would stay disconnected for the life of the process.
+        """
+        token = getattr(connection.connection, "refresh_token", None)
+        if isinstance(token, str) and token:
+            self._latest_token = token
 
     @staticmethod
     def _build_profile() -> TargetProfile:
@@ -123,3 +156,14 @@ class QPerfectProvider(QuantumProvider):
         if not hasattr(self, "_hash"):
             object.__setattr__(self, "_hash", hash((self._token, self._url, self._username)))
         return self._hash  # pylint: disable=no-member
+
+
+def _stop_refresher(connection: MimiqConnection) -> None:
+    """Ask a discarded connection's token-refresher thread to exit.
+
+    ``close()`` is not used: it joins the refresher, which waits out a token refresh in progress.
+    The thread checks the flag every second and is a daemon, so nothing has to join it.
+    """
+    link = connection.connection
+    with link.refresher_lock:
+        link.refresher_stop = True

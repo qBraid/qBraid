@@ -20,8 +20,10 @@ Unit tests for the QPerfect (MIMIQ) provider.
 import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
+from unittest.mock import MagicMock
 
 import pytest
+import requests
 from mimiqcircuits import MimiqConnection
 
 from qbraid.runtime.enums import DeviceStatus
@@ -134,3 +136,115 @@ def test_concurrent_rebuild_logs_in_once(monkeypatch, mock_connection):
 
     assert len(logins) == 1
     assert all(connection is mock_connection for connection in connections)
+
+
+def _logged_in(mock_connection):
+    """Give the mocked connection the refresher state a real login leaves behind."""
+    mock_connection.connection.refresher_lock = threading.Lock()
+    mock_connection.connection.refresher_stop = False
+    return mock_connection
+
+
+def test_invalidate_connection_logs_in_again_and_stops_the_refresher(monkeypatch, mock_connection):
+    """A session MIMIQ rejects while it still reports open is replaced on next access."""
+    logins = []
+
+    def login(*_args, **_kwargs):
+        logins.append(1)
+        return MagicMock()
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", login)
+    provider = QPerfectProvider(token="fake-token")
+    rejected = _logged_in(mock_connection)
+    provider._connection = rejected  # pylint: disable=protected-access
+
+    provider.invalidate_connection(rejected)
+
+    assert rejected.connection.refresher_stop
+    assert provider.connection is not rejected
+    assert len(logins) == 1
+
+
+def test_invalidate_connection_ignores_a_replaced_connection(monkeypatch, mock_connection):
+    """A failure on a connection already replaced leaves the new one alone, costing no login."""
+
+    def fail_build(*args, **kwargs):
+        raise AssertionError("the current connection must not be discarded")
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", fail_build)
+    provider = QPerfectProvider(token="fake-token")
+    current = _logged_in(mock_connection)
+    provider._connection = current  # pylint: disable=protected-access
+
+    provider.invalidate_connection(MagicMock())
+
+    assert provider.connection is current
+    assert not current.connection.refresher_stop
+
+
+def test_invalidate_connection_without_argument_discards_the_current_one(mock_connection):
+    """``None`` discards whatever connection is current."""
+    provider = QPerfectProvider(token="fake-token")
+    current = _logged_in(mock_connection)
+    provider._connection = current  # pylint: disable=protected-access
+
+    provider.invalidate_connection()
+
+    assert provider._connection is None  # pylint: disable=protected-access
+    assert current.connection.refresher_stop
+
+
+def test_token_only_provider_logs_in_again_with_the_rotated_token(monkeypatch, mock_connection):
+    """After an invalidation, the next login uses the refresh token MIMIQ rotated to.
+
+    MIMIQ rotates the refresh token every 15 minutes, so the one the provider was built with has
+    stopped working by then. With no credentials to fall back to, reusing it left the provider
+    disconnected for the life of the process.
+    """
+    tokens = []
+
+    def login(token, **_kwargs):
+        tokens.append(token)
+        return MagicMock()
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", login)
+    provider = QPerfectProvider(token="original-token")
+    current = _logged_in(mock_connection)
+    current.connection.refresh_token = "rotated-token"
+    provider._connection = current  # pylint: disable=protected-access
+
+    provider.invalidate_connection(current)
+    _ = provider.connection
+
+    assert tokens == ["rotated-token"]
+
+
+def test_closed_connection_is_rebuilt_with_the_rotated_token(monkeypatch, mock_connection):
+    """A connection whose refresher died is replaced using its latest refresh token."""
+    tokens = []
+
+    def login(token, **_kwargs):
+        tokens.append(token)
+        return mock_connection
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", login)
+    provider = QPerfectProvider(token="original-token")
+    dead = _connection_with_dead_refresher()
+    dead.connection.refresh_token = "rotated-token"
+    provider._connection = dead  # pylint: disable=protected-access
+
+    _ = provider.connection
+
+    assert tokens == ["rotated-token"]
+
+
+def test_mimiqlink_internals_the_provider_relies_on():
+    """Pin the mimiqlink attributes the SDK reaches into, so an upstream rename fails here.
+
+    A renamed stop flag would not raise: setting it would add a new attribute, and every
+    invalidation would leave a refresher thread calling MIMIQ for the life of the process.
+    """
+    link = MimiqConnection("http://127.0.0.1:1").connection
+    assert isinstance(link.session, requests.Session)
+    assert hasattr(link.refresher_lock, "acquire")
+    assert link.refresher_stop is False
