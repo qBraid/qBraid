@@ -278,8 +278,9 @@ def should_set_latest(client: Any, settings: Settings, current: Optional[str], s
     if current in (None, slug):
         return True
     match = ENV_NAME_PATTERN.fullmatch(client.get_environment_by_slug(current).get("name", ""))
-    if match and version_tuple(match.group(1)) >= version_tuple(settings.version):
-        print(f"Group latest '{current}' is {PACKAGE} {match.group(1)}, not older; leaving it.")
+    # A newer release stays the latest. An equal one is replaced, so a rebuild wins.
+    if match and version_tuple(match.group(1)) > version_tuple(settings.version):
+        print(f"Group latest '{current}' is {PACKAGE} {match.group(1)}, newer; leaving it.")
         return False
     return True
 
