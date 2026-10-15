@@ -36,6 +36,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Converting a qrisp circuit to pytket no longer reorders qubits whose names sort differently as text and as numbers (for example `qb_99` and `qb_100`), which produced a circuit acting on the wrong qubits ([#1482](https://github.com/qBraid/qBraid/pull/1482))
 - Toffoli gates (`ccx`, `ccnot`, `toffoli`) in OpenQASM programs sent to IonQ no longer fail with "Failed to parse circuit" ([#1472](https://github.com/qBraid/qBraid/pull/1472))
 - `QPerfectProvider`'s `mimiq-emulator` no longer rejects circuits over 256 qubits before submission. The cap was a placeholder; MPS reach depends on entanglement rather than width, so MIMIQ now decides what it can run ([#1478](https://github.com/qBraid/qBraid/pull/1478))
 - `QPerfectProvider` now reconnects when its MIMIQ connection has closed, so the emulator no longer stays `OFFLINE` until the process restarts after one failed token refresh ([#1476](https://github.com/qBraid/qBraid/pull/1476))
