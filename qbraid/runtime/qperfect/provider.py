@@ -40,13 +40,6 @@ from .device import QPerfectDevice
 # The algorithm (auto / statevector / mps) is a per-job option, not a separate device.
 _DEVICE_ID = "mimiq-emulator"
 
-# Approximate reach per backend: state vector is memory-bound (2^N amplitudes), MPS scales with
-# entanglement. The emulator errors if a run exceeds what its chosen backend can handle.
-_ALGORITHM_QUBITS: dict[str, int] = {
-    "statevector": 32,
-    "mps": 256,
-}
-
 
 class QPerfectProvider(QuantumProvider):
     """QPerfect (MIMIQ) provider class."""
@@ -105,8 +98,9 @@ class QPerfectProvider(QuantumProvider):
             device_id=_DEVICE_ID,
             simulator=True,
             experiment_type=ExperimentType.GATE_MODEL,
-            # The emulator picks a backend per job, so advertise the largest reach.
-            num_qubits=max(_ALGORITHM_QUBITS.values()),
+            # No cap: MPS reach depends on entanglement, not width, so a fixed count would reject
+            # circuits MIMIQ can run. MIMIQ rejects what its chosen backend cannot handle.
+            num_qubits=None,
             program_spec=ProgramSpec(MimiqCircuit),
             provider_name="QPerfect",
         )

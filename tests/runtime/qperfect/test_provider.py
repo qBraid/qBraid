@@ -52,10 +52,10 @@ def test_get_devices(provider):
 
 
 def test_get_device(provider):
-    """The emulator device advertises the largest per-algorithm qubit reach."""
+    """The emulator device advertises no qubit cap, leaving the limit to MIMIQ."""
     device = provider.get_device("mimiq-emulator")
     assert device.id == "mimiq-emulator"
-    assert device.num_qubits == 256
+    assert device.num_qubits is None
 
 
 def test_get_device_unknown(provider):
@@ -120,7 +120,7 @@ def test_concurrent_rebuild_logs_in_once(monkeypatch, mock_connection):
     """
     logins = []
 
-    def slow_login(*args, **kwargs):
+    def slow_login(*_args, **_kwargs):
         time.sleep(0.05)
         logins.append(1)
         return mock_connection
