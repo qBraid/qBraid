@@ -230,3 +230,17 @@ def test_timeout_adapter_defaults_and_keeps_uploads_unbounded(requested, sent):
     with patch("requests.adapters.HTTPAdapter.send") as send:
         adapter.send(MagicMock(), timeout=requested)
     assert send.call_args.kwargs["timeout"] == sent
+
+
+def test_unreachable_mimiq_does_not_fall_back_to_credentials(mimiq_connection):
+    """A token login MIMIQ never answers raises rather than trying the same host again.
+
+    The fallback is for a rejected token. After a timeout it would wait on MIMIQ a second time
+    while the caller holds the provider's connection lock.
+    """
+    _, instance = mimiq_connection
+    instance.connection.connectToken.side_effect = requests.exceptions.ReadTimeout("no answer")
+
+    with pytest.raises(requests.exceptions.ReadTimeout):
+        build_connection("some-token", username="someone@example.com", password="pw")
+    instance.connection.connectUser.assert_not_called()

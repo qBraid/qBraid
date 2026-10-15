@@ -34,6 +34,7 @@ import os
 
 from mimiqcircuits import MimiqConnection
 from mimiqlink import QPERFECT_CLOUD
+from requests import RequestException
 from requests.adapters import HTTPAdapter
 
 logger = logging.getLogger(__name__)
@@ -147,6 +148,7 @@ def build_connection(
     Raises:
         ValueError: If neither a token nor a complete set of credentials is available.
         ConnectionError: If a token is the only credential available and MIMIQ rejects it.
+        requests.RequestException: If MIMIQ cannot be reached or does not answer in time.
     """
     resolved_url = resolve_url(url)
     token = token or os.getenv(TOKEN_ENV_VAR)
@@ -157,6 +159,10 @@ def build_connection(
         try:
             connection.connection.connectToken(token)
             return connection
+        except RequestException:
+            # MIMIQ did not answer, rather than rejecting the token. A credentials login would
+            # wait on the same host again while the caller holds the provider's connection lock.
+            raise
         except Exception as err:  # pylint: disable=broad-except
             if account is None:
                 raise
