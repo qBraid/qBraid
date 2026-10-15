@@ -24,10 +24,14 @@ about a day, so a rejected token must fall back to a credentials login rather th
 from __future__ import annotations
 
 import os
+import socket
+import time
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
+from qbraid.runtime.qperfect import client
 from qbraid.runtime.qperfect.client import (
     PASSWORD_ENV_VAR,
     TOKEN_ENV_VAR,
@@ -193,3 +197,36 @@ def test_rotation_race_falls_back_instead_of_failing(monkeypatch, mimiq_connecti
 
     assert build_connection() is instance
     instance.connection.connectUser.assert_called_once_with("user@example.com", "secret")
+
+
+def test_login_that_never_answers_times_out(monkeypatch):
+    """A login MIMIQ accepts but never answers raises instead of blocking forever.
+
+    mimiqlink sets no read timeout, and a login runs under the provider's connection lock, so a
+    hung one held up every caller of that provider for the life of the process.
+    """
+    monkeypatch.setattr(client, "READ_TIMEOUT_S", 0.2)
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+        # Listening without accepting: the kernel completes the handshake, nothing ever replies.
+        server.bind(("127.0.0.1", 0))
+        server.listen()
+        url = f"http://127.0.0.1:{server.getsockname()[1]}"
+
+        started = time.monotonic()
+        with pytest.raises(requests.exceptions.ReadTimeout):
+            build_connection(url=url, username="someone@example.com", password="pw")
+        assert time.monotonic() - started < 5
+
+
+@pytest.mark.parametrize(
+    "requested, sent",
+    [(None, (client.CONNECT_TIMEOUT_S, client.READ_TIMEOUT_S)), (0, None), ((2, 3), (2, 3))],
+)
+def test_timeout_adapter_defaults_and_keeps_uploads_unbounded(requested, sent):
+    """Requests without a timeout get the default; ``timeout=0`` (job uploads) still means none."""
+    adapter = client._TimeoutAdapter(  # pylint: disable=protected-access
+        (client.CONNECT_TIMEOUT_S, client.READ_TIMEOUT_S)
+    )
+    with patch("requests.adapters.HTTPAdapter.send") as send:
+        adapter.send(MagicMock(), timeout=requested)
+    assert send.call_args.kwargs["timeout"] == sent

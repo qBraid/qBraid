@@ -91,6 +91,23 @@ class QPerfectProvider(QuantumProvider):
                 )
             return self._connection
 
+    def invalidate_connection(self, connection: MimiqConnection | None = None) -> None:
+        """Discard the connection so the next access logs in again, stopping its refresher.
+
+        For a session MIMIQ no longer accepts while it still reports open. Pass the connection the
+        failed call used: if it has already been replaced, nothing happens, so concurrent failures
+        on one session cost one login. ``None`` discards whatever connection is current.
+
+        Jobs created on the discarded connection keep it, and its access token expires without
+        the refresher.
+        """
+        with self._connection_lock:
+            current = self._connection
+            if current is None or (connection is not None and current is not connection):
+                return
+            self._connection = None
+        _stop_refresher(current)
+
     @staticmethod
     def _build_profile() -> TargetProfile:
         """Build the :class:`TargetProfile` for the MIMIQ emulator."""
@@ -123,3 +140,14 @@ class QPerfectProvider(QuantumProvider):
         if not hasattr(self, "_hash"):
             object.__setattr__(self, "_hash", hash((self._token, self._url, self._username)))
         return self._hash  # pylint: disable=no-member
+
+
+def _stop_refresher(connection: MimiqConnection) -> None:
+    """Ask a discarded connection's token-refresher thread to exit.
+
+    ``close()`` is not used: it joins the refresher, which waits out a token refresh in progress.
+    The thread checks the flag every second and is a daemon, so nothing has to join it.
+    """
+    link = connection.connection
+    with link.refresher_lock:
+        link.refresher_stop = True
