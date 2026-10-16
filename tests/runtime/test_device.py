@@ -1462,3 +1462,82 @@ def test_best_qubits_ignores_unpublished_metrics(mock_profile):
     )
     device = _device_with(calibration, mock_profile)
     assert device.best_qubits(1) == (0,)
+
+
+class TestQuantumCircuitSubclass:
+    """Regression tests for GitHub issue #1480.
+
+    QuantumCircuit subclasses (e.g. bound qiskit-nature UCCSD, TwoLocal, EfficientSU2)
+    should work with QuantumDevice.run() without raising
+    "Alias 'qiskit' is already registered with a different type".
+    """
+
+    @staticmethod
+    def _qasm_device():
+        """Return a mock device whose target is QASM2."""
+        from qbraid.programs import ProgramSpec
+        from qbraid.runtime import TargetProfile
+
+        profile = TargetProfile(
+            device_id="test:qasm:sim",
+            simulator=True,
+            program_spec=ProgramSpec(str, alias="qasm2"),
+        )
+        return MockDevice(profile=profile)
+
+    def test_apply_runtime_profile_with_quantum_circuit_subclass(self):
+        """Subclass of QuantumCircuit should not raise during apply_runtime_profile."""
+        pytest.importorskip("qiskit", reason="qiskit not installed")
+        from qiskit import QuantumCircuit
+
+        class MyCircuit(QuantumCircuit):
+            """Custom QuantumCircuit subclass."""
+
+        device = self._qasm_device()
+        circuit = MyCircuit(2)
+        circuit.h(0)
+        circuit.cx(0, 1)
+
+        # This should not raise "Alias 'qiskit' is already registered with a different type"
+        result = device.apply_runtime_profile(circuit)
+        assert result is not None
+
+    def test_get_spec_with_subclass(self):
+        """QuantumProgram.get_spec should not raise for subclasses."""
+        pytest.importorskip("qiskit", reason="qiskit not installed")
+        from qiskit import QuantumCircuit
+        from qbraid.programs.program import QuantumProgram
+
+        class MyCircuit(QuantumCircuit):
+            """Custom QuantumCircuit subclass."""
+
+        circuit = MyCircuit(2)
+        circuit.h(0)
+        circuit.cx(0, 1)
+
+        # This should not raise "Alias 'qiskit' is already registered with a different type"
+        spec = QuantumProgram.get_spec(circuit)
+        assert spec.alias == "qiskit"
+
+    def test_program_spec_from_subclass_uses_registered_type(self):
+        """ProgramSpec for a subclass should use the parent type from the registry."""
+        pytest.importorskip("qiskit", reason="qiskit not installed")
+        from qiskit import QuantumCircuit
+        from qbraid.programs import ProgramSpec, QPROGRAM_REGISTRY, get_program_type_alias
+
+        class MyCircuit(QuantumCircuit):
+            """Custom QuantumCircuit subclass."""
+
+        circuit = MyCircuit(2)
+        alias = get_program_type_alias(circuit, safe=True)
+
+        # The alias should be 'qiskit' because get_program_type_alias matches by isinstance
+        assert alias == "qiskit"
+
+        # The fix: use the registered type, not type(circuit)
+        program_type = QPROGRAM_REGISTRY[alias] if alias else type(circuit)
+        spec = ProgramSpec(program_type, alias=alias)
+
+        # The spec should use QuantumCircuit, not MyCircuit
+        assert spec.program_type is QuantumCircuit
+        assert spec.alias == "qiskit"
