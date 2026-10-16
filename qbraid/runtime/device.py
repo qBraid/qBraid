@@ -27,10 +27,10 @@ from typing import TYPE_CHECKING, Any, cast
 
 from qbraid._logging import logger
 from qbraid.programs import (
+    QPROGRAM_REGISTRY,
     ProgramLoaderError,
     ProgramSpec,
     ProgramTypeError,
-    QPROGRAM_REGISTRY,
     get_program_type_alias,
     load_program,
 )

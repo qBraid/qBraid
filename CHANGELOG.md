@@ -37,6 +37,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed `QuantumDevice.apply_runtime_profile` and `QuantumProgram.get_spec` raising `ValueError: Alias 'qiskit' is already registered with a different type` for `QuantumCircuit` subclasses (e.g. bound qiskit-nature `UCCSD`, `TwoLocal`, `EfficientSU2`) by building the `ProgramSpec` from the type registered under the resolved alias. ([#1483](https://github.com/qBraid/qBraid/pull/1483))
 - Converting a qrisp circuit to pytket no longer reorders qubits whose names sort differently as text and as numbers (for example `qb_99` and `qb_100`), which produced a circuit acting on the wrong qubits ([#1482](https://github.com/qBraid/qBraid/pull/1482))
 - Toffoli gates (`ccx`, `ccnot`, `toffoli`) in OpenQASM programs sent to IonQ no longer fail with "Failed to parse circuit" ([#1472](https://github.com/qBraid/qBraid/pull/1472))
 - `QPerfectProvider`'s `mimiq-emulator` no longer rejects circuits over 256 qubits before submission. The cap was a placeholder; MPS reach depends on entanglement rather than width, so MIMIQ now decides what it can run ([#1478](https://github.com/qBraid/qBraid/pull/1478))
