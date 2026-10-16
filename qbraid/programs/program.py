@@ -76,7 +76,8 @@ class QuantumProgram(ABC):
             logger.info(err)
             alias = None
 
-        return ProgramSpec(type(program), alias)
+        program_type = QPROGRAM_REGISTRY[alias] if alias else type(program)
+        return ProgramSpec(program_type, alias)
 
     @property
     @abstractmethod

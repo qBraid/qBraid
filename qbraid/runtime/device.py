@@ -30,6 +30,7 @@ from qbraid.programs import (
     ProgramLoaderError,
     ProgramSpec,
     ProgramTypeError,
+    QPROGRAM_REGISTRY,
     get_program_type_alias,
     load_program,
 )
@@ -463,7 +464,8 @@ class QuantumDevice(ABC):
         """
         if self._target_spec is not None and self._options.get("transpile") is True:
             run_input_alias = get_program_type_alias(run_input, safe=True)
-            run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
+            program_type = QPROGRAM_REGISTRY[run_input_alias] if run_input_alias else type(run_input)
+            run_input_spec = ProgramSpec(program_type, alias=run_input_alias)
             run_input = self.transpile(run_input, run_input_spec)
 
         is_single_output = not isinstance(run_input, list)
