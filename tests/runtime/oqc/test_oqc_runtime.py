@@ -1046,7 +1046,6 @@ def test_oqc_result_reports_qubit_zero_last(oqc_job):
 
     with (
         patch.object(OQCJob, "status", return_value=JobStatus.COMPLETED),
-        patch.object(OQCJob, "_get_counts", return_value=vendor_counts),
         patch.object(
             oqc_job._client, "get_task_results", return_value=MagicMock(result={"c": vendor_counts})
         ),
