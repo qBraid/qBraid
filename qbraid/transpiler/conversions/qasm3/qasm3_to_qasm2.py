@@ -26,8 +26,8 @@ from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.transpiler.annotations import weight
 
 # The original qelib1.inc gates, plus the extended ones the Cirq-based conversion
-# already emits. Unrolling reduces every standard gate to these, so any other gate
-# raises and the transpiler takes the Cirq path.
+# already emits. These are kept as written and every other gate is unrolled into them,
+# so a gate that is neither raises and the transpiler takes the Cirq path.
 QELIB1_GATES = frozenset(
     {
         "u3", "u2", "u1", "cx", "id", "x", "y", "z", "h", "s", "sdg", "t", "tdg", "rx", "ry",
@@ -46,6 +46,7 @@ _QASM2_IDENTIFIER = re.compile(r"[a-z][A-Za-z0-9_]*")
 _DECLARATION = re.compile(r"^(qubit|bit)\[(\d+)\] (\w+);$")
 _MEASUREMENT = re.compile(r"^(\w+\[\d+\]) = measure (\w+\[\d+\]);$")
 _GATE = re.compile(r"^(\w+)(?:\([^)]*\))? [^;]+;$")
+_GATE_DEFINITION = re.compile(r"\bgate\s+(\w+)")
 _EXPONENT_WITHOUT_POINT = re.compile(r"(?<![\w.])(\d+)([eE][-+]?\d+)")
 
 
@@ -63,9 +64,7 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
             (``$1``), or a register name OpenQASM 2 cannot use. The transpiler then tries
             its next conversion path.
     """
-    module = pyqasm.loads(qasm)
-    module.unroll()
-    unrolled = pyqasm.dumps(module)
+    unrolled = _unroll(qasm)
     if "$" in unrolled:
         raise ValueError("OpenQASM 2 cannot express a physical qubit.")
 
@@ -93,3 +92,20 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
             raise ValueError(f"OpenQASM 2 cannot express the statement: {statement}")
 
     return "\n".join(lines) + "\n"
+
+
+def _unroll(qasm: str) -> str:
+    """``qasm`` unrolled into gates, keeping qelib1 gates as written where that is safe.
+
+    A gate the program defines itself under a qelib1 name is unrolled, since QASM 2 would
+    run qelib1's gate instead. If a modifier (``ctrl @``, ``inv @``) is left on a kept gate,
+    everything is unrolled instead, which QASM 2 can express.
+    """
+    module = pyqasm.loads(qasm)
+    module.unroll(external_gates=sorted(QELIB1_GATES - set(_GATE_DEFINITION.findall(qasm))))
+    unrolled = pyqasm.dumps(module)
+    if "@" not in unrolled:
+        return unrolled
+    module = pyqasm.loads(qasm)
+    module.unroll()
+    return pyqasm.dumps(module)

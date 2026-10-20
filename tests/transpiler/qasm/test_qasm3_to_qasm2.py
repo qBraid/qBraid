@@ -66,6 +66,42 @@ def test_gate_outside_qelib1_is_unrolled_into_qelib1_gates():
     assert "creg c[2];" in qasm2
 
 
+@pytest.mark.parametrize(
+    "gate",
+    [
+        "u3(0.1, 0.2, 0.3) q[0];",
+        "u2(0.1, 0.2) q[0];",
+        "ch q[0], q[1];",
+        "cy q[0], q[1];",
+        "crz(0.2) q[0], q[1];",
+        "cu1(0.2) q[0], q[1];",
+        "cswap q[0], q[1], q[2];",
+        "sxdg q[0];",
+    ],
+)
+def test_qelib1_gate_is_kept_as_written(gate):
+    """Unrolling a gate QASM 2 already has would only add gates, and error on hardware."""
+    qasm2 = qasm3_to_qasm2(HEADER + "qubit[3] q;\n" + gate + "\n")
+
+    assert qasm2.endswith("qreg q[3];\n" + gate + "\n")
+
+
+def test_a_gate_redefined_under_a_qelib1_name_is_unrolled():
+    """QASM 2 would run qelib1's ``ch``, not this one, so its body is what is sent."""
+    qasm2 = qasm3_to_qasm2(HEADER + "gate ch a, b { x a; x b; }\nqubit[2] q;\nch q[0], q[1];\n")
+
+    assert qasm2.endswith("qreg q[2];\nx q[0];\nx q[1];\n")
+
+
+def test_a_modifier_on_a_kept_gate_is_unrolled_with_it():
+    """``ctrl @ x`` has no QASM 2 form, so the program is unrolled whole, registers intact."""
+    qasm2 = qasm3_to_qasm2(
+        HEADER + "qubit[2] q;\nbit[2] c;\nctrl @ x q[0], q[1];\nc = measure q;\n"
+    )
+
+    assert "creg c[2];\ncx q[0], q[1];" in qasm2
+
+
 def test_custom_gates_are_unrolled_and_global_phase_dropped():
     """Gates outside ``qelib1.inc`` are decomposed, and ``gphase`` has no QASM 2 form."""
     qasm2 = qasm3_to_qasm2(

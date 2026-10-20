@@ -31,13 +31,13 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- **Behavior change:** OpenQASM 3 programs sent to OpenQASM 2 devices (OQC, IonQ, Azure Quantinuum, OpenQuantum, QUDORA) now keep their classical registers and qubits as declared. A partly measured register stays one register under its own name, with unmeasured bits reading 0, instead of one-bit `m_c_0`-style registers. Its counts change shape (OQC's `get_counts()` returns one dict, not a list), and fully measured registers keep their name (`c`, not `m_c`). Unused qubits are no longer dropped, so the remaining qubits keep their indices. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
-- Converting OpenQASM 3 to OpenQASM 2 now keeps each classical register whole and under its own name, instead of splitting a partly measured register into one-bit registers and renaming `c` to `m_c`. Devices that target OpenQASM 2 (OQC, IonQ, QUDORA and others) receive the registers as written. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
 - Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
 - Converting a qrisp circuit to pytket no longer reorders qubits whose names sort differently as text and as numbers (for example `qb_99` and `qb_100`), which produced a circuit acting on the wrong qubits ([#1482](https://github.com/qBraid/qBraid/pull/1482))
 - Toffoli gates (`ccx`, `ccnot`, `toffoli`) in OpenQASM programs sent to IonQ no longer fail with "Failed to parse circuit" ([#1472](https://github.com/qBraid/qBraid/pull/1472))
