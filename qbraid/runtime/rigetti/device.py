@@ -345,9 +345,8 @@ class RigettiDevice(QuantumDevice):
         execution-only), so this issues the REST call directly against
         ``GET {api_url}/v1/calendars/{id}``, reusing the device's
         ``QCSClient`` for the API base URL and the (auto-refreshing) OAuth
-        bearer token. The response contains a ``maintenanceICal`` field whose
-        value is an RFC 5545 calendar listing the windows during which
-        execution on the QPU is unavailable.
+        bearer token. Its ``maintenanceICal`` field is an RFC 5545 calendar of
+        the windows when the QPU is unavailable, or an ``https`` link to one.
 
         Returns:
             The iCalendar text, or an empty string when no maintenance
@@ -369,14 +368,15 @@ class RigettiDevice(QuantumDevice):
                 timeout=_QCS_CALENDAR_TIMEOUT_S,
             )
             response.raise_for_status()
-            payload = response.json()
+            ical = response.json().get("maintenanceICal") or ""
+            ical = availability.follow_feed_link(ical, _QCS_CALENDAR_TIMEOUT_S)
         except Exception as e:  # pylint: disable=broad-exception-caught
             raise RigettiDeviceError(
                 f"Failed to fetch maintenance calendar for quantum processor '{self.id}' "
                 "from the Rigetti QCS API."
             ) from e
 
-        return payload.get("maintenanceICal") or ""
+        return ical
 
     def maintenance_calendar(self) -> str:
         """Return the raw maintenance iCalendar (RFC 5545) for this processor.

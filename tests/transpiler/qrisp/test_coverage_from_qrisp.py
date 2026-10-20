@@ -160,15 +160,9 @@ ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.88), ("qiskit", 0.95)]
 #: and with 25 gates one failure moves accuracy by 0.04 while ALLOWANCE was 0.01 -- so the
 #: pytket case sat exactly on its 0.88 baseline with three failures and went red the moment
 #: a fourth appeared, regardless of which. That is what made it flake in CI.
-#:
-#: MCRXGate is listed for pytket because it fails only on some conversion paths: the direct
-#: qrisp -> pytket edge produces a circuit that is not equivalent, while a route through an
-#: intermediate does not, and which one the graph picks depends on what else is imported.
-#: Listing it keeps the suite green either way; the underlying conversion is still wrong and
-#: is tracked separately.
 KNOWN_BAD_CONVERSIONS = {
     "cirq": {"RGate"},
-    "pytket": {"CPGate", "MCRXGate", "RGate", "U1Gate"},
+    "pytket": {"CPGate", "RGate", "U1Gate"},
     "qiskit": {"RGate"},
 }
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
@@ -219,7 +213,7 @@ def test_qrisp_coverage(target, baseline, qrisp_circuits, conversion_graph):
 
     # A known-bad gate that starts passing is not a failure, but the list must not rot:
     # left unchecked it grows into a permanent allowance that hides the next regression.
-    fixed = sorted(known_bad - set(failures) - {"MCRXGate"})
+    fixed = sorted(known_bad - set(failures))
     assert not fixed, (
         f"qrisp -> {target} now converts {fixed} correctly. Remove from "
         f"KNOWN_BAD_CONVERSIONS so a future regression is caught."
@@ -238,3 +232,25 @@ def test_qrisp_to_qasm_roundtrip(target, conversion_graph):
     assert isinstance(qasm, str)
     back = transpile(qasm, "cirq", conversion_graph=conversion_graph)
     assert circuits_allclose(qc.to_cirq(), back, strict_gphase=False)
+
+
+@pytest.mark.parametrize("first", [7, 97, 997])
+@pytest.mark.parametrize("gate", ["cx", "mcrx"])
+def test_qrisp_to_pytket_keeps_qubit_order_across_digit_boundaries(first, gate, conversion_graph):
+    """Qubits whose names sort differently as text and as numbers keep qrisp's order.
+
+    qrisp names qubits from a process-wide counter, and pytket ordered its one-qubit registers
+    by name as text, so ``qb_100`` came before ``qb_99``. Which gates failed then depended on how
+    many qubits earlier tests had created, which is what made ``test_qrisp_coverage`` flaky.
+    """
+    pytest.importorskip("pytket")
+    qc = qrisp.QuantumCircuit()
+    for index in range(first, first + 4):
+        qc.add_qubit(qrisp.circuit.Qubit(f"qb_{index}"))
+    if gate == "cx":
+        qc.cx(qc.qubits[2], qc.qubits[3])
+    else:
+        qc.append(qrisp.MCRXGate(0.7, 3), qc.qubits)
+
+    target = transpile(qc, "pytket", conversion_graph=conversion_graph)
+    assert circuits_allclose(qc, target, strict_gphase=False)
