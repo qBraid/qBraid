@@ -239,6 +239,23 @@ def test_transform_with_ionq_device():
     assert qprogram.program.partial_measurement_qubits == [0]
 
 
+def test_transform_rewrites_gates_the_profile_does_not_list():
+    """``transform`` rewrites gates missing from the profile's ``supported_operations``."""
+    qprogram = BraketCircuit(Circuit().h(0).v(1))
+    mock_device = Mock()
+    mock_device.simulator = False
+    mock_device.profile = TargetProfile(
+        device_id="test_device",
+        simulator=False,
+        provider_name="Rigetti",
+        supported_operations=["h", "rx"],
+    )
+
+    qprogram.transform(mock_device)
+
+    assert [instr.operator.name for instr in qprogram.program.instructions] == ["H", "Rx"]
+
+
 def test_transform_with_amazon_braket_device():
     """Test transform method with Amazon Braket device calls pad_measurements."""
     circuit = Circuit().h(0).cnot(0, 1).measure(1)

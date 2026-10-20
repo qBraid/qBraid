@@ -293,6 +293,12 @@ class BraketCircuit(GateModelProgram):
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
+        supported_operations = device.profile.get("supported_operations")
+        if supported_operations is not None:
+            # Conversion can emit gates the device rejects at task creation, e.g. ``gphase``
+            # from unrolled QASM, ``v`` from ``sx``, or a ``ccnot`` IonQ doesn't take.
+            self.rewrite_unsupported_gates(supported_operations)
+
         if device.simulator:
             self.remove_idle_qubits()
 
