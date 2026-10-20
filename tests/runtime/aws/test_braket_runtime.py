@@ -41,6 +41,7 @@ from qbraid.runtime import (
     DeviceProgramTypeMismatchError,
     DeviceStatus,
     GateModelResultData,
+    QuantumDevice,
     TargetProfile,
 )
 from qbraid.runtime.aws.availability import _calculate_future_time
@@ -632,6 +633,61 @@ def test_device_transform_without_capabilities_leaves_gates():
     device = _qpu_device("Rigetti")
     circuit = Circuit().h(0).v(1)
     assert device.transform(circuit) == circuit
+
+
+FEEDFORWARD_QASM3 = """
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[2] c;
+qubit[2] q;
+h q[0];
+c[0] = measure q[0];
+if (c[0]) {
+  x q[1];
+}
+c[1] = measure q[1];
+"""
+
+QASM3_SPEC = ProgramSpec(str, alias="qasm3")
+
+
+def test_device_transpile_rejects_feedforward_the_device_does_not_list():
+    """A device without ``if`` rejects feed-forward before any conversion is attempted."""
+    device = _qpu_device("Rigetti", ["h", "x", "cnot"])
+    with patch.object(QuantumDevice, "transpile") as base_transpile:
+        with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
+            device.transpile(FEEDFORWARD_QASM3, QASM3_SPEC)
+    base_transpile.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "supported_operations",
+    [["h", "x", "cnot", "if"], None],
+    ids=["lists-if", "unknown-capabilities"],
+)
+def test_device_transpile_passes_feedforward_through(supported_operations):
+    """Feed-forward reaches the conversion step when the device lists ``if`` or its
+    capabilities are unknown."""
+    device = _qpu_device("IQM", supported_operations)
+    with patch.object(QuantumDevice, "transpile", return_value="converted") as base_transpile:
+        assert device.transpile(FEEDFORWARD_QASM3, QASM3_SPEC) == "converted"
+    base_transpile.assert_called_once_with(FEEDFORWARD_QASM3, QASM3_SPEC)
+
+
+@pytest.mark.parametrize(
+    "qasm",
+    [
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nint n = 1;\n'
+        "if (n == 1) { cx q[0], q[1]; }\n",
+        "OPENQASM 3.0;\nqubit[1] q;\nnot_a_gate q[0];\n",
+    ],
+    ids=["static-branch", "unparsable"],
+)
+def test_device_transpile_feedforward_check_leaves_other_programs(qasm):
+    """Static branches and programs pyqasm cannot unroll are left to the conversion step."""
+    device = _qpu_device("Rigetti", ["h", "cnot"])
+    with patch.object(QuantumDevice, "transpile", return_value="converted"):
+        assert device.transpile(qasm, QASM3_SPEC) == "converted"
 
 
 @patch("qbraid.runtime.aws.BraketProvider")

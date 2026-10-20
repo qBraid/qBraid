@@ -956,3 +956,35 @@ def test_openqasm3_to_ionq_rejects_hardware_qubits(gate_line):
     with pytest.raises(ValueError) as excinfo:
         openqasm3_to_ionq(qasm)
     assert "is not supported by the IonQ format" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "qasm",
+    [
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        bit[2] c;
+        qubit[2] q;
+        h q[0];
+        c[0] = measure q[0];
+        if (c[0]) {
+          x q[1];
+        }
+        """,
+        """
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[2];
+        creg c[2];
+        h q[0];
+        measure q[0] -> c[0];
+        if(c==1) x q[1];
+        """,
+    ],
+    ids=["qasm3", "qasm2"],
+)
+def test_openqasm3_to_ionq_rejects_feedforward(qasm):
+    """IonQ's format has no conditionals, so an ``if`` must raise rather than be dropped."""
+    with pytest.raises(ProgramConversionError, match="do not support classical feed-forward"):
+        qasm3_to_ionq(qasm)

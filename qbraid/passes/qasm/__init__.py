@@ -30,10 +30,12 @@ Functions
     remove_stdgates_include
     convert_qasm_pi_to_decimal
     normalize_qasm_gate_params
+    contains_feedforward
 
 """
 from .compat import (
     add_stdgates_include,
+    contains_feedforward,
     convert_qasm_pi_to_decimal,
     insert_gate_def,
     normalize_qasm_gate_params,
@@ -52,4 +54,5 @@ __all__ = [
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",
+    "contains_feedforward",
 ]

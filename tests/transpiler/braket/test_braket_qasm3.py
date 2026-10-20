@@ -323,6 +323,43 @@ def test_qasm3_to_braket_no_delay_unaffected():
     assert qasm3_to_braket(qasm_input) == Circuit().h(0).cnot(0, 1).measure(0).measure(1)
 
 
+FEEDFORWARD_QASM = """
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[2] c;
+qubit[2] q;
+h q[0];
+c[0] = measure q[0];
+if (c[0]) {
+  x q[1];
+}
+c[1] = measure q[1];
+"""
+
+
+def test_qasm3_to_braket_feedforward_raises():
+    """An ``if`` on a measured bit raises a clear error instead of Braket's
+    "Identifier 'c' is not initialized".
+    """
+    with pytest.raises(QasmError, match="cannot express classical feed-forward"):
+        qasm3_to_braket(FEEDFORWARD_QASM)
+
+
+def test_qasm3_to_braket_static_branch_unaffected():
+    """A branch on a compile-time constant is resolved by unrolling and still converts."""
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[2] q;
+        int n = 1;
+        h q[0];
+        if (n == 1) { cx q[0], q[1]; }
+        """
+    ).strip()
+    assert qasm3_to_braket(qasm_input) == Circuit().h(0).cnot(0, 1)
+
+
 def test_qasm3_to_braket_identifier_named_delay_unaffected():
     """An identifier that merely contains the substring 'delay' is not a delay
     instruction, and must not trip the delay check.

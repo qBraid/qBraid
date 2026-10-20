@@ -27,6 +27,7 @@ from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
+    contains_feedforward,
     remove_stdgates_include,
     replace_gate_names,
 )
@@ -105,7 +106,7 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
 
     Raises:
         QasmError: If qasm to braket conversion fails, or if the program contains
-            a delay instruction, which Braket cannot represent.
+            a delay instruction or classical feed-forward, which Braket cannot represent.
 
     """
     prior_errors: list[tuple[str, BaseException]] = []
@@ -130,6 +131,15 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
             qasm = pyqasm.dumps(module)
         except ValidationError as err:
             prior_errors.append(("PyQASM validation", err))
+        else:
+            # A braket Circuit has no conditional operations, and Circuit.from_ir reports
+            # an ``if`` on a measured bit only as "Identifier 'c' is not initialized".
+            if contains_feedforward(module.unrolled_ast):
+                raise QasmError(
+                    "Amazon Braket circuits cannot express classical feed-forward "
+                    "('if' on measurement results). Remove the conditional, or use a "
+                    "device that supports dynamic circuits."
+                )
 
     try:
         qasm = transform_notation(qasm)

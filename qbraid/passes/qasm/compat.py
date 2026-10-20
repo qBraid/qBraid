@@ -24,6 +24,7 @@ from functools import reduce
 from openqasm3 import dumps, parse
 from openqasm3.ast import BranchingStatement, Program, QuantumGate, Statement
 from openqasm3.parser import QASM3ParsingError
+from openqasm3.visitor import QASMVisitor
 
 from qbraid._logging import logger
 
@@ -244,6 +245,30 @@ def normalize_if_blocks(qasm: str) -> str:
         re.DOTALL,
     )
     return pattern.sub(_replace_if_block, qasm)
+
+
+class _BranchFinder(QASMVisitor):
+    """Records whether a program contains an ``if`` statement."""
+
+    def __init__(self):
+        self.found = False
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_BranchingStatement(self, node: BranchingStatement, context=None) -> None:
+        """Record that the program contains an ``if`` statement."""
+        self.found = True
+
+
+def contains_feedforward(program: Program) -> bool:
+    """Check whether an unrolled OpenQASM program branches on a measurement result.
+
+    Pass ``QasmModule.unrolled_ast``, not the original program: unrolling resolves
+    ``if`` statements on compile-time constants, so any ``if`` left over is
+    classical feed-forward.
+    """
+    finder = _BranchFinder()
+    finder.visit(program)
+    return finder.found
 
 
 def add_stdgates_include(qasm_str: str) -> str:
