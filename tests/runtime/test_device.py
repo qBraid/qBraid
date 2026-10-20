@@ -795,6 +795,29 @@ def test_device_transpile_program_conversion_error():
     assert "Transpile step failed after multiple attempts." in str(excinfo.value)
 
 
+@pytest.mark.parametrize("targets", [["qasm3"], ["qasm2", "qasm3"]])
+def test_transpile_unrecognized_string_explains_why(targets):
+    """A string that is not OpenQASM names the missing header and the parser's reason,
+    instead of reporting that no conversion path exists from 'str'."""
+    profile = TargetProfile(
+        device_id="fake_device",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=2,
+        program_spec=[ProgramSpec(str, alias) for alias in targets],
+    )
+    device = MockDevice(profile=profile)
+    program = "version 3.0\nqubit[2] q\n# comment\nH q[0]\n"
+
+    with pytest.raises(ProgramConversionError) as excinfo:
+        device.apply_runtime_profile(program)
+
+    message = str(excinfo.value)
+    assert message.startswith("Program not recognised as OpenQASM 2 or 3: no 'OPENQASM")
+    assert "OpenQASM 3 parser error:" in message
+    assert "No conversion path found" not in message
+
+
 @pytest.fixture
 def mock_qasm_profile():
     """Mock profile for testing."""
