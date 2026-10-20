@@ -53,7 +53,8 @@ def convert_from_qiskit_to_x(target, gate_name):
     # Cirq and Braket keep only the qubits a circuit acts on, so a gate whose definition
     # leaves an ancilla idle (MCXVChain since Qiskit 2.6) converts to fewer qubits.
     if load_program(target_circuit).num_qubits < source_circuit.num_qubits:
-        # Decompose first: the idle ancilla is inside the gate's definition.
+        # Decompose first: the idle ancilla is inside the gate's definition. Only the source
+        # is trimmed, rather than index_contig=True, so the target is compared as converted.
         qprogram = QiskitCircuit(source_circuit.decompose(reps=10))
         qprogram.remove_idle_qubits()
         source_circuit = qprogram.program
