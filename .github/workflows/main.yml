@@ -60,6 +60,9 @@ jobs:
         tox -e unit-tests ${{ matrix.python-version != '3.11' && '-- --no-cov' || '' }}
       env:
         QBRAID_RUN_REMOTE_TESTS: False
+        # qiskit>=2.6 and pyqpanda3 both use static TLS, and whichever loads second fails
+        # with "cannot allocate memory in static TLS block"; preloading libgomp reserves it.
+        LD_PRELOAD: /lib/x86_64-linux-gnu/libgomp.so.1
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.11'
       uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
