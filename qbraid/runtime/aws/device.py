@@ -26,9 +26,11 @@ from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
 from braket.circuits.measure import Measure
+from braket.device_schema import DeviceActionType
 
 from qbraid._logging import logger
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
+from qbraid.programs.gate_model.braket import BraketCircuit
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
@@ -132,6 +134,17 @@ class BraketDevice(QuantumDevice):
             total_queued += int(num_queued)
         return total_queued
 
+    def _supported_operations(self) -> frozenset[str] | None:
+        """The OpenQASM operations the device lists, or ``None`` if it lists none."""
+        try:
+            action = self._device.properties.action[DeviceActionType.OPENQASM]
+        except (AttributeError, KeyError, TypeError):
+            return None
+        operations = getattr(action, "supportedOperations", None)
+        if not isinstance(operations, list) or not all(isinstance(o, str) for o in operations):
+            return None
+        return frozenset(operation.lower() for operation in operations)
+
     def transform(
         self, run_input: Circuit | AnalogHamiltonianSimulation
     ) -> Circuit | AnalogHamiltonianSimulation:
@@ -190,6 +203,11 @@ class BraketDevice(QuantumDevice):
                 )
 
         qprogram = load_program(program)
+        supported_operations = self._supported_operations()
+        if isinstance(qprogram, BraketCircuit) and supported_operations is not None:
+            # Conversion can emit gates the device rejects at task creation, e.g. ``gphase``
+            # from unrolled QASM, ``v`` from ``sx``, or a ``ccnot`` IonQ doesn't take.
+            qprogram.rewrite_unsupported_gates(supported_operations)
         qprogram.transform(self)
         program = qprogram.program
 

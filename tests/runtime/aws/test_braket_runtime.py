@@ -31,7 +31,7 @@ import pytest
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
-from braket.device_schema import ExecutionDay
+from braket.device_schema import DeviceActionType, ExecutionDay
 from braket.devices import Devices, LocalSimulator
 
 from qbraid.exceptions import QbraidError
@@ -575,6 +575,45 @@ def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
     expected_circuit = Circuit().x(0).y(2).measure(0).measure(1).measure(2)
     assert isinstance(transformed_circuit, Circuit)
     assert transformed_circuit == expected_circuit
+
+
+def _qpu_device(provider_name: str, supported_operations) -> BraketDevice:
+    """A Braket QPU device whose capabilities list ``supported_operations``."""
+    with patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device:
+        action = Mock(supportedOperations=supported_operations)
+        mock_aws_device.return_value = Mock(
+            properties=Mock(action={DeviceActionType.OPENQASM: action})
+        )
+        profile = TargetProfile(
+            simulator=False,
+            num_qubits=108,
+            program_spec=ProgramSpec(Circuit),
+            provider_name=provider_name,
+            device_id="arn:aws:braket:us-west-1::device/qpu/rigetti/Cepheus-1-108Q",
+            experiment_type=ExperimentType.GATE_MODEL,
+        )
+        return BraketDevice(profile)
+
+
+def test_device_transform_rewrites_gates_the_device_does_not_list():
+    """Gates missing from the device's supportedOperations are rewritten before submission."""
+    device = _qpu_device("Rigetti", ["cz", "rx", "rz", "h", "cnot", "t", "ti"])
+    circuit = Circuit().gphase(0.2).h(0).v(1).ccnot(0, 1, 2).measure([0, 1, 2])
+
+    transformed = device.transform(circuit)
+
+    names = {instr.operator.name.lower() for instr in transformed.instructions}
+    assert names <= {"h", "rx", "cnot", "t", "ti", "measure"}
+    assert circuits_allclose(
+        Circuit().add(transformed.instructions[:-3]), Circuit().h(0).v(1).ccnot(0, 1, 2)
+    )
+
+
+def test_device_transform_without_capabilities_leaves_gates():
+    """A device whose capabilities don't parse into a list keeps the circuit's gates."""
+    device = _qpu_device("Rigetti", None)
+    circuit = Circuit().h(0).v(1)
+    assert device.transform(circuit) == circuit
 
 
 @patch("qbraid.runtime.aws.BraketProvider")

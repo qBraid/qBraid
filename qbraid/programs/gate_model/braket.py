@@ -18,9 +18,13 @@ Module defining BraketCircuit Class
 """
 from __future__ import annotations
 
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING
 
-from braket.circuits import Circuit, Instruction, Qubit
+import numpy as np
+from braket.circuits import Circuit, Gate, Instruction, Qubit
+from braket.circuits.compiler_directives import EndVerbatimBox, StartVerbatimBox
+from braket.circuits.gates import CNot, H, Rx, T, Ti
 from braket.circuits.measure import Measure
 from qbraid_core.services.runtime.schemas import Program
 
@@ -30,7 +34,26 @@ from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import braket.circuits
-    import numpy as np
+
+
+def _ccnot(a: Qubit, b: Qubit, c: Qubit) -> list[Instruction]:
+    """Toffoli as h, cnot, t and ti (Nielsen & Chuang, fig. 4.9)."""
+    steps = [
+        (H(), [c]), (CNot(), [b, c]), (Ti(), [c]), (CNot(), [a, c]), (T(), [c]),
+        (CNot(), [b, c]), (Ti(), [c]), (CNot(), [a, c]), (T(), [b]), (T(), [c]),
+        (H(), [c]), (CNot(), [a, b]), (T(), [a]), (Ti(), [b]), (CNot(), [a, b]),
+    ]  # fmt: skip
+    return [Instruction(gate, target) for gate, target in steps]
+
+
+#: Rewrites of a gate's targets into gates Braket QPUs commonly accept, each exact up to
+#: global phase, which no measurement can observe.
+_GATE_REWRITES: dict[str, Callable[..., list[Instruction]]] = {
+    "gphase": lambda: [],
+    "v": lambda q: [Instruction(Rx(np.pi / 2), q)],
+    "vi": lambda q: [Instruction(Rx(-np.pi / 2), q)],
+    "ccnot": _ccnot,
+}
 
 
 class BraketCircuit(GateModelProgram):
@@ -215,6 +238,40 @@ class BraketCircuit(GateModelProgram):
 
         # Store the original partial measurement qubits for result processing
         self._program.partial_measurement_qubits = partial_measurement_qubits
+
+    def rewrite_unsupported_gates(self, supported_operations: Iterable[str]) -> None:
+        """Rewrite gates missing from ``supported_operations`` into ones the device accepts.
+
+        Only gates in ``_GATE_REWRITES`` are rewritten. Gates inside a verbatim box, or with a
+        control modifier or power, are left as written, as is any gate the device supports.
+        """
+        supported = {operation.lower() for operation in supported_operations}
+        rewritten = Circuit()
+        in_verbatim = changed = False
+        for instruction in self.program.instructions:
+            operator = instruction.operator
+            if isinstance(operator, StartVerbatimBox):
+                in_verbatim = True
+            elif isinstance(operator, EndVerbatimBox):
+                in_verbatim = False
+            name = operator.name.lower()
+            rewrite = None if in_verbatim or name in supported else _GATE_REWRITES.get(name)
+            if (
+                rewrite is None
+                or not isinstance(operator, Gate)
+                or instruction.control
+                or instruction.power != 1
+            ):
+                rewritten.add_instruction(instruction)
+                continue
+            changed = True
+            for replacement in rewrite(*instruction.target):
+                rewritten.add_instruction(replacement)
+
+        if changed:
+            for result_type in self.program.result_types:
+                rewritten.add_result_type(result_type)
+            self._program = rewritten
 
     def replace_i_with_rz_zero(self) -> None:
         """Replace all 'i' gates with 'rz(0)' gates in the circuit.
