@@ -809,8 +809,13 @@ def test_transpile_unrecognized_string_explains_why(targets):
     device = MockDevice(profile=profile)
     program = "version 3.0\nqubit[2] q\n# comment\nH q[0]\n"
 
-    with pytest.raises(ProgramConversionError) as excinfo:
-        device.apply_runtime_profile(program)
+    try:
+        with pytest.raises(ProgramConversionError) as excinfo:
+            device.apply_runtime_profile(program)
+    finally:
+        # apply_runtime_profile registers the bare 'str' alias, which would leak into
+        # later tests that expect an unrecognised string to raise ProgramTypeError
+        unregister_program_type("str", raise_error=False)
 
     message = str(excinfo.value)
     assert message.startswith("Program not recognised as OpenQASM 2 or 3: no 'OPENQASM")
