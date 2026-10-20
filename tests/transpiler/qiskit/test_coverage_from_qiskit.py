@@ -20,8 +20,10 @@ import importlib.util
 
 import pytest
 import qiskit
+from qiskit.converters import circuit_to_dag, dag_to_circuit
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs import load_program
 from qbraid.transpiler import ConversionGraph, transpile
 
 from ...fixtures.qiskit.gates import get_qiskit_gates
@@ -40,6 +42,15 @@ qiskit_gates = get_qiskit_gates(seed=0, exclude=["GlobalPhaseGate"])
 graph = ConversionGraph(require_native=True)
 
 
+def _drop_idle_qubits(circuit: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
+    """``circuit`` fully decomposed, without the qubits no operation acts on."""
+    dag = circuit_to_dag(circuit.decompose(reps=10))
+    dag.remove_qubits(
+        *(wire for wire in dag.idle_wires() if isinstance(wire, qiskit.circuit.Qubit))
+    )
+    return dag_to_circuit(dag)
+
+
 def convert_from_qiskit_to_x(target, gate_name):
     """Construct a Qiskit circuit with the given gate, transpile it to
     target program type, and check equivalence.
@@ -48,6 +59,10 @@ def convert_from_qiskit_to_x(target, gate_name):
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
     target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    # Cirq and Braket keep only the qubits a circuit acts on, so a gate whose definition
+    # leaves an ancilla idle (MCXVChain since Qiskit 2.6) converts to fewer qubits.
+    if load_program(target_circuit).num_qubits < source_circuit.num_qubits:
+        source_circuit = _drop_idle_qubits(source_circuit)
     assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
