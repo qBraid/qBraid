@@ -16,6 +16,7 @@
 Module for converting Braket circuits to/from OpenQASM 3
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -137,8 +138,9 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
             if contains_feedforward(module.unrolled_ast):
                 raise QasmError(
                     "Amazon Braket circuits cannot express classical feed-forward "
-                    "('if' on measurement results). Remove the conditional, or use a "
-                    "device that supports dynamic circuits."
+                    "('if' on measurement results). On a device that runs it, such as IQM "
+                    'Emerald or Garnet, pass experimental_capabilities="ALL" to submit '
+                    "the OpenQASM program as written. Otherwise, remove the conditional."
                 )
 
     try:

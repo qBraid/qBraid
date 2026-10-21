@@ -16,6 +16,7 @@
 Module defining BraketDeviceWrapper Class
 
 """
+
 from __future__ import annotations
 
 import datetime
@@ -163,7 +164,8 @@ class BraketDevice(QuantumDevice):
                 raise ProgramValidationError(
                     f"Device '{self.id}' does not support classical feed-forward ('if' on "
                     "measurement results). Remove the conditional, or use a device that "
-                    "supports dynamic circuits."
+                    "runs it, such as IQM Emerald or Garnet, with "
+                    'experimental_capabilities="ALL".'
                 )
         return super().transpile(run_input, run_input_spec)
 
