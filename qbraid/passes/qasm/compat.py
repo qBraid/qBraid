@@ -24,6 +24,7 @@ from functools import reduce
 from openqasm3 import dumps, parse
 from openqasm3.ast import (
     BranchingStatement,
+    ClassicalAssignment,
     ClassicalDeclaration,
     Identifier,
     IndexedIdentifier,
@@ -32,6 +33,7 @@ from openqasm3.ast import (
     QuantumMeasurement,
     QuantumMeasurementStatement,
     Statement,
+    SwitchStatement,
 )
 from openqasm3.parser import QASM3ParsingError
 from openqasm3.visitor import QASMVisitor
@@ -258,7 +260,7 @@ def normalize_if_blocks(qasm: str) -> str:
 
 
 class _BranchFinder(QASMVisitor):
-    """Records whether a program contains an ``if`` statement."""
+    """Records whether a program contains an ``if`` or ``switch`` statement."""
 
     def __init__(self):
         self.found = False
@@ -268,12 +270,17 @@ class _BranchFinder(QASMVisitor):
         """Record that the program contains an ``if`` statement."""
         self.found = True
 
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_SwitchStatement(self, node: SwitchStatement, context=None) -> None:
+        """Record that the program contains a ``switch`` statement."""
+        self.found = True
+
 
 def contains_feedforward(program: Program) -> bool:
     """Check whether an unrolled OpenQASM program branches on a measurement result.
 
     Pass ``QasmModule.unrolled_ast``, not the original program: unrolling resolves
-    ``if`` statements on compile-time constants, so any ``if`` left over is
+    ``if`` and ``switch`` statements on compile-time constants, so any left over are
     classical feed-forward.
     """
     finder = _BranchFinder()
@@ -282,7 +289,7 @@ def contains_feedforward(program: Program) -> bool:
 
 
 class _MeasuredBranchFinder(QASMVisitor):
-    """Records the bits a program measures into and the names its ``if`` conditions read."""
+    """Records the variables holding measurement results and the names branches read."""
 
     def __init__(self):
         self.measured: set[str] = set()
@@ -293,25 +300,36 @@ class _MeasuredBranchFinder(QASMVisitor):
         self, node: QuantumMeasurementStatement, context=None  # pylint: disable=unused-argument
     ) -> None:
         """Record the bit a measurement is assigned to."""
-        target = node.target
-        if isinstance(target, IndexedIdentifier):
-            target = target.name
-        if isinstance(target, Identifier):
-            self.measured.add(target.name)
+        if node.target is not None:
+            self.measured.add(_base_name(node.target))
 
     # pylint: disable-next=invalid-name
     def visit_ClassicalDeclaration(self, node: ClassicalDeclaration, context=None) -> None:
-        """Record a bit declared with a measurement as its initial value."""
-        if isinstance(node.init_expression, QuantumMeasurement):
+        """Record a variable initialised from a measurement or a measured variable."""
+        init = node.init_expression
+        if isinstance(init, QuantumMeasurement) or (
+            init is not None and _names(init) & self.measured
+        ):
             self.measured.add(node.identifier.name)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_ClassicalAssignment(self, node: ClassicalAssignment, context=None) -> None:
+        """Record a variable assigned from a measured variable."""
+        if _names(node.rvalue) & self.measured:
+            self.measured.add(_base_name(node.lvalue))
         self.generic_visit(node, context)
 
     # pylint: disable-next=invalid-name
     def visit_BranchingStatement(self, node: BranchingStatement, context=None) -> None:
         """Record the names the condition reads."""
-        reader = _IdentifierCollector()
-        reader.visit(node.condition)
-        self.read |= reader.names
+        self.read |= _names(node.condition)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_SwitchStatement(self, node: SwitchStatement, context=None) -> None:
+        """Record the names the switch target reads."""
+        self.read |= _names(node.target)
         self.generic_visit(node, context)
 
 
@@ -327,11 +345,23 @@ class _IdentifierCollector(QASMVisitor):
         self.names.add(node.name)
 
 
+def _base_name(target: Identifier | IndexedIdentifier) -> str:
+    """Return the variable an assignment target writes, without its index."""
+    return (target.name if isinstance(target, IndexedIdentifier) else target).name
+
+
+def _names(node) -> set[str]:
+    """Return the identifier names an AST node reads."""
+    collector = _IdentifierCollector()
+    collector.visit(node)
+    return collector.names
+
+
 def branches_on_measurement(program: Program) -> bool:
-    """Check whether an ``if`` condition reads a bit the program measures into.
+    """Check whether an ``if`` or ``switch`` reads a measurement result.
 
     For programs pyqasm can't unroll, where :func:`contains_feedforward` doesn't apply.
-    A measured bit read through an alias is missed.
+    Follows copies into other variables in program order, but not through subroutines.
     """
     finder = _MeasuredBranchFinder()
     finder.visit(program)

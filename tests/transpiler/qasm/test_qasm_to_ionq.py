@@ -1002,3 +1002,34 @@ def test_openqasm3_to_ionq_static_branch_keeps_body():
     """
     circuit = openqasm3_to_ionq(qasm)["circuit"]
     assert [gate["gate"] for gate in circuit] == ["h", "cnot"]
+
+
+def test_openqasm3_to_ionq_static_switch_keeps_body():
+    """A ``switch`` on a constant is resolved by unrolling, and its body kept."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    const int i = 1;
+    h q[0];
+    switch (i) { case 1 { x q[1]; } default { } }
+    """
+    circuit = openqasm3_to_ionq(qasm)["circuit"]
+    assert [gate["gate"] for gate in circuit] == ["h", "x"]
+
+
+def test_openqasm3_to_ionq_rejects_switch_on_measurement():
+    """A ``switch`` on a measured value must raise rather than be dropped."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    bit[2] c;
+    h q[0];
+    c[0] = measure q[0];
+    int i = c;
+    switch (i) { case 1 { x q[1]; } default { } }
+    h q[1];
+    """
+    with pytest.raises(ProgramConversionError, match="do not support classical feed-forward"):
+        openqasm3_to_ionq(qasm)

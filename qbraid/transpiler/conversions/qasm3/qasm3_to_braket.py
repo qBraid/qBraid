@@ -133,14 +133,16 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
     if module is not None and contains_delay(module.original_program):
         raise QasmError("Delay instructions are not supported by Amazon Braket.")
 
+    # Checked before unrolling, which fails on some feed-forward, such as ``if (c)`` on
+    # a single bit, and would hide it behind an unrelated error.
+    if module is not None and branches_on_measurement(module.original_program):
+        raise QasmError(_FEEDFORWARD_ERROR)
+
     if module is not None:
         try:
             module.unroll()
             qasm = pyqasm.dumps(module)
         except ValidationError as err:
-            # pyqasm can't unroll some conditionals, such as ``if (c)`` on a single bit.
-            if branches_on_measurement(module.original_program):
-                raise QasmError(_FEEDFORWARD_ERROR) from err
             prior_errors.append(("PyQASM validation", err))
         else:
             # A braket Circuit has no conditional operations, and Circuit.from_ir reports

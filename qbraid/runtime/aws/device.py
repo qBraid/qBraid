@@ -29,7 +29,7 @@ from braket.circuits import Circuit
 from braket.circuits.measure import Measure
 
 from qbraid._logging import logger
-from qbraid.passes.qasm import contains_feedforward
+from qbraid.passes.qasm import branches_on_measurement, contains_feedforward
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -156,10 +156,18 @@ class BraketDevice(QuantumDevice):
         ):
             try:
                 module = pyqasm.loads(run_input)
-                module.unroll()
             except Exception:  # pylint: disable=broad-exception-caught
                 module = None  # leave parse errors to the conversion step
-            if module is not None and contains_feedforward(module.unrolled_ast):
+            # Unrolling is slow on large programs, so only unroll one that has a branch.
+            if module is not None and contains_feedforward(module.original_program):
+                try:
+                    module.unroll()
+                    feedforward = contains_feedforward(module.unrolled_ast)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    feedforward = branches_on_measurement(module.original_program)
+            else:
+                feedforward = False
+            if feedforward:
                 raise ProgramValidationError(
                     f"Device '{self.id}' does not support classical feed-forward ('if' on "
                     "measurement results). Remove the conditional, or use a device that "

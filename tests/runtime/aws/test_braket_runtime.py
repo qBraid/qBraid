@@ -33,6 +33,7 @@ from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
+from pyqasm.modules.base import QasmModule
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
@@ -688,6 +689,29 @@ def test_device_transpile_feedforward_check_leaves_other_programs(qasm):
     device = _qpu_device("Rigetti", ["h", "cnot"])
     with patch.object(QuantumDevice, "transpile", return_value="converted"):
         assert device.transpile(qasm, QASM3_SPEC) == "converted"
+
+
+def test_device_transpile_rejects_feedforward_on_single_bit():
+    """``if (c)`` on a single bit fails pyqasm's unroll, and the device still rejects it."""
+    qasm = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit c;\nh q[0];\n'
+        "c = measure q[0];\nif (c) { x q[1]; }\n"
+    )
+    device = _qpu_device("Rigetti", ["h", "x", "cnot"])
+    with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
+        device.transpile(qasm, QASM3_SPEC)
+
+
+def test_device_transpile_skips_unroll_without_a_branch():
+    """A program with no ``if`` or ``switch`` is not unrolled by the feed-forward check."""
+    device = _qpu_device("Rigetti", ["h", "cnot"])
+    qasm = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n'
+    with (
+        patch.object(QasmModule, "unroll") as unroll,
+        patch.object(QuantumDevice, "transpile", return_value="converted"),
+    ):
+        assert device.transpile(qasm, QASM3_SPEC) == "converted"
+    unroll.assert_not_called()
 
 
 @patch("qbraid.runtime.aws.BraketProvider")
