@@ -25,6 +25,8 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, cast
 
+from pyqasm.exceptions import PyQasmError, QasmParsingError
+
 from qbraid._logging import logger
 from qbraid.programs import (
     ProgramLoaderError,
@@ -422,7 +424,7 @@ class QuantumDevice(ABC):
                     "Skipping qubit count validation: program type '%s' not supported natively.",
                     type(run_input).__name__,
                 )
-            except Exception as err:  # pylint: disable=broad-exception-caught
+            except (PyQasmError, QasmParsingError) as err:
                 # The parser can reject a program the device accepts, e.g. a vendor's own
                 # instruction such as IQM's measure_ff, so it can't count the qubits.
                 logger.info("Skipping qubit count validation: %s", err)
