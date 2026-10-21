@@ -29,6 +29,7 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+from pyqasm.exceptions import PyQasmError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled
@@ -598,6 +599,15 @@ def test_device_validate_skips_qubit_count_the_parser_rejects(mock_qbraid_device
         mock_qbraid_device.validate([program])
 
     assert "Skipping qubit count validation: " in caplog.text
+
+
+def test_device_validate_raises_other_parser_errors(mock_qbraid_device):
+    """Only an unknown instruction skips the qubit count; other parser errors still raise."""
+    mock_qbraid_device._target_spec = None
+    program = "OPENQASM 3.0;\nqubit[2] q;\nh q[5];\n"
+
+    with pytest.raises(PyQasmError, match="out of range"):
+        mock_qbraid_device.validate([program])
 
 
 def test_device_validate_level_none(mock_qbraid_device):

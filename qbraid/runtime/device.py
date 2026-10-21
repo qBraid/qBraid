@@ -425,8 +425,10 @@ class QuantumDevice(ABC):
                     type(run_input).__name__,
                 )
             except (PyQasmError, QasmParsingError) as err:
-                # The parser can reject a program the device accepts, e.g. a vendor's own
-                # instruction such as IQM's measure_ff, so it can't count the qubits.
+                # The parser rejects a vendor's own instruction, such as IQM's measure_ff,
+                # which the device accepts. Any other error is a defect in the program.
+                if "Unsupported / undeclared QASM operation" not in str(err):
+                    raise
                 logger.info("Skipping qubit count validation: %s", err)
             else:
                 if self.num_qubits and num_qubits > self.num_qubits:
