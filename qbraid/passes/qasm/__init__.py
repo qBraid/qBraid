@@ -31,10 +31,12 @@ Functions
     convert_qasm_pi_to_decimal
     normalize_qasm_gate_params
     contains_feedforward
+    branches_on_measurement
 
 """
 from .compat import (
     add_stdgates_include,
+    branches_on_measurement,
     contains_feedforward,
     convert_qasm_pi_to_decimal,
     insert_gate_def,
@@ -55,4 +57,5 @@ __all__ = [
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",
     "contains_feedforward",
+    "branches_on_measurement",
 ]

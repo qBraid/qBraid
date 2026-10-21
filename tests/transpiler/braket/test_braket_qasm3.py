@@ -345,6 +345,23 @@ def test_qasm3_to_braket_feedforward_raises():
         qasm3_to_braket(FEEDFORWARD_QASM)
 
 
+def test_qasm3_to_braket_feedforward_on_single_bit_raises():
+    """``if (c)`` on a single measured bit fails pyqasm's unroll, and is still caught."""
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[2] q;
+        bit c;
+        h q[0];
+        c = measure q[0];
+        if (c) { x q[1]; }
+        """
+    ).strip()
+    with pytest.raises(QasmError, match="cannot express classical feed-forward"):
+        qasm3_to_braket(qasm_input)
+
+
 def test_qasm3_to_braket_static_branch_unaffected():
     """A branch on a compile-time constant is resolved by unrolling and still converts."""
     qasm_input = textwrap.dedent(

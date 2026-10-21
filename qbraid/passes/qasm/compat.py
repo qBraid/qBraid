@@ -22,7 +22,17 @@ import re
 from functools import reduce
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import BranchingStatement, Program, QuantumGate, Statement
+from openqasm3.ast import (
+    BranchingStatement,
+    ClassicalDeclaration,
+    Identifier,
+    IndexedIdentifier,
+    Program,
+    QuantumGate,
+    QuantumMeasurement,
+    QuantumMeasurementStatement,
+    Statement,
+)
 from openqasm3.parser import QASM3ParsingError
 from openqasm3.visitor import QASMVisitor
 
@@ -269,6 +279,63 @@ def contains_feedforward(program: Program) -> bool:
     finder = _BranchFinder()
     finder.visit(program)
     return finder.found
+
+
+class _MeasuredBranchFinder(QASMVisitor):
+    """Records the bits a program measures into and the names its ``if`` conditions read."""
+
+    def __init__(self):
+        self.measured: set[str] = set()
+        self.read: set[str] = set()
+
+    # pylint: disable-next=invalid-name
+    def visit_QuantumMeasurementStatement(
+        self, node: QuantumMeasurementStatement, context=None  # pylint: disable=unused-argument
+    ) -> None:
+        """Record the bit a measurement is assigned to."""
+        target = node.target
+        if isinstance(target, IndexedIdentifier):
+            target = target.name
+        if isinstance(target, Identifier):
+            self.measured.add(target.name)
+
+    # pylint: disable-next=invalid-name
+    def visit_ClassicalDeclaration(self, node: ClassicalDeclaration, context=None) -> None:
+        """Record a bit declared with a measurement as its initial value."""
+        if isinstance(node.init_expression, QuantumMeasurement):
+            self.measured.add(node.identifier.name)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_BranchingStatement(self, node: BranchingStatement, context=None) -> None:
+        """Record the names the condition reads."""
+        reader = _IdentifierCollector()
+        reader.visit(node.condition)
+        self.read |= reader.names
+        self.generic_visit(node, context)
+
+
+class _IdentifierCollector(QASMVisitor):
+    """Collects the identifier names in an expression."""
+
+    def __init__(self):
+        self.names: set[str] = set()
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_Identifier(self, node: Identifier, context=None) -> None:
+        """Record the identifier's name."""
+        self.names.add(node.name)
+
+
+def branches_on_measurement(program: Program) -> bool:
+    """Check whether an ``if`` condition reads a bit the program measures into.
+
+    For programs pyqasm can't unroll, where :func:`contains_feedforward` doesn't apply.
+    A measured bit read through an alias is missed.
+    """
+    finder = _MeasuredBranchFinder()
+    finder.visit(program)
+    return bool(finder.measured & finder.read)
 
 
 def add_stdgates_include(qasm_str: str) -> str:

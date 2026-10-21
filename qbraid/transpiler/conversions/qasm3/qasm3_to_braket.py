@@ -16,7 +16,6 @@
 Module for converting Braket circuits to/from OpenQASM 3
 
 """
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -28,12 +27,20 @@ from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
+    branches_on_measurement,
     contains_feedforward,
     remove_stdgates_include,
     replace_gate_names,
 )
 from qbraid.programs.exceptions import QasmError, describe_error
 from qbraid.transpiler.annotations import weight
+
+_FEEDFORWARD_ERROR = (
+    "Amazon Braket circuits cannot express classical feed-forward "
+    "('if' on measurement results). On a device that runs it, such as IQM "
+    'Emerald or Garnet, pass experimental_capabilities="ALL" to submit '
+    "the OpenQASM program as written. Otherwise, remove the conditional."
+)
 
 braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
 braket_openqasm = LazyLoader("braket_openqasm", globals(), "braket.ir.openqasm")
@@ -131,17 +138,15 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
             module.unroll()
             qasm = pyqasm.dumps(module)
         except ValidationError as err:
+            # pyqasm can't unroll some conditionals, such as ``if (c)`` on a single bit.
+            if branches_on_measurement(module.original_program):
+                raise QasmError(_FEEDFORWARD_ERROR) from err
             prior_errors.append(("PyQASM validation", err))
         else:
             # A braket Circuit has no conditional operations, and Circuit.from_ir reports
             # an ``if`` on a measured bit only as "Identifier 'c' is not initialized".
             if contains_feedforward(module.unrolled_ast):
-                raise QasmError(
-                    "Amazon Braket circuits cannot express classical feed-forward "
-                    "('if' on measurement results). On a device that runs it, such as IQM "
-                    'Emerald or Garnet, pass experimental_capabilities="ALL" to submit '
-                    "the OpenQASM program as written. Otherwise, remove the conditional."
-                )
+                raise QasmError(_FEEDFORWARD_ERROR)
 
     try:
         qasm = transform_notation(qasm)

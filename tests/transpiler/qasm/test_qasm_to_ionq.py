@@ -988,3 +988,17 @@ def test_openqasm3_to_ionq_rejects_feedforward(qasm):
     """IonQ's format has no conditionals, so an ``if`` must raise rather than be dropped."""
     with pytest.raises(ProgramConversionError, match="do not support classical feed-forward"):
         qasm3_to_ionq(qasm)
+
+
+def test_openqasm3_to_ionq_static_branch_keeps_body():
+    """A branch on a compile-time constant is resolved by unrolling, and its body kept."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    int n = 1;
+    h q[0];
+    if (n == 1) { cx q[0], q[1]; }
+    """
+    circuit = openqasm3_to_ionq(qasm)["circuit"]
+    assert [gate["gate"] for gate in circuit] == ["h", "cnot"]

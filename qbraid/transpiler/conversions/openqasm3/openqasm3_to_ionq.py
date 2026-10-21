@@ -194,7 +194,8 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
     # Fall back to the unrolled AST only when gates are hidden inside compound
     # statements (for-loops, subroutine calls, etc.) and thus invisible at the top level.
     has_top_level_gates = any(isinstance(s, openqasm3.ast.QuantumGate) for s in original.statements)
-    if has_top_level_gates:
+    # Unrolling resolves an ``if`` on a constant, whose body the loop below would skip.
+    if has_top_level_gates and not contains_feedforward(original):
         ast_program = original
     else:
         unrolled = program.module.unrolled_ast
