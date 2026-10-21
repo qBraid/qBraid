@@ -23,6 +23,7 @@ from functools import reduce
 
 from openqasm3 import dumps, parse
 from openqasm3.ast import (
+    AssignmentOperator,
     BranchingStatement,
     ClassicalAssignment,
     ClassicalDeclaration,
@@ -289,7 +290,7 @@ def contains_feedforward(program: Program) -> bool:
 
 
 class _MeasuredBranchFinder(QASMVisitor):
-    """Records the variables holding measurement results and the names branches read."""
+    """Records, in program order, measured variables and the ones branches read."""
 
     def __init__(self):
         self.measured: set[str] = set()
@@ -315,21 +316,23 @@ class _MeasuredBranchFinder(QASMVisitor):
 
     # pylint: disable-next=invalid-name
     def visit_ClassicalAssignment(self, node: ClassicalAssignment, context=None) -> None:
-        """Record a variable assigned from a measured variable."""
+        """Track a variable assigned from a measured variable, or overwritten without one."""
         if _names(node.rvalue) & self.measured:
             self.measured.add(_base_name(node.lvalue))
+        elif node.op == AssignmentOperator["="] and isinstance(node.lvalue, Identifier):
+            self.measured.discard(node.lvalue.name)
         self.generic_visit(node, context)
 
     # pylint: disable-next=invalid-name
     def visit_BranchingStatement(self, node: BranchingStatement, context=None) -> None:
-        """Record the names the condition reads."""
-        self.read |= _names(node.condition)
+        """Record the measured names the condition reads."""
+        self.read |= _names(node.condition) & self.measured
         self.generic_visit(node, context)
 
     # pylint: disable-next=invalid-name
     def visit_SwitchStatement(self, node: SwitchStatement, context=None) -> None:
-        """Record the names the switch target reads."""
-        self.read |= _names(node.target)
+        """Record the measured names the switch target reads."""
+        self.read |= _names(node.target) & self.measured
         self.generic_visit(node, context)
 
 
@@ -365,7 +368,7 @@ def branches_on_measurement(program: Program) -> bool:
     """
     finder = _MeasuredBranchFinder()
     finder.visit(program)
-    return bool(finder.measured & finder.read)
+    return bool(finder.read)
 
 
 def add_stdgates_include(qasm_str: str) -> str:
