@@ -31,6 +31,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- `QbraidDevice.best_qubits()` no longer selects a qubit or edge whose calibration value the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. Edge costs now read only gate errors, never gate lengths.
 
 ### Deprecated
 

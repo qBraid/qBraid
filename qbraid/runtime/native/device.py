@@ -122,7 +122,9 @@ class QbraidDevice(QuantumDevice):
         ``(1 - error)`` over each qubit's readout and gate errors and each
         edge's two-qubit gate error. The chain is returned in path order, ready
         for e.g. Qiskit's ``initial_layout``. Calibrations shift with every
-        refresh, so select shortly before submitting.
+        refresh, so select shortly before submitting. A qubit or edge whose
+        error the provider flags as a placeholder (``calibrated=False``) is
+        never selected.
 
         For devices that publish qubit metrics but no coupling edges (all-to-all
         connectivity, e.g. trapped ion), returns the ``num_qubits`` individually
