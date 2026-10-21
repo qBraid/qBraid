@@ -29,12 +29,7 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
-from qbraid_core.services.runtime.schemas import (
-    DeviceCalibration,
-    EdgeEntry,
-    Program,
-    RuntimeDevice,
-)
+from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
@@ -1532,39 +1527,38 @@ def _ibm_boston_fragment(flagged: bool) -> DeviceCalibration:
     """Qubits 77, 84, 85 and 86 of an ibm_boston calibration.
 
     Qubit 85 reports ``gate_error == 1`` on every physical 1Q gate, IBM's placeholder; its CZ
-    edges are real. ``gateLength`` is in nanoseconds, as the extractor stores it.
+    edges are real. As the extractor stores it, ``gateLength`` is in nanoseconds and the virtual
+    ``rz`` gate is left out.
     """
-    measured = {"rz": 0}
+    gates = ("id", "sx", "x", "xslow")
     qubits: dict[str, dict[str, Any]] = {
         "77": {
             "t1": 0.00010401203137568006,
             "t2": 0.00017328203615092234,
             "readoutError": 0.00341796875,
-            "gateError": {g: 0.0002009336359245476 for g in ("id", "sx", "x", "xslow")} | measured,
+            "gateError": dict.fromkeys(gates, 0.0002009336359245476),
         },
         "84": {
             "t1": 0.00016686046270181183,
             "t2": 0.0003541490550716008,
             "readoutError": 0.0032958984375,
-            "gateError": {g: 0.00013813311911529236 for g in ("id", "sx", "x", "xslow")} | measured,
+            "gateError": dict.fromkeys(gates, 0.00013813311911529236),
         },
         "85": {
             "t1": 9.092209756307555e-06,
             "t2": 4.787052057181761e-05,
             "readoutError": 0.1768798828125,
-            "gateError": {"id": 1, "rz": 0, "sx": 1, "x": 1, "xslow": 1},
+            "gateError": dict.fromkeys(gates, 1),
         },
         "86": {
             "t1": 0.00018449153383568294,
             "t2": 8.721841448182351e-05,
             "readoutError": 0.0068359375,
-            "gateError": {g: 0.0001951447131770379 for g in ("id", "sx", "x", "xslow")} | measured,
+            "gateError": dict.fromkeys(gates, 0.0001951447131770379),
         },
     }
     if flagged:
-        qubits["85"]["calibrated"] = {
-            "gateError": {"id": False, "sx": False, "x": False, "xslow": False}
-        }
+        qubits["85"]["calibrated"] = {"gateError": dict.fromkeys(gates, False)}
     return DeviceCalibration.model_validate(
         {
             "deviceQRNs": ["ibm:ibm:qpu:ibm_boston"],
@@ -1655,10 +1649,25 @@ def test_edge_costs_flagged_entry_costs_inf(value):
     assert costs[(2, 3)] == pytest.approx(-math.log(0.99))
 
 
+def _document(calibration: DeviceCalibration) -> dict[str, Any]:
+    """Raw API document of ``calibration``, to edit and validate again."""
+    return calibration.model_dump(by_alias=True, exclude_none=True)
+
+
+def _with_qubit_flags(
+    calibration: DeviceCalibration, qubit_id: str, flags: dict[str, Any]
+) -> DeviceCalibration:
+    """Copy of ``calibration`` whose qubit ``qubit_id`` carries the ``calibrated`` flags."""
+    document = _document(calibration)
+    document["qubits"][qubit_id]["calibrated"] = flags
+    return DeviceCalibration.model_validate(document)
+
+
 def test_edge_costs_flagged_entry_falls_back_to_other_gate():
     """A flagged entry costs the pair that gate only; a real entry for another gate still counts."""
-    calibration = _calibration({}, [(0, 1, 0.02)], iswap=[(0, 1, 0.001)])
-    calibration.edges["gateError"]["iswap"][0].calibrated = False
+    document = _document(_calibration({}, [(0, 1, 0.02)], iswap=[(0, 1, 0.001)]))
+    document["edges"]["gateError"]["iswap"][0]["calibrated"] = False
+    calibration = DeviceCalibration.model_validate(document)
     assert edge_costs(calibration) == {(0, 1): pytest.approx(-math.log(0.98))}
     assert edge_costs(calibration, gate="iswap") == {(0, 1): math.inf}
 
@@ -1666,18 +1675,10 @@ def test_edge_costs_flagged_entry_falls_back_to_other_gate():
 def test_best_qubits_prefers_real_edge_over_flagged_low_value(mock_profile):
     """A flagged edge with a low placeholder value loses to a measured, worse edge."""
     calibration = _calibration({q: (0.02, 0.001) for q in range(4)}, [(0, 1, 0.001), (2, 3, 0.03)])
-    calibration.edges["gateError"]["cz"][0].calibrated = False
-    device = _device_with(calibration, mock_profile)
+    document = _document(calibration)
+    document["edges"]["gateError"]["cz"][0]["calibrated"] = False
+    device = _device_with(DeviceCalibration.model_validate(document), mock_profile)
     assert device.best_qubits(2) == (2, 3)
-
-
-def _with_qubit_flags(
-    calibration: DeviceCalibration, qubit_id: str, flags: dict[str, Any]
-) -> DeviceCalibration:
-    """Copy of ``calibration`` whose qubit ``qubit_id`` carries the ``calibrated`` flags."""
-    document = calibration.model_dump(by_alias=True, exclude_none=True)
-    document["qubits"][qubit_id]["calibrated"] = flags
-    return DeviceCalibration.model_validate(document)
 
 
 @pytest.mark.parametrize(
@@ -1692,7 +1693,7 @@ def test_qubit_costs_flagged_metric_costs_inf(flags):
     calibration = _calibration({0: (0.001, 0.001), 1: (0.02, 0.002)}, [(0, 1, 0.01)])
     costs = qubit_costs(_with_qubit_flags(calibration, "0", flags))
     assert costs[0] == math.inf
-    assert math.isfinite(costs[1])
+    assert costs[1] == pytest.approx(-math.log(0.98 * 0.998))
 
 
 @pytest.mark.parametrize(
@@ -1763,11 +1764,12 @@ def test_edge_costs_read_only_gate_error():
     A gate length stored in seconds lies inside ``[0, 1]``, so it must not pass as a near-zero
     error and make a poor pair look perfect.
     """
-    calibration = _calibration({}, [(0, 1, 0.01), (2, 3, 0.05)])
-    calibration.edges["gateLength"] = {
-        "cz": [EdgeEntry(source=2, target=3, value=6.8e-08)],
-        "iswap": [EdgeEntry(source=0, target=1, value=6.8e-08)],
+    document = _document(_calibration({}, [(0, 1, 0.01), (2, 3, 0.05)]))
+    document["edges"]["gateLength"] = {
+        "cz": [{"source": 2, "target": 3, "value": 6.8e-08}],
+        "iswap": [{"source": 0, "target": 1, "value": 6.8e-08}],
     }
+    calibration = DeviceCalibration.model_validate(document)
     costs = edge_costs(calibration)
     assert costs == {
         (0, 1): pytest.approx(-math.log(0.99)),
@@ -1779,7 +1781,6 @@ def test_edge_costs_read_only_gate_error():
 
 def test_edge_costs_empty_without_gate_error():
     """A document whose edges carry no ``gateError`` metric has no edge costs."""
-    calibration = _calibration({0: (0.02, 0.001)}, [])
-    calibration.edges.clear()
-    calibration.edges["gateLength"] = {"cz": [EdgeEntry(source=0, target=1, value=68.0)]}
-    assert not edge_costs(calibration)
+    document = _document(_calibration({0: (0.02, 0.001)}, []))
+    document["edges"] = {"gateLength": {"cz": [{"source": 0, "target": 1, "value": 68.0}]}}
+    assert not edge_costs(DeviceCalibration.model_validate(document))
