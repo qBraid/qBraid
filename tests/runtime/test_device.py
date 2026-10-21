@@ -1348,7 +1348,7 @@ def test_best_qubits_more_qubits_than_calibrated_raises(mock_profile):
     """Requesting more qubits than the device calibrates raises rather than truncating."""
     calibration = _calibration({0: (0.02, 0.001), 1: (0.01, 0.001)}, [])
     device = _device_with(calibration, mock_profile)
-    with pytest.raises(ValueError, match="2 calibrated qubits; 3 requested"):
+    with pytest.raises(ValueError, match="2 usable calibrated qubits; 3 requested"):
         device.best_qubits(3)
 
 
@@ -1713,6 +1713,33 @@ def test_qubit_costs_ignore_flags_on_unscored_metrics(flags):
     """
     calibration = _calibration({0: (0.001, 0.001), 1: (0.02, 0.002)}, [(0, 1, 0.01)])
     assert qubit_costs(_with_qubit_flags(calibration, "0", flags)) == qubit_costs(calibration)
+
+
+def test_best_qubits_ranking_skips_flagged_qubits(mock_profile):
+    """Without a chain to build, ranking never returns a placeholder qubit either.
+
+    The device has no edges, so qubits are ranked. Qubit 1 has the best values but a flagged
+    RB. Ranking used to append it after the usable qubits instead of raising.
+    """
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.001, 0.001), 2: (0.03, 0.001)}, [])
+    device = _device_with(
+        _with_qubit_flags(calibration, "1", {"gateError": {"rb": False}}), mock_profile
+    )
+
+    assert device.best_qubits(2) == (0, 2)
+    with pytest.raises(ValueError, match="2 usable calibrated qubits; 3 requested"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_single_raises_when_every_qubit_flagged(mock_profile):
+    """``best_qubits(1)`` raises rather than return a placeholder when no qubit is usable."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 0.001)}, [(0, 1, 0.01)])
+    for qubit_id in ("0", "1"):
+        calibration = _with_qubit_flags(calibration, qubit_id, {"readoutError": False})
+    device = _device_with(calibration, mock_profile)
+
+    with pytest.raises(ValueError, match="0 usable calibrated qubits; 1 requested"):
+        device.best_qubits(1)
 
 
 def test_ibm_placeholder_flags_change_nothing(mock_profile):

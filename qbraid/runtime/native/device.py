@@ -21,6 +21,7 @@ Module defining QbraidDevice class
 
 from __future__ import annotations
 
+import math
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, overload
 
@@ -144,7 +145,7 @@ class QbraidDevice(QuantumDevice):
                 atom, where atom geometry is programmable and there is no fixed
                 qubit lattice to select from), ``num_qubits < 1``, no connected
                 chain of that length exists, ``gate`` has no calibrated edges,
-                or the device has fewer calibrated qubits than requested.
+                or the device has fewer usable calibrated qubits than requested.
         """
         experiment_type = self.profile.experiment_type
         if experiment_type is not None and experiment_type != ExperimentType.GATE_MODEL:
@@ -160,11 +161,12 @@ class QbraidDevice(QuantumDevice):
         node_costs = qubit_costs(calibration)
         edge_costs_map = edge_costs(calibration, gate=gate)
         if num_qubits == 1 or not edge_costs_map:
-            if len(node_costs) < num_qubits:
+            usable = [qubit for qubit, cost in node_costs.items() if math.isfinite(cost)]
+            if len(usable) < num_qubits:
                 raise ValueError(
-                    f"Device has {len(node_costs)} calibrated qubits; {num_qubits} requested"
+                    f"Device has {len(usable)} usable calibrated qubits; {num_qubits} requested"
                 )
-            ranked = sorted(node_costs, key=lambda qubit: (node_costs[qubit], qubit))
+            ranked = sorted(usable, key=lambda qubit: (node_costs[qubit], qubit))
             return tuple(ranked[:num_qubits])
         chain = best_chain(node_costs, edge_costs_map, num_qubits)
         if chain is None:
