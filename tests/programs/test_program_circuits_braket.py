@@ -239,6 +239,23 @@ def test_transform_with_ionq_device():
     assert qprogram.program.partial_measurement_qubits == [0]
 
 
+def test_transform_rewrites_gates_the_profile_does_not_list():
+    """``transform`` rewrites gates missing from the profile's ``supported_operations``."""
+    qprogram = BraketCircuit(Circuit().h(0).v(1))
+    mock_device = Mock()
+    mock_device.simulator = False
+    mock_device.profile = TargetProfile(
+        device_id="test_device",
+        simulator=False,
+        provider_name="Rigetti",
+        supported_operations=["h", "rx"],
+    )
+
+    qprogram.transform(mock_device)
+
+    assert [instr.operator.name for instr in qprogram.program.instructions] == ["H", "Rx"]
+
+
 def test_transform_with_amazon_braket_device():
     """Test transform method with Amazon Braket device calls pad_measurements."""
     circuit = Circuit().h(0).cnot(0, 1).measure(1)
@@ -420,3 +437,55 @@ def test_replace_i_with_rz_zero():
     for instr in qprogram.program.instructions:
         if instr.operator.name.lower() == "rz":
             assert instr.operator.angle == 0
+
+
+@pytest.mark.parametrize(
+    "circuit",
+    [
+        Circuit().h(0).v(0).vi(1),
+        Circuit().h(0).h(1).ccnot(0, 1, 2),
+        Circuit().ccnot(2, 0, 1).h(2),
+        Circuit().gphase(0.7).h(0).cnot(0, 1),
+    ],
+)
+def test_rewrite_unsupported_gates_is_equivalent(circuit):
+    """Each rewrite keeps the circuit's unitary, up to global phase."""
+    from qbraid.interface import circuits_allclose  # pylint: disable=import-outside-toplevel
+
+    qprogram = BraketCircuit(circuit)
+    qprogram.rewrite_unsupported_gates({"h", "cnot", "t", "ti", "rx"})
+
+    names = {instr.operator.name.lower() for instr in qprogram.program.instructions}
+    assert names <= {"h", "cnot", "t", "ti", "rx"}
+    assert circuits_allclose(qprogram.program, circuit)
+
+
+def test_rewrite_unsupported_gates_leaves_supported_and_unrewritable_gates():
+    """Supported gates, gates with no rewrite, and controlled gates pass through unchanged."""
+    circuit = Circuit().ccnot(0, 1, 2).xy(0, 1, 0.3).v(0, control=1)
+    qprogram = BraketCircuit(circuit)
+    qprogram.rewrite_unsupported_gates({"ccnot", "h"})
+    assert qprogram.program == circuit
+
+
+def test_rewrite_unsupported_gates_skips_verbatim_box():
+    """Gates inside a verbatim box are what the user asked the device to run as written."""
+    circuit = Circuit().v(0).add_verbatim_box(Circuit().v(1))
+    qprogram = BraketCircuit(circuit)
+    qprogram.rewrite_unsupported_gates({"rx"})
+
+    names = [instr.operator.name for instr in qprogram.program.instructions]
+    assert names == ["Rx", "StartVerbatimBox", "V", "EndVerbatimBox"]
+
+
+def test_rewrite_unsupported_gates_keeps_measurements_and_result_types():
+    """Measurements stay in place, and result types survive the rebuild."""
+    circuit = Circuit().gphase(0.1).h(0).measure(0)
+    qprogram = BraketCircuit(circuit)
+    qprogram.rewrite_unsupported_gates({"h"})
+    assert qprogram.program == Circuit().h(0).measure(0)
+
+    with_result = Circuit().v(0).probability(target=[0])
+    qprogram = BraketCircuit(with_result)
+    qprogram.rewrite_unsupported_gates({"rx"})
+    assert qprogram.program.result_types == with_result.result_types

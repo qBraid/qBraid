@@ -255,6 +255,26 @@ def test_provider_build_runtime_profile(mock_sv1):
     assert profile.get("device_id") == SV1_ARN
     assert profile.get("extra") == "data"
     assert profile.get("basis_gates") == {"gate1", "gate2"}
+    assert profile.get("supported_operations") is None  # the mock's action is not a dict
+
+
+@pytest.mark.parametrize(
+    ("operations", "expected"),
+    [(["cz", "rx", "rz"], ["cz", "rx", "rz"]), (None, None), (["cz", 3], None), ("cz", None)],
+)
+def test_provider_profile_lists_supported_operations(mock_sv1, operations, expected):
+    """The profile carries the OpenQASM action's supportedOperations, if they are strings."""
+    action = {} if operations is None else {"supportedOperations": operations}
+    capabilities = {
+        "action": {"braket.ir.openqasm.program": action},
+        "paradigm": {"qubitCount": 2},
+    }
+    metadata = {"deviceType": "QPU", "providerName": "Rigetti"}
+    mock_sv1.aws_session.get_device = Mock(
+        return_value={**metadata, "deviceCapabilities": json.dumps(capabilities)}
+    )
+    profile = BraketProvider()._build_runtime_profile(device=mock_sv1)
+    assert profile.get("supported_operations") == expected
 
 
 @pytest.mark.parametrize(
@@ -575,6 +595,43 @@ def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
     expected_circuit = Circuit().x(0).y(2).measure(0).measure(1).measure(2)
     assert isinstance(transformed_circuit, Circuit)
     assert transformed_circuit == expected_circuit
+
+
+def _qpu_device(provider_name: str, supported_operations=None) -> BraketDevice:
+    """A Braket QPU device whose profile lists ``supported_operations``, if any."""
+    extra = {} if supported_operations is None else {"supported_operations": supported_operations}
+    with patch("qbraid.runtime.aws.device.AwsDevice"):
+        profile = TargetProfile(
+            simulator=False,
+            num_qubits=108,
+            program_spec=ProgramSpec(Circuit),
+            provider_name=provider_name,
+            device_id="arn:aws:braket:us-west-1::device/qpu/rigetti/Cepheus-1-108Q",
+            experiment_type=ExperimentType.GATE_MODEL,
+            **extra,
+        )
+        return BraketDevice(profile)
+
+
+def test_device_transform_rewrites_gates_the_device_does_not_list():
+    """Gates missing from the device's supportedOperations are rewritten before submission."""
+    device = _qpu_device("Rigetti", ["cz", "rx", "rz", "h", "cnot", "t", "ti"])
+    circuit = Circuit().gphase(0.2).h(0).v(1).ccnot(0, 1, 2).measure([0, 1, 2])
+
+    transformed = device.transform(circuit)
+
+    names = {instr.operator.name.lower() for instr in transformed.instructions}
+    assert names <= {"h", "rx", "cnot", "t", "ti", "measure"}
+    assert circuits_allclose(
+        Circuit().add(transformed.instructions[:-3]), Circuit().h(0).v(1).ccnot(0, 1, 2)
+    )
+
+
+def test_device_transform_without_capabilities_leaves_gates():
+    """A device whose profile lists no supported operations keeps the circuit's gates."""
+    device = _qpu_device("Rigetti")
+    circuit = Circuit().h(0).v(1)
+    assert device.transform(circuit) == circuit
 
 
 @patch("qbraid.runtime.aws.BraketProvider")
