@@ -37,23 +37,28 @@ Submodules
 
 """
 import importlib
+import importlib.util
 
 from ._model import AnalogHamiltonianEncoder, AnalogHamiltonianProgram
 
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 
-submodules = []
 base_path = "qbraid.programs.analog."
 
-for lib in NATIVE_REGISTRY:
-    try:
-        imported_lib = importlib.import_module(base_path + lib)
-        submodules.append(lib)
-        globals()[lib] = imported_lib
+# Submodules wrap optional SDKs, so they are imported on first attribute access
+# rather than here. find_spec on a child module does not execute it.
+submodules = [
+    lib for lib in NATIVE_REGISTRY if importlib.util.find_spec(base_path + lib) is not None
+]
 
-    except ImportError:
-        pass
+
+def __getattr__(name):
+    if name in submodules:
+        module = importlib.import_module(base_path + name)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["AnalogHamiltonianProgram", "AnalogHamiltonianEncoder"]
