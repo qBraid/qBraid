@@ -18,6 +18,7 @@
 Unit tests for BraketProvider class
 
 """
+
 import datetime
 import importlib.util
 import json
@@ -33,6 +34,7 @@ from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
+from braket.ir.openqasm import Program as OpenQasmProgram
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
@@ -41,6 +43,7 @@ from qbraid.runtime import (
     DeviceProgramTypeMismatchError,
     DeviceStatus,
     GateModelResultData,
+    QuantumDevice,
     TargetProfile,
 )
 from qbraid.runtime.aws.availability import _calculate_future_time
@@ -632,6 +635,55 @@ def test_device_transform_without_capabilities_leaves_gates():
     device = _qpu_device("Rigetti")
     circuit = Circuit().h(0).v(1)
     assert device.transform(circuit) == circuit
+
+
+IQM_FEEDFORWARD_QASM3 = """OPENQASM 3.0;
+#pragma braket verbatim
+box {
+  prx(1.5707963, 0) $0;
+  measure_ff(0) $0;
+  cc_prx(3.1415926, 0, 0) $1;
+}
+"""
+
+
+@pytest.mark.parametrize("batch", [False, True])
+def test_device_run_experimental_submits_openqasm_as_written(batch):
+    """With experimental capabilities, OpenQASM 3 is submitted without converting to a Circuit."""
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+    run_input = [IQM_FEEDFORWARD_QASM3] if batch else IQM_FEEDFORWARD_QASM3
+
+    with patch.object(QuantumDevice, "apply_runtime_profile") as apply_runtime_profile:
+        result = device.run(run_input, shots=100, experimental_capabilities="ALL")
+
+    apply_runtime_profile.assert_not_called()
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert submitted == OpenQasmProgram(source=IQM_FEEDFORWARD_QASM3)
+    assert device._device.run_batch.call_args.kwargs["experimental_capabilities"] == "ALL"
+    assert isinstance(result, list) is batch
+
+
+@pytest.mark.parametrize(
+    "run_input, kwargs",
+    [
+        (IQM_FEEDFORWARD_QASM3, {}),
+        ("OPENQASM 2.0;\nqreg q[1];\n", {"experimental_capabilities": "ALL"}),
+        (Circuit().h(0), {"experimental_capabilities": "ALL"}),
+    ],
+)
+def test_device_run_converts_without_experimental_openqasm3(run_input, kwargs):
+    """Anything else goes through the usual transpile and transform before submission."""
+    device = _qpu_device("IQM")
+
+    with (
+        patch.object(QuantumDevice, "apply_runtime_profile", return_value=Circuit()) as apply,
+        patch.object(BraketDevice, "submit") as submit,
+    ):
+        device.run(run_input, shots=100, **kwargs)
+
+    apply.assert_called_once_with(run_input)
+    assert submit.call_args.args[0] == Circuit()
 
 
 @patch("qbraid.runtime.aws.BraketProvider")

@@ -416,15 +416,20 @@ class QuantumDevice(ABC):
         for run_input in run_input_batch:
             try:
                 program = load_program(run_input)
+                num_qubits = program.num_qubits
             except ProgramLoaderError:
                 logger.info(
                     "Skipping qubit count validation: program type '%s' not supported natively.",
                     type(run_input).__name__,
                 )
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                # The parser can reject a program the device accepts, e.g. a vendor's own
+                # instruction such as IQM's measure_ff, so it can't count the qubits.
+                logger.info("Skipping qubit count validation: %s", err)
             else:
-                if self.num_qubits and program.num_qubits > self.num_qubits:
+                if self.num_qubits and num_qubits > self.num_qubits:
                     message = (
-                        f"Number of qubits in the circuit ({program.num_qubits}) exceeds "
+                        f"Number of qubits in the circuit ({num_qubits}) exceeds "
                         f"the device's capacity ({self.num_qubits})."
                     )
                     if level == ValidationLevel.RAISE:
