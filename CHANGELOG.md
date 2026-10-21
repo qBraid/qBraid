@@ -31,7 +31,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
-- `QbraidDevice.best_qubits()` no longer selects a qubit or edge whose calibration value the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. When too few usable qubits remain, it raises `ValueError` instead of returning unusable ones.
+- `QbraidDevice.best_qubits()` no longer selects a qubit or edge whose calibration value the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. When too few usable qubits remain, it raises `ValueError` instead of returning unusable ones ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 
 ### Deprecated
 
@@ -51,7 +51,7 @@ Writing an entry:
 - `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
-- Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields.
+- Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 
 ## [0.13.0] - 2026-10-02
 
