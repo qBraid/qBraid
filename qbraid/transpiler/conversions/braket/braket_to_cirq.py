@@ -127,6 +127,36 @@ def _from_braket_instruction(
         ValueError: If the instruction cannot be converted to Cirq.
         ProgramConversionError: If error raise during conversion.
     """
+    operations = _from_braket_target_instruction(instr, qubit_mapping)
+
+    power = getattr(instr, "power", 1)
+    if power != 1:
+        if len(operations) != 1:
+            raise ProgramConversionError(
+                f"Unable to convert {instr} to Cirq: power modifier on a multi-operation gate."
+            )
+        powered = cirq.pow(operations[0], power, None)
+        if powered is None:
+            raise ProgramConversionError(
+                f"Unable to convert {instr} to Cirq: gate does not support power {power}."
+            )
+        operations = [powered]
+
+    controls = [qubit_mapping[int(q)] for q in getattr(instr, "control", [])]
+    if controls:
+        control_values = list(instr.control_state.as_tuple)
+        operations = [
+            op.controlled_by(*controls, control_values=control_values) for op in operations
+        ]
+
+    return operations
+
+
+def _from_braket_target_instruction(
+    instr: BKInstruction, qubit_mapping: dict[int, cirq_devices.LineQubit]
+) -> list[cirq_ops.Operation]:
+    """Converts the braket instruction's operator on its target qubits, ignoring
+    any control and power modifiers."""
     nqubits = len(instr.target)
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
