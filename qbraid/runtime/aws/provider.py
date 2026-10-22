@@ -176,7 +176,16 @@ class BraketProvider(QuantumProvider):
         action: dict = capabilities.get("action", {})
         num_qubits = paradigm.get("qubitCount")
         basis_gates = paradigm.get("nativeGateSet", None)
-        if action.get("braket.ir.openqasm.program") is not None:
+        openqasm = action.get("braket.ir.openqasm.program")
+        supported_operations = (
+            openqasm.get("supportedOperations") if isinstance(openqasm, dict) else None
+        )
+        if isinstance(supported_operations, list) and all(
+            isinstance(operation, str) for operation in supported_operations
+        ):
+            # Every operation the device accepts, wider than the verbatim ``nativeGateSet``.
+            kwargs.setdefault("supported_operations", supported_operations)
+        if openqasm is not None:
             experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:

@@ -29,6 +29,7 @@ from qbraid.programs.alias_manager import (
     _get_program_type_alias,
     get_program_type_alias,
 )
+from qbraid.programs.exceptions import describe_error
 
 from .exceptions import (
     ConversionPathNotFoundError,
@@ -50,7 +51,7 @@ def _warn_if_unsupported(program_type, program_direction):
 
 
 def _format_exception(err: Exception) -> str:
-    return f"{type(err).__name__}: {str(err)}\n"
+    return f"{type(err).__name__}: {describe_error(err)}\n"
 
 
 def transpile(
