@@ -67,6 +67,7 @@ from qbraid.runtime.quantinuum._transport import (  # noqa: E402
 )
 from qbraid.runtime.quantinuum.device import (  # noqa: E402
     DEFAULT_COMPILE_TIMEOUT_SECONDS,
+    MAX_OPT_LEVEL,
     QuantinuumDeviceError,
 )
 from qbraid.runtime.quantinuum.job import (  # noqa: E402
@@ -945,6 +946,29 @@ class TestQuantinuumDevice:
 
         mock_execute.assert_called_once()
 
+    @pytest.mark.parametrize("level", [-1, 4, 5])
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_rejects_out_of_range_opt_level_before_upload(
+        self, mock_get_or_create, mock_upload, level
+    ):
+        """An out-of-range ``optimisation_level`` fails before anything reaches NEXUS.
+
+        NEXUS accepts 0-3 and otherwise answers the compile request with a raw 422.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        device = _make_device()
+        with pytest.raises(ValueError, match=f"between 0 and 3, got {level}"):
+            device.submit(Circuit(2), shots=100, optimisation_level=level)
+        mock_get_or_create.assert_not_called()
+        mock_upload.assert_not_called()
+
+    def test_max_opt_level_matches_nexus(self):
+        """NEXUS accepts optimisation levels below 4."""
+        assert MAX_OPT_LEVEL == 3
+
     @pytest.mark.parametrize(
         ("env", "value", "match"),
         [
@@ -957,7 +981,7 @@ class TestQuantinuumDevice:
             ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "inf", "must be a finite number"),
             ("QUANTINUUM_NEXUS_HTTP_TIMEOUT", "abc", "must be a number of seconds"),
             ("QUANTINUUM_NEXUS_OPT_LEVEL", "high", "must be an integer"),
-            ("QUANTINUUM_NEXUS_OPT_LEVEL", "7", "must be between 0 and 2"),
+            ("QUANTINUUM_NEXUS_OPT_LEVEL", "7", "must be between 0 and 3"),
         ],
     )
     def test_submit_rejects_malformed_env_config(self, env, value, match):
