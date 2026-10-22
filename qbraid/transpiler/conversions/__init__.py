@@ -41,6 +41,8 @@ Submodules
 import importlib
 import inspect
 
+from qbraid._logging import logger
+
 # Dynamically import QPROGRAM_ALIASES when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
 _registry = importlib.import_module("qbraid.programs.registry")
@@ -102,6 +104,10 @@ def _update_registered_conversions() -> None:
 
         except ModuleNotFoundError:
             pass
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            # An SDK can be listed (found on disk) but fail to import. Skip only its
+            # conversions so the rest of the graph keeps working.
+            logger.warning("Skipping conversions for '%s': %s: %s", lib, type(err).__name__, err)
 
 
 _update_registered_conversions()

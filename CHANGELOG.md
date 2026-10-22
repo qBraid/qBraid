@@ -31,7 +31,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
-- Importing `qbraid.programs` no longer imports every installed quantum SDK, so it stays near 0.4 s whatever extras are installed (qrisp: 3.2 s → 0.4 s). An SDK whose install is broken is now reported with a warning instead of silently missing ([#1499](https://github.com/qBraid/qBraid/pull/1499))
+- Importing `qbraid.programs` no longer imports every installed quantum SDK, so it stays near 0.4 s whatever extras are installed (qrisp: 3.2 s → 0.4 s). An SDK whose install is broken is now reported with a warning instead of silently missing. `NATIVE_REGISTRY` and `QPROGRAM_REGISTRY` are now mappings rather than `dict` subclasses, so code that checks `isinstance(..., dict)` should check `collections.abc.Mapping` ([#1499](https://github.com/qBraid/qBraid/pull/1499))
 
 ### Deprecated
 

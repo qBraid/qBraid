@@ -235,9 +235,10 @@ class IonQDevice(QuantumDevice):
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
 
+        qiskit_circuit_type = QPROGRAM_REGISTRY.get("qiskit")
         if (
-            "qiskit" in QPROGRAM_REGISTRY
-            and all(isinstance(program, QPROGRAM_REGISTRY["qiskit"]) for program in run_input)
+            qiskit_circuit_type is not None
+            and all(isinstance(program, qiskit_circuit_type) for program in run_input)
             and importlib.util.find_spec("qiskit_ionq") is not None
         ):
             gateset = gateset or GateSet.QIS

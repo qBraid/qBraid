@@ -17,9 +17,12 @@ Unit tests for the lazy program type registry, and a guard that importing
 qbraid.programs does not import optional quantum SDKs.
 
 """
+import copy
 import importlib
 import json
 import logging
+import os
+import pickle
 import subprocess
 import sys
 import types
@@ -278,3 +281,68 @@ def test_unregister_unloaded_alias_does_not_import():
     assert alias not in QPROGRAM_REGISTRY
     assert alias not in QPROGRAM_ALIASES
     assert "qbraid_probe_good" not in sys.modules
+
+
+def test_broken_sdk_does_not_break_transpiler(tmp_path):
+    """An SDK found on disk that fails to import is skipped, not fatal.
+
+    Shadows pytket with a package whose import raises, so its alias is listed but
+    its conversion and wrapper modules cannot load.
+    """
+    (tmp_path / "pytket").mkdir()
+    (tmp_path / "pytket" / "__init__.py").write_text("raise ImportError('broken install')\n")
+    script = (
+        "import qbraid.programs.gate_model as gate_model\n"
+        "from qbraid.programs import QPROGRAM_ALIASES\n"
+        "from qbraid.transpiler import ConversionGraph, transpile\n"
+        "assert 'pytket' in QPROGRAM_ALIASES\n"
+        "qasm2 = 'OPENQASM 2.0;\\ninclude \"qelib1.inc\";\\nqreg q[1];\\nh q[0];'\n"
+        "out = transpile(qasm2, 'qasm3', conversion_graph=ConversionGraph())\n"
+        "assert out.startswith('OPENQASM 3'), out\n"
+        "assert not hasattr(gate_model, 'pytket')\n"
+        "assert 'pytket' not in gate_model.__all__\n"
+        "exec('from qbraid.programs.gate_model import *', {})\n"
+    )
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(tmp_path), *sys.path])}
+    result = subprocess.run(
+        [sys.executable, "-c", script], capture_output=True, text=True, env=env, check=False
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Skipping conversions for 'pytket'" in result.stderr
+
+
+@pytest.mark.usefixtures("probe_packages")
+def test_registry_supports_dict_operations():
+    """Copying, pickling and merging keep working and keep entries unresolved."""
+    registry = LazyTypeRegistry({"probe": _LazyType("qbraid_probe_good", "Program"), "str": str})
+
+    for clone in (
+        copy.copy(registry),
+        copy.deepcopy(registry),
+        pickle.loads(pickle.dumps(registry)),
+        registry | {},
+        {} | registry,
+    ):
+        assert isinstance(clone, LazyTypeRegistry)
+        assert set(clone) == {"probe", "str"}
+        assert not clone.is_loaded("probe")
+
+    assert (registry | {"int": int})["int"] is int
+    assert ({"str": int} | registry)["str"] is str
+    registry |= {"int": int}
+    assert registry["int"] is int
+    assert "qbraid_probe_good" not in sys.modules
+
+
+def test_type_set_supports_set_operations():
+    """Set operators, copies and pickling return plain sets."""
+    types_set = LazyTypeSet(LazyTypeRegistry({"str": str, "int": int}))
+
+    assert types_set | {dict} == {str, int, dict}
+    assert {dict} | types_set == {str, int, dict}
+    assert types_set & {str} == {str}
+    assert types_set - {str} == {int}
+    assert types_set ^ {str, dict} == {int, dict}
+    assert copy.deepcopy(types_set) == {str, int}
+    assert pickle.loads(pickle.dumps(types_set)) == {str, int}

@@ -26,6 +26,7 @@ every installed SDK.
 """
 from __future__ import annotations
 
+import copy as _copy
 import importlib.util
 import sys
 import threading
@@ -187,6 +188,32 @@ class LazyTypeRegistry(MutableMapping):
         """Return a shallow copy that keeps unresolved entries unresolved."""
         return type(self)(self._data)
 
+    __copy__ = copy
+
+    def __deepcopy__(self, memo: dict) -> LazyTypeRegistry:
+        return type(self)(_copy.deepcopy(self._data, memo))
+
+    def __reduce__(self):
+        return (type(self), (dict(self._data),))
+
+    def __or__(self, other: Mapping) -> LazyTypeRegistry:
+        if not isinstance(other, Mapping):
+            return NotImplemented
+        merged = self.copy()
+        merged.update(other)
+        return merged
+
+    def __ror__(self, other: Mapping) -> LazyTypeRegistry:
+        if not isinstance(other, Mapping):
+            return NotImplemented
+        merged = type(self)(other)
+        merged.update(self)
+        return merged
+
+    def __ior__(self, other: Mapping) -> LazyTypeRegistry:
+        self.update(other)
+        return self
+
     def update(self, other=(), /, **kwargs) -> None:  # pylint: disable=arguments-differ
         if isinstance(other, LazyTypeRegistry):
             self._data.update(other._data)
@@ -244,6 +271,11 @@ class LazyTypeSet(MutableSet):
     (membership, iteration, length) imports every installed SDK once.
     """
 
+    @classmethod
+    def _from_iterable(cls, it: Iterable[Type[Any]]) -> set[Type[Any]]:
+        # Set operators (|, &, -, ^) build their result through this hook.
+        return set(it)
+
     def __init__(self, registry: LazyTypeRegistry):
         self._registry: Optional[LazyTypeRegistry] = registry
         self._items: set[Type[Any]] = set()
@@ -286,6 +318,14 @@ class LazyTypeSet(MutableSet):
     def copy(self) -> set[Type[Any]]:
         """Return the registered types as a plain set."""
         return set(self._materialize())
+
+    __copy__ = copy
+
+    def __deepcopy__(self, memo: dict) -> set[Type[Any]]:
+        return set(self._materialize())
+
+    def __reduce__(self):
+        return (set, (list(self._materialize()),))
 
     def update(self, values: Iterable[Type[Any]]) -> None:
         """Add each of the given types."""
