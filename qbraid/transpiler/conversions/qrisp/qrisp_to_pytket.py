@@ -42,4 +42,14 @@ def qrisp_to_pytket(qrisp_qc: qrisp_.QuantumCircuit) -> pytket_.Circuit:
     Returns:
         PyTKET Circuit equivalent to the input Qrisp circuit.
     """
-    return qrisp_qc.to_pytket()
+    from pytket.circuit import Qubit  # pylint: disable=import-outside-toplevel
+
+    circuit = qrisp_qc.to_pytket()
+    # qrisp gives each qubit a register of its own, named after the qubit, and pytket orders
+    # qubits by register name as text, so ``qb_100`` would come before ``qb_99`` and the circuit
+    # would act on the wrong qubits. One register in qrisp's order keeps the two aligned.
+    by_name = {qubit.reg_name: qubit for qubit in circuit.qubits}
+    ordered = [by_name.get(str(qubit.identifier)) for qubit in qrisp_qc.qubits]
+    if len(by_name) == len(ordered) and all(qubit is not None for qubit in ordered):
+        circuit.rename_units({old: Qubit("q", index) for index, old in enumerate(ordered)})
+    return circuit

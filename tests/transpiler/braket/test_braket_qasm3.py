@@ -16,7 +16,9 @@
 Unit tests for converting Braket circuits to/from OpenQASM
 
 """
+import importlib
 import textwrap
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -210,20 +212,25 @@ def test_qiskit_to_qasm3_to_braket():
     assert circuits_allclose(qc, circuit)
 
 
-@pytest.mark.parametrize(
-    "match_substring",
-    ["PyQASM validation", "Transform"],
-    ids=["pyqasm_validation_in_final_error", "transform_in_final_error"],
-)
-def test_qasm3_to_braket_prior_errors_included_in_final_error(match_substring):
-    """Coverage: prior_errors (PyQASM validation and/or Transform) are included in QasmError
+def test_qasm3_to_braket_prior_errors_included_in_final_error(monkeypatch):
+    """Prior errors that differ from the Braket parser's reason are kept in the message."""
+    module = importlib.import_module("qbraid.transpiler.conversions.qasm3.qasm3_to_braket")
+    monkeypatch.setattr(module, "transform_notation", Mock(side_effect=ValueError("bad transform")))
+    with pytest.raises(QasmError, match="Prior errors:.*Transform: bad transform"):
+        qasm3_to_braket("not valid openqasm")
 
-    Invalid QASM causes the first try (PyQASM) to raise; the second try (transform_notation
-    -> replace_gate_names -> parse) also raises. The final QasmError message includes both.
-    """
-    invalid_qasm = "not valid openqasm"
-    with pytest.raises(QasmError, match=f"Prior errors:.*{match_substring}"):
-        qasm3_to_braket(invalid_qasm)
+
+def test_qasm3_to_braket_syntax_error_names_location_once():
+    """A syntax error reports the offending token and position, without repeating it as a
+    prior error for every step that hit the same parse failure."""
+    qasm = "OPENQASM 3.0;\nqubit[1] q;\nbox {\n  x q[0];\n};\n"
+    with pytest.raises(QasmError) as excinfo:
+        qasm3_to_braket(qasm)
+    message = str(excinfo.value)
+    assert message == (
+        "Error converting qasm3 string to braket circuit: "
+        "syntax error near ';' at line 5, column 2"
+    )
 
 
 def test_qasm3_to_braket_error_includes_detail():

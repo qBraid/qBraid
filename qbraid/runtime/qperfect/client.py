@@ -34,6 +34,8 @@ import os
 
 from mimiqcircuits import MimiqConnection
 from mimiqlink import QPERFECT_CLOUD
+from requests import RequestException
+from requests.adapters import HTTPAdapter
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +43,41 @@ TOKEN_ENV_VAR = "QPERFECT_API_TOKEN"
 USERNAME_ENV_VAR = "QPERFECT_USERNAME"
 PASSWORD_ENV_VAR = "QPERFECT_PASSWORD"
 URL_ENV_VAR = "QPERFECT_BASE_URL"
+
+# mimiqlink sets a 1 s connect timeout and no read timeout, so a request MIMIQ accepts and never
+# answers blocks forever. That includes a login, which holds the provider's connection lock, and
+# the token refresher, whose connection keeps reporting open while its token expires.
+CONNECT_TIMEOUT_S = 1.0
+READ_TIMEOUT_S = 60.0
+
+
+class _TimeoutAdapter(HTTPAdapter):
+    """Applies a default ``(connect, read)`` timeout to every request on a MIMIQ session.
+
+    ``timeout=0`` still means no timeout, as in mimiqlink's own adapter: its job uploads pass it.
+    """
+
+    def __init__(self, timeout: tuple[float, float]):
+        super().__init__()
+        self._timeout = timeout
+
+    def send(self, request, **kwargs):  # pylint: disable=arguments-differ
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self._timeout
+        elif timeout == 0:
+            kwargs["timeout"] = None
+        return super().send(request, **kwargs)
+
+
+def _new_connection(url: str) -> MimiqConnection:
+    """Return an unauthenticated MIMIQ connection whose requests time out."""
+    connection = MimiqConnection(url)
+    adapter = _TimeoutAdapter((CONNECT_TIMEOUT_S, READ_TIMEOUT_S))
+    session = connection.connection.session
+    session.mount("http://", adapter)
+    session.mount("https://", adapter)
+    return connection
 
 
 def resolve_url(url: str | None = None) -> str:
@@ -111,16 +148,21 @@ def build_connection(
     Raises:
         ValueError: If neither a token nor a complete set of credentials is available.
         ConnectionError: If a token is the only credential available and MIMIQ rejects it.
+        requests.RequestException: If MIMIQ cannot be reached or does not answer in time.
     """
     resolved_url = resolve_url(url)
     token = token or os.getenv(TOKEN_ENV_VAR)
     account = resolve_account(username, password)
 
     if token:
-        connection = MimiqConnection(resolved_url)
+        connection = _new_connection(resolved_url)
         try:
             connection.connection.connectToken(token)
             return connection
+        except RequestException:
+            # MIMIQ did not answer, rather than rejecting the token. A credentials login would
+            # wait on the same host again while the caller holds the provider's connection lock.
+            raise
         except Exception as err:  # pylint: disable=broad-except
             if account is None:
                 raise
@@ -134,7 +176,7 @@ def build_connection(
             f"or supply a refresh token via {TOKEN_ENV_VAR} or token=."
         )
 
-    connection = MimiqConnection(resolved_url)
+    connection = _new_connection(resolved_url)
     connection.connection.connectUser(*account)
     _publish_token(connection)
     return connection
