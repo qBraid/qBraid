@@ -255,6 +255,26 @@ def test_provider_build_runtime_profile(mock_sv1):
     assert profile.get("device_id") == SV1_ARN
     assert profile.get("extra") == "data"
     assert profile.get("basis_gates") == {"gate1", "gate2"}
+    assert profile.get("supported_operations") is None  # the mock's action is not a dict
+
+
+@pytest.mark.parametrize(
+    ("operations", "expected"),
+    [(["cz", "rx", "rz"], ["cz", "rx", "rz"]), (None, None), (["cz", 3], None), ("cz", None)],
+)
+def test_provider_profile_lists_supported_operations(mock_sv1, operations, expected):
+    """The profile carries the OpenQASM action's supportedOperations, if they are strings."""
+    action = {} if operations is None else {"supportedOperations": operations}
+    capabilities = {
+        "action": {"braket.ir.openqasm.program": action},
+        "paradigm": {"qubitCount": 2},
+    }
+    metadata = {"deviceType": "QPU", "providerName": "Rigetti"}
+    mock_sv1.aws_session.get_device = Mock(
+        return_value={**metadata, "deviceCapabilities": json.dumps(capabilities)}
+    )
+    profile = BraketProvider()._build_runtime_profile(device=mock_sv1)
+    assert profile.get("supported_operations") == expected
 
 
 @pytest.mark.parametrize(
@@ -577,6 +597,43 @@ def test_device_ionq_transform_non_contiguous_qubits(mock_aws_device):
     assert transformed_circuit == expected_circuit
 
 
+def _qpu_device(provider_name: str, supported_operations=None) -> BraketDevice:
+    """A Braket QPU device whose profile lists ``supported_operations``, if any."""
+    extra = {} if supported_operations is None else {"supported_operations": supported_operations}
+    with patch("qbraid.runtime.aws.device.AwsDevice"):
+        profile = TargetProfile(
+            simulator=False,
+            num_qubits=108,
+            program_spec=ProgramSpec(Circuit),
+            provider_name=provider_name,
+            device_id="arn:aws:braket:us-west-1::device/qpu/rigetti/Cepheus-1-108Q",
+            experiment_type=ExperimentType.GATE_MODEL,
+            **extra,
+        )
+        return BraketDevice(profile)
+
+
+def test_device_transform_rewrites_gates_the_device_does_not_list():
+    """Gates missing from the device's supportedOperations are rewritten before submission."""
+    device = _qpu_device("Rigetti", ["cz", "rx", "rz", "h", "cnot", "t", "ti"])
+    circuit = Circuit().gphase(0.2).h(0).v(1).ccnot(0, 1, 2).measure([0, 1, 2])
+
+    transformed = device.transform(circuit)
+
+    names = {instr.operator.name.lower() for instr in transformed.instructions}
+    assert names <= {"h", "rx", "cnot", "t", "ti", "measure"}
+    assert circuits_allclose(
+        Circuit().add(transformed.instructions[:-3]), Circuit().h(0).v(1).ccnot(0, 1, 2)
+    )
+
+
+def test_device_transform_without_capabilities_leaves_gates():
+    """A device whose profile lists no supported operations keeps the circuit's gates."""
+    device = _qpu_device("Rigetti")
+    circuit = Circuit().h(0).v(1)
+    assert device.transform(circuit) == circuit
+
+
 @patch("qbraid.runtime.aws.BraketProvider")
 def test_device_submit_task_with_tags(mock_provider):
     """Test getting tagged quantum tasks."""
@@ -612,6 +669,133 @@ def test_device_submit_task_with_tags(mock_provider):
     assert set([task1.id, task2.id]) == set(provider.get_tasks_by_tag(key))
     assert len(provider.get_tasks_by_tag(key, values=[value1], region_names=["us-east-1"])) == 1
     assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
+
+
+@pytest.mark.parametrize("method", ["run", "submit"])
+@pytest.mark.parametrize("batch", [False, True], ids=["single", "batch"])
+@pytest.mark.parametrize(
+    "tag_case",
+    [
+        (None, {"project": "benchmarks", "environment": "dev"}),
+        ({}, {"project": "benchmarks", "environment": "dev"}),
+        (
+            {"environment": "prod", "run": "trial-1"},
+            {"project": "benchmarks", "environment": "prod", "run": "trial-1"},
+        ),
+    ],
+)
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_submission_with_default_tags(
+    mock_aws_device: MagicMock,
+    sv1_profile: TargetProfile,
+    tag_case: tuple[dict[str, str] | None, dict[str, str]],
+    batch: bool,
+    method: str,
+) -> None:
+    """Configured tags reach AWS through run and submit, with per-call overrides."""
+    call_tags, expected_tags = tag_case
+    device = BraketDevice(sv1_profile)
+    default_tags = {"project": "benchmarks", "environment": "dev"}
+    device.set_options(tags=default_tags, transpile=False, transform=False, validate=False)
+    circuits = [Circuit().h(0), Circuit().x(0)] if batch else [Circuit().h(0)]
+    tasks = [
+        Mock(
+            id="arn:aws:braket:us-east-1:123456789012:quantum-task/"
+            f"00000000-0000-0000-0000-{index:012d}"
+        )
+        for index in range(len(circuits))
+    ]
+    mock_aws_device.return_value.run_batch.return_value.tasks = tasks
+
+    result = getattr(device, method)(circuits if batch else circuits[0], shots=100, tags=call_tags)
+
+    mock_aws_device.return_value.run_batch.assert_called_once_with(
+        circuits, shots=100, tags=expected_tags
+    )
+    jobs = result if batch else [result]
+    assert [job.id for job in jobs] == [task.id for task in tasks]
+    assert default_tags == {"project": "benchmarks", "environment": "dev"}
+    assert device._options["tags"] == default_tags
+    assert device._options["tags"] is not default_tags
+    if call_tags:
+        assert call_tags == {"environment": "prod", "run": "trial-1"}
+
+    # Per-call overrides must not become defaults for later submissions.
+    device.submit(circuits, shots=100)
+    assert mock_aws_device.return_value.run_batch.call_args.kwargs["tags"] == default_tags
+
+
+@pytest.mark.parametrize("batch", [False, True], ids=["single", "batch"])
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_default_tags_preserve_partial_measurements(
+    mock_aws_device: MagicMock, sv1_profile: TargetProfile, batch: bool
+) -> None:
+    """Each partial-measurement task gets merged tags and its own measured qubits."""
+    device = BraketDevice(sv1_profile)
+    default_tags = {"project": "benchmarks"}
+    call_tags = {"run": "trial-1", "partial_measurement_qubits": "stale"}
+    device.set_options(tags=default_tags)
+    circuits = [Circuit().h(0).cnot(0, 1) for _ in range(2 if batch else 1)]
+    for index, circuit in enumerate(circuits):
+        circuit.partial_measurement_qubits = [index]
+    mock_aws_device.return_value.run.return_value.id = (
+        "arn:aws:braket:us-east-1:123456789012:quantum-task/00000000-0000-0000-0000-000000000001"
+    )
+
+    device.submit(circuits if batch else circuits[0], shots=100, tags=call_tags)
+
+    mock_aws_device.return_value.run_batch.assert_not_called()
+    calls = mock_aws_device.return_value.run.call_args_list
+    assert len(calls) == len(circuits)
+    for index, submission in enumerate(calls):
+        assert submission.args == (circuits[index],)
+        assert submission.kwargs == {
+            "shots": 100,
+            "tags": {
+                "project": "benchmarks",
+                "run": "trial-1",
+                "partial_measurement_qubits": str(index),
+            },
+        }
+    assert default_tags == {"project": "benchmarks"}
+    assert call_tags == {"run": "trial-1", "partial_measurement_qubits": "stale"}
+
+
+@pytest.mark.parametrize("cleared_tags", [None, {}])
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_default_tags_can_be_cleared(
+    mock_aws_device: MagicMock,
+    sv1_profile: TargetProfile,
+    cleared_tags: dict[str, str] | None,
+) -> None:
+    """Clearing defaults removes tags from subsequent AWS submissions."""
+    device = BraketDevice(sv1_profile)
+    mock_aws_device.return_value.run_batch.return_value.tasks = [
+        Mock(
+            id="arn:aws:braket:us-east-1:123456789012:quantum-task/"
+            "00000000-0000-0000-0000-000000000001"
+        )
+    ]
+    device.set_options(tags={"project": "benchmarks"})
+    device.set_options(tags=cleared_tags)
+
+    device.submit(Circuit().h(0), shots=100)
+
+    assert mock_aws_device.return_value.run_batch.call_args.kwargs["tags"] == cleared_tags
+    assert device._options["tags"] == cleared_tags
+
+
+@pytest.mark.parametrize("invalid_tags", ["project", ["project"], {1: "value"}, {"key": 1}])
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_device_default_tags_reject_invalid_types(
+    mock_aws_device: MagicMock, sv1_profile: TargetProfile, invalid_tags: object
+) -> None:
+    """Default tags must be None or a dictionary of string keys and values."""
+    device = BraketDevice(sv1_profile)
+    with pytest.raises(ValueError, match="tags"):
+        device.set_options(tags=invalid_tags)
+    mock_aws_device.return_value.run.assert_not_called()
+    mock_aws_device.return_value.run_batch.assert_not_called()
 
 
 @patch("qbraid.runtime.aws.device.AwsDevice")
