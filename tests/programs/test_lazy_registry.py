@@ -366,3 +366,40 @@ def test_conversion_graph_tolerates_aliases_dropped_while_building(monkeypatch):
 
     assert graph.has_node("qasm2")
     assert not graph.has_node("probe_a")
+
+
+def test_conversions_skip_sdk_that_fails_to_import(monkeypatch, caplog):
+    """A conversion module that raises on import is skipped with a warning."""
+    conversions = importlib.import_module("qbraid.transpiler.conversions")
+    real_import_module = importlib.import_module
+
+    def import_module(name, *args, **kwargs):
+        if name == "qbraid.transpiler.conversions.qasm3":
+            raise ImportError("broken install")
+        return real_import_module(name, *args, **kwargs)
+
+    monkeypatch.setattr(
+        conversions, "importlib", types.SimpleNamespace(import_module=import_module)
+    )
+    try:
+        with caplog.at_level(logging.WARNING):
+            conversions._update_registered_conversions()  # pylint: disable=protected-access
+
+        assert "Skipping conversions for 'qasm3'" in caplog.text
+        assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
+        assert "qasm2_to_qasm3" in conversions.conversion_functions
+    finally:
+        monkeypatch.undo()
+        conversions._update_registered_conversions()  # pylint: disable=protected-access
+
+
+@pytest.mark.parametrize("package", ["gate_model", "analog", "annealing"])
+def test_program_subpackage_hides_wrapper_that_fails_to_import(monkeypatch, package):
+    """A wrapper submodule that cannot be imported is not an attribute."""
+    module = importlib.import_module(f"qbraid.programs.{package}")
+    monkeypatch.setattr(module, "submodules", [*module.submodules, "qbraid_probe_missing"])
+    monkeypatch.setattr(module, "__all__", [*module.__all__, "qbraid_probe_missing"])
+
+    assert not hasattr(module, "qbraid_probe_missing")
+    assert "qbraid_probe_missing" not in module.submodules
+    assert "qbraid_probe_missing" not in module.__all__
