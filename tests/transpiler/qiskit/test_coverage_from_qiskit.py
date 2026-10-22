@@ -22,6 +22,8 @@ import pytest
 import qiskit
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs import load_program
+from qbraid.programs.gate_model.qiskit import QiskitCircuit
 from qbraid.transpiler import ConversionGraph, transpile
 
 from ...fixtures.qiskit.gates import get_qiskit_gates
@@ -48,6 +50,14 @@ def convert_from_qiskit_to_x(target, gate_name):
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
     target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    # Cirq and Braket keep only the qubits a circuit acts on, so a gate whose definition
+    # leaves an ancilla idle (MCXVChain since Qiskit 2.6) converts to fewer qubits.
+    if load_program(target_circuit).num_qubits < source_circuit.num_qubits:
+        # Decompose first: the idle ancilla is inside the gate's definition. Only the source
+        # is trimmed, rather than index_contig=True, so the target is compared as converted.
+        qprogram = QiskitCircuit(source_circuit.decompose(reps=10))
+        qprogram.remove_idle_qubits()
+        source_circuit = qprogram.program
     assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 

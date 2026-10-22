@@ -33,6 +33,7 @@ from qbraid.programs import (
     get_program_type_alias,
     load_program,
 )
+from qbraid.programs.typer import explain_unrecognized_qasm
 from qbraid.transpiler import (
     ConversionGraph,
     ConversionPathNotFoundError,
@@ -365,6 +366,10 @@ class QuantumDevice(ABC):
                 return transpiled_run_input
             except (ProgramConversionError, ConversionPathNotFoundError) as err:
                 cached_errors.append(err)
+
+        if isinstance(run_input, str) and run_input_spec.alias == "str":
+            # no registered program type matched, so every target fails with "no path from str"
+            raise ProgramConversionError(explain_unrecognized_qasm(run_input)) from cached_errors[0]
 
         if len(cached_errors) == 1:
             raise cached_errors[0]
