@@ -298,6 +298,7 @@ def test_broken_sdk_does_not_break_transpiler(tmp_path):
         "assert 'pytket' in QPROGRAM_ALIASES\n"
         "qasm2 = 'OPENQASM 2.0;\\ninclude \"qelib1.inc\";\\nqreg q[1];\\nh q[0];'\n"
         "out = transpile(qasm2, 'qasm3', conversion_graph=ConversionGraph())\n"
+        "ConversionGraph(require_native=True)\n"
         "assert out.startswith('OPENQASM 3'), out\n"
         "assert not hasattr(gate_model, 'pytket')\n"
         "assert 'pytket' not in gate_model.__all__\n"
@@ -346,3 +347,22 @@ def test_type_set_supports_set_operations():
     assert types_set ^ {str, dict} == {int, dict}
     assert copy.deepcopy(types_set) == {str, int}
     assert pickle.loads(pickle.dumps(types_set)) == {str, int}
+
+
+def test_conversion_graph_tolerates_aliases_dropped_while_building(monkeypatch):
+    """Resolving an alias can drop it from QPROGRAM_ALIASES; graph build must not crash."""
+    graph_module = importlib.import_module("qbraid.transpiler.graph")
+    aliases = {"qasm2", "qasm3", "probe_a", "probe_b", "probe_c"}
+
+    def drop_on_check(alias):
+        # Stands in for a lookup that drops an SDK which fails to import.
+        aliases.discard(alias)
+        return alias in {"qasm2", "qasm3"}
+
+    monkeypatch.setattr(graph_module, "QPROGRAM_ALIASES", aliases)
+    monkeypatch.setattr(graph_module, "is_registered_alias_native", drop_on_check)
+
+    graph = graph_module.ConversionGraph(require_native=True)
+
+    assert graph.has_node("qasm2")
+    assert not graph.has_node("probe_a")
