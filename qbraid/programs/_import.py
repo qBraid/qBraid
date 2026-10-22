@@ -135,9 +135,6 @@ class LazyTypeRegistry(MutableMapping):
             return value
 
         with self._lock:
-            value = self._data.get(alias, value)
-            if not isinstance(value, _LazyType):
-                return value
             try:
                 program_type = _load_type(value)
             except Exception as err:  # pylint: disable=broad-exception-caught

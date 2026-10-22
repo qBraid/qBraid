@@ -17,10 +17,12 @@ Unit tests for the lazy program type registry, and a guard that importing
 qbraid.programs does not import optional quantum SDKs.
 
 """
+import importlib
 import json
 import logging
 import subprocess
 import sys
+import types
 import typing
 
 import pytest
@@ -34,7 +36,7 @@ from qbraid.programs._import import (
     _LazyType,
     _module_available,
 )
-from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
+from qbraid.programs.registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY, unregister_program_type
 
 # openqasm3 is a core dependency that qbraid.programs imports directly.
 OPTIONAL_SDK_ROOTS = sorted(
@@ -225,3 +227,54 @@ def test_type_set_defers_materialization():
     assert set(types) == {dict, sys.modules["qbraid_probe_good"].Program}
     types.discard(dict)
     assert dict not in types
+
+
+def test_module_available_without_spec(monkeypatch):
+    """A module in sys.modules without a spec cannot be searched for submodules."""
+    monkeypatch.setitem(sys.modules, "qbraid_probe_nospec", types.ModuleType("qbraid_probe_nospec"))
+
+    assert not _module_available("qbraid_probe_nospec.sub")
+
+
+@pytest.mark.usefixtures("probe_packages")
+def test_loaded_items_skips_missing_attribute():
+    """An imported module that lacks the registered class is skipped, not raised."""
+    registry = LazyTypeRegistry({"missing": _LazyType("qbraid_probe_good", "Missing")})
+
+    importlib.import_module("qbraid_probe_good")
+
+    assert not list(registry.loaded_items())
+    assert "missing" not in registry
+
+
+@pytest.mark.usefixtures("probe_packages")
+def test_items_skip_broken_entries():
+    """Iterating items resolves every entry and skips those that fail to load."""
+    registry = LazyTypeRegistry({"bad": _LazyType("qbraid_probe_bad", "Program"), "str": str})
+
+    assert dict(registry.items()) == {"str": str}
+
+
+def test_type_set_copy_and_update():
+    """copy returns a plain set and update adds each type."""
+    types_set = LazyTypeSet(LazyTypeRegistry({"str": str}))
+    types_set.update([dict, list])
+
+    copied = types_set.copy()
+
+    assert copied == {str, dict, list}
+    assert isinstance(copied, set)
+
+
+@pytest.mark.usefixtures("probe_packages")
+def test_unregister_unloaded_alias_does_not_import():
+    """Unregistering an alias that was never loaded removes it without importing."""
+    alias = "qbraid_probe_lazy_alias"
+    QPROGRAM_REGISTRY[alias] = _LazyType("qbraid_probe_good", "Program")
+    QPROGRAM_ALIASES.add(alias)
+
+    unregister_program_type(alias)
+
+    assert alias not in QPROGRAM_REGISTRY
+    assert alias not in QPROGRAM_ALIASES
+    assert "qbraid_probe_good" not in sys.modules
