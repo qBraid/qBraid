@@ -67,7 +67,8 @@ def qiskit_to_iqm(circuit: qiskit.QuantumCircuit) -> iqm.iqm_client.Circuit:
 
     The IQM wire format addresses qubits by name. This conversion has no device
     context, so it emits logical names ``q_0 … q_n`` and leaves binding them to
-    physical qubits to ``IQMDevice``, which passes a ``qubit_mapping`` at submit.
+    physical qubits to ``IQMDevice``, which rewrites each circuit's loci to physical
+    qubits before submission.
 
     Args:
         circuit (qiskit.QuantumCircuit): Qiskit circuit to convert.

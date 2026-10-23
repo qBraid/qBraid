@@ -25,6 +25,7 @@ from uuid import UUID
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
 
+from qbraid.programs.gate_model.iqm import IQMProgram
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.iqm.exceptions import IQMDeviceError
@@ -43,6 +44,10 @@ logger = logging.getLogger(__name__)
 
 # IQM's client defaults to one shot; qBraid providers default to 100.
 DEFAULT_SHOTS = 100
+
+# Bounds the VF2 placement search. Without a bound, a circuit whose interaction graph
+# does not embed (an odd ring on a bipartite grid) searches for minutes before failing.
+PLACEMENT_CALL_LIMIT = 1_000_000
 
 
 def _backend_qubit_names(backend) -> dict[int, str]:
@@ -85,6 +90,7 @@ class IQMDevice(QuantumDevice):
     ):
         super().__init__(profile=profile)
         self._session = session
+        self._backend = None
 
     @property
     def session(self) -> qbraid.runtime.iqm.provider.IQMSession:
@@ -136,8 +142,9 @@ class IQMDevice(QuantumDevice):
         """Route the circuit onto this device's topology.
 
         IQM's server does not route: a two-qubit gate on a pair that cannot run CZ is
-        rejected at submission. When ``qiskit`` is importable the circuit goes through
-        IQM's own ``transpile_to_IQM``, which routes and applies IQM's single-qubit
+        rejected at submission. When IQM's Qiskit adapter imports -- it needs both
+        ``qiskit`` and ``qiskit-aer`` -- the circuit goes through IQM's own
+        ``transpile_to_IQM``, which routes and applies IQM's single-qubit
         optimizations. Without it the circuit is left as-is, which is valid whenever
         its interaction graph already embeds in the topology -- ``qubit_mapping_for``
         raises with a clear message when it does not.
@@ -150,7 +157,7 @@ class IQMDevice(QuantumDevice):
 
         # Checked here rather than left to validate(), which runs after transform:
         # routing an oversized circuit raises a bare qiskit TranspilerError.
-        width = len({qubit for op in run_input.instructions for qubit in op.locus})
+        width = IQMProgram(run_input).num_qubits
         if self.num_qubits and width > self.num_qubits:
             raise ValueError(
                 f"Number of qubits in the circuit ({width}) exceeds "
@@ -161,17 +168,34 @@ class IQMDevice(QuantumDevice):
             return run_input
         try:
             return self._route_with_qiskit(run_input)
-        except ValueError as err:
-            # The round trip goes through Qiskit's measurement-key convention, which
-            # only circuits serialized from Qiskit follow. Anything else keeps its
-            # placement as-is, which qubit_mapping_for still validates before submit.
+        except (ImportError, ValueError) as err:
+            # ImportError: iqm.qiskit_iqm imports qiskit_aer at package import, and the
+            # qiskit extra does not install it. ValueError: the round trip goes through
+            # Qiskit's measurement-key convention, which only circuits serialized from
+            # Qiskit follow. Either way the circuit keeps its placement as-is, which
+            # qubit_mapping_for still validates before submit.
             logger.debug("Skipping IQM routing for '%s': %s", self.id, err)
             return run_input
+
+    def _routing_backend(self):
+        """Return IQM's Qiskit backend for this device's calibration set, built once.
+
+        Pinned to the profile's ``calibration_set_id`` so routing targets the same
+        calibration that ``submit`` runs against, not whatever is current on the server.
+        """
+        if self._backend is None:
+            # pylint: disable-next=import-outside-toplevel
+            from iqm.qiskit_iqm import IQMBackend
+
+            self._backend = IQMBackend(
+                self.session.client, calibration_set_id=self.profile.get("calibration_set_id")
+            )
+        return self._backend
 
     def _route_with_qiskit(self, circuit: iqm.iqm_client.Circuit) -> iqm.iqm_client.Circuit:
         """Round-trip through Qiskit so IQM's own transpiler can route and optimize."""
         # pylint: disable=import-outside-toplevel
-        from iqm.qiskit_iqm import IQMBackend, transpile_to_IQM
+        from iqm.qiskit_iqm import transpile_to_IQM
         from iqm.qiskit_iqm.qiskit_to_iqm import (
             deserialize_instructions,
             serialize_instructions,
@@ -184,7 +208,7 @@ class IQMDevice(QuantumDevice):
         layout = Layout.generate_trivial_layout(QuantumRegister(len(logical), "q"))
 
         qiskit_circuit = deserialize_instructions(list(circuit.instructions), name_to_index, layout)
-        backend = IQMBackend(self.session.client)
+        backend = self._routing_backend()
         routed = transpile_to_IQM(qiskit_circuit, backend)
         # transpile_to_IQM chose physical qubits using the device's real topology.
         # Serialize with those physical names so qubit_mapping_for leaves them alone
@@ -254,7 +278,9 @@ class IQMDevice(QuantumDevice):
         for first, second in interactions:
             pattern.add_edge(pattern_node[first], pattern_node[second], None)
 
-        for mapping in rx.vf2_mapping(graph, pattern, subgraph=True, induced=False):
+        for mapping in rx.vf2_mapping(
+            graph, pattern, subgraph=True, induced=False, call_limit=PLACEMENT_CALL_LIMIT
+        ):
             assignment = {logical[target]: physical[source] for source, target in mapping.items()}
             if valid(assignment):
                 return assignment
@@ -313,6 +339,13 @@ class IQMDevice(QuantumDevice):
 
         resolved_calibration_set_id = self._resolve_calibration_set_id(calibration_set_id)
 
+        if qubit_mapping is None:
+            # IQM applies a single qubit_mapping to a whole batch, and circuits in one
+            # batch can need different placements (a routed circuit already names
+            # physical qubits; an unrouted one does not). Resolving each circuit's
+            # placement into its own loci sidesteps that, so batches stay submittable.
+            circuits = [self._place(circuit) for circuit in circuits]
+
         if self.profile.get("computational_resonators"):
             # Captured when the profile was built; get_dynamic_quantum_architecture is not
             # cached on IQMClient, so refetching it here would be a round trip per run.
@@ -322,20 +355,16 @@ class IQMDevice(QuantumDevice):
                     resolved_calibration_set_id
                 )
             circuits = [
+                # MOVE insertion looks every name up in the architecture, so it runs
+                # after placement, and needs the caller's mapping when there is one.
                 iqm_client.transpile_insert_moves(
                     circuit,
                     dynamic_architecture,
                     existing_moves=iqm_client.ExistingMoveHandlingOptions.KEEP,
+                    qubit_mapping=qubit_mapping,
                 )
                 for circuit in circuits
             ]
-
-        if qubit_mapping is None:
-            # IQM applies a single qubit_mapping to a whole batch, and circuits in one
-            # batch can need different placements (a routed circuit already names
-            # physical qubits; an unrouted one does not). Resolving each circuit's
-            # placement into its own loci sidesteps that, so batches stay submittable.
-            circuits = [self._place(circuit) for circuit in circuits]
 
         job = self.session.submit_circuits(
             circuits,

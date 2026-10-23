@@ -161,13 +161,17 @@ class IQMSession:
         self.client_signature = client_signature or f"QbraidSDK/{qbraid_version}"
         self._token = token
         self._tokens_file = tokens_file
+        # iqm-client falls back to these variables, so they identify the account too.
+        # Read now: providers hash by this, and a hash must not change after creation.
+        self._credential = (
+            token or tokens_file or os.getenv("IQM_TOKEN") or os.getenv("IQM_TOKENS_FILE")
+        )
         self._client: iqm.iqm_client.IQMClient | None = None
 
     @property
     def token_id(self) -> str | None:
         """Return a non-secret fingerprint of the credential this session uses."""
-        secret = self._token or self._tokens_file
-        return sha256(secret.encode()).hexdigest() if secret else None
+        return sha256(self._credential.encode()).hexdigest() if self._credential else None
 
     def with_quantum_computer(self, quantum_computer: str) -> IQMSession:
         """Return a session scoped to a specific IQM quantum computer alias."""

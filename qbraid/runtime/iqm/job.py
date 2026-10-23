@@ -50,6 +50,10 @@ iqm_qiskit: iqm.qiskit_iqm.qiskit_to_iqm = LazyLoader(
 
 _QISKIT_KEY_RE = re.compile(r".+_(?P<creg_len>\d+)_(?P<creg_idx>\d+)_(?P<clbit_idx>\d+)")
 
+# Upper bound on a classical register's width, as for IonQ's MAX_QUBITS. The width is
+# read from the measurement key, which any Cirq key can mimic, and sizes an allocation.
+MAX_CREG_BITS = 10_000
+
 
 @dataclass(frozen=True)
 class _MeasurementKey:
@@ -70,10 +74,15 @@ def _parse_measurement_key(key: str, values, register_index: int) -> _Measuremen
     """
     match = _QISKIT_KEY_RE.fullmatch(key)
     if match:
+        creg_len = int(match.group("creg_len"))
+        clbit_idx = int(match.group("clbit_idx"))
+        if not 0 < creg_len <= MAX_CREG_BITS or clbit_idx >= creg_len:
+            raise ValueError(
+                f"Measurement key '{key}' describes an implausible classical register: "
+                f"bit {clbit_idx} of a {creg_len}-bit register."
+            )
         return _MeasurementKey(
-            creg_idx=int(match.group("creg_idx")),
-            creg_len=int(match.group("creg_len")),
-            clbit_idx=int(match.group("clbit_idx")),
+            creg_idx=int(match.group("creg_idx")), creg_len=creg_len, clbit_idx=clbit_idx
         )
     shape = np.asarray(values, dtype=int).shape
     return _MeasurementKey(register_index, shape[1] if len(shape) > 1 else 1, 0)
@@ -120,13 +129,13 @@ def _format_measurement_memory(
                 "because of bad calibration.",
                 stacklevel=2,
             )
-            result_array = np.array([], dtype=int)
-        else:
-            if result_array.ndim != 2:
-                raise ValueError(
-                    f"Measurement result {measurement_key} has the wrong shape "
-                    f"{result_array.shape}, expected (*, N)"
-                )
+            # No shots means no bitstrings to fill in.
+            continue
+        if result_array.ndim != 2:
+            raise ValueError(
+                f"Measurement result {measurement_key} has the wrong shape "
+                f"{result_array.shape}, expected (*, N)"
+            )
 
         classical_register = formatted_results.setdefault(
             measurement_key.creg_idx,

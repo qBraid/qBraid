@@ -49,11 +49,11 @@ class IQMProgram(GateModelProgram):
     @property
     def qubits(self) -> list[str]:
         """Return the qubit names acted upon by the operations in this circuit."""
-        seen: dict[str, None] = {}
-        for instruction in self.program.instructions:
-            for qubit in instruction.locus:
-                seen.setdefault(qubit, None)
-        return sorted(seen)
+        instructions = self.program.instructions
+        # A computational resonator is MOVE's second locus element. CZ can address it
+        # too, but only after a MOVE has loaded it, so MOVE targets name every one.
+        resonators = {op.locus[1] for op in instructions if op.name == "move"}
+        return sorted({qubit for op in instructions for qubit in op.locus} - resonators)
 
     @property
     def num_clbits(self) -> int:

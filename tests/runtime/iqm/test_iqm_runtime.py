@@ -64,6 +64,7 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 
 importlib.import_module("qbraid.transpiler.conversions.qiskit.qiskit_to_iqm")
 qiskit_to_iqm_module = sys.modules["qbraid.transpiler.conversions.qiskit.qiskit_to_iqm"]
+iqm_device_module = sys.modules["qbraid.runtime.iqm.device"]
 from qbraid.runtime.iqm.job import _format_measurement_memory, _format_measurement_results
 
 
@@ -330,11 +331,20 @@ def fake_symbols(monkeypatch):
     def fake_transpile_insert_moves(
         circuit, architecture, *, existing_moves=None, qubit_mapping=None, restore_states=True
     ):
-        del existing_moves, qubit_mapping, restore_states
+        del existing_moves, restore_states
         move_loci = tuple(getattr(architecture.gates.get("move"), "loci", ()))
         cz_loci = tuple(getattr(architecture.gates.get("cz"), "loci", ()))
         if not move_loci:
             return circuit
+
+        # Like the real function, look every name up in the architecture: a circuit
+        # still on logical names must fail here rather than pass through.
+        known = set(architecture.qubits) | set(architecture.computational_resonators)
+        mapping = qubit_mapping or {}
+        for instruction in circuit.instructions:
+            for name in instruction.locus:
+                if mapping.get(name, name) not in known:
+                    raise KeyError(name)
 
         instructions = []
         for instruction in circuit.instructions:
@@ -1014,3 +1024,161 @@ def test_submit_rejects_circuits_with_no_instructions(profile):
 
     with pytest.raises(ValueError, match="contain no instructions"):
         device.submit(empty, shots=1)
+
+
+def _sirius_device() -> IQMDevice:
+    """A Sirius device built from the real fixture, using the real ``iqm-client``."""
+    profile = IQMProvider(token="token")._build_profile(
+        FAKE_STATIC_ARCHITECTURES["sirius"],
+        FAKE_DYNAMIC_ARCHITECTURES["sirius"],
+        quantum_computer="sirius",
+    )
+    session = Mock()
+    session.submit_circuits.return_value = SimpleNamespace(job_id=uuid.uuid4())
+    return IQMDevice(profile=profile, session=session)
+
+
+def _bell(first: str, second: str) -> RealIQMCircuit:
+    return RealIQMCircuit(
+        name="bell",
+        instructions=(
+            FakeCircuitOperation(name="prx", locus=(first,), args={"angle": 0.5, "phase": 0.0}),
+            FakeCircuitOperation(name="cz", locus=(first, second), args={}),
+            FakeCircuitOperation(name="measure", locus=(first, second), args={"key": "m"}),
+        ),
+        metadata=None,
+    )
+
+
+def test_star_submit_places_logical_names_before_inserting_moves():
+    """On Sirius, a circuit on logical names gets physical qubits, then MOVEs.
+
+    ``transpile_insert_moves`` looks every name up in the architecture, so placing
+    after it fails with ``KeyError: 'q_0'``. Cirq circuits always arrive this way.
+    """
+    device = _sirius_device()
+
+    device.submit(_bell("q_0", "q_1"), shots=10)
+
+    (circuit,), kwargs = device.session.submit_circuits.call_args.args[0], (
+        device.session.submit_circuits.call_args.kwargs
+    )
+    names = [op.name for op in circuit.instructions]
+    loci = {qubit for op in circuit.instructions for qubit in op.locus}
+    assert "move" in names
+    assert loci <= device.components
+    assert "COMPR1" in loci
+    assert kwargs["qubit_mapping"] is None
+
+
+def test_star_submit_passes_caller_mapping_to_move_insertion():
+    """A caller's qubit_mapping reaches MOVE insertion, which cannot resolve q_0 without it."""
+    device = _sirius_device()
+    mapping = {"q_0": "QB1", "q_1": "QB2"}
+
+    device.submit(_bell("q_0", "q_1"), shots=10, qubit_mapping=mapping)
+
+    assert device.session.submit_circuits.call_args.kwargs["qubit_mapping"] == mapping
+    (circuit,) = device.session.submit_circuits.call_args.args[0]
+    assert "move" in [op.name for op in circuit.instructions]
+
+
+def test_transform_skips_routing_without_qiskit_aer(profile, monkeypatch):
+    """IQM's Qiskit adapter imports qiskit_aer; without it the circuit is left as-is."""
+    monkeypatch.setitem(sys.modules, "qiskit_aer", None)
+    for name in [name for name in sys.modules if name.startswith("iqm.qiskit_iqm")]:
+        monkeypatch.delitem(sys.modules, name)
+    device = IQMDevice(profile=profile, session=Mock())
+    circuit = _bell("q_0", "q_1")
+
+    assert device.transform(circuit) is circuit
+
+
+def test_routing_backend_is_pinned_to_the_profile_calibration_and_built_once(profile, monkeypatch):
+    """Routing targets the calibration set submit() runs against, fetched once per device."""
+    calibration_set_id = uuid.uuid4()
+    built = []
+
+    class FakeBackend:  # pylint: disable=too-few-public-methods
+        def __init__(self, client, *, calibration_set_id=None):
+            built.append((client, calibration_set_id))
+
+    monkeypatch.setitem(sys.modules, "iqm.qiskit_iqm", SimpleNamespace(IQMBackend=FakeBackend))
+    session = Mock()
+    device = IQMDevice(
+        profile=profile.model_copy(update={"calibration_set_id": calibration_set_id}),
+        session=session,
+    )
+
+    first, second = device._routing_backend(), device._routing_backend()
+
+    assert first is second
+    assert built == [(session.client, calibration_set_id)]
+
+
+def test_placement_search_is_bounded(monkeypatch, profile):
+    """The VF2 search gets a call limit, so a circuit that cannot embed fails promptly."""
+    seen = {}
+    real_vf2 = iqm_device_module.rx.vf2_mapping
+
+    def recording_vf2(*args, **kwargs):
+        seen.update(kwargs)
+        return real_vf2(*args, **kwargs)
+
+    monkeypatch.setattr(iqm_device_module.rx, "vf2_mapping", recording_vf2)
+    device = IQMDevice(profile=profile, session=Mock())
+    # A triangle cannot embed in Garnet's square lattice.
+    triangle = RealIQMCircuit(
+        name="triangle",
+        instructions=tuple(
+            FakeCircuitOperation(name="cz", locus=pair, args={})
+            for pair in (("q_0", "q_1"), ("q_1", "q_2"), ("q_0", "q_2"))
+        ),
+        metadata=None,
+    )
+
+    with pytest.raises(ValueError, match="CZ-capable pair"):
+        device.qubit_mapping_for(triangle)
+    assert seen["call_limit"] == iqm_device_module.PLACEMENT_CALL_LIMIT
+
+
+def test_iqm_program_does_not_count_the_resonator_as_a_qubit():
+    """MOVE names a resonator second; a routed Star circuit is as wide as its qubits."""
+    circuit = RealIQMCircuit(
+        name="star",
+        instructions=(
+            FakeCircuitOperation(name="move", locus=("QB2", "COMPR1"), args={}),
+            FakeCircuitOperation(name="cz", locus=("QB1", "COMPR1"), args={}),
+            FakeCircuitOperation(name="move", locus=("QB2", "COMPR1"), args={}),
+            FakeCircuitOperation(name="measure", locus=("QB1", "QB2"), args={"key": "m"}),
+        ),
+        metadata=None,
+    )
+
+    assert IQMProgram(circuit).qubits == ["QB1", "QB2"]
+
+
+def test_iqm_measurement_formatting_zero_shots_is_empty(fake_symbols):
+    """A heralded job that kept no shots yields no bitstrings, not an IndexError."""
+    with pytest.warns(UserWarning, match="zero shots"):
+        assert not _format_measurement_memory({"c_2_0_0": [], "c_2_0_1": []})
+
+
+@pytest.mark.parametrize("key", ["c_2000000000_0_0", "c_2_0_5", "c_0_0_0"])
+def test_iqm_measurement_formatting_rejects_implausible_registers(fake_symbols, key):
+    """A register width read from a key is bounded before it sizes an allocation."""
+    with pytest.raises(ValueError, match="implausible classical register"):
+        _format_measurement_memory({key: [[1]]})
+
+
+def test_env_credentials_distinguish_providers(monkeypatch):
+    """Providers authenticated from IQM_TOKEN hash by that token, not all alike."""
+    monkeypatch.delenv("IQM_TOKENS_FILE", raising=False)
+    monkeypatch.setenv("IQM_TOKEN", "alice-token")
+    alice = IQMProvider()
+    monkeypatch.setenv("IQM_TOKEN", "bob-token")
+    bob = IQMProvider()
+
+    assert alice.session.token_id is not None
+    assert "alice-token" not in alice.session.token_id
+    assert hash(alice) != hash(bob)
