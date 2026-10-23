@@ -31,7 +31,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
-- **Behavior change:** OpenQASM 3 programs sent to OpenQASM 2 devices (OQC, IonQ, Azure Quantinuum, OpenQuantum, QUDORA) now keep their classical registers and qubits as declared. A partly measured register stays one register under its own name, with unmeasured bits reading 0, instead of one-bit `m_c_0`-style registers. Its counts change shape (OQC's `get_counts()` returns one dict, not a list), and fully measured registers keep their name (`c`, not `m_c`). Unused qubits are no longer dropped, so the remaining qubits keep their indices. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
+- **Behavior change:** OpenQASM 3 programs sent to devices that accept only OpenQASM 2 (OQC, Azure Quantinuum, and qBraid-native devices without OpenQASM 3 input) now keep their classical registers and qubits as declared. A partly measured register stays one register under its own name, with unmeasured bits reading 0, instead of one-bit `m_c_0`-style registers. Its counts change shape (OQC's `get_counts()` returns one dict, not a list), and fully measured registers keep their name (`c`, not `m_c`). Unused qubits are no longer dropped, so the remaining qubits keep their indices. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
 
 ### Deprecated
 
