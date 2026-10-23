@@ -1812,3 +1812,23 @@ def test_edge_costs_empty_without_gate_error():
     document = _document(_calibration({0: (0.02, 0.001)}, []))
     document["edges"] = {"gateLength": {"cz": [{"source": 0, "target": 1, "value": 68.0}]}}
     assert not edge_costs(DeviceCalibration.model_validate(document))
+
+
+def test_best_qubits_stays_on_coupling_graph_without_gate_error(mock_profile):
+    """A device with couplers but no edge gate errors is not all-to-all.
+
+    Reproduces an IBM document where ``gate_error`` raised on every pair, so the edges hold an
+    empty ``gateError`` map beside ``gateLength``. Qubits 77, 84 and 86 couple only through 85.
+    Ranking them by readout would return three qubits with no coupler between any two.
+    """
+    document = _document(_ibm_boston_fragment(flagged=False))
+    document["edges"]["gateError"] = {}
+    device = _device_with(DeviceCalibration.model_validate(document), mock_profile)
+
+    assert device.best_qubits(1) == (84,)
+    with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+        device.best_qubits(2)
+    with pytest.raises(ValueError, match="No connected chain of 3 qubits"):
+        device.best_qubits(3)
+    with pytest.raises(ValueError, match=r"Gate 'cz' has no calibrated edges.*\[\]"):
+        device.best_qubits(3, gate="cz")
