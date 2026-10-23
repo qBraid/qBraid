@@ -278,11 +278,12 @@ class _BranchFinder(QASMVisitor):
 
 
 def contains_feedforward(program: Program) -> bool:
-    """Check whether an unrolled OpenQASM program branches on a measurement result.
+    """Check whether an unrolled OpenQASM program still contains an ``if`` or ``switch``.
 
     Pass ``QasmModule.unrolled_ast``, not the original program: unrolling resolves
-    ``if`` and ``switch`` statements on compile-time constants, so any left over are
-    classical feed-forward.
+    ``if`` and ``switch`` statements on compile-time constants. It keeps any ``if`` on a
+    ``bit``, though, even one never measured; use :func:`branches_on_measurement` on the
+    unrolled program to tell those apart.
     """
     finder = _BranchFinder()
     finder.visit(program)

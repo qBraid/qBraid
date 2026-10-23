@@ -380,6 +380,21 @@ def test_qasm3_to_braket_switch_on_measurement_raises():
         qasm3_to_braket(qasm_input)
 
 
+def test_qasm3_to_braket_branch_on_constant_bit_converts():
+    """Unrolling keeps an ``if`` on a bit that is never measured; Braket evaluates it."""
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[2] q;
+        bit[1] c = "1";
+        if (c[0]) { x q[1]; }
+        c[0] = measure q[0];
+        """
+    ).strip()
+    assert qasm3_to_braket(qasm_input) == Circuit().x(1).measure(0)
+
+
 def test_qasm3_to_braket_static_branch_unaffected():
     """A branch on a compile-time constant is resolved by unrolling and still converts."""
     qasm_input = textwrap.dedent(

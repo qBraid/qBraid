@@ -191,7 +191,8 @@ class BraketDevice(QuantumDevice):
             if module is not None and contains_feedforward(module.original_program):
                 try:
                     module.unroll()
-                    feedforward = contains_feedforward(module.unrolled_ast)
+                    # unrolling keeps any ``if`` on a bit, so check what it reads
+                    feedforward = branches_on_measurement(module.unrolled_ast)
                 except Exception:  # pylint: disable=broad-exception-caught
                     feedforward = branches_on_measurement(module.original_program)
             else:
@@ -199,9 +200,9 @@ class BraketDevice(QuantumDevice):
             if feedforward:
                 raise ProgramValidationError(
                     f"Device '{self.id}' does not support classical feed-forward ('if' on "
-                    "measurement results). Remove the conditional, or use a device that "
-                    "runs it, such as IQM Emerald or Garnet, with "
-                    'experimental_capabilities="ALL".'
+                    "measurement results). Remove the conditional, or submit it as "
+                    "OpenQASM 3 to a device that runs it, such as IQM Emerald or Garnet, "
+                    'with experimental_capabilities="ALL".'
                 )
         return super().transpile(run_input, run_input_spec)
 

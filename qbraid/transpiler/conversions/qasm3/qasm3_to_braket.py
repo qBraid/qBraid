@@ -28,7 +28,6 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
     branches_on_measurement,
-    contains_feedforward,
     remove_stdgates_include,
     replace_gate_names,
 )
@@ -38,8 +37,9 @@ from qbraid.transpiler.annotations import weight
 _FEEDFORWARD_ERROR = (
     "Amazon Braket circuits cannot express classical feed-forward "
     "('if' on measurement results). On a device that runs it, such as IQM "
-    'Emerald or Garnet, pass experimental_capabilities="ALL" to submit '
-    "the OpenQASM program as written. Otherwise, remove the conditional."
+    "Emerald or Garnet, submit the program as OpenQASM 3 with "
+    'experimental_capabilities="ALL" to run it as written. Otherwise, remove the '
+    "conditional."
 )
 
 braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
@@ -147,7 +147,9 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         else:
             # A braket Circuit has no conditional operations, and Circuit.from_ir reports
             # an ``if`` on a measured bit only as "Identifier 'c' is not initialized".
-            if contains_feedforward(module.unrolled_ast):
+            # Unrolling keeps any ``if`` on a bit, measured or not, and from_ir evaluates
+            # one on a constant bit, so only a branch that reads a measurement is rejected.
+            if branches_on_measurement(module.unrolled_ast):
                 raise QasmError(_FEEDFORWARD_ERROR)
 
     try:
