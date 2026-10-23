@@ -21,6 +21,8 @@ from __future__ import annotations
 import re
 
 import pyqasm
+from openqasm3 import ast
+from openqasm3.visitor import QASMVisitor
 
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.transpiler.annotations import weight
@@ -59,11 +61,18 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
     between its bits.
 
     Raises:
-        ValueError: If the unrolled program has a statement OpenQASM 2 cannot express, such
-            as a condition on a single bit, a measurement with no target, a physical qubit
-            (``$1``), or a register name OpenQASM 2 cannot use. The transpiler then tries
-            its next conversion path.
+        ValueError: If the program has a statement OpenQASM 2 cannot express, such as a
+            classical write to a bit, a condition on a single bit, a measurement with no
+            target, a physical qubit (``$1``), or a register name OpenQASM 2 cannot use.
+            The transpiler then tries its next conversion path.
     """
+    # Unrolling drops a write such as ``c[1] = 1;`` without a trace, and the whole
+    # register would then report that bit as 0.
+    finder = _BitWriteFinder()
+    finder.visit(pyqasm.loads(qasm).original_program)
+    if finder.found:
+        raise ValueError("OpenQASM 2 cannot express a classical write to a bit.")
+
     unrolled = _unroll(qasm)
     if "$" in unrolled:
         raise ValueError("OpenQASM 2 cannot express a physical qubit.")
@@ -92,6 +101,28 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
             raise ValueError(f"OpenQASM 2 cannot express the statement: {statement}")
 
     return "\n".join(lines) + "\n"
+
+
+class _BitWriteFinder(QASMVisitor):
+    """Records whether a program assigns to a bit, including in a declaration."""
+
+    def __init__(self):
+        self.bits: set[str] = set()
+        self.found = False
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_ClassicalDeclaration(self, node: ast.ClassicalDeclaration, context=None) -> None:
+        """Track bit declarations and flag one that sets an initial value."""
+        if isinstance(node.type, ast.BitType):
+            self.bits.add(node.identifier.name)
+            self.found |= node.init_expression is not None
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_ClassicalAssignment(self, node: ast.ClassicalAssignment, context=None) -> None:
+        """Flag an assignment whose target is a declared bit."""
+        target = node.lvalue.name
+        name = target.name if isinstance(target, ast.Identifier) else target
+        self.found |= name in self.bits
 
 
 def _unroll(qasm: str) -> str:

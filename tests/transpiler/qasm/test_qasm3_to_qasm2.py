@@ -138,6 +138,11 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
         "qubit[1] _q;\nh _q[0];\n",
         "qubit[1] q;\nbit[1] rzz;\nrzz[0] = measure q[0];\n",
         "qubit[1] q;\nbit[1] exp;\nexp[0] = measure q[0];\n",
+        "qubit[1] q;\nbit[2] c;\nc[0] = measure q[0];\nc[1] = 1;\n",
+        "qubit[1] q;\nbit[2] c;\nc[0] = measure q[0];\nc[1] = c[0];\n",
+        "qubit[1] q;\nbit c;\nc = measure q[0];\nc = ~c;\n",
+        'qubit[1] q;\nbit[2] c = "01";\nc[0] = measure q[0];\n',
+        "qubit[1] q;\nbit[2] c;\nfor int i in [0:1] { c[i] = 1; }\n",
     ],
     ids=[
         "bit-condition",
@@ -147,12 +152,23 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
         "underscore-name",
         "gate-name",
         "keyword-name",
+        "bit-write-constant",
+        "bit-write-copy",
+        "bit-write-whole-register",
+        "bit-initializer",
+        "bit-write-in-loop",
     ],
 )
 def test_statement_qasm2_cannot_express_raises(body):
     """The transpiler tries its next conversion path on ValueError."""
     with pytest.raises(ValueError, match="OpenQASM 2 cannot"):
         qasm3_to_qasm2(HEADER + body)
+
+
+def test_classical_writes_to_other_types_are_kept_out_of_the_check():
+    """An ``int`` loop counter is not a register, so writing to it still converts."""
+    body = "qubit[2] q;\nbit[2] c;\nint n = 0;\nn = 1;\nh q[0];\nc = measure q;\n"
+    assert "creg c[2];" in qasm3_to_qasm2(HEADER + body)
 
 
 def test_transpiler_prefers_the_direct_conversion():
