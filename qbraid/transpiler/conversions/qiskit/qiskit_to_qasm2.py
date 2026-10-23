@@ -20,7 +20,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from qiskit import transpile
+from qiskit.qasm2 import QASM2ParseError
 from qiskit.qasm2 import dumps as qasm2_dumps
+from qiskit.qasm2 import loads as qasm2_loads
 
 from qbraid.transpiler.annotations import weight
 
@@ -28,6 +31,37 @@ if TYPE_CHECKING:
     import qiskit as qiskit_
 
     from qbraid.programs.typer import Qasm2StringType
+
+
+# Qiskit's exporter also accepts gates from its extended qelib1.inc, including
+# inside custom definitions. Lower rejected exports to the standard library.
+_QASM2_BASIS_GATES = [
+    "u3",
+    "u2",
+    "u1",
+    "cx",
+    "id",
+    "x",
+    "y",
+    "z",
+    "h",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "rx",
+    "ry",
+    "rz",
+    "cz",
+    "cy",
+    "ch",
+    "ccx",
+    "crz",
+    "cu1",
+    "cu3",
+    "swap",
+    "cswap",
+]
 
 
 # 1.0, not the 0.999 it carried from 2025-01 (#880): that value matched no benchmark and
@@ -43,4 +77,11 @@ def qiskit_to_qasm2(circuit: qiskit_.QuantumCircuit) -> Qasm2StringType:
     Returns:
         str: OpenQASM 2 representation of the input Qiskit circuit.
     """
-    return qasm2_dumps(circuit)
+    qasm = qasm2_dumps(circuit)
+    try:
+        qasm2_loads(qasm, strict=True)
+    except QASM2ParseError:
+        circuit = transpile(circuit, basis_gates=_QASM2_BASIS_GATES, optimization_level=0)
+        qasm = qasm2_dumps(circuit)
+        qasm2_loads(qasm, strict=True)
+    return qasm
