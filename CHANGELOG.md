@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- `BraketDevice.run(..., experimental_capabilities="ALL")` now submits an OpenQASM 3 program as written instead of converting it to a Braket `Circuit`, so IQM Emerald and Garnet can run feed-forward (`measure_ff`/`cc_prx` in a verbatim box), including through `QbraidProvider` with `runtime_options={"experimental_capabilities": "ALL"}`. `"NONE"`, which the Braket SDK rejects, now runs without the flag, and any other value raises a `ValueError` naming the accepted values before a task is created ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Added default AWS quantum task tags through `BraketDevice.set_options(tags=...)`. Defaults apply to single and batch submissions, and per-submission tags override matching keys ([#1471](https://github.com/qBraid/qBraid/pull/1471)).
 - Added the `Publish qBraid Lab environment` workflow (`publish-lab-env.yml`), run by hand for a released version. It builds a `qBraid-SDK (vX.Y.Z)` Lab environment with the main framework extras, smoke tests it, and publishes it on qBraid staging or production, as pyqasm does ([#1477](https://github.com/qBraid/qBraid/pull/1477))
 - Added `qbraid.runtime.aqt.set_token_store` and the `AQTTokenStore` protocol, so a service running several processes can share one AQT access token instead of each minting its own. The store loads and saves the token; the SDK still caches in memory, and within the last hour before expiry only the process that wins `claim_renewal` mints the replacement. A failing store falls back to the in-process cache rather than breaking authentication ([#1461](https://github.com/qBraid/qBraid/pull/1461))
@@ -39,6 +40,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Device validation no longer rejects a program the OpenQASM parser can't read, such as one using a vendor instruction like IQM's `measure_ff`. The qubit-count check is skipped for it instead ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Programs that fail to parse as OpenQASM now say why. A string with no `OPENQASM` header no longer fails with "No conversion path found from 'str'", and syntax errors name the offending token, line and column instead of an empty reason ([#1490](https://github.com/qBraid/qBraid/pull/1490))
 - Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
 - Converting a qrisp circuit to pytket no longer reorders qubits whose names sort differently as text and as numbers (for example `qb_99` and `qb_100`), which produced a circuit acting on the wrong qubits ([#1482](https://github.com/qBraid/qBraid/pull/1482))
@@ -55,6 +57,7 @@ Writing an entry:
 
 ### Dependencies
 - Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
+- Raised the `amazon-braket-sdk` floor from `>=1.83.0` to `>=1.108.0`, the first release whose `AwsDevice.run` accepts `experimental_capabilities`. Earlier releases ignore it or reject it after creating the task ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 
 ## [0.13.0] - 2026-10-02
 

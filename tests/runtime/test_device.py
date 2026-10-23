@@ -18,6 +18,7 @@
 Unit tests for QbraidDevice and QbraidProvider classes.
 
 """
+
 import importlib.util
 import json
 import logging
@@ -29,6 +30,7 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+from pyqasm.exceptions import PyQasmError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled, clear_cache
@@ -588,6 +590,26 @@ def test_device_validate_non_native_type_logs(mock_qbraid_device, caplog):
     assert (
         "Skipping qubit count validation: program type 'int' not supported natively." in caplog.text
     )
+
+
+def test_device_validate_skips_qubit_count_the_parser_rejects(mock_qbraid_device, caplog):
+    """A program the parser can't count qubits for is passed on, not rejected."""
+    mock_qbraid_device._target_spec = None
+    program = "OPENQASM 3.0;\nqubit[2] q;\nmeasure_ff(0) q[0];\n"
+
+    with caplog.at_level(logging.INFO):
+        mock_qbraid_device.validate([program])
+
+    assert "Skipping qubit count validation: " in caplog.text
+
+
+def test_device_validate_raises_other_parser_errors(mock_qbraid_device):
+    """Only an unknown instruction skips the qubit count; other parser errors still raise."""
+    mock_qbraid_device._target_spec = None
+    program = "OPENQASM 3.0;\nqubit[2] q;\nh q[5];\n"
+
+    with pytest.raises(PyQasmError, match="out of range"):
+        mock_qbraid_device.validate([program])
 
 
 def test_device_validate_level_none(mock_qbraid_device):
