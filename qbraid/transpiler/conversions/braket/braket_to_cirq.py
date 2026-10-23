@@ -135,7 +135,10 @@ def _from_braket_instruction(
             raise ProgramConversionError(
                 f"Unable to convert {instr} to Cirq: power modifier on a multi-operation gate."
             )
-        powered = cirq.pow(operations[0], power, None)
+        if float(power).is_integer():
+            powered = cirq.pow(operations[0], int(power), None)
+        else:
+            powered = _principal_power(operations[0], power)
         if powered is None:
             raise ProgramConversionError(
                 f"Unable to convert {instr} to Cirq: gate does not support power {power}."
@@ -150,6 +153,26 @@ def _from_braket_instruction(
         ]
 
     return operations
+
+
+def _principal_power(operation: cirq_ops.Operation, power: float) -> cirq_ops.Operation | None:
+    """Raise an operation to a fractional power the way Braket does.
+
+    Braket applies a fractional ``power`` as the principal matrix power, with every
+    eigenphase taken in (-pi, pi]. ``cirq.pow`` scales the gate's exponent instead,
+    which only agrees while the eigenphases stay inside that range.
+    """
+    unitary = cirq.unitary(operation, None)
+    if unitary is None:
+        return None
+
+    def principal(value: complex) -> complex:
+        phase = np.angle(value)
+        if phase <= -np.pi + 1e-9:
+            phase = np.pi
+        return abs(value) ** power * np.exp(1j * power * phase)
+
+    return cirq.MatrixGate(cirq.map_eigenvalues(unitary, principal)).on(*operation.qubits)
 
 
 def _from_braket_target_instruction(
