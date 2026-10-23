@@ -40,6 +40,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))
 - OQC jobs now reject `shots` or `repeats` below 1 before submission, instead of silently using the default repeat count when `shots=0` ([#1442](https://github.com/qBraid/qBraid/pull/1442)).
 - `OQCJob` created without a device, as `load_job(task_id, "oqc")` does, no longer fails with a 404 for a task on any QPU but the client's default. It now finds the QPU that holds the task ([#1467](https://github.com/qBraid/qBraid/pull/1467))
 - Device validation no longer rejects a program the OpenQASM parser can't read, such as one using a vendor instruction like IQM's `measure_ff`. The qubit-count check is skipped for it instead ([#1494](https://github.com/qBraid/qBraid/pull/1494))
