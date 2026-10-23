@@ -17,6 +17,7 @@ Submodules
    azure
    ibm
    ionq
+   iqm
    native
    openquantum
    oqc
