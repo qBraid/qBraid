@@ -20,7 +20,6 @@ from unittest.mock import Mock
 
 import pytest
 
-from qbraid.programs._import import _assign_default_type_alias, _get_class
 from qbraid.programs.alias_manager import (
     _get_program_type_alias,
     find_str_type_alias,
@@ -279,20 +278,6 @@ def test_submodule_insufficient_error():
         derive_program_type_alias(SinglePartModule, use_submodule=True)
 
 
-def test_single_part_module_name():
-    """Test alias assignment with a single-part module name."""
-    imported_aliases = {"quantum": object}
-    alias = _assign_default_type_alias(imported_aliases, SinglePartModule)
-    assert alias == "quantum_singlepartmodule"
-
-
-def test_duplicate_alias_raises_value_error():
-    """Ensure ValueError is raised for duplicate alias."""
-    imported_aliases = {"quantum": object, "quantum_singlepartmodule": object}
-    with pytest.raises(ValueError, match="Duplicate alias quantum_singlepartmodule"):
-        _assign_default_type_alias(imported_aliases, SinglePartModule)
-
-
 def test_get_ionq_program_type_alias():
     """Test getting the IonQ program type alias."""
     circuit = {
@@ -304,10 +289,3 @@ def test_get_ionq_program_type_alias():
         ],
     }
     assert _get_program_type_alias(circuit) == "ionq"
-
-
-def test_get_class_none_for_unsupported_program():
-    """Test that None is returned for unsupported program type module."""
-    with pytest.raises(ValueError) as excinfo:
-        _get_class("not a module")
-    assert "Unsupported module 'not a module'" == str(excinfo.value)

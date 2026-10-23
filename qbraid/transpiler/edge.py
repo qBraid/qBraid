@@ -240,8 +240,8 @@ class Conversion:
         package = get_program_type_alias(program)
         if package != self._source:
             raise ValueError(
-                f"Expected program of type {QPROGRAM_REGISTRY[self._source]}, "
-                f"but got program of type {QPROGRAM_REGISTRY[package]}."
+                f"Expected program of type {QPROGRAM_REGISTRY.get(self._source)}, "
+                f"but got program of type {QPROGRAM_REGISTRY.get(package)}."
             )
         return self._conversion_func(program)
 
