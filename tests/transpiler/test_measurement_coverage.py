@@ -60,7 +60,11 @@ _ALIAS_PACKAGE = {
 
 
 def _installed(alias: str) -> bool:
-    return importlib.util.find_spec(_ALIAS_PACKAGE.get(alias, alias)) is not None
+    try:
+        return importlib.util.find_spec(_ALIAS_PACKAGE.get(alias, alias)) is not None
+    except ModuleNotFoundError:
+        # find_spec imports a dotted name's parent, and raises when the parent is absent.
+        return False
 
 
 def count_measurements(program, alias: str) -> int:
