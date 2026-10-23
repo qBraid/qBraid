@@ -164,11 +164,14 @@ def plot_connectivity_graph(
             f"Gate '{gate}' not found in calibration data. "
             f"Available gates: {sorted(gate_errors)}"
         )
-    edge_error = {(e.source, e.target): e.value for e in gate_errors[gate]}
+    edge_error = {
+        (e.source, e.target): e.value for e in gate_errors[gate] if e.calibrated is not False
+    }
     readout_error = {
         int(q): m.readout_error
         for q, m in calibration.qubits.items()
         if m.readout_error is not None
+        and (m.calibrated is None or m.calibrated.readout_error is not False)
     }
 
     nodes = sorted({q for edge in coupling_map for q in edge})

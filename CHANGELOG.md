@@ -40,7 +40,10 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- Connectivity plots exclude missing or invalid calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
+- Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
+- `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))
+- OQC jobs now reject `shots` or `repeats` below 1 before submission, instead of silently using the default repeat count when `shots=0` ([#1442](https://github.com/qBraid/qBraid/pull/1442)).
+- `OQCJob` created without a device, as `load_job(task_id, "oqc")` does, no longer fails with a 404 for a task on any QPU but the client's default. It now finds the QPU that holds the task ([#1467](https://github.com/qBraid/qBraid/pull/1467))
 - Device validation no longer rejects a program the OpenQASM parser can't read, such as one using a vendor instruction like IQM's `measure_ff`. The qubit-count check is skipped for it instead ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Programs that fail to parse as OpenQASM now say why. A string with no `OPENQASM` header no longer fails with "No conversion path found from 'str'", and syntax errors name the offending token, line and column instead of an empty reason ([#1490](https://github.com/qBraid/qBraid/pull/1490))
 - Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
