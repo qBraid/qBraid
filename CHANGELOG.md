@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- `BraketDevice.run(..., experimental_capabilities="ALL")` now submits an OpenQASM 3 program as written instead of converting it to a Braket `Circuit`, so IQM Emerald and Garnet can run feed-forward (`measure_ff`/`cc_prx` in a verbatim box), including through `QbraidProvider` with `runtime_options={"experimental_capabilities": "ALL"}`. `"NONE"`, which the Braket SDK rejects, now runs without the flag, and any other value raises a `ValueError` naming the accepted values before a task is created ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Added default AWS quantum task tags through `BraketDevice.set_options(tags=...)`. Defaults apply to single and batch submissions, and per-submission tags override matching keys ([#1471](https://github.com/qBraid/qBraid/pull/1471)).
 - Added the `Publish qBraid Lab environment` workflow (`publish-lab-env.yml`), run by hand for a released version. It builds a `qBraid-SDK (vX.Y.Z)` Lab environment with the main framework extras, smoke tests it, and publishes it on qBraid staging or production, as pyqasm does ([#1477](https://github.com/qBraid/qBraid/pull/1477))
 - Added `qbraid.runtime.aqt.set_token_store` and the `AQTTokenStore` protocol, so a service running several processes can share one AQT access token instead of each minting its own. The store loads and saves the token; the SDK still caches in memory, and within the last hour before expiry only the process that wins `claim_renewal` mints the replacement. A failing store falls back to the in-process cache rather than breaking authentication ([#1461](https://github.com/qBraid/qBraid/pull/1461))
@@ -31,12 +32,14 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Device validation no longer rejects a program the OpenQASM parser can't read, such as one using a vendor instruction like IQM's `measure_ff`. The qubit-count check is skipped for it instead ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Programs that fail to parse as OpenQASM now say why. A string with no `OPENQASM` header no longer fails with "No conversion path found from 'str'", and syntax errors name the offending token, line and column instead of an empty reason ([#1490](https://github.com/qBraid/qBraid/pull/1490))
 - OpenQASM programs with classical feed-forward (`if` on a measurement result) sent to Amazon Braket or IonQ now fail with a clear message instead of "Identifier 'c' is not initialized" on Braket or the conditional being dropped on IonQ. The Braket message points to `experimental_capabilities="ALL"`, which runs them on IQM Emerald and Garnet ([#1489](https://github.com/qBraid/qBraid/pull/1489))
 - Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
@@ -53,6 +56,7 @@ Writing an entry:
 - `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
+- Raised the `amazon-braket-sdk` floor from `>=1.83.0` to `>=1.108.0`, the first release whose `AwsDevice.run` accepts `experimental_capabilities`. Earlier releases ignore it or reject it after creating the task ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 
 ## [0.13.0] - 2026-10-02
 

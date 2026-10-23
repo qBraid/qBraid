@@ -16,6 +16,7 @@
 Module defining BraketDeviceWrapper Class
 
 """
+
 from __future__ import annotations
 
 import datetime
@@ -27,10 +28,20 @@ from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
 from braket.circuits.measure import Measure
+from braket.experimental_capabilities.experimental_capability_context import (
+    EXPERIMENTAL_CAPABILITIES_ALL,
+)
+from braket.ir.openqasm import Program as OpenQasmProgram
 
 from qbraid._logging import logger
 from qbraid.passes.qasm import branches_on_measurement, contains_feedforward
-from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
+from qbraid.programs import (
+    NATIVE_REGISTRY,
+    QPROGRAM_REGISTRY,
+    ExperimentType,
+    get_program_type_alias,
+    load_program,
+)
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError, ProgramValidationError
@@ -44,6 +55,24 @@ if TYPE_CHECKING:
     import braket.aws
 
     import qbraid.runtime
+
+
+def _enable_experimental_capabilities(kwargs: dict) -> bool:
+    """Normalize ``experimental_capabilities`` in ``kwargs``; return whether it is enabled.
+
+    The Braket SDK accepts only ``"ALL"`` and raises on ``"NONE"``, the API's other value,
+    so ``"NONE"`` and falsy values are dropped. Anything else raises before submission.
+    """
+    value = kwargs.pop("experimental_capabilities", None)
+    if value == EXPERIMENTAL_CAPABILITIES_ALL:
+        kwargs["experimental_capabilities"] = value
+        return True
+    if value and value != "NONE":
+        raise ValueError(
+            f"Invalid experimental_capabilities {value!r}: use 'ALL' to enable "
+            "experimental capabilities, or 'NONE' to disable them."
+        )
+    return False
 
 
 class BraketDevice(QuantumDevice):
@@ -239,13 +268,38 @@ class BraketDevice(QuantumDevice):
 
         return program
 
+    def run(
+        self,
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
+        *args,
+        **kwargs,
+    ) -> BraketQuantumTask | list[BraketQuantumTask]:
+        """Run a quantum job or a list of quantum jobs on this quantum device.
+
+        With ``experimental_capabilities="ALL"``, OpenQASM 3 programs are submitted as written,
+        without conversion or validation. Experimental instructions such as IQM's
+        ``measure_ff`` and ``cc_prx`` can only be converted inside Braket's process-wide
+        ``EnableExperimentalCapability`` context, which concurrent submissions would share.
+        """
+        programs = run_input if isinstance(run_input, list) else [run_input]
+        if _enable_experimental_capabilities(kwargs) and all(
+            get_program_type_alias(program, safe=True) == "qasm3" for program in programs
+        ):
+            openqasm = [OpenQasmProgram(source=program) for program in programs]
+            return self.submit(
+                openqasm if isinstance(run_input, list) else openqasm[0], *args, **kwargs
+            )
+        return super().run(run_input, *args, **kwargs)
+
     def submit(
         self,
         run_input: (
             Circuit
             | AnalogHamiltonianSimulation
+            | OpenQasmProgram
             | list[Circuit]
             | list[AnalogHamiltonianSimulation]
+            | list[OpenQasmProgram]
         ),
         *args,
         tags: dict[str, str] | None = None,
@@ -267,6 +321,7 @@ class BraketDevice(QuantumDevice):
             The job like object for the run.
 
         """
+        _enable_experimental_capabilities(kwargs)
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
 
