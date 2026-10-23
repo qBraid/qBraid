@@ -90,7 +90,11 @@ class OQCProvider(QuantumProvider):
             simulator=simulator,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
-            program_spec=ProgramSpec(str, alias="qasm3"),
+            # OQC accepts both dialects, but only OpenQASM 2 is placed onto physical
+            # qubits and has its CX gates turned to each coupler's calibrated direction.
+            # OpenQASM 3 runs as written, so a CX against that direction fails with
+            # error 101. Targeting QASM 2 lets any circuit run without that knowledge.
+            program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=endpoint_url,
             provider_name="OQC",

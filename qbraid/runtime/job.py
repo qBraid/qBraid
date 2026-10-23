@@ -99,6 +99,10 @@ class QuantumJob(ABC):
         allowing other coroutines to run while waiting. It is especially useful in
         asynchronous applications where blocking the event loop is undesirable.
 
+        Each poll runs in a worker thread, since ``status()`` is synchronous on every
+        provider. A provider with an async transport can avoid the thread by
+        overriding this method.
+
         Args:
             timeout (Optional[int]): Maximum number of seconds to wait for the job.
                 If None, waits indefinitely.
@@ -108,7 +112,9 @@ class QuantumJob(ABC):
             TimeoutError: If the job does not reach a terminal state before the specified timeout.
         """
         start_time = time()
-        while not self.is_terminal_state():
+        # status() is synchronous for every provider and issues an HTTP request, so
+        # calling it on the loop stalls every other coroutine for the round trip.
+        while not await asyncio.to_thread(self.is_terminal_state):
             elapsed_time = time() - start_time
             if timeout is not None and elapsed_time >= timeout:
                 raise TimeoutError(f"Timeout while waiting for job {self.id}.")
@@ -136,7 +142,8 @@ class QuantumJob(ABC):
             TimeoutError: If the job does not reach a terminal state before the timeout expires.
         """
         await self._wait_for_final_state(timeout, poll_interval)
-        return self.result()
+        # result() fetches over the network too, so it is offloaded for the same reason.
+        return await asyncio.to_thread(self.result)
 
     @abstractmethod
     def result(self) -> qbraid.runtime.Result[ResultDataType]:

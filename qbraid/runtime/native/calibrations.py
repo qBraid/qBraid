@@ -27,20 +27,48 @@ if TYPE_CHECKING:
     from qbraid_core.services.runtime.schemas import DeviceCalibration
 
 
+def _is_error_rate(value: float) -> bool:
+    """Whether a published error is usable as a rate, i.e. lies in ``[0, 1]``.
+
+    The schema leaves these fields unbounded. A negative error would raise
+    fidelity above 1 and so score better than a flawless qubit, which is why
+    out-of-range values are excluded rather than clamped. NaN fails the
+    comparison too.
+    """
+    return 0.0 <= value <= 1.0
+
+
 def qubit_costs(calibration: DeviceCalibration) -> dict[int, float]:
     """Per-qubit cost as ``-log(fidelity)``, folding readout and gate errors.
 
     Metrics that are unpublished (``None``) contribute nothing, so a qubit is
-    never penalized for data the provider does not report.
+    never penalized for data the provider does not report. A published metric
+    outside ``[0, 1]`` costs the qubit ``inf``, the same as one that is
+    certainly lossy. So does a readout or gate error flagged ``False`` in the
+    qubit's ``calibrated`` object: the vendor marked that value as a
+    placeholder, not a measurement. Flags on metrics the cost does not read
+    (T1, T2, frequency) change nothing.
     """
     costs: dict[int, float] = {}
     for qubit_id, qubit in calibration.qubits.items():
+        flags = qubit.calibrated
+        readout_flag = flags.readout_error if flags is not None else None
+        gate_flags = (flags.gate_error if flags is not None else None) or {}
+        measurements = [(qubit.readout_error, readout_flag)]
+        measurements.extend(
+            (error, gate_flags.get(name)) for name, error in (qubit.gate_error or {}).items()
+        )
         fidelity = 1.0
-        if qubit.readout_error is not None:
-            fidelity *= 1.0 - qubit.readout_error
-        for error in (qubit.gate_error or {}).values():
-            if error is not None:
-                fidelity *= 1.0 - error
+        for error, flag in measurements:
+            if flag is False:
+                fidelity = 0.0
+                break
+            if error is None:
+                continue
+            if not _is_error_rate(error):
+                fidelity = 0.0
+                break
+            fidelity *= 1.0 - error
         costs[int(qubit_id)] = -math.log(fidelity) if fidelity > 0 else math.inf
     return costs
 
@@ -50,20 +78,27 @@ def edge_costs(
 ) -> dict[tuple[int, int], float]:
     """Per-edge cost as ``-log(1 - error)``, keyed by normalized qubit pair.
 
-    When ``gate`` is None, each edge takes the lowest error among its
-    calibrated two-qubit gates (the best gate available on that pair).
+    Reads the ``gateError`` metric only; other edge metrics such as
+    ``gateLength`` are not error rates. When ``gate`` is None, each edge takes
+    the lowest error among its calibrated two-qubit gates (the best gate
+    available on that pair). An error outside ``[0, 1]`` costs the edge
+    ``inf``, the same as one at 100%, and so does an entry flagged
+    ``calibrated=False``, whose value is a placeholder.
     """
     available: set[str] = set()
     errors: dict[tuple[int, int], float] = {}
-    for gate_map in calibration.edges.values():
-        for gate_name, entries in gate_map.items():
-            available.add(gate_name)
-            if gate is not None and gate_name != gate:
-                continue
-            for entry in entries:
-                pair = (min(entry.source, entry.target), max(entry.source, entry.target))
-                if pair not in errors or entry.value < errors[pair]:
-                    errors[pair] = entry.value
+    for gate_name, entries in calibration.edges.get("gateError", {}).items():
+        available.add(gate_name)
+        if gate is not None and gate_name != gate:
+            continue
+        for entry in entries:
+            pair = (min(entry.source, entry.target), max(entry.source, entry.target))
+            # inf loses every comparison below, so a pair falls back to another
+            # calibrated gate when one of its entries is out of range or flagged.
+            usable = entry.calibrated is not False and _is_error_rate(entry.value)
+            error = entry.value if usable else math.inf
+            if pair not in errors or error < errors[pair]:
+                errors[pair] = error
     if gate is not None and gate not in available:
         raise ValueError(
             f"Gate '{gate}' has no calibrated edges on this device. "

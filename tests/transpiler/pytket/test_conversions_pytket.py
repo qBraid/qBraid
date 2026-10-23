@@ -34,7 +34,7 @@ try:
         pytket_to_pyqir,
         pytket_to_qasm2,
     )
-    from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
+    from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq, qasm2_to_pytket
     from qbraid.transpiler.converter import transpile
     from qbraid.transpiler.exceptions import ProgramConversionError
 
@@ -168,3 +168,27 @@ def test_convert_with_multiple_barriers(as_qasm):
     correct = Circuit(ops.H.on(qbit) for _ in range(num_ops))
     assert _equal(cirq_circuit, correct)
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
+
+
+@pytest.mark.parametrize("width", (32, 33, 64))
+def test_classical_register_wider_than_pytket_default(width):
+    """Registers wider than pytket's default maxwidth of 32 survive a round trip.
+
+    Both converters took pytket's default, which rejects any circuit measuring more
+    than 32 qubits -- the path every Quantinuum device uses, against hardware that is
+    already 56 qubits. 32 passed and 33 did not.
+    """
+    body = "\n".join(f"cx q[0],q[{i}];" for i in range(1, width))
+    measures = "\n".join(f"measure q[{i}] -> c[{i}];" for i in range(width))
+    qasm = (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        f"qreg q[{width}];\ncreg c[{width}];\nh q[0];\n{body}\n{measures}\n"
+    )
+
+    circuit = qasm2_to_pytket(qasm)
+    assert circuit.n_qubits == width
+    assert circuit.n_bits == width
+
+    # The reverse direction carries the same default, so assert the round trip
+    # rather than just the read.
+    assert qasm2_to_pytket(pytket_to_qasm2(circuit)).n_bits == width

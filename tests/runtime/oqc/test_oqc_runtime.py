@@ -27,15 +27,17 @@ import logging
 import os
 import textwrap
 import uuid
-from typing import Optional, Union
+from typing import ClassVar, Optional, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from requests import ConnectionError as RequestsConnectionError
 from requests import ReadTimeout
 
 try:
     from qbraid_core.decimal import USD
     from qcaas_client.client import (  # type: ignore
+        ConnectionFailureException,
         OQCClient,
         QPUTask,
         QPUTaskErrors,
@@ -111,6 +113,12 @@ MOCK_TIMINGS = {
 
 MOCK_METRICS = {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
 
+MOCK_TASK = {
+    "id": "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada",
+    "compile_time": 1.23,
+    "execute_time": 4.56,
+}
+
 MOCK_TASK_ID = "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada"
 MOCK_TASK_ID_NO_RESULT = "e35fb436-ff08-44c8-8acc-7d5a1f1a0adb"
 
@@ -127,6 +135,48 @@ MOCK_RESULT = {"c": {"00": 52, "11": 48}}
 
 NOW = datetime.datetime.now()
 NEXT_YEAR = NOW.year + 1
+
+# OQC Cloud's /monitoring/statuses response for Toshiko Tokyo-1, captured 2026-09-25.
+TOSHIKO_SYSTEM_STATUS = {
+    "hostname": "toshiko-public-server-7bf7c685bb-85bxm",
+    "status": "success",
+    "timestamp": 1790355214.2614625,
+    "results": [
+        {
+            "checker": "_datastore_available",
+            "output": "database ok",
+            "passed": True,
+            "timestamp": 1790355212.8458488,
+            "expires": 1790355239.8458488,
+            "response_time": 0.032367,
+        },
+        {
+            "checker": "_qpu_available",
+            "output": "QPU is available. QPU with ID: qpu:jp:3:673b1ad43c, is connected to "
+            "['toshiko-aks-jp-prod-public.main'], in hardware mode HardwareMode.Connect. ",
+            "passed": True,
+            "timestamp": 1790355213.5582607,
+            "expires": 1790355240.5582607,
+            "response_time": 0.712402,
+        },
+        {
+            "checker": "_rabbit_mq_available",
+            "output": "Rpc client connected.",
+            "passed": True,
+            "timestamp": 1790355213.558,
+            "expires": 1790355240.558,
+            "response_time": 0.0,
+        },
+        {
+            "checker": "scheduler_available",
+            "output": "Scheduler OK",
+            "passed": True,
+            "timestamp": 1790355213.6,
+            "expires": 1790355240.6,
+            "response_time": 0.0,
+        },
+    ],
+}
 
 TOSHIKO_EXEC_ESTIMATE = {
     "qpu_wait_times": [
@@ -195,22 +245,45 @@ def program():
 
 
 @pytest.fixture
-def optimized_program():
-    """Return a QASM3 program."""
-    qasm3 = """
-    OPENQASM 3.0;
-    qubit[2] q;
-    bit[2] c;
+def qasm2_program():
+    """Return a QASM2 Bell program, the format OQC devices target."""
+    qasm2 = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c[2];
+
     h q[0];
     cx q[0], q[1];
-    c = measure q;
+
+    measure q -> c;
     """
-    qasm3_compat = textwrap.dedent(qasm3).strip()
-    return qasm3_compat
+    return textwrap.dedent(qasm2).strip()
+
+
+def _measured_distribution(qasm2: str):
+    """Exact probability of each classical-register outcome, by statevector simulation.
+
+    Follows every ``measure`` to the physical qubit it reads, so circuits that place
+    the same logical qubits differently compare equal.
+    """
+    qiskit_qasm2 = pytest.importorskip("qiskit.qasm2")
+    quantum_info = pytest.importorskip("qiskit.quantum_info")
+    circuit = qiskit_qasm2.loads(qasm2)
+    measured = {
+        circuit.find_bit(instruction.clbits[0]).index: circuit.find_bit(instruction.qubits[0]).index
+        for instruction in circuit.data
+        if instruction.operation.name == "measure"
+    }
+    qargs = [measured[clbit] for clbit in range(circuit.num_clbits)]
+    state = quantum_info.Statevector(circuit.remove_final_measurements(inplace=False))
+    return state.probabilities(qargs)
 
 
 class MockOQCClient:
     """Test class for OQC client."""
+
+    cancelled: ClassVar[list[str]] = []
 
     def __init__(self, authentication_token=None, **kwargs):
         self._authentication_token = authentication_token
@@ -221,6 +294,10 @@ class MockOQCClient:
     def get_qpus(self):
         """Get QPUs."""
         return [LUCY_SIM_MOCK_DATA.copy(), TOSHIKO_MOCK_DATA.copy()]
+
+    def get_system_status(self, qpu_id: Optional[str] = None):
+        """Get the system health checks for a QPU."""
+        return copy.deepcopy(TOSHIKO_SYSTEM_STATUS)
 
     def schedule_tasks(
         self,
@@ -291,6 +368,12 @@ class MockOQCClient:
             return "COMPLETED"
         return "FAILED"
 
+    def get_task(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get the full task record."""
+        task = MOCK_TASK.copy()
+        task["id"] = task_id
+        return task
+
     def get_task_timings(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task timings."""
         return MOCK_TIMINGS
@@ -321,8 +404,14 @@ class MockOQCClient:
         error_details = self.get_task_errors(task_id, qpu_id)
         return QPUTaskResult(task_id, result=result, metrics=metrics, error_details=error_details)
 
-    def cancel_task(self, task_id: str, qpu_id: Optional[str] = None):
-        """Cancel task."""
+    def cancel_task(self, task_ids: Union[str, list[str]], qpu_id: Optional[str] = None):
+        """Cancel one or more tasks.
+
+        Mirrors ``OQCClient.cancel_task``, whose parameter is ``task_ids``. The mock
+        previously named it ``task_id``, so a call that raised ``TypeError`` against
+        the real client passed here.
+        """
+        type(self).cancelled.extend(task_ids if isinstance(task_ids, list) else [task_ids])
         return None
 
 
@@ -376,7 +465,7 @@ def target_profile(lucy_sim_data):
         experiment_type=ExperimentType.GATE_MODEL,
         endpoint_url=lucy_sim_data["url"],
         num_qubits=num_qubits,
-        program_spec=ProgramSpec(str, alias="qasm3"),
+        program_spec=ProgramSpec(str, alias="qasm2"),
         feature_set=feature_set,
         price_per_shot=USD(lucy_sim_data["price_per_shot"]),
         price_per_task=USD(lucy_sim_data["price_per_task"]),
@@ -449,21 +538,26 @@ def test_oqc_provider_get_device_status_offline(lucy_sim_data, toshiko_data):
         assert test_device.status() == DeviceStatus.OFFLINE
 
 
-def test_oqc_device_status_from_window_unavailable(lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
-    lucy_sim_data["feature_set"] = json.dumps(
-        {"always_on": False, "qubit_count": 8, "simulator": True}
-    )
+def test_windowed_device_is_online_while_its_next_window_is_in_the_future(
+    lucy_sim_data, toshiko_data
+):
+    """Reproduces #1446: OQC only reports the NEXT window, which is always in the future.
+
+    Toshiko reported its next window as 17:00 UTC while running tasks at 14:57 UTC, inside
+    an open window. An active device with passing health checks is ONLINE whatever the
+    window schedule says, and status() does not consult the windows at all.
+    """
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
-        provider = OQCProvider(token="fake_token")
+        mock_client.return_value.get_system_status.return_value = copy.deepcopy(
+            TOSHIKO_SYSTEM_STATUS
+        )
+        mock_client.return_value.get_next_window.return_value = "2026-09-25T17:00:00Z"
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
 
-        now = datetime.datetime.now()
-        window = f"{now.year + 1}-{now.month:02d}-{now.day:02d} 00:50:00"
-        mock_client.return_value.get_next_window.return_value = window
-        unavailable_device = provider.get_device(lucy_sim_data["id"])
-        assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
+        assert device.status() == DeviceStatus.ONLINE
+        mock_client.return_value.get_next_window.assert_not_called()
 
 
 def test_oqc_device_status_always_on(lucy_sim_data, toshiko_data):
@@ -477,17 +571,49 @@ def test_oqc_device_status_always_on(lucy_sim_data, toshiko_data):
         mock_client.get_next_window.assert_not_called()
 
 
-def test_get_next_window_read_timeout(toshiko_id):
-    """Test getting the next window with a timeout results in status unavialable."""
+@pytest.mark.parametrize("failing_check", ["_qpu_available", "scheduler_available"])
+def test_failing_health_check_makes_the_device_unavailable(
+    failing_check, lucy_sim_data, toshiko_data
+):
+    """Any failing OQC health check means the device cannot be relied on right now."""
+    health = copy.deepcopy(TOSHIKO_SYSTEM_STATUS)
+    for check in health["results"]:
+        if check["checker"] == failing_check:
+            check["passed"] = False
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
-        mock_client.return_value = MockOQCClient()
-        provider = OQCProvider(token="fake_token")
-        device = provider.get_device(toshiko_id)
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        mock_client.return_value.get_system_status.return_value = health
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
+
         assert device.status() == DeviceStatus.UNAVAILABLE
 
 
-def test_oqc_device_status_from_qpu_exec_est_unavailable(lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
+@pytest.mark.parametrize(
+    "health",
+    [
+        {},
+        {"status": "success", "results": []},
+        [],
+        {"results": {"passed": True}},
+        {"results": ["ok"]},
+    ],
+)
+def test_unreadable_health_payload_makes_the_device_unavailable(
+    health, lucy_sim_data, toshiko_data
+):
+    """No checks to trust (an empty payload, or the [] OQC returns for an unknown QPU)."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        mock_client.return_value.get_system_status.return_value = health
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
+
+        assert device.status() == DeviceStatus.UNAVAILABLE
+
+
+def test_oqc_device_status_online_from_health_checks(lucy_sim_data, toshiko_data):
+    """An active QPU whose health checks all pass is ONLINE."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
@@ -495,19 +621,6 @@ def test_oqc_device_status_from_qpu_exec_est_unavailable(lucy_sim_data, toshiko_
         provider = OQCProvider(token="fake_token")
         qpu_device = provider.get_device(toshiko_data["id"])
         qpu_device._client = MockOQCClient(authentication_token="fake_token")
-        assert qpu_device.status() == DeviceStatus.UNAVAILABLE
-
-
-def test_oqc_device_status_from_qpu_exec_est_online(lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
-    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
-        mock_client.return_value = Mock(spec=OQCClient)
-        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
-
-        provider = OQCProvider(token="fake_token")
-        qpu_device = provider.get_device(toshiko_data["id"])
-        qpu_device._client = MockOQCClient(authentication_token="fake_token")
-        qpu_device._client._toshiko_online = True
         assert qpu_device.status() == DeviceStatus.ONLINE
         assert qpu_device.queue_depth() == 21
 
@@ -549,7 +662,7 @@ def test_oqc_device_status_raises(lucy_sim_data, toshiko_data):
             experiment_type=ExperimentType.GATE_MODEL,
             endpoint_url="https://uk.cloud.oqc.app/fake_id",
             num_qubits=8,
-            program_spec=ProgramSpec(str, alias="qasm3"),
+            program_spec=ProgramSpec(str, alias="qasm2"),
         )
         fake_device = OQCDevice(profile=fake_profile, client=provider.client)
         with pytest.raises(ResourceNotFoundError):
@@ -590,7 +703,7 @@ def test_build_runtime_profile(lucy_sim_data):
         assert profile["device_id"] == lucy_sim_data["id"]
         assert profile["simulator"] is True
         assert profile["num_qubits"] == 8
-        assert profile["program_spec"] == ProgramSpec(str, alias="qasm3")
+        assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
@@ -663,7 +776,7 @@ def test_remote_provider_reraises_non_auth_errors():
 
 
 @pytest.mark.remote
-def test_oqc_runtime_remote_execution(program, optimized_program):
+def test_oqc_runtime_remote_execution(qasm2_program):
     """Test OQC runtime with remote execution."""
     token = os.getenv("OQC_AUTH_TOKEN")
     if token is None:
@@ -677,7 +790,7 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
 
     shots = 100
     timeout = 120
-    job = device.run(program, shots=shots)
+    job = device.run(qasm2_program, shots=shots)
     assert isinstance(job, OQCJob)
 
     try:
@@ -697,8 +810,14 @@ def test_oqc_runtime_remote_execution(program, optimized_program):
     assert result.details["errors"] is None
     assert result.details["shots"] == shots
 
+    # OQC compiles OpenQASM 2 with TKET, which picks the physical qubits and may
+    # rewrite gates (e.g. reversing a CX against its native direction), so the
+    # compiled text varies between runs. Compare what it computes instead.
     optimized_out = result.details["metrics"]["optimized_circuit"]
-    assert optimized_out.strip() == optimized_program.strip()
+    assert optimized_out.lstrip().startswith("OPENQASM 2.0;")
+    assert _measured_distribution(optimized_out) == pytest.approx(
+        _measured_distribution(qasm2_program)
+    )
 
     data = result.data
     assert isinstance(data, GateModelResultData)
@@ -818,6 +937,92 @@ def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):
     oqc_client.get_task_metadata.assert_called_once()
 
 
+def _metadata_only_on(home_qpu_id: str):
+    """A get_task_metadata stand-in that, like OQC, 404s on every QPU but the task's own."""
+
+    def get_task_metadata(task_id, qpu_id=None):
+        if qpu_id != home_qpu_id:
+            raise ServerException("404 Not Found", 404)
+        return {"qpu_id": qpu_id, "id": task_id}
+
+    return get_task_metadata
+
+
+def test_job_without_device_finds_its_qpu_past_a_404(toshiko_id, oqc_job, oqc_client):
+    """A task on Toshiko 404s on Lucy, which is listed first, so the lookup moves on."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=_metadata_only_on(toshiko_id))
+    oqc_job._client = oqc_client
+
+    assert oqc_job.qpu_id == toshiko_id
+    assert oqc_client.get_task_metadata.call_count == 2
+
+
+def test_job_without_device_raises_when_no_qpu_has_the_task(oqc_job, oqc_client):
+    """A task no QPU knows is reported as not found, not as a raw 404."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=_metadata_only_on("qpu:none"))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ResourceNotFoundError, match="not found on any OQC QPU"):
+        _ = oqc_job.qpu_id
+
+
+def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
+    """Only a 404 means "not on this QPU"; anything else is a real failure."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=ServerException("Forbidden", 403))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ServerException, match="Forbidden"):
+        _ = oqc_job.qpu_id
+    oqc_client.get_task_metadata.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "make_error",
+    # Built in the test, since qcaas_client may not be installed when this module is collected.
+    [
+        lambda: ConnectionFailureException(503),
+        lambda: ConnectionFailureException("Timeout error"),
+        lambda: ServerException("Not Implemented", 501),
+        lambda: RequestsConnectionError("Failed to resolve 'jp.cloud.oqc.app'"),
+    ],
+    ids=["retryable-5xx", "timeout", "other-5xx", "no-connection"],
+)
+def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client, make_error):
+    """A QPU that times out or fails may not hold the task, so the lookup tries the rest."""
+    find_on_toshiko = _metadata_only_on(toshiko_id)
+
+    def get_task_metadata(task_id, qpu_id=None):
+        if qpu_id != toshiko_id:
+            raise make_error()
+        return find_on_toshiko(task_id, qpu_id)
+
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=get_task_metadata)
+    oqc_job._client = oqc_client
+
+    assert oqc_job.qpu_id == toshiko_id
+
+
+def test_job_without_device_reports_an_unreachable_qpu_if_no_other_has_the_task(
+    oqc_job, oqc_client
+):
+    """With the task nowhere else, the connection failure is the useful error."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=ConnectionFailureException(503))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ConnectionFailureException):
+        _ = oqc_job.qpu_id
+
+
 def test_oqc_provider_raises_for_no_token(monkeypatch):
     """Test that the OQCProvider raises an error when no token is provided."""
     monkeypatch.setenv("OQC_AUTH_TOKEN", "")
@@ -827,17 +1032,6 @@ def test_oqc_provider_raises_for_no_token(monkeypatch):
     assert "An OQC authenication token is required to initialize the provider." in str(
         excinfo.value
     )
-
-
-@patch("qbraid.runtime.oqc.device.logger")
-@patch("qbraid.runtime.oqc.device.OQCDevice.get_next_window")
-def test_device_status_online(mock_get_next_window, mock_logger):
-    """A device with an upcoming window reports ONLINE."""
-    mock_get_next_window.return_value = datetime.datetime(2023, 10, 31, 12, 0, 0)
-    device = OQCDevice(profile=Mock(), client=Mock())
-    result = device.status()
-    assert result == DeviceStatus.ONLINE
-    mock_logger.error.assert_not_called()
 
 
 def test_build_compiler_config_unsupported_key():
@@ -852,6 +1046,41 @@ def test_build_compiler_config_invalid_value():
         OQCDevice._build_compiler_config(optimizations="invalid_value")
 
 
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"shots": 0},
+        {"shots": -1},
+        {"shots": 0, "repeats": 1000},
+        {"repeats": 0},
+        {"repeats": -1},
+    ],
+)
+def test_oqc_run_rejects_nonpositive_repeats(oqc_device, qasm2_program, kwargs):
+    """Invalid shot counts must fail before OQC can schedule a paid task."""
+    with patch.object(oqc_device.client, "schedule_tasks") as schedule_tasks:
+        with pytest.raises(ValueError, match="shots or repeats must be at least 1"):
+            oqc_device.run(qasm2_program, **kwargs)
+
+    schedule_tasks.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected_repeats",
+    [
+        ({}, None),
+        ({"shots": 1}, 1),
+        ({"repeats": 10}, 10),
+        ({"shots": 2, "repeats": 10}, 2),
+    ],
+)
+def test_build_compiler_config_repeat_selection(kwargs, expected_repeats):
+    """Explicit shots take precedence, while omitted shots retain the repeat fallback."""
+    config = OQCDevice._build_compiler_config(**kwargs)
+
+    assert config.repeats == expected_repeats
+
+
 @patch("qbraid.runtime.oqc.device.logger")
 def test_device_get_next_window_raises_resource_not_found(mock_logger, target_profile):
     """Test that get_next_window raises ResourceNotFoundError when the window is not found."""
@@ -861,24 +1090,72 @@ def test_device_get_next_window_raises_resource_not_found(mock_logger, target_pr
     device = OQCDevice(target_profile, client)
     with pytest.raises(ResourceNotFoundError) as excinfo:
         device.get_next_window()
-    assert "Falied to fetch next active window for device" in str(excinfo.value)
+    assert "Could not fetch the next access window for device" in str(excinfo.value)
+    assert "ReadTimeout" in str(excinfo.value)
+    assert isinstance(excinfo.value.__cause__, ReadTimeout)
     mock_logger.error.assert_called_once()
 
 
 @patch("qbraid.runtime.oqc.device.logger")
-def test_catch_device_status_resource_not_found(mock_logger, lucy_sim_data, toshiko_data):
-    """Test that device status is unavailable when get_next_window method raises error."""
+def test_get_next_window_none_raises_resource_not_found(mock_logger, target_profile):
+    """Reproduces #1436: OQC returns None for an always-on device, which crashed with AttributeError.
+
+    Both responses are the ones OQC Cloud gives for the Lucy Simulator: no next window, and a
+    rejected execution-estimates request.
+    """
+    client = Mock()
+    client.get_next_window.return_value = None
+    client.get_qpu_execution_estimates.side_effect = ServerException(
+        '{"message":"Invalid input provided"}', 400
+    )
+    device = OQCDevice(target_profile, client)
+    with pytest.raises(ResourceNotFoundError, match="OQC reports no upcoming access window"):
+        device.get_next_window()
+    # No window is OQC's normal answer here, not a failure, so it must not log an error.
+    mock_logger.error.assert_not_called()
+    mock_logger.info.assert_called_once()
+
+
+def test_get_next_window_none_falls_back_to_execution_estimates(target_profile):
+    """A None window is resolved from the execution estimates when they carry one.
+
+    The payload is OQC Cloud's response for Toshiko Tokyo-1.
+    """
+    client = Mock()
+    client.get_next_window.return_value = None
+    client.get_qpu_execution_estimates.return_value = {
+        "qpu_wait_times": [
+            {
+                "average_processing_seconds": 0.0,
+                "estimated_availability_time": "2026-09-24 17:00:00",
+                "qpu_id": "qpu:jp:3:673b1ad43c",
+                "tasks_in_queue": 0,
+                "timestamp": "2026-09-24 15:19:00.660269",
+                "windows": [
+                    {"end_time": "2026-09-24 19:00:00", "start_time": "2026-09-24 17:00:00"}
+                ],
+            }
+        ]
+    }
+    device = OQCDevice(target_profile, client)
+    assert device.get_next_window() == datetime.datetime(
+        2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc
+    )
+
+
+@patch("qbraid.runtime.oqc.device.logger")
+def test_health_endpoint_error_makes_the_device_unavailable(
+    mock_logger, lucy_sim_data, toshiko_data
+):
+    """If OQC's health endpoint cannot be read, availability is unknown: UNAVAILABLE."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        mock_client.return_value.get_system_status.side_effect = ReadTimeout
+        device = OQCProvider(token="fake_token").get_device(toshiko_data["id"])
 
-        provider = OQCProvider(token="fake_token")
-        device = provider.get_device(toshiko_data["id"])
-
-        with patch.object(device, "get_next_window", side_effect=ResourceNotFoundError):
-            status = device.status()
-            assert status == DeviceStatus.UNAVAILABLE
-            mock_logger.info.assert_called_once()
+        assert device.status() == DeviceStatus.UNAVAILABLE
+        mock_logger.info.assert_called_once()
 
 
 def test_oqc_result_reports_qubit_zero_last(oqc_job):
@@ -898,3 +1175,135 @@ def test_oqc_result_reports_qubit_zero_last(oqc_job):
         result = oqc_job.result()
 
     assert result.data.measurement_counts == {"001": 90, "011": 10}
+
+
+def test_transform_preserves_qasm2_includes(target_profile, oqc_client):
+    """QASM 2 must reach OQC with ``qelib1.inc`` intact.
+
+    OQC's QASM 2 parser resolves the standard gates from the include, so stripping it
+    leaves every gate undefined and the task fails to compile server-side.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm2 = (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        "qreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    assert device.transform(qasm2) == qasm2
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        "",
+        "// bell pair\n",
+        "/* bell pair */\n",
+        "/*\n multi-line\n*/\n",
+        "\n\n",
+    ],
+    ids=["bare", "line-comment", "block-comment", "multiline-block", "blank-lines"],
+)
+def test_transform_preserves_qasm2_includes_whatever_precedes_the_version(
+    header, target_profile, oqc_client
+):
+    """The QASM 2 check must see past anything legal before the version directive.
+
+    A hand-rolled version regex skipped ``//`` comments but not ``/* */`` ones, so a
+    block-comment header sent QASM 2 down the QASM 3 branch and stripped the include
+    OQC needs to resolve its gates.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm2 = header + (
+        'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+        "qreg q[2];\ncreg c[2];\nh q[0];\ncx q[0],q[1];\nmeasure q -> c;\n"
+    )
+
+    assert device.transform(qasm2) == qasm2
+
+
+def test_transform_strips_qasm3_includes(target_profile, oqc_client):
+    """QASM 3 keeps the existing behaviour: OQC has the standard gates built in."""
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    qasm3 = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nbit[1] c;\nh q[0];\nc[0] = measure q[0];\n'
+
+    transformed = device.transform(qasm3)
+
+    assert "stdgates.inc" not in transformed
+    assert "h q[0];" in transformed
+
+
+def test_oqc_job_execution_time(oqc_job):
+    """A completed task reports the QPU duration, which is what gets billed."""
+    assert oqc_job.execution_time_s() == MOCK_TASK["execute_time"]
+
+
+def test_oqc_job_compile_time(oqc_job):
+    """A completed task reports how long OQC spent compiling it."""
+    assert oqc_job.compile_time_s() == MOCK_TASK["compile_time"]
+
+
+def test_oqc_job_compiled_program(oqc_job):
+    """The compiled program is the circuit OQC actually ran."""
+    assert oqc_job.compiled_program() == MOCK_METRICS["optimized_circuit"]
+
+
+@pytest.mark.parametrize(
+    "accessor, field",
+    [("execution_time_s", "execute_time"), ("compile_time_s", "compile_time")],
+    ids=["execution", "compile"],
+)
+def test_oqc_job_timings_do_not_wait_for_completion(accessor, field, oqc_job_failed):
+    """Timings are reported as soon as OQC publishes them.
+
+    OQC fills in ``compile_time``, ``execute_time`` and the compiled circuit and only
+    then marks the task completed, so gating these on ``COMPLETED`` discarded real
+    values. Traced on Lucy Simulator: a SUBMITTED task already carried the same
+    numbers it reported once COMPLETED.
+    """
+    assert getattr(oqc_job_failed, accessor)() == MOCK_TASK[field]
+
+
+def test_oqc_job_cancel_uses_the_client_parameter_name(oqc_job):
+    """``OQCClient.cancel_task`` takes ``task_ids``; ``task_id`` raises ``TypeError``."""
+    MockOQCClient.cancelled.clear()
+
+    oqc_job.cancel()
+
+    assert MockOQCClient.cancelled == [oqc_job.id]
+
+
+def test_oqc_device_submit_forwards_tag(target_profile, oqc_client, program):
+    """``tag`` reaches the OQC task.
+
+    It is the only way to attribute a task to an individual user when several share
+    one OQC account, so a dropped tag is unattributable usage.
+    """
+    device = OQCDevice(profile=target_profile, client=oqc_client)
+    scheduled = []
+    original = oqc_client.schedule_tasks
+
+    def capture(tasks, qpu_id=None, tag=None):
+        scheduled.extend(tasks if isinstance(tasks, list) else [tasks])
+        return original(tasks, qpu_id=qpu_id, tag=tag)
+
+    oqc_client.schedule_tasks = capture
+    device.submit(program, tag="user-42")
+
+    assert [task.tag for task in scheduled] == ["user-42"]
+
+
+@pytest.mark.parametrize(
+    ("oqc_status", "expected"),
+    [("CREATED", "INITIALIZING"), ("SUBMITTED", "QUEUED"), ("RUNNING", "RUNNING")],
+)
+def test_oqc_task_states_map_to_job_status(oqc_status, expected, oqc_device):
+    """A SUBMITTED task has been accepted by OQC and is waiting to run, so it is QUEUED.
+
+    Observed live on Toshiko Tokyo-1: a task submitted between access windows stays
+    SUBMITTED until the next window opens, which can be hours. Parameters are names,
+    not ``JobStatus`` members, because this module must import without the OQC extra.
+    """
+    client = Mock()
+    client.get_task_status.return_value = oqc_status
+    job = OQCJob("046d4610-1a61-4a99-b1ef-45c9b62eeaa4", client=client, device=oqc_device)
+    assert job.status() == JobStatus[expected]

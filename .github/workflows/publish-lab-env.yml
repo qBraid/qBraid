@@ -1,0 +1,140 @@
+name: Publish qBraid Lab environment
+
+# Builds a Lab environment for a released qbraid version and publishes it on
+# qBraid. Each target maps to a GitHub Environment, env-publish-staging or
+# env-publish-production, that holds:
+#   secret   QBRAID_API_KEY    platform-admin API key issued by that server
+#   variable QBRAID_API_URL    e.g. https://api-v2-staging.qbraid.com/api/v1
+#   variable QBRAID_ENV_GROUP  environment group slug (required when stop_after is publish)
+# The steps live in bin/publish_lab_env.py and bin/lab_env_smoke_test.py.
+# The run approves directly, without a publish request. That skips the per-plan
+# publish quota and the email a request sends every platform admin.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "qBraid server to publish on"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+        default: staging
+      version:
+        description: "qbraid version, already released on PyPI (x.y.z)"
+        required: true
+        type: string
+      stop_after:
+        description: "Last step to run (publish = approve and set as the group's latest)"
+        required: true
+        type: choice
+        options:
+          - upload
+          - approve
+          - publish
+        default: publish
+      set_latest:
+        description: "Make this the group's latest (skipped if the latest is a newer qbraid)"
+        required: false
+        type: boolean
+        default: true
+      slug:
+        description: "Resume: slug of an environment a failed run already uploaded"
+        required: false
+        type: string
+        default: ""
+      allow_existing:
+        description: "Publish even if an environment with the same name exists"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: publish-lab-env-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  # The venv ships to Lab as built, linked to the Python that created it. Lab runs
+  # Ubuntu 24.04 x86_64 with the system Python 3.12.3 at /usr/bin/python3.12, the
+  # same as the ubuntu-24.04 runner, so the link works in Lab unchanged.
+  LAB_PYTHON: /usr/bin/python3.12
+  QBRAID_CLI_VERSION: "0.16.10"
+  QBRAID_CORE_VERSION: "0.6.27"  # does the upload path rewriting and the publish calls
+
+jobs:
+  publish:
+    name: Build and publish on ${{ inputs.target }}
+    runs-on: ubuntu-24.04  # match Lab's OS and glibc (2.39)
+    environment: env-publish-${{ inputs.target }}
+    timeout-minutes: 45
+    permissions:
+      contents: read  # actions/checkout
+    env:
+      # QBRAID_API_KEY is set only on the steps that call qBraid, not on installs or the smoke test.
+      QBRAID_API_URL: ${{ vars.QBRAID_API_URL }}
+      QBRAID_CONFIG_FILE: /tmp/no-qbraidrc  # keep any qbraidrc from overriding the key and URL
+      QBRAID_CLI_SHOW_PROGRESS: "false"
+      COLUMNS: "200"
+      GROUP: ${{ vars.QBRAID_ENV_GROUP }}
+      VERSION: ${{ inputs.version }}
+      STOP_AFTER: ${{ inputs.stop_after }}
+      ALLOW_EXISTING: ${{ inputs.allow_existing }}
+      SET_LATEST: ${{ inputs.set_latest }}
+      SLUG: ${{ inputs.slug }}
+      PIP_ONLY_BINARY: ":all:"  # install wheels only, so no package build code runs
+    steps:
+      - name: Checkout qBraid
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Use the system Python in a tool venv
+        run: '"$LAB_PYTHON" -m venv "$RUNNER_TEMP/tools" && echo "$RUNNER_TEMP/tools/bin" >> "$GITHUB_PATH"'
+
+      - name: Install the qBraid CLI
+        run: >-
+          python -m pip install
+          "qbraid-cli[envs]==${QBRAID_CLI_VERSION}"
+          "qbraid-core[environments]==${QBRAID_CORE_VERSION}"
+
+      - name: Preflight
+        env:
+          QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
+        run: python bin/publish_lab_env.py preflight
+
+      - name: Create the environment
+        id: create
+        if: inputs.slug == ''
+        env:
+          QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}  # the CLI resolves the owner
+        run: python bin/publish_lab_env.py create
+
+      - name: Smoke test the environment
+        if: inputs.slug == ''
+        env:
+          ENV_PYTHON: ${{ steps.create.outputs.python }}
+        run: '"$ENV_PYTHON" bin/lab_env_smoke_test.py "$VERSION"'
+
+      - name: Upload
+        id: upload
+        if: inputs.slug == ''
+        env:
+          QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
+          ENV_ID: ${{ steps.create.outputs.env_id }}
+        run: python bin/publish_lab_env.py upload --env-id "$ENV_ID"
+
+      - name: Approve and add to the group
+        if: inputs.stop_after != 'upload'
+        env:
+          QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
+          ENV_SLUG: ${{ inputs.slug || steps.upload.outputs.slug }}
+        run: python bin/publish_lab_env.py publish --slug "$ENV_SLUG"
+
+      - name: Summary
+        if: always()
+        env:
+          ENV_ID: ${{ steps.create.outputs.env_id }}
+          ENV_SLUG: ${{ inputs.slug || steps.upload.outputs.slug }}
+          STATUS: ${{ job.status }}
+        run: python bin/publish_lab_env.py summary --env-id "$ENV_ID" --slug "$ENV_SLUG" --status "$STATUS"

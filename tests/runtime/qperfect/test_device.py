@@ -29,9 +29,14 @@ def test_status_online_when_connection_open(device):
     assert device.status() == DeviceStatus.ONLINE
 
 
-def test_status_offline_when_connection_not_open(device, mock_connection):
-    """A connection that is not open reports OFFLINE."""
+def test_status_offline_when_connection_cannot_reopen(device, mock_connection, monkeypatch):
+    """A closed connection that fails to log in again reports OFFLINE."""
     mock_connection.connection.isOpen.return_value = False
+
+    def fail_login(*args, **kwargs):
+        raise ConnectionError("Authentication failed")
+
+    monkeypatch.setattr("qbraid.runtime.qperfect.provider.build_connection", fail_login)
     assert device.status() == DeviceStatus.OFFLINE
 
 
@@ -82,11 +87,23 @@ def test_submit_batch(device, mock_connection):
     assert kwargs["algorithm"] == "statevector"
 
 
-def test_submit_batch_requires_explicit_algorithm(device, mock_connection):
-    """MIMIQ rejects algorithm='auto' for batches, so a batch must name one itself."""
-    with pytest.raises(ValueError, match="Batch submission requires an explicit algorithm"):
-        device.submit([mc.Circuit(), mc.Circuit()], shots=100)
-    mock_connection.submit.assert_not_called()
+def test_submit_batch_defaults_to_mps_algorithm(device, mock_connection):
+    """MIMIQ rejects algorithm='auto' for batches, so a batch defaults to ``'mps'`` instead."""
+    circuits = [mc.Circuit(), mc.Circuit()]
+    device.submit(circuits, shots=100)
+    args, kwargs = mock_connection.submit.call_args
+    assert args[0] is circuits
+    assert kwargs["algorithm"] == "mps"
+
+
+def test_run_accepts_circuits_wider_than_256_qubits(device, mock_connection):
+    """A 300-qubit GHZ reaches MIMIQ; the device sets no qubit cap of its own."""
+    circuit = mc.Circuit()
+    circuit.push(mc.GateH(), 0)
+    for qubit in range(299):
+        circuit.push(mc.GateCX(), qubit, qubit + 1)
+    device.run(circuit, shots=10)
+    mock_connection.submit.assert_called_once()
 
 
 def test_str_names_the_device(device):

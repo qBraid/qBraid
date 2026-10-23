@@ -16,21 +16,34 @@
 Module defining BraketDeviceWrapper Class
 
 """
+
 from __future__ import annotations
 
 import datetime
+import warnings
 from typing import TYPE_CHECKING
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
 from braket.circuits.measure import Measure
+from braket.experimental_capabilities.experimental_capability_context import (
+    EXPERIMENTAL_CAPABILITIES_ALL,
+)
+from braket.ir.openqasm import Program as OpenQasmProgram
 
 from qbraid._logging import logger
-from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
+from qbraid.programs import (
+    NATIVE_REGISTRY,
+    QPROGRAM_REGISTRY,
+    ExperimentType,
+    get_program_type_alias,
+    load_program,
+)
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.options import RuntimeOptions
 from qbraid.transpiler import transpile
 
 from .availability import next_available_time
@@ -42,8 +55,31 @@ if TYPE_CHECKING:
     import qbraid.runtime
 
 
+def _enable_experimental_capabilities(kwargs: dict) -> bool:
+    """Normalize ``experimental_capabilities`` in ``kwargs``; return whether it is enabled.
+
+    The Braket SDK accepts only ``"ALL"`` and raises on ``"NONE"``, the API's other value,
+    so ``"NONE"`` and falsy values are dropped. Anything else raises before submission.
+    """
+    value = kwargs.pop("experimental_capabilities", None)
+    if value == EXPERIMENTAL_CAPABILITIES_ALL:
+        kwargs["experimental_capabilities"] = value
+        return True
+    if value and value != "NONE":
+        raise ValueError(
+            f"Invalid experimental_capabilities {value!r}: use 'ALL' to enable "
+            "experimental capabilities, or 'NONE' to disable them."
+        )
+    return False
+
+
 class BraketDevice(QuantumDevice):
-    """Wrapper class for Amazon Braket ``Device`` objects."""
+    """Wrapper class for Amazon Braket ``Device`` objects.
+
+    Configure default quantum task tags with ``device.set_options(tags={"project": "example"})``.
+    Tags passed to ``run`` or ``submit`` override matching default keys. Clear the defaults
+    with ``device.set_options(tags=None)``.
+    """
 
     def __init__(
         self,
@@ -51,9 +87,26 @@ class BraketDevice(QuantumDevice):
         session: braket.aws.AwsSession | None = None,
     ):
         """Create a BraketDevice."""
-        super().__init__(profile=profile)
+        options = RuntimeOptions(tags=None)
+        options.set_validator(
+            "tags",
+            lambda tags: tags is None
+            or (
+                isinstance(tags, dict)
+                and all(
+                    isinstance(key, str) and isinstance(value, str) for key, value in tags.items()
+                )
+            ),
+        )
+        super().__init__(profile=profile, options=options)
         self._device = AwsDevice(arn=self.id, aws_session=session)
         self._provider_name = self.profile.get("provider_name")
+
+    def set_options(self, **fields):
+        """Update runtime options, storing ``tags`` as a copy of the caller's dict."""
+        if isinstance(fields.get("tags"), dict):
+            fields["tags"] = dict(fields["tags"])
+        super().set_options(**fields)
 
     @property
     def name(self) -> str:
@@ -67,6 +120,16 @@ class BraketDevice(QuantumDevice):
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return the status of this Device."""
         if self._device.status == "ONLINE":
+            # Braket reports a device ONLINE even when its capabilities fail schema
+            # validation, and then ``is_available`` raises on the unset properties.
+            if self._device.properties is None:
+                warnings.warn(
+                    f"Device '{self.id}' is ONLINE but its capabilities could not be parsed, "
+                    "so its availability is unknown. Reporting it as unavailable; upgrading "
+                    "amazon-braket-schemas may resolve this.",
+                    UserWarning,
+                )
+                return DeviceStatus.UNAVAILABLE
             if self._device.is_available:
                 return DeviceStatus.ONLINE
             return DeviceStatus.UNAVAILABLE
@@ -161,13 +224,38 @@ class BraketDevice(QuantumDevice):
 
         return program
 
+    def run(
+        self,
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
+        *args,
+        **kwargs,
+    ) -> BraketQuantumTask | list[BraketQuantumTask]:
+        """Run a quantum job or a list of quantum jobs on this quantum device.
+
+        With ``experimental_capabilities="ALL"``, OpenQASM 3 programs are submitted as written,
+        without conversion or validation. Experimental instructions such as IQM's
+        ``measure_ff`` and ``cc_prx`` can only be converted inside Braket's process-wide
+        ``EnableExperimentalCapability`` context, which concurrent submissions would share.
+        """
+        programs = run_input if isinstance(run_input, list) else [run_input]
+        if _enable_experimental_capabilities(kwargs) and all(
+            get_program_type_alias(program, safe=True) == "qasm3" for program in programs
+        ):
+            openqasm = [OpenQasmProgram(source=program) for program in programs]
+            return self.submit(
+                openqasm if isinstance(run_input, list) else openqasm[0], *args, **kwargs
+            )
+        return super().run(run_input, *args, **kwargs)
+
     def submit(
         self,
         run_input: (
             Circuit
             | AnalogHamiltonianSimulation
+            | OpenQasmProgram
             | list[Circuit]
             | list[AnalogHamiltonianSimulation]
+            | list[OpenQasmProgram]
         ),
         *args,
         tags: dict[str, str] | None = None,
@@ -180,15 +268,22 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
-            tags (dict[str, str]): A dictionary of tags to associate with the job.
+            tags (dict[str, str]): Tags to associate with the job, merged with defaults
+                configured via ``set_options(tags=...)``. Per-submission values take
+                precedence. Passing ``None`` or an empty dictionary uses the defaults.
             shots (int): The number of times to run the task on the device.
 
         Returns:
             The job like object for the run.
 
         """
+        _enable_experimental_capabilities(kwargs)
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
+
+        default_tags = self._options["tags"]
+        if default_tags is not None:
+            tags = {**default_tags, **(tags or {})}
 
         if any(hasattr(circuit, "partial_measurement_qubits") for circuit in run_input):
             # Extract partial measurement qubit information and add as tags for job tracking

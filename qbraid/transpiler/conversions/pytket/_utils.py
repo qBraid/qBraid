@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared validation for PyTKET conversion functions."""
+"""Shared helpers for PyTKET conversion functions."""
 
 from __future__ import annotations
 
@@ -22,6 +22,17 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
     import pytket.circuit
+
+#: Classical register width passed to pytket's QASM reader and writer.
+#:
+#: pytket defaults to 32, which rejects any circuit measuring more qubits than
+#: that -- below H2-1's 56. 64 is the ceiling, not a taste: pytket's writer
+#: raises ``NotImplementedError`` above it when a circuit carries a
+#: ``RangePredicate`` (``_parse_range`` in ``pytket/qasm/qasm.py``), which is
+#: how a conditional such as ``if(c!=0)`` is represented. One shared constant
+#: rather than each circuit's own width, since pytket caches a single global
+#: parser keyed on this value and rebuilds it whenever it changes.
+QASM_MAXWIDTH = 64
 
 
 def _validate_resolved_parameters(circuit: pytket.circuit.Circuit, target: str) -> None:

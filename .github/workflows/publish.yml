@@ -47,3 +47,23 @@ jobs:
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # release/v1
+
+  notify-docs:
+    name: Tell qBraid/docs about the release
+    # Bumps versions.json in qBraid/docs so docs for this release move into the
+    # Stable docs. Never fails the release.
+    needs: pypi-publish
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - name: Send package-released event
+        env:
+          GH_TOKEN: ${{ secrets.DOCS_DISPATCH_TOKEN }}
+          PKG: qbraid
+        run: |
+          if [ -z "$GH_TOKEN" ]; then echo "DOCS_DISPATCH_TOKEN is not set; skipping"; exit 0; fi
+          sleep 60 # PyPI's JSON API can trail the upload briefly
+          VERSION=$(curl -fsSL "https://pypi.org/pypi/${PKG}/json" | jq -r .info.version)
+          echo "Notifying qBraid/docs: ${PKG} ${VERSION}"
+          gh api repos/qBraid/docs/dispatches -f event_type=package-released \
+            -f "client_payload[package]=${PKG}" -f "client_payload[version]=${VERSION}"

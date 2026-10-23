@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
@@ -67,6 +68,29 @@ def _serialize_sequence(sequence: pulser.Sequence) -> Program:
     )
 
 
+def _serialize_gst(program: str) -> Program:
+    """Serialize a GST circuit, sent as written."""
+    return Program(format="gst", data=program)
+
+
+_GST_LAYOUT = re.compile(r"@\(\d+(,\d+)*\)$")
+
+
+def validate_gst(program: str, device_id: str) -> None:
+    """Raises a ValueError unless the GST program is one circuit ending in a qubit layout."""
+    circuit = program.strip()
+    if any(char.isspace() for char in circuit):
+        raise ValueError(
+            f"GST program for device '{device_id}' must be a single circuit, "
+            "without whitespace or line breaks."
+        )
+    if not _GST_LAYOUT.search(circuit):
+        raise ValueError(
+            f"GST program for device '{device_id}' must end with a qubit layout, "
+            "for example 'Gxpi2:0@(0)'."
+        )
+
+
 def validate_qasm_no_measurements(
     program: Qasm2StringType | Qasm3StringType, device_id: str
 ) -> None:
@@ -111,6 +135,9 @@ def get_program_spec_lambdas(
 
     if program_type_alias == "pulser":
         return {"serialize": _serialize_sequence, "validate": None}
+
+    if program_type_alias == "gst":
+        return {"serialize": _serialize_gst, "validate": lambda p: validate_gst(p, device_id)}
 
     if program_type_alias in {"qasm2", "qasm3"}:
         vendor, provider = device_id.split(":")[:2]

@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+import requests
 from qbraid_core._import import LazyLoader
 
 from qbraid.runtime.enums import JobStatus
@@ -36,6 +37,7 @@ if TYPE_CHECKING:
     import qbraid.runtime.oqc
 
 qbraid_rt_oqc: qbraid.runtime.oqc = LazyLoader("qbraid_rt_oqc", globals(), "qbraid.runtime.oqc")
+qcaas_client = LazyLoader("qcaas_client", globals(), "qcaas_client.client")
 
 RESULTS_FORMAT = {
     2: "raw",
@@ -87,10 +89,39 @@ class OQCJob(QuantumJob):
         if self._device is not None:
             self._qpu_id = self._device.id
         else:
-            task_metadata = self._client.get_task_metadata(task_id=self.id)
-            self._qpu_id = task_metadata["qpu_id"]
+            self._qpu_id = self._find_qpu_id()
 
         return self._qpu_id
+
+    def _find_qpu_id(self) -> str:
+        """Return the ID of the QPU that holds this task.
+
+        Each QPU serves only its own tasks, so a lookup on any other QPU, including the
+        client's default when no ID is given, returns 404. An unreachable QPU is skipped
+        too, and its error raised only if no other QPU has the task.
+        """
+        unreachable: Optional[Exception] = None
+        for qpu in self._client.get_qpus():
+            try:
+                self._client.get_task_metadata(task_id=self.id, qpu_id=qpu["id"])
+            except qcaas_client.ServerException as err:
+                if err.server_error_code == 404:
+                    continue
+                # qcaas raises ConnectionFailureException for 500-504 and timeouts, and a
+                # plain ServerException for any other 5xx.
+                if isinstance(err, qcaas_client.ConnectionFailureException) or (
+                    isinstance(err.server_error_code, int) and err.server_error_code >= 500
+                ):
+                    unreachable = err
+                    continue
+                raise
+            except requests.exceptions.ConnectionError as err:  # e.g. a failed DNS lookup
+                unreachable = err
+                continue
+            return qpu["id"]
+        if unreachable is not None:
+            raise unreachable
+        raise ResourceNotFoundError(f"Task '{self.id}' was not found on any OQC QPU.")
 
     def status(self) -> JobStatus:
         """Get the status of the task."""
@@ -101,7 +132,8 @@ class OQCJob(QuantumJob):
 
         status_map = {
             "CREATED": JobStatus.INITIALIZING,
-            "SUBMITTED": JobStatus.INITIALIZING,
+            # Accepted by OQC and waiting to run, e.g. for the device's next access window.
+            "SUBMITTED": JobStatus.QUEUED,
             "RUNNING": JobStatus.RUNNING,
             "FAILED": JobStatus.FAILED,
             "CANCELLED": JobStatus.CANCELLED,
@@ -126,7 +158,7 @@ class OQCJob(QuantumJob):
 
     def cancel(self) -> None:
         """Cancel the task."""
-        self._client.cancel_task(task_id=self.id, qpu_id=self.qpu_id)
+        self._client.cancel_task(task_ids=self.id, qpu_id=self.qpu_id)
 
     @staticmethod
     def _get_counts(
@@ -190,7 +222,7 @@ class OQCJob(QuantumJob):
         if not task_results or not task_results.result:
             raise ResourceNotFoundError("No result found for the task")
 
-        # OQC reports qubit 0 first; qBraid's convention is qubit 0 last (little-endian,
+        # OQC writes classical bit 0 first; qBraid's convention is bit 0 last (little-endian,
         # as Qiskit and IonQ already use), so the key is reversed here.
         counts = reverse_bit_order(self._get_counts(task_results.result))
         data = GateModelResultData(measurement_counts=counts)
@@ -233,6 +265,37 @@ class OQCJob(QuantumJob):
     def get_timings(self) -> dict[str, Any]:
         """Get the timings for the task."""
         return self._client.get_task_timings(task_id=self.id, qpu_id=self.qpu_id)
+
+    def _get_task(self) -> dict[str, Any]:
+        """Get the full task record, including timings and execution metadata."""
+        return self._client.get_task(task_id=self.id, qpu_id=self.qpu_id)
+
+    def execution_time_s(self) -> float | None:
+        """Get the time the task spent executing on the QPU, in seconds.
+
+        Excludes compilation and queue wait, so it is the duration to bill against.
+        Returns ``None`` until OQC has published it, which happens before the task
+        is marked completed, not after.
+        """
+        return self._get_task().get("execute_time")
+
+    def compile_time_s(self) -> float | None:
+        """Get the time the task spent compiling, in seconds.
+
+        Returns ``None`` until OQC has published it, which happens before the task
+        is marked completed, not after.
+        """
+        return self._get_task().get("compile_time")
+
+    def compiled_program(self) -> str | None:
+        """Get the program as compiled by OQC, or ``None`` if it is not available yet.
+
+        OQC decides the dialect and whether to map onto physical qubits, so neither the
+        QASM version nor the register names are guaranteed to match the submitted program.
+        Available as soon as OQC has compiled the task, which can precede completion.
+        """
+        metrics = self.metrics() or {}
+        return metrics.get("optimized_circuit")
 
     def get_errors(self) -> Optional[dict[str, Any]]:
         """Get the error message for the task."""

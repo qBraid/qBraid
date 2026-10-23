@@ -24,7 +24,7 @@ from pytket.qasm import circuit_to_qasm_str
 
 from qbraid.transpiler.annotations import weight
 
-from ._utils import _validate_resolved_parameters
+from ._utils import QASM_MAXWIDTH, _validate_resolved_parameters
 
 if TYPE_CHECKING:
     import pytket.circuit
@@ -46,4 +46,4 @@ def pytket_to_qasm2(circuit: pytket.circuit.Circuit) -> Qasm2StringType:
         ProgramConversionError: If the circuit contains unresolved parameters.
     """
     _validate_resolved_parameters(circuit, "OpenQASM 2")
-    return circuit_to_qasm_str(circuit)
+    return circuit_to_qasm_str(circuit, maxwidth=QASM_MAXWIDTH)

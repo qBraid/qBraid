@@ -41,12 +41,14 @@ Exceptions
 
 from .device import AQTDevice, AQTDeviceError
 from .job import AQTJob, AQTJobError
-from .provider import AQTProvider, AQTSession
+from .provider import AQTProvider, AQTSession, AQTTokenStore, set_token_store
 
 __all__ = [
     "AQTDevice",
     "AQTProvider",
     "AQTSession",
+    "AQTTokenStore",
+    "set_token_store",
     "AQTJob",
     "AQTDeviceError",
     "AQTJobError",

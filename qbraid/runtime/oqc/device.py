@@ -19,7 +19,7 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING
 
 import pyqasm
 from qcaas_client.client import (
@@ -32,6 +32,7 @@ from qcaas_client.client import (
 from qcaas_client.compiler_config import MetricsType  # type: ignore
 
 from qbraid._logging import logger
+from qbraid.programs import Qasm2String
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -102,61 +103,102 @@ class OQCDevice(QuantumDevice):
             raise ResourceNotFoundError("Queue depth is not available for this device.") from err
 
     def status(self) -> DeviceStatus:
-        """Returns the status of the device."""
+        """Returns the status of the device.
+
+        ONLINE when OQC lists the device as active and its health checks pass, meaning it
+        accepts tasks. A windowed QPU queues them for its next access window, and the health
+        checks also pass between windows, so ONLINE does not mean a task will run now. OQC's
+        APIs report only the next window, never the one that is open (see
+        :meth:`get_next_window`).
+
+        Raises:
+            ResourceNotFoundError: If OQC does not list the device.
+        """
         feature_set: dict = self.profile.get("feature_set", {})
         always_on: bool = feature_set.get("always_on", False)
         if always_on:
             return DeviceStatus.ONLINE
 
         devices = self._client.get_qpus()
-        device: Optional[dict] = next((d for d in devices if d["id"] == self.id), None)
+        device: dict | None = next((d for d in devices if d["id"] == self.id), None)
         if not device:
             raise ResourceNotFoundError(f"Device '{self.id}' not found.")
 
         status: str = device.get("status", "")
-
         if status and status.upper() == "INACTIVE":
             return DeviceStatus.OFFLINE
 
         try:
-            start_time = self.get_next_window()
-            now = datetime.datetime.now(datetime.timezone.utc)
+            health = self._client.get_system_status(qpu_id=self.id)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.info("Could not read OQC system status for %s: %r", self.id, err)
+            return DeviceStatus.UNAVAILABLE
 
-            if now > start_time:  # TODO: does this comparison correctly account for timezones?
-                return DeviceStatus.ONLINE
-        except ResourceNotFoundError as err:  # pylint: disable=broad-exception-caught
-            logger.info(err)
+        checks = health.get("results") if isinstance(health, dict) else None
+        if (
+            not isinstance(checks, list)
+            or not checks
+            or not all(isinstance(check, dict) and check.get("passed") is True for check in checks)
+        ):
+            logger.info("OQC health checks for %s are not all passing: %s", self.id, health)
+            return DeviceStatus.UNAVAILABLE
 
-        return DeviceStatus.UNAVAILABLE
+        return DeviceStatus.ONLINE
 
     def get_next_window(self) -> datetime.datetime:
         """
         Returns the start time of the next active window for the device.
 
-        Note: Currently only AWS windows are defined.
+        Raises:
+            ResourceNotFoundError: If OQC reports no upcoming window for the device,
+                as it does for always-on devices, or the window lookup fails.
         """
+        next_window_err: Exception | None = None
         try:
             # NOTE: get_next_window returns str not datetime.datetime
-            start_time = self._client.get_next_window(self.id)
+            start_time: str | None = self._client.get_next_window(self.id)
             # start_time will be a string of the format: '2025-12-19T00:50:00Z'
-        except Exception as next_window_err:  # pylint: disable=broad-exception-caught
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            next_window_err = err
+            start_time = None
+
+        # OQC answers None, rather than raising, for a device with no window.
+        if start_time is None:
             try:
                 exec_estimates = self._client.get_qpu_execution_estimates(qpu_ids=self.id)
-                start_time: str = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
+                start_time = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
                 # start_time will be a string of the format: '2025-12-19 00:50:00'
             except Exception as exec_est_error:  # pylint: disable=broad-exception-caught
-                logger.error(exec_est_error)
+                # Expected when OQC has already said there is no window: it rejects
+                # estimates for always-on devices. An error only if the lookup failed.
+                log = logger.info if next_window_err is None else logger.error
+                log("OQC execution estimates for %s failed: %r", self.id, exec_est_error)
+
+        if not start_time:
+            if next_window_err is None:
                 raise ResourceNotFoundError(
-                    f"Falied to fetch next active window for device '{self.id}'. "
-                    "Note: Currently only AWS windows are defined."
-                ) from next_window_err
+                    f"OQC reports no upcoming access window for device '{self.id}'."
+                )
+            raise ResourceNotFoundError(
+                f"Could not fetch the next access window for device '{self.id}': "
+                f"{next_window_err!r}"
+            ) from next_window_err
 
         return datetime.datetime.fromisoformat(start_time.replace("Z", "+00:00")).replace(
             tzinfo=datetime.timezone.utc
         )
 
     def transform(self, run_input: str) -> str:
-        """Transforms the input program before submitting it to the device."""
+        """Transforms the input program before submitting it to the device.
+
+        OQC's OpenQASM 3 parser treats the standard gates as built in, but its
+        OpenQASM 2 parser resolves them from ``qelib1.inc``, so a QASM 2 program is
+        passed through untouched: dropping that include leaves every gate undefined
+        and the task fails to compile.
+        """
+        if isinstance(run_input, Qasm2String):
+            return run_input
+
         qasm_module = pyqasm.loads(run_input)
         qasm_module.remove_includes()
         qasm_no_includes = pyqasm.dumps(qasm_module)
@@ -192,10 +234,17 @@ class OQCDevice(QuantumDevice):
         }
 
         config_values = {key: kwargs.get(key, default) for key, default in default_values.items()}
+        repeats = (
+            config_values["shots"]
+            if config_values["shots"] is not None
+            else config_values["repeats"]
+        )
+        if repeats is not None and repeats < 1:
+            raise ValueError("OQC shots or repeats must be at least 1.")
 
         try:
             return CompilerConfig(
-                repeats=config_values["shots"] or config_values["repeats"],
+                repeats=repeats,
                 repetition_period=config_values["repetition_period"],
                 results_format=RESULTS_FORMAT[config_values["results_format"]],
                 metrics=METRICS_TYPE[config_values["metrics"]],
@@ -211,12 +260,19 @@ class OQCDevice(QuantumDevice):
             raise ValueError(f"Invalid configuration option: {err.args[0]}") from err
 
     # pylint: disable-next=arguments-differ
-    def submit(self, run_input, **kwargs) -> Union[OQCJob, list[OQCJob]]:
-        """Submit one or more jobs to the device."""
+    def submit(self, run_input, *, tag: str | None = None, **kwargs) -> OQCJob | list[OQCJob]:
+        """Submit one or more jobs to the device.
+
+        ``tag`` is stored on the OQC task and is the only way to attribute a task to
+        an individual user when many users share a single OQC account.
+        """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         config = self._build_compiler_config(**kwargs) if any(kwargs) else None
-        tasks = [QPUTask(program=program, config=config, qpu_id=self.id) for program in run_input]
+        tasks = [
+            QPUTask(program=program, config=config, qpu_id=self.id, tag=tag or "")
+            for program in run_input
+        ]
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id=self.id)
         jobs = [OQCJob(job_id=task.task_id, device=self, client=self._client) for task in qpu_tasks]
         return jobs[0] if is_single_input else jobs

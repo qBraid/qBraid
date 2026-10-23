@@ -17,14 +17,18 @@ Module providing granular type checking for quantum programs
 that use Python's built-in types.
 
 """
+
+import re
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Type, TypeVar
 
+from openqasm3.parser import parse
 from pyqasm.analyzer import Qasm3Analyzer
 from pyqasm.exceptions import QasmParsingError
 
 from .exceptions import QasmError
 from .exceptions import ValidationError as ProgramValidationError
+from .exceptions import describe_error
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
 QuboCoefficientsDictType = TypeVar("QuboCoefficientsDictType", bound=dict)
@@ -230,6 +234,41 @@ class Qasm2KirinString(metaclass=Qasm2KirinStringMeta):
     """Marker class for strings that are valid OpenQASM 2 programs."""
 
 
+class GstStringMeta(QbraidMetaType):
+    """Metaclass for strings holding a gate-set sequence (GST) circuit.
+
+    GST is Diraq's native circuit format, e.g. ``Gxpi2:0Gcphase:0:1@(0,1)``. A string
+    qualifies when it opens with a ``G<name>`` gate token and contains nothing an
+    OpenQASM program needs (``;``), so OpenQASM is never mistaken for GST.
+    """
+
+    @property
+    def __alias__(cls) -> str:
+        return "gst"
+
+    @property
+    def __bound__(cls) -> Type[str]:
+        return str
+
+    def __instancecheck__(cls, instance: Any) -> bool:
+        """Custom instance checks for GST strings.
+
+        Args:
+            instance: The object to check.
+
+        Returns:
+            bool: True if instance is a string that looks like a GST circuit, False otherwise.
+        """
+        return isinstance(instance, str) and _GST_PATTERN.fullmatch(instance.strip()) is not None
+
+
+_GST_PATTERN = re.compile(r"[{(]*G[A-Za-z][\w:@(){}^,\s]*")
+
+
+class GstString(metaclass=GstStringMeta):
+    """Marker class for strings that are gate-set sequence (GST) circuits."""
+
+
 class QasmStringType(str):
     """Base class for OpenQASM string types, providing validation upon instantiation."""
 
@@ -277,5 +316,24 @@ def get_qasm_type_alias(qasm: str) -> str:
     raise QasmError("Could not determine the type alias: the OpenQASM program may be invalid.")
 
 
+def explain_unrecognized_qasm(qasm: str) -> str:
+    """Explain why a string was not recognised as an OpenQASM 2 or 3 program.
+
+    Returns a sentence naming the missing or unsupported version header, followed by the
+    OpenQASM 3 parser's reason when the string does not parse.
+    """
+    try:
+        version = Qasm3Analyzer.extract_qasm_version(qasm)
+        reason = f"OpenQASM version {version} is not supported"
+    except QasmParsingError:
+        reason = "no 'OPENQASM 2.0;' or 'OPENQASM 3.0;' header found"
+    message = f"Program not recognised as OpenQASM 2 or 3: {reason}."
+    try:
+        parse(qasm)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        message += f" OpenQASM 3 parser error: {describe_error(err)}"
+    return message
+
+
 QBRAID_META_TYPES = {IonQDict, QuboCoefficientsDict}
-BOUND_QBRAID_META_TYPES = {Qasm2String, Qasm3String, Qasm2KirinString}
+BOUND_QBRAID_META_TYPES = {Qasm2String, Qasm3String, Qasm2KirinString, GstString}

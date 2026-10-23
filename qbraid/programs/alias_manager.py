@@ -16,6 +16,7 @@
 Module for managing and retrieving custom program type aliases
 
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Type
@@ -23,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Type
 from .exceptions import ProgramTypeError
 from .exceptions import QasmError as QbraidQasmError
 from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
-from .typer import IonQDict, get_qasm_type_alias
+from .typer import GstString, IonQDict, get_qasm_type_alias
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -32,7 +33,9 @@ if TYPE_CHECKING:
 def find_str_type_alias(registry: dict[str, Type] = QPROGRAM_REGISTRY) -> Optional[str]:
     """Find additional keys with type 'str' in the registry."""
     str_keys = [
-        k for k, v in registry.items() if v is str and k not in ("qasm2", "qasm3", "qasm2_kirin")
+        k
+        for k, v in registry.items()
+        if v is str and k not in ("qasm2", "qasm3", "qasm2_kirin", "gst")
     ]
 
     if len(str_keys) == 0:
@@ -62,6 +65,8 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
         try:
             return get_qasm_type_alias(program)
         except QbraidQasmError as err:
+            if isinstance(program, GstString):
+                return GstString.__alias__
             package = find_str_type_alias()
             if package is not None:
                 return package

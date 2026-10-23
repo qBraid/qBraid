@@ -195,9 +195,10 @@ class TestBatchResult:
         assert not isinstance(result, BatchResult)
 
     def test_batch_result_failed_job(self, device, client):
-        """A failed batch job returns a BatchResult with success=False."""
+        """A failed batch job returns a BatchResult with success=False and the failure reason."""
         original_status = JOB_DATA_BATCH_EQUAL1["status"]
         JOB_DATA_BATCH_EQUAL1["status"] = "FAILED"
+        JOB_DATA_BATCH_EQUAL1["statusMsg"] = "Unsupported submit option(s): ['bogus']"
         try:
             job = QbraidJob(
                 job_id=JOB_DATA_BATCH_EQUAL1["jobQrn"],
@@ -210,13 +211,18 @@ class TestBatchResult:
             assert result.success is False
             for circuit_result in result.results:
                 assert circuit_result.success is False
+                assert circuit_result.details["status_message"] == (
+                    "Unsupported submit option(s): ['bogus']"
+                )
         finally:
             JOB_DATA_BATCH_EQUAL1["status"] = original_status
+            JOB_DATA_BATCH_EQUAL1["statusMsg"] = None
 
     def test_single_circuit_failed_result(self, device, client):
-        """A failed single-circuit job returns a Result with success=False and empty data."""
+        """A failed single-circuit job returns success=False and carries the failure reason."""
         original_status = JOB_DATA_EQUAL1["status"]
         JOB_DATA_EQUAL1["status"] = "FAILED"
+        JOB_DATA_EQUAL1["statusMsg"] = "SVS: Not enough memory to execute circuit 1."
         try:
             job = QbraidJob(
                 job_id=JOB_DATA_EQUAL1["jobQrn"],
@@ -227,6 +233,20 @@ class TestBatchResult:
             assert isinstance(result, Result)
             assert not isinstance(result, BatchResult)
             assert result.success is False
+            assert result.details["status_message"] == (
+                "SVS: Not enough memory to execute circuit 1."
+            )
+        finally:
+            JOB_DATA_EQUAL1["status"] = original_status
+            JOB_DATA_EQUAL1["statusMsg"] = None
+
+    def test_failed_result_without_status_message(self, device, client):
+        """A failed job the platform gave no reason for adds no status_message."""
+        original_status = JOB_DATA_EQUAL1["status"]
+        JOB_DATA_EQUAL1["status"] = "FAILED"
+        try:
+            job = QbraidJob(job_id=JOB_DATA_EQUAL1["jobQrn"], device=device, client=client)
+            assert "status_message" not in job.result().details
         finally:
             JOB_DATA_EQUAL1["status"] = original_status
 

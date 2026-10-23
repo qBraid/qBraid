@@ -235,7 +235,6 @@ _lazy = {
         "QbraidProvider",
         "QbraidDevice",
         "QbraidJob",
-        "QirRunner",
     ],
     "schemas": [],
 }

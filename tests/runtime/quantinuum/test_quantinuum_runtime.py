@@ -21,6 +21,7 @@ Unit tests for Quantinuum provider, device, and job classes.
 """
 import importlib
 import os
+from collections import OrderedDict
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -57,6 +58,7 @@ from qbraid.runtime.quantinuum import (  # noqa: E402
     QuantinuumDevice,
     QuantinuumJob,
     QuantinuumProvider,
+    queue_lengths,
 )
 from qbraid.runtime.quantinuum._transport import (  # noqa: E402
     DEFAULT_HTTP_TIMEOUT_SECONDS,
@@ -65,6 +67,7 @@ from qbraid.runtime.quantinuum._transport import (  # noqa: E402
 )
 from qbraid.runtime.quantinuum.device import (  # noqa: E402
     DEFAULT_COMPILE_TIMEOUT_SECONDS,
+    MAX_OPT_LEVEL,
     QuantinuumDeviceError,
 )
 from qbraid.runtime.quantinuum.job import (  # noqa: E402
@@ -371,6 +374,81 @@ class TestQuantinuumDevice:
         assert execute_kwargs["n_shots"] == [500]
         assert isinstance(job, QuantinuumJob)
         assert job.id == execute_job_id
+
+    @staticmethod
+    def _execute_kwargs_for(mock_execute, **submit_kwargs):
+        """Run ``submit`` against fully mocked NEXUS and return the execute kwargs."""
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_execute.return_value = MagicMock(id="00000000-0000-0000-0000-000000000002")
+
+        device = _make_device()
+        device.submit(Circuit(2), shots=10, **submit_kwargs)
+        return mock_execute.call_args.kwargs
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_forwards_job_properties(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """Properties are how a job is attributed once every job shares one project."""
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+
+        kwargs = self._execute_kwargs_for(
+            mock_execute,
+            job_properties={"org_user_id": "ou-123", "job_qrn": "qrn:job:abc"},
+        )
+
+        assert kwargs["properties"] == OrderedDict(org_user_id="ou-123", job_qrn="qrn:job:abc")
+
+    @patch("qnexus.start_execute_job")
+    @patch("qnexus.jobs.results")
+    @patch("qnexus.jobs.wait_for")
+    @patch("qnexus.start_compile_job")
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.QuantinuumConfig")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_omits_properties_when_none_given(
+        self,
+        mock_get_or_create,
+        _mock_config,
+        mock_upload,
+        mock_compile,
+        _mock_wait,
+        mock_results,
+        mock_execute,
+    ):
+        """Send None rather than an empty dict: NEXUS rejects undefined property keys,
+        so a caller that passes nothing must not have an empty mapping sent on its behalf."""
+        mock_get_or_create.return_value = MagicMock(name="project")
+        mock_compile.return_value = MagicMock(id="compile-job-id")
+        compiled_item = MagicMock()
+        compiled_item.get_output.return_value = MagicMock(name="compiled-ref")
+        mock_results.return_value = [compiled_item]
+        mock_upload.side_effect = [MagicMock(name="circuit-ref")]
+
+        kwargs = self._execute_kwargs_for(mock_execute)
+        assert kwargs["properties"] is None
 
     @patch("qnexus.start_execute_job")
     @patch("qnexus.jobs.results")
@@ -868,6 +946,29 @@ class TestQuantinuumDevice:
 
         mock_execute.assert_called_once()
 
+    @pytest.mark.parametrize("level", [-1, 4, 5, 1.5, True])
+    @patch("qnexus.circuits.upload")
+    @patch("qnexus.projects.get_or_create")
+    def test_submit_rejects_out_of_range_opt_level_before_upload(
+        self, mock_get_or_create, mock_upload, level
+    ):
+        """A non-integer or out-of-range ``optimisation_level`` fails before anything reaches NEXUS.
+
+        NEXUS accepts 0-3 and otherwise answers the compile request with a raw 422.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from pytket import Circuit
+
+        device = _make_device()
+        with pytest.raises(ValueError, match=f"integer between 0 and 3, got {level!r}"):
+            device.submit(Circuit(2), shots=100, optimisation_level=level)
+        mock_get_or_create.assert_not_called()
+        mock_upload.assert_not_called()
+
+    def test_max_opt_level_matches_nexus(self):
+        """NEXUS accepts optimisation levels below 4."""
+        assert MAX_OPT_LEVEL == 3
+
     @pytest.mark.parametrize(
         ("env", "value", "match"),
         [
@@ -880,7 +981,7 @@ class TestQuantinuumDevice:
             ("QUANTINUUM_NEXUS_COMPILE_TIMEOUT", "inf", "must be a finite number"),
             ("QUANTINUUM_NEXUS_HTTP_TIMEOUT", "abc", "must be a number of seconds"),
             ("QUANTINUUM_NEXUS_OPT_LEVEL", "high", "must be an integer"),
-            ("QUANTINUUM_NEXUS_OPT_LEVEL", "7", "must be between 0 and 2"),
+            ("QUANTINUUM_NEXUS_OPT_LEVEL", "7", "must be between 0 and 3"),
         ],
     )
     def test_submit_rejects_malformed_env_config(self, env, value, match):
@@ -1005,6 +1106,22 @@ class TestTransportHardening:
 
 
 # --- Job ---
+
+
+def _result_item(circuit, counts=None):
+    """Wrap a pytket circuit in the NEXUS result/input refs the job reads."""
+    # pylint: disable-next=import-outside-toplevel
+    from qnexus.models.references import CircuitRef
+
+    circuit_ref = MagicMock(spec=CircuitRef)
+    circuit_ref.download_circuit.return_value = circuit
+
+    download = MagicMock()
+    download.get_counts.return_value = counts or {(0, 1): 10}
+    item = MagicMock()
+    item.download_result.return_value = download
+    item.get_input.return_value = circuit_ref
+    return item
 
 
 def _nexus_status(name: str, **kwargs):
@@ -1319,6 +1436,400 @@ class TestQuantinuumJob:
         result = job.result()
         assert result.device_id == "quantinuum"
 
+    @staticmethod
+    def _circuit_item(counts=None, n_qubits=None, conditional=False):
+        """A NEXUS result ref whose input program is a compiled pytket circuit."""
+        # pylint: disable-next=import-outside-toplevel
+        from pytket.circuit import Circuit, OpType
+
+        if conditional:
+            # pylint: disable-next=import-outside-toplevel
+            from pytket.qasm import circuit_from_qasm_str
+
+            # A mid-circuit conditional becomes a RangePredicate, which is the
+            # op whose export pytket caps at maxwidth 64.
+            return _result_item(
+                circuit_from_qasm_str(
+                    'OPENQASM 2.0;\ninclude "qelib1.inc";\n'
+                    "qreg q[2];\ncreg c[2];\nmeasure q[0] -> c[0];\n"
+                    "if(c!=0) x q[1];\n",
+                    maxwidth=64,
+                ),
+                counts,
+            )
+
+        circuit = Circuit(n_qubits or 2)
+        circuit.add_gate(OpType.ZZPhase, 0.3, [0, 1])
+        circuit.add_gate(OpType.PhasedX, [0.1, 0.2], [0])
+        if n_qubits:
+            circuit.measure_all()
+
+        return _result_item(circuit, counts)
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_hqslib1(self, mock_results, mock_status):
+        """Compiled H-series circuits use native gates the default qelib1 export rejects."""
+        mock_results.return_value = [self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert 'include "hqslib1.inc";' in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_wide_registers(self, mock_results, mock_status):
+        """A compiled circuit wider than pytket's default maxwidth still exports.
+
+        H2-1 is 56 qubits, and pytket's QASM writer rejects a classical register
+        above 32 by default, so compiled_program() failed on exactly the circuits
+        large enough to be worth inspecting.
+        """
+        mock_results.return_value = [self._circuit_item(n_qubits=56)]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert "creg c[56];" in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_exports_conditional_circuit(self, mock_results, mock_status):
+        """A mid-circuit conditional still exports, whatever maxwidth we pass.
+
+        pytket represents ``if(c!=0)`` as a RangePredicate and refuses to write one
+        when maxwidth exceeds 64, so raising the limit too far breaks narrow
+        conditional circuits that used to export fine.
+        """
+        mock_results.return_value = [self._circuit_item(conditional=True)]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qasm2"
+        assert "if(" in program.data
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_reuses_refs_from_result(self, mock_results, mock_status):
+        """``result`` captures the refs, so this costs no second results listing."""
+        mock_results.return_value = [self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        assert mock_results.call_count == 1
+
+        job.compiled_program()
+        job.compiled_program()
+        assert mock_results.call_count == 1
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_without_result_fetches_refs(self, mock_results, mock_status):
+        """Callers that never asked for counts still get the compiled program."""
+        mock_results.return_value = [self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        assert job.compiled_program().format == "qasm2"
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_batch_returns_list(self, mock_results, mock_status):
+        mock_results.return_value = [self._circuit_item(), self._circuit_item()]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        programs = job.compiled_program()
+
+        assert isinstance(programs, list)
+        assert [p.format for p in programs] == ["qasm2", "qasm2"]
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_skips_unmapped_ref_type(self, mock_results, mock_status):
+        """NEXUS picks the union arm; HUGR has no Program.format, so report nothing."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import HUGRRef
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = MagicMock(spec=HUGRRef)
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        assert job.compiled_program() is None
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_batch_keeps_unmapped_slots(self, mock_results, mock_status):
+        """A batch stays a list, positionally aligned, even when an entry is unmappable.
+
+        Dropping the unmappable entry would both collapse a two-program batch to a
+        scalar and silently shift the surviving program to the wrong index.
+        """
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import HUGRRef
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        hugr_item = MagicMock()
+        hugr_item.download_result.return_value = download
+        hugr_item.get_input.return_value = MagicMock(spec=HUGRRef)
+
+        mock_results.return_value = [self._circuit_item(), hugr_item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        programs = job.compiled_program()
+
+        assert isinstance(programs, list)
+        assert len(programs) == 2
+        assert programs[0].format == "qasm2"
+        assert programs[1] is None
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_result_survives_compiled_program_capture_failure(self, mock_results, mock_status):
+        """The compiled program is optional metadata; losing it must not discard the
+        measurement counts that were already downloaded successfully."""
+        download = MagicMock()
+        download.get_counts.return_value = {(0, 1): 512}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.side_effect = RuntimeError("connection reset")
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        result = job.result()
+
+        assert result.success is True
+        assert result.data.measurement_counts == {"01": 512}
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_none_before_completion(self, mock_results, mock_status):
+        """An unfinished job has no compiled program and must not fetch results."""
+        mock_status.return_value = _nexus_status("RUNNING")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        assert job.compiled_program() is None
+        mock_results.assert_not_called()
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_qir_job(self, mock_results, mock_status):
+        """NEXUS picks the union arm, so a QIR job must report qir.bc, not qasm2."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import QIRRef
+
+        qir_ref = MagicMock(spec=QIRRef)
+        qir_ref.download_qir.return_value = b"BC\xc0\xde"
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = qir_ref
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        program = job.compiled_program()
+
+        assert program.format == "qir.bc"
+        assert program.data == b"BC\xc0\xde"
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_wraps_fetch_errors(self, mock_results, mock_status):
+        """A standalone call fetches its own refs; NEXUS failures there must surface
+        as QuantinuumJobError rather than a raw transport exception."""
+        mock_status.return_value = _nexus_status("COMPLETED")
+        mock_results.side_effect = RuntimeError("connection reset")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        with pytest.raises(QuantinuumJobError, match="Failed to fetch compiled program"):
+            job.compiled_program()
+
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_absence_not_cached_before_completion(self, mock_results, mock_status):
+        """A job polled before it finishes must still report its program afterwards.
+
+        Caching the empty result of an early call would pin ``None`` for the life of
+        the job object, since the cache check short-circuits the refs reload.
+        """
+        mock_results.return_value = [self._circuit_item()]
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+
+        mock_status.return_value = _nexus_status("RUNNING")
+        assert job.compiled_program() is None
+
+        mock_status.return_value = _nexus_status("COMPLETED")
+        job._cache_metadata.pop("status", None)  # pylint: disable=protected-access
+        assert job.compiled_program().format == "qasm2"
+
+    @pytest.mark.parametrize("ref_kind", ["circuit", "qir"])
+    @patch("qnexus.jobs.status")
+    @patch("qnexus.jobs.results")
+    def test_compiled_program_wraps_download_errors(self, mock_results, mock_status, ref_kind):
+        """Downloading the program is a separate NEXUS request from fetching the refs,
+        so its failures need the same wrapping rather than escaping as transport errors."""
+        # pylint: disable-next=import-outside-toplevel
+        from qnexus.models.references import CircuitRef, QIRRef
+
+        if ref_kind == "circuit":
+            ref = MagicMock(spec=CircuitRef)
+            ref.download_circuit.side_effect = RuntimeError("connection reset")
+        else:
+            ref = MagicMock(spec=QIRRef)
+            ref.download_qir.side_effect = RuntimeError("connection reset")
+
+        download = MagicMock()
+        download.get_counts.return_value = {(0,): 1}
+        item = MagicMock()
+        item.download_result.return_value = download
+        item.get_input.return_value = ref
+        mock_results.return_value = [item]
+        mock_status.return_value = _nexus_status("COMPLETED")
+
+        job = QuantinuumJob(job_id="job-123", job=MagicMock(name="ref"))
+        job.result()
+        with pytest.raises(QuantinuumJobError, match="Failed to download compiled program"):
+            job.compiled_program()
+
 
 # Silence unused-import warnings from conditional imports referenced only in tests.
 _ = QuantinuumDeviceError
+
+
+class TestQueueLengths:
+    """The NEXUS remote-queue endpoint, which ``qnexus`` exposes no wrapper for.
+
+    Documented in the NEXUS OpenAPI schema as ``GET /api/v6/remote_queue/{issuer}``,
+    returning one ``DeviceQueueInfo`` (``issuer``, ``device_name``, ``queue_length``)
+    per device. It is the only source of queue data NEXUS publishes: the device
+    listing carries capability and calibration data only, and the machine-status
+    endpoint answers with a state, not a depth.
+    """
+
+    @staticmethod
+    def _client(payload, status_code=200):
+        """A stand-in for the authenticated NEXUS httpx client."""
+        response = MagicMock()
+        response.status_code = status_code
+        response.json.return_value = payload
+        client = MagicMock()
+        client.get.return_value = response
+        return client
+
+    def test_returns_a_name_to_length_mapping(self):
+        payload = [
+            {"issuer": "Quantinuum", "device_name": "H1-1", "queue_length": 7},
+            {"issuer": "Quantinuum", "device_name": "H2-1", "queue_length": 0},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H1-1": 7, "H2-1": 0}
+
+    def test_names_are_sent_as_a_filter_so_one_call_can_cover_many_devices(self):
+        """The endpoint is keyed by issuer, not device, so the filter is what keeps a
+        refresh over N devices from being N identical full-issuer fetches."""
+        client = self._client([{"device_name": "H1-1", "queue_length": 3}])
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            queue_lengths(["H1-1", "H2-1"])
+
+        _args, kwargs = client.get.call_args
+        assert kwargs["params"] == {"device_names": ["H1-1", "H2-1"]}
+
+    def test_no_names_sends_no_filter(self):
+        client = self._client([])
+        with patch("qnexus.client.get_nexus_client", return_value=client):
+            queue_lengths()
+
+        assert client.get.call_args.kwargs["params"] is None
+
+    def test_a_non_200_is_reported_as_unavailable(self):
+        with patch("qnexus.client.get_nexus_client", return_value=self._client([], 503)):
+            with pytest.raises(ResourceNotFoundError, match="503"):
+                queue_lengths()
+
+    def test_a_malformed_entry_is_skipped_rather_than_raising(self):
+        """A refresh walks every device, so one unreadable entry must not fail the rest.
+
+        ``queue_length`` is required by the schema, but a field renamed upstream should
+        cost that one device its answer, not the whole sweep. A non-object entry counts:
+        calling ``.get`` on it raises, which would lose every device after it, not just
+        the bad one — so the readable entry last in this payload is the assertion that
+        matters.
+        """
+        payload = [
+            {"device_name": "H1-1", "queue_length": 4},
+            {"device_name": "H2-1"},
+            {"device_name": "H2-2", "queue_length": "many"},
+            None,
+            "H3-1",
+            {"device_name": "H2-3", "queue_length": 9},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H1-1": 4, "H2-3": 9}
+
+    def test_a_boolean_queue_length_is_not_read_as_a_depth(self):
+        """``bool`` subclasses ``int``, so a JSON ``true`` would pass an ``isinstance``
+        check and be stored as a depth of 1 — a fabricated number, not a missing one."""
+        payload = [
+            {"device_name": "H1-1", "queue_length": True},
+            {"device_name": "H2-1", "queue_length": 0},
+        ]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert queue_lengths() == {"H2-1": 0}
+
+
+class TestQuantinuumDeviceQueueDepth:
+    """``queue_depth`` on the device, which reads the issuer-wide endpoint for one name."""
+
+    @staticmethod
+    def _client(payload):
+        response = MagicMock()
+        response.status_code = 200
+        response.json.return_value = payload
+        client = MagicMock()
+        client.get.return_value = response
+        return client
+
+    def test_returns_the_depth_for_this_device(self):
+        device = _make_device("H1-1")
+        payload = [{"device_name": "H1-1", "queue_length": 12}]
+        with patch("qnexus.client.get_nexus_client", return_value=self._client(payload)):
+            assert device.queue_depth() == 12
+
+    def test_a_device_nexus_does_not_report_raises_rather_than_reading_zero(self):
+        """Absent is not empty.
+
+        A cloud-hosted emulator does not queue behind hardware, so NEXUS reports no
+        length for it. Returning 0 would claim the device is idle, which is a different
+        statement from "this device has no queue".
+        """
+        device = _make_device("H1-1E", nexus_hosted=True)
+        with patch("qnexus.client.get_nexus_client", return_value=self._client([])):
+            with pytest.raises(ResourceNotFoundError, match="H1-1E"):
+                device.queue_depth()

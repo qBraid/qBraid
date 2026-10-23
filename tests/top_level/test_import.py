@@ -105,3 +105,27 @@ def test_lazy_loading_objects(obj_name):
     obj = getattr(qbraid, obj_name)
     assert obj is not None
     assert hasattr(qbraid, obj_name)
+
+
+@pytest.mark.parametrize(
+    "mod_name,obj_name",
+    [(mod, obj) for mod, objs in qbraid.runtime._lazy.items() for obj in objs],
+)
+def test_runtime_lazy_names_are_not_stale(mod_name, obj_name):
+    """Every name advertised by `qbraid.runtime` must exist on the module it names.
+
+    `__dir__` offers these names for tab completion, so a name left behind after its
+    export is dropped looks available and raises AttributeError on use. A missing
+    optional provider dependency is a different matter and skips instead.
+    """
+    import importlib
+
+    try:
+        module = importlib.import_module(f"qbraid.runtime.{mod_name}")
+    except ImportError as err:
+        pytest.skip(f"optional dependency for qbraid.runtime.{mod_name} not installed: {err}")
+
+    assert hasattr(module, obj_name), (
+        f"qbraid.runtime._lazy maps {obj_name!r} to qbraid.runtime.{mod_name}, "
+        f"which does not define it"
+    )
