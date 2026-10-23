@@ -743,6 +743,20 @@ def test_device_run_experimental_submits_openqasm_as_written(batch):
     assert isinstance(result, list) is batch
 
 
+def test_device_run_experimental_skips_the_feedforward_check():
+    """With experimental capabilities, a generic ``if`` reaches Braket as written; without
+    them, a device that does not list ``if`` rejects it."""
+    device = _qpu_device("IQM", ["h", "x", "cnot"])
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+
+    device.run(FEEDFORWARD_QASM3, shots=100, experimental_capabilities="ALL")
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert submitted == OpenQasmProgram(source=FEEDFORWARD_QASM3)
+
+    with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
+        device.run(FEEDFORWARD_QASM3, shots=100)
+
+
 @pytest.mark.parametrize(
     "run_input, kwargs",
     [
