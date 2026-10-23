@@ -105,8 +105,10 @@ def _update_registered_conversions() -> None:
         except ModuleNotFoundError:
             pass
         except Exception as err:  # pylint: disable=broad-exception-caught
-            # An SDK can be listed (found on disk) but fail to import. Skip only its
-            # conversions so the rest of the graph keeps working.
+            # Tolerate only an SDK that is on disk but fails to import. If the SDK itself
+            # loads, the failure is in qbraid's own conversion module and must surface.
+            if NATIVE_REGISTRY.get(lib) is not None:
+                raise
             logger.warning("Skipping conversions for '%s': %s: %s", lib, type(err).__name__, err)
 
 

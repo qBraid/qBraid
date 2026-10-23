@@ -332,6 +332,30 @@ class LazyTypeSet(MutableSet):
         for value in values:
             self.add(value)
 
+    def union(self, *others: Iterable[Any]) -> set[Type[Any]]:
+        """Return the union with ``others`` as a plain set."""
+        return self.copy().union(*others)
+
+    def intersection(self, *others: Iterable[Any]) -> set[Type[Any]]:
+        """Return the intersection with ``others`` as a plain set."""
+        return self.copy().intersection(*others)
+
+    def difference(self, *others: Iterable[Any]) -> set[Type[Any]]:
+        """Return the difference with ``others`` as a plain set."""
+        return self.copy().difference(*others)
+
+    def symmetric_difference(self, other: Iterable[Any]) -> set[Type[Any]]:
+        """Return the symmetric difference with ``other`` as a plain set."""
+        return self.copy().symmetric_difference(other)
+
+    def issubset(self, other: Iterable[Any]) -> bool:
+        """Return True if every registered type is in ``other``."""
+        return self.copy().issubset(other)
+
+    def issuperset(self, other: Iterable[Any]) -> bool:
+        """Return True if every element of ``other`` is a registered type."""
+        return self.copy().issuperset(other)
+
 
 def _available(lazy_types: dict[str, _LazyType]) -> dict[str, _LazyType]:
     return {alias: ref for alias, ref in lazy_types.items() if _module_available(ref.module)}

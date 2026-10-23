@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import sys
 import warnings
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
@@ -235,7 +236,8 @@ class IonQDevice(QuantumDevice):
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
 
-        qiskit_circuit_type = QPROGRAM_REGISTRY.get("qiskit")
+        # A program can only be a qiskit circuit if qiskit is already imported.
+        qiskit_circuit_type = QPROGRAM_REGISTRY.get("qiskit") if "qiskit" in sys.modules else None
         if (
             qiskit_circuit_type is not None
             and all(isinstance(program, qiskit_circuit_type) for program in run_input)

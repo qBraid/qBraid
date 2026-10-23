@@ -300,9 +300,10 @@ def test_broken_sdk_does_not_break_transpiler(tmp_path):
         "out = transpile(qasm2, 'qasm3', conversion_graph=ConversionGraph())\n"
         "ConversionGraph(require_native=True)\n"
         "assert out.startswith('OPENQASM 3'), out\n"
-        "assert not hasattr(gate_model, 'pytket')\n"
-        "assert 'pytket' not in gate_model.__all__\n"
         "exec('from qbraid.programs.gate_model import *', {})\n"
+        "assert 'pytket' not in gate_model.__all__\n"
+        "assert not hasattr(gate_model, 'pytket')\n"
+        "assert 'pytket' not in dir(gate_model)\n"
     )
     env = {**os.environ, "PYTHONPATH": os.pathsep.join([str(tmp_path), *sys.path])}
     result = subprocess.run(
@@ -347,6 +348,12 @@ def test_type_set_supports_set_operations():
     assert types_set ^ {str, dict} == {int, dict}
     assert copy.deepcopy(types_set) == {str, int}
     assert pickle.loads(pickle.dumps(types_set)) == {str, int}
+    assert types_set.union({dict}, [list]) == {str, int, dict, list}
+    assert types_set.intersection({str, dict}) == {str}
+    assert types_set.difference({str}) == {int}
+    assert types_set.symmetric_difference({str, dict}) == {int, dict}
+    assert types_set.issubset({str, int, dict})
+    assert types_set.issuperset([str])
 
 
 def test_conversion_graph_tolerates_aliases_dropped_while_building(monkeypatch):
@@ -368,29 +375,55 @@ def test_conversion_graph_tolerates_aliases_dropped_while_building(monkeypatch):
     assert not graph.has_node("probe_a")
 
 
-def test_conversions_skip_sdk_that_fails_to_import(monkeypatch, caplog):
-    """A conversion module that raises on import is skipped with a warning."""
+def _rebuild_conversions_with(monkeypatch, failing_module, error):
+    """Rebuild the conversion table with one conversion module raising on import."""
     conversions = importlib.import_module("qbraid.transpiler.conversions")
     real_import_module = importlib.import_module
 
     def import_module(name, *args, **kwargs):
-        if name == "qbraid.transpiler.conversions.qasm3":
-            raise ImportError("broken install")
+        if name == f"qbraid.transpiler.conversions.{failing_module}":
+            raise error
         return real_import_module(name, *args, **kwargs)
 
     monkeypatch.setattr(
         conversions, "importlib", types.SimpleNamespace(import_module=import_module)
     )
-    try:
-        with caplog.at_level(logging.WARNING):
-            conversions._update_registered_conversions()  # pylint: disable=protected-access
+    conversions._update_registered_conversions()  # pylint: disable=protected-access
+    return conversions
 
-        assert "Skipping conversions for 'qasm3'" in caplog.text
-        assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
-        assert "qasm2_to_qasm3" in conversions.conversion_functions
-    finally:
-        monkeypatch.undo()
-        conversions._update_registered_conversions()  # pylint: disable=protected-access
+
+@pytest.fixture
+def restore_conversions(monkeypatch):
+    """Undo patches and rebuild the real conversion table after the test."""
+    yield
+    monkeypatch.undo()
+    conversions = importlib.import_module("qbraid.transpiler.conversions")
+    conversions._update_registered_conversions()  # pylint: disable=protected-access
+
+
+@pytest.mark.usefixtures("probe_packages", "restore_conversions")
+def test_conversions_skip_sdk_that_fails_to_import(monkeypatch, caplog):
+    """Conversions for an SDK that is listed but fails to import are skipped."""
+    conversions = importlib.import_module("qbraid.transpiler.conversions")
+    registry = conversions.NATIVE_REGISTRY.copy()
+    registry["pytket"] = _LazyType("qbraid_probe_bad", "Program")
+    monkeypatch.setattr(conversions, "NATIVE_REGISTRY", registry)
+
+    with caplog.at_level(logging.WARNING):
+        conversions = _rebuild_conversions_with(
+            monkeypatch, "pytket", ImportError("broken install")
+        )
+
+    assert "Skipping conversions for 'pytket'" in caplog.text
+    assert not any(name.startswith("pytket_to_") for name in conversions.conversion_functions)
+    assert "qasm2_to_qasm3" in conversions.conversion_functions
+
+
+@pytest.mark.usefixtures("restore_conversions")
+def test_conversions_surface_errors_in_qbraid_code(monkeypatch):
+    """A failure in qbraid's own conversion module is raised, not skipped."""
+    with pytest.raises(NameError, match="bug in conversion module"):
+        _rebuild_conversions_with(monkeypatch, "qasm3", NameError("bug in conversion module"))
 
 
 @pytest.mark.parametrize("package", ["gate_model", "analog", "annealing"])
@@ -398,8 +431,9 @@ def test_program_subpackage_hides_wrapper_that_fails_to_import(monkeypatch, pack
     """A wrapper submodule that cannot be imported is not an attribute."""
     module = importlib.import_module(f"qbraid.programs.{package}")
     monkeypatch.setattr(module, "submodules", [*module.submodules, "qbraid_probe_missing"])
-    monkeypatch.setattr(module, "__all__", [*module.__all__, "qbraid_probe_missing"])
+    assert "qbraid_probe_missing" in dir(module)
+    assert "qbraid_probe_missing" not in module.__all__
 
     assert not hasattr(module, "qbraid_probe_missing")
     assert "qbraid_probe_missing" not in module.submodules
-    assert "qbraid_probe_missing" not in module.__all__
+    assert "qbraid_probe_missing" not in dir(module)

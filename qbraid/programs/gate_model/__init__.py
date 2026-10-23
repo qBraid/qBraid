@@ -70,8 +70,6 @@ def __getattr__(name):
         except ImportError as err:
             # The SDK was found on disk but does not import; behave as if absent.
             submodules.remove(name)
-            if name in __all__:
-                __all__.remove(name)
             raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from err
         globals()[name] = module
         return module
@@ -80,4 +78,8 @@ def __getattr__(name):
 
 __all__ = ["GateModelProgram"]
 
-__all__.extend(submodules)
+# SDK wrappers stay out of __all__: a star-import would otherwise import every SDK.
+
+
+def __dir__():
+    return sorted(set(globals()) | set(submodules))
