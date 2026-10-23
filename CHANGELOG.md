@@ -37,6 +37,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Braket circuits with `control`, `control_state` or `power` modifiers no longer lose them when converted to Cirq (and so to OpenQASM 2 and pyQuil). Modifiers Cirq can't apply now raise instead of returning a different circuit ([#1497](https://github.com/qBraid/qBraid/pull/1497))
 - Programs that fail to parse as OpenQASM now say why. A string with no `OPENQASM` header no longer fails with "No conversion path found from 'str'", and syntax errors name the offending token, line and column instead of an empty reason ([#1490](https://github.com/qBraid/qBraid/pull/1490))
 - Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
 - Converting a qrisp circuit to pytket no longer reorders qubits whose names sort differently as text and as numbers (for example `qb_99` and `qb_100`), which produced a circuit acting on the wrong qubits ([#1482](https://github.com/qBraid/qBraid/pull/1482))

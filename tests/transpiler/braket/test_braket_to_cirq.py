@@ -348,3 +348,75 @@ def test_from_braket_instruction_three_qubit():
     instr.operator.to_matrix = lambda: np.eye(8)
     cirq_instr = _from_braket_instruction(instr, qubit_mapping)
     assert isinstance(cirq_instr[0].gate, cirq.MatrixGate)
+
+
+@pytest.mark.parametrize(
+    "braket_circuit",
+    [
+        BKCircuit().s(1, control=0),
+        BKCircuit().h(1, control=0),
+        BKCircuit().rx(1, 0.3, control=0),
+        BKCircuit().x(1, control=0, control_state="0"),
+        BKCircuit().swap(1, 2, control=0),
+        BKCircuit().s(0, power=2),
+        BKCircuit().h(0).rx(0, 0.4, power=0.5),
+        BKCircuit().s(1, control=0, power=3),
+    ],
+)
+def test_from_braket_applies_control_and_power_modifiers(braket_circuit):
+    """Test that control, control_state and power modifiers are not dropped."""
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    assert len(cirq_circuit.all_qubits()) == braket_circuit.qubit_count
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+def test_from_braket_multi_qubit_control_state_order():
+    """Test that control_state bits line up with the control qubits in order.
+
+    Compared by simulation rather than circuits_allclose: Braket's LocalSimulator
+    flips the target only for q0=0, q1=1 here, but Circuit.to_unitary() reverses
+    multi-qubit control states, so a unitary comparison would expect the wrong state.
+    """
+    braket_circuit = BKCircuit().x(2, control=[0, 1], control_state="01")
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    qubits = sorted(cirq_circuit.all_qubits())
+    flipped = []
+    for basis in range(8):
+        state = (
+            cirq.Simulator()
+            .simulate(cirq_circuit, qubit_order=qubits, initial_state=basis)
+            .final_state_vector
+        )
+        if int(np.argmax(np.abs(state))) != basis:
+            flipped.append(format(basis, "03b"))
+    assert flipped == ["010", "011"]
+
+
+@pytest.mark.parametrize(
+    "braket_circuit",
+    [
+        BKCircuit().h(0).phaseshift(0, 1.5 * np.pi, power=0.5),
+        BKCircuit().h(0).phaseshift(0, 1.5 * np.pi, power=-0.5),
+        BKCircuit().h(0).h(1).rz(1, 3 * np.pi, control=0, power=0.5),
+        BKCircuit().h(0).h(1).rx(1, 3 * np.pi, control=0, power=0.5),
+        BKCircuit().x(0, power=-0.5),
+        BKCircuit().h(0, power=0.5),
+    ],
+)
+def test_from_braket_fractional_power_matches_braket_simulator(braket_circuit):
+    """Test that fractional powers follow Braket's principal matrix power.
+
+    Scaling the gate exponent agrees with Braket only while eigenphases stay within
+    (-pi, pi], so these cases use angles past pi and negative powers. Compared with
+    Braket's LocalSimulator, which applies the power itself.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from braket.devices import LocalSimulator
+
+    expected = (
+        LocalSimulator().run(braket_circuit.copy().state_vector(), shots=0).result().values[0]
+    )
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    qubits = [LineQubit(q) for q in range(braket_circuit.qubit_count)]
+    actual = cirq.final_state_vector(cirq_circuit, qubit_order=qubits, dtype=np.complex128)
+    assert abs(np.vdot(expected, actual)) ** 2 == pytest.approx(1.0)
