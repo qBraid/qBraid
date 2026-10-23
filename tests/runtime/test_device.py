@@ -1760,6 +1760,27 @@ def test_best_qubits_ranking_skips_flagged_qubits(mock_profile):
         device.best_qubits(3)
 
 
+def test_best_qubits_ranking_drops_unflagged_full_error(mock_profile):
+    """Ranking leaves out a qubit whose published error is 1, flagged or not."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 1.0)}, [])
+    device = _device_with(calibration, mock_profile)
+
+    assert device.best_qubits(1) == (0,)
+    with pytest.raises(ValueError, match="1 usable calibrated qubits; 2 requested"):
+        device.best_qubits(2)
+
+
+def test_best_qubits_chain_error_names_flagged_qubits(mock_profile):
+    """A chain blocked by a flagged qubit says so, not only that the edges failed."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 0.001)}, [(0, 1, 0.01)])
+    device = _device_with(
+        _with_qubit_flags(calibration, "0", {"readoutError": False}), mock_profile
+    )
+
+    with pytest.raises(ValueError, match="using only usable qubits and two-qubit gate errors"):
+        device.best_qubits(2)
+
+
 def test_best_qubits_single_raises_when_every_qubit_flagged(mock_profile):
     """``best_qubits(1)`` raises rather than return a placeholder when no qubit is usable."""
     calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 0.001)}, [(0, 1, 0.01)])

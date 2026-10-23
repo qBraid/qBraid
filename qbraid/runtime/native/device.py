@@ -144,9 +144,9 @@ class QbraidDevice(QuantumDevice):
             ValueError: If the device is not gate-model (e.g. analog neutral
                 atom, where atom geometry is programmable and there is no fixed
                 qubit lattice to select from), ``num_qubits < 1``, no connected
-                chain of that length has usable two-qubit gate errors, ``gate``
-                has no calibrated edges, or the device has fewer usable
-                calibrated qubits than requested.
+                chain of that length has usable qubits and two-qubit gate
+                errors, ``gate`` has no calibrated edges, or the device has
+                fewer usable calibrated qubits than requested.
         """
         experiment_type = self.profile.experiment_type
         if experiment_type is not None and experiment_type != ExperimentType.GATE_MODEL:
@@ -175,8 +175,8 @@ class QbraidDevice(QuantumDevice):
         chain = best_chain(node_costs, edge_costs_map, num_qubits)
         if chain is None:
             raise ValueError(
-                f"No connected chain of {num_qubits} qubits with usable two-qubit gate errors "
-                "exists on this device's coupling graph"
+                f"No connected chain of {num_qubits} qubits exists on this device's coupling "
+                "graph using only usable qubits and two-qubit gate errors"
             )
         return tuple(chain)
 
