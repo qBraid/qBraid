@@ -686,6 +686,36 @@ def test_device_run_converts_without_experimental_openqasm3(run_input, kwargs):
     assert submit.call_args.args[0] == Circuit()
 
 
+@pytest.mark.parametrize("value", ["NONE", None, ""])
+def test_device_run_experimental_disabled_converts(value):
+    """``"NONE"``, which the Braket SDK rejects, and falsy values run without the flag."""
+    device = _qpu_device("IQM")
+
+    with (
+        patch.object(QuantumDevice, "apply_runtime_profile", return_value=Circuit()) as apply,
+        patch.object(BraketDevice, "submit") as submit,
+    ):
+        device.run("OPENQASM 3.0;\nqubit[1] q;\n", shots=100, experimental_capabilities=value)
+
+    apply.assert_called_once()
+    assert "experimental_capabilities" not in submit.call_args.kwargs
+
+
+@pytest.mark.parametrize("value", ["all", True, "MEASURE_FF"])
+@pytest.mark.parametrize("method", ["run", "submit"])
+def test_device_experimental_invalid_value_raises_before_submission(value, method):
+    """Values other than ``"ALL"`` and ``"NONE"`` fail before any task is created."""
+    device = _qpu_device("IQM")
+    run_input = (
+        IQM_FEEDFORWARD_QASM3 if method == "run" else OpenQasmProgram(source=IQM_FEEDFORWARD_QASM3)
+    )
+
+    with pytest.raises(ValueError, match="Invalid experimental_capabilities"):
+        getattr(device, method)(run_input, shots=100, experimental_capabilities=value)
+
+    device._device.run_batch.assert_not_called()
+
+
 @patch("qbraid.runtime.aws.BraketProvider")
 def test_device_submit_task_with_tags(mock_provider):
     """Test getting tagged quantum tasks."""

@@ -490,6 +490,17 @@ def test_aquila_device_submit(aquila_profile, ahs_program):
         assert task.id == TASK_ARN
 
 
+def test_aquila_device_run_experimental_capabilities(aquila_profile, ahs_program):
+    """AHS programs take the usual path, and the flag still reaches the task request."""
+    device = BraketDevice(profile=aquila_profile, session=MockAwsSession())
+    device._device = MockAquilaDevice()
+
+    with patch.object(MockAwsSession, "create_quantum_task", return_value=TASK_ARN) as create:
+        device.run(ahs_program, shots=100, experimental_capabilities="ALL")
+
+    assert create.call_args.kwargs["experimentalCapabilities"] == {"enabled": "ALL"}
+
+
 @patch("qbraid.runtime.aws.device.AwsDevice")
 @patch("braket.ahs.analog_hamiltonian_simulation.AnalogHamiltonianSimulation.discretize")
 def test_transform_ahs_programs(mock_aws_device, mock_discretize, aquila_profile, ahs_program):
