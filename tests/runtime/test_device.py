@@ -31,7 +31,7 @@ import numpy as np
 import pytest
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
-from qbraid._caching import cache_disabled
+from qbraid._caching import cache_disabled, clear_cache
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
@@ -1176,6 +1176,92 @@ def test_coupling_map_cached_per_device(mock_profile):
 
     assert first == second
     client.get_device_calibrations.assert_called_once()
+
+
+@pytest.fixture
+def calibration_cache(monkeypatch):
+    """Turn method caching on, with an empty cache before and after the test."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    clear_cache()
+    yield
+    clear_cache()
+
+
+def _device(mock_profile, device_id: str, client: Mock) -> QbraidDevice:
+    """A QbraidDevice with ``device_id``, built on the shared mock profile."""
+    profile = mock_profile.model_copy(update={"device_id": device_id})
+    return QbraidDevice(profile=profile, client=client)
+
+
+def test_get_calibrations_cached_per_device(mock_profile, calibration_cache):
+    """Repeated calls within five minutes make one request."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    first = device.get_calibrations()
+    device.best_qubits(2)
+
+    assert device.get_calibrations() is first
+    client.get_device_calibrations.assert_called_once_with(device.id)
+
+
+def test_get_calibrations_refetched_after_five_minutes(mock_profile, calibration_cache):
+    """The cached snapshot expires after five minutes."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    with patch("qbraid._caching.time.time", return_value=1_000.0):
+        device.get_calibrations()
+    with patch("qbraid._caching.time.time", return_value=1_299.0):
+        device.get_calibrations()
+    assert client.get_device_calibrations.call_count == 1
+
+    with patch("qbraid._caching.time.time", return_value=1_301.0):
+        device.get_calibrations()
+    assert client.get_device_calibrations.call_count == 2
+
+
+def test_get_calibrations_cache_keyed_by_device_id(mock_profile, calibration_cache):
+    """Freed devices never hand their snapshot to a new device at the same address."""
+    client = Mock()
+    client.get_device_calibrations.side_effect = (
+        lambda device_id: _cepheus_calibration().model_copy(
+            update={"physical_device_id": device_id}
+        )
+    )
+
+    for i in range(50):
+        device_id = f"vendor:vendor:qpu:device-{i}"
+        calibration = _device(mock_profile, device_id, client).get_calibrations()
+        assert calibration.physical_device_id == device_id
+
+
+def test_get_calibrations_shared_by_same_device_id(mock_profile, calibration_cache):
+    """Two objects for one device share the cached snapshot."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    first = _device(mock_profile, CEPHEUS_QRN, client)
+    second = _device(mock_profile, CEPHEUS_QRN, client)
+
+    assert hash(first) == hash(second)
+    assert first != second
+    assert second.get_calibrations() is first.get_calibrations()
+    client.get_device_calibrations.assert_called_once()
+
+
+def test_get_calibrations_cache_disabled_fetches(mock_profile, calibration_cache):
+    """cache_disabled fetches a new snapshot."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    device.get_calibrations()
+    with cache_disabled(device):
+        device.get_calibrations()
+
+    assert client.get_device_calibrations.call_count == 2
 
 
 class TestSupportedRunInputs:

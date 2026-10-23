@@ -32,6 +32,7 @@ Writing an entry:
 
 ### Improved / Modified
 - `QbraidDevice.best_qubits()` no longer selects a qubit whose readout or gate error, or an edge whose two-qubit gate error, the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. Flags on T1, T2 and frequency are ignored. When one qubit is requested or the device has no couplers, the ranking also leaves out qubits with an error of 1 or outside `[0, 1]`, such as IBM's unflagged 1.0 placeholders, which it used to rank last. When too few usable qubits remain, it raises `ValueError` instead of returning unusable ones ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
+- `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 
 ### Deprecated
 

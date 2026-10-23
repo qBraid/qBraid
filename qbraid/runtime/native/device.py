@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any, overload
 from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
 
+from qbraid._caching import cached_method
 from qbraid._logging import logger
 from qbraid.programs import ExperimentType
 from qbraid.runtime.device import QuantumDevice
@@ -66,6 +67,10 @@ class QbraidDevice(QuantumDevice):
         """String representation of the QbraidDevice object."""
         return f"{self.__class__.__name__}('{self.id}')"
 
+    def __hash__(self):
+        """Hash by device ID, so cached methods key on the device, not the object."""
+        return hash((self.__class__.__name__, self.id))
+
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
@@ -76,13 +81,17 @@ class QbraidDevice(QuantumDevice):
         device_data = self.client.get_device(self.id)
         return device_data.queueDepth or 0
 
+    @cached_method(ttl=300)
     def get_calibrations(self) -> DeviceCalibration | None:
         """Return the latest calibration snapshot for this device.
 
-        Fetched live on every call, so repeated calls track the platform's
-        refresh cadence. The snapshot includes per-edge two-qubit gate errors
-        (each entry naming the physical ``source``/``target`` qubit pair),
-        per-qubit metrics, and calibration timestamps.
+        The platform refreshes calibrations every two hours, so the result is
+        cached for five minutes per device ID. Use ``qbraid.cache_disabled``
+        or ``qbraid.clear_cache`` to fetch a new snapshot sooner. Calls within
+        the cache window return the same object, so treat it as read-only. The
+        snapshot includes per-edge two-qubit gate errors (each entry naming the
+        physical ``source``/``target`` qubit pair), per-qubit metrics, and
+        calibration timestamps.
 
         Returns:
             The device's ``DeviceCalibration``, or ``None`` when the device
@@ -97,8 +106,7 @@ class QbraidDevice(QuantumDevice):
         Every calibrated two-qubit gate edge names a physically coupled qubit
         pair, so the union of edges across all calibrated gates is the
         device's coupling graph. Cached per device instance — connectivity is
-        fixed hardware topology; use :meth:`get_calibrations` for fresh error
-        rates.
+        fixed hardware topology; use :meth:`get_calibrations` for error rates.
 
         Returns:
             Sorted ``(source, target)`` pairs, or ``None`` when the device has
@@ -118,14 +126,14 @@ class QbraidDevice(QuantumDevice):
     def best_qubits(self, num_qubits: int, gate: str | None = None) -> tuple[int, ...] | None:
         """Select the best-calibrated qubits for a circuit of ``num_qubits`` qubits.
 
-        Fetches a fresh calibration snapshot and returns the connected chain of
-        physical qubits maximizing estimated fidelity: the product of
-        ``(1 - error)`` over each qubit's readout and gate errors and each
-        edge's two-qubit gate error. The chain is returned in path order, ready
-        for e.g. Qiskit's ``initial_layout``. Calibrations shift with every
-        refresh, so select shortly before submitting. A qubit or edge whose
-        error the provider flags as a placeholder (``calibrated=False``) is
-        never selected.
+        Uses the current calibration snapshot (see :meth:`get_calibrations`)
+        and returns the connected chain of physical qubits maximizing estimated
+        fidelity: the product of ``(1 - error)`` over each qubit's readout and
+        gate errors and each edge's two-qubit gate error. The chain is returned
+        in path order, ready for e.g. Qiskit's ``initial_layout``. Calibrations
+        shift with every refresh, so select shortly before submitting. A qubit
+        or edge whose error the provider flags as a placeholder
+        (``calibrated=False``) is never selected.
 
         For devices that publish qubit metrics but no coupling edges (all-to-all
         connectivity, e.g. trapped ion), returns the ``num_qubits`` individually
