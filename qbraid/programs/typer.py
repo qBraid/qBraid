@@ -22,11 +22,13 @@ import re
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Type, TypeVar
 
+from openqasm3.parser import parse
 from pyqasm.analyzer import Qasm3Analyzer
 from pyqasm.exceptions import QasmParsingError
 
 from .exceptions import QasmError
 from .exceptions import ValidationError as ProgramValidationError
+from .exceptions import describe_error
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
 QuboCoefficientsDictType = TypeVar("QuboCoefficientsDictType", bound=dict)
@@ -312,6 +314,25 @@ def get_qasm_type_alias(qasm: str) -> str:
     if isinstance(qasm, Qasm2KirinString):
         return Qasm2KirinString.__alias__
     raise QasmError("Could not determine the type alias: the OpenQASM program may be invalid.")
+
+
+def explain_unrecognized_qasm(qasm: str) -> str:
+    """Explain why a string was not recognised as an OpenQASM 2 or 3 program.
+
+    Returns a sentence naming the missing or unsupported version header, followed by the
+    OpenQASM 3 parser's reason when the string does not parse.
+    """
+    try:
+        version = Qasm3Analyzer.extract_qasm_version(qasm)
+        reason = f"OpenQASM version {version} is not supported"
+    except QasmParsingError:
+        reason = "no 'OPENQASM 2.0;' or 'OPENQASM 3.0;' header found"
+    message = f"Program not recognised as OpenQASM 2 or 3: {reason}."
+    try:
+        parse(qasm)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        message += f" OpenQASM 3 parser error: {describe_error(err)}"
+    return message
 
 
 QBRAID_META_TYPES = {IonQDict, QuboCoefficientsDict}

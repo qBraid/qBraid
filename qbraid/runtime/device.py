@@ -25,6 +25,8 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, cast
 
+from pyqasm.exceptions import PyQasmError, QasmParsingError
+
 from qbraid._logging import logger
 from qbraid.programs import (
     ProgramLoaderError,
@@ -33,6 +35,7 @@ from qbraid.programs import (
     get_program_type_alias,
     load_program,
 )
+from qbraid.programs.typer import explain_unrecognized_qasm
 from qbraid.transpiler import (
     ConversionGraph,
     ConversionPathNotFoundError,
@@ -366,6 +369,10 @@ class QuantumDevice(ABC):
             except (ProgramConversionError, ConversionPathNotFoundError) as err:
                 cached_errors.append(err)
 
+        if isinstance(run_input, str) and run_input_spec.alias == "str":
+            # no registered program type matched, so every target fails with "no path from str"
+            raise ProgramConversionError(explain_unrecognized_qasm(run_input)) from cached_errors[0]
+
         if len(cached_errors) == 1:
             raise cached_errors[0]
 
@@ -411,15 +418,22 @@ class QuantumDevice(ABC):
         for run_input in run_input_batch:
             try:
                 program = load_program(run_input)
+                num_qubits = program.num_qubits
             except ProgramLoaderError:
                 logger.info(
                     "Skipping qubit count validation: program type '%s' not supported natively.",
                     type(run_input).__name__,
                 )
+            except (PyQasmError, QasmParsingError) as err:
+                # The parser rejects a vendor's own instruction, such as IQM's measure_ff,
+                # which the device accepts. Any other error is a defect in the program.
+                if "Unsupported / undeclared QASM operation" not in str(err):
+                    raise
+                logger.info("Skipping qubit count validation: %s", err)
             else:
-                if self.num_qubits and program.num_qubits > self.num_qubits:
+                if self.num_qubits and num_qubits > self.num_qubits:
                     message = (
-                        f"Number of qubits in the circuit ({program.num_qubits}) exceeds "
+                        f"Number of qubits in the circuit ({num_qubits}) exceeds "
                         f"the device's capacity ({self.num_qubits})."
                     )
                     if level == ValidationLevel.RAISE:

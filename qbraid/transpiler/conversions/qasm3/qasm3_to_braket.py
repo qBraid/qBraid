@@ -30,7 +30,7 @@ from qbraid.passes.qasm.compat import (
     remove_stdgates_include,
     replace_gate_names,
 )
-from qbraid.programs.exceptions import QasmError
+from qbraid.programs.exceptions import QasmError, describe_error
 from qbraid.transpiler.annotations import weight
 
 braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
@@ -140,7 +140,11 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         program = braket_openqasm.Program(source=qasm)
         return braket_circuits.Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
-        msg = f"Error converting qasm3 string to braket circuit: {err}"
-        if prior_errors:
-            msg += ". Prior errors: " + "; ".join(f"{label}: {e}" for label, e in prior_errors)
+        detail = describe_error(err)
+        msg = f"Error converting qasm3 string to braket circuit: {detail}"
+        # a syntax error fails every step the same way, so repeats add nothing
+        prior = [(label, describe_error(e)) for label, e in prior_errors]
+        prior = [(label, text) for label, text in prior if not text.endswith(detail)]
+        if prior:
+            msg += ". Prior errors: " + "; ".join(f"{label}: {text}" for label, text in prior)
         raise QasmError(msg) from err

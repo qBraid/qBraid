@@ -90,6 +90,9 @@ jobs:
           echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
         env:
           QBRAID_RUN_REMOTE_TESTS: False
+          # Runs outside tox, so repeat the unit-tests env's static TLS reservation for
+          # qiskit>=2.6 and pyqpanda3.
+          GLIBC_TUNABLES: glibc.rtld.optional_static_tls=2048
         continue-on-error: true
 
       # Run even if pytest crashes (e.g. import error, segfault) so we always get a summary
