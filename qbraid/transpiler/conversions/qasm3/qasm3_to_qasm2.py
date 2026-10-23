@@ -49,6 +49,7 @@ _DECLARATION = re.compile(r"^(qubit|bit)\[(\d+)\] (\w+);$")
 _MEASUREMENT = re.compile(r"^(\w+\[\d+\]) = measure (\w+\[\d+\]);$")
 _UNTARGETED_MEASUREMENT = re.compile(r"^measure (\w+\[\d+\]);$")
 _GATE = re.compile(r"^(\w+)(?:\([^)]*\))? [^;]+;$")
+_BOX = re.compile(r"^box(?:\[[^\]]*\])? \{$")
 _GATE_DEFINITION = re.compile(r"\bgate\s+(\w+)")
 _EXPONENT_WITHOUT_POINT = re.compile(r"(?<![\w.])(\d+)([eE][-+]?\d+)")
 
@@ -72,10 +73,17 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
     """
     # Unrolling drops a write such as ``c[1] = 1;`` without a trace, and the whole
     # register would then report that bit as 0.
-    finder = _BitWriteFinder()
-    finder.visit(pyqasm.loads(qasm).original_program)
-    if finder.found:
+    program = pyqasm.loads(qasm).original_program
+    bit_writes = _BitWriteFinder()
+    bit_writes.visit(program)
+    if bit_writes.found:
         raise ValueError("OpenQASM 2 cannot express a classical write to a bit.")
+    # pyqasm unrolls ``cx a, b`` over two registers as ``cx a[0], a[1]; cx b[0], b[1];``
+    # (qBraid/pyqasm#384); the Cirq path broadcasts it correctly.
+    broadcasts = _BroadcastFinder()
+    broadcasts.visit(program)
+    if broadcasts.found:
+        raise ValueError("Cannot unroll a multi-qubit gate broadcast over a register.")
 
     unrolled = _unroll(qasm)
     if "$" in unrolled:
@@ -83,7 +91,7 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
 
     lines = ["OPENQASM 2.0;", 'include "qelib1.inc";']
     untargeted = _untargeted_register(unrolled)
-    untargeted_bits = declaration_at = 0
+    untargeted_bits = declaration_at = open_boxes = 0
     for statement in unrolled.splitlines():
         statement = statement.strip()
         if not statement or statement.startswith(("OPENQASM", "include")):
@@ -101,6 +109,10 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
                 declaration_at = len(lines)
             lines.append(f"measure {measurement.group(1)} -> {untargeted}[{untargeted_bits}];")
             untargeted_bits += 1
+        elif _BOX.match(statement):
+            open_boxes += 1  # A box only schedules its body, so the body is kept as is.
+        elif statement == "}" and open_boxes:
+            open_boxes -= 1
         elif statement.startswith(("reset ", "barrier ")):
             lines.append(statement)
         elif statement.startswith("gphase"):
@@ -146,6 +158,52 @@ class _BitWriteFinder(QASMVisitor):
         target = node.lvalue.name
         name = target.name if isinstance(target, ast.Identifier) else target
         self.found |= name in self.bits
+
+
+class _BroadcastFinder(QASMVisitor):
+    """Records whether a gate on two or more operands broadcasts over a register."""
+
+    def __init__(self):
+        self.registers: set[str] = set()
+        self.found = False
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_QubitDeclaration(self, node: ast.QubitDeclaration, context=None) -> None:
+        """Track qubit registers, which a bare name broadcasts over."""
+        if node.size is not None:
+            self.registers.add(node.qubit.name)
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_AliasStatement(self, node: ast.AliasStatement, context=None) -> None:
+        """Treat an alias as a register, since it may name several qubits."""
+        self.registers.add(node.target.name)
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_QuantumArgument(self, node: ast.QuantumArgument, context=None) -> None:
+        """Track a subroutine's register arguments."""
+        if node.size is not None:
+            self.registers.add(node.name.name)
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_QuantumGateDefinition(self, node: ast.QuantumGateDefinition, context=None) -> None:
+        """Skip gate bodies, whose operands are always single qubits."""
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_QuantumGate(self, node: ast.QuantumGate, context=None) -> None:
+        """Flag a gate on two or more operands where one names several qubits."""
+        if len(node.qubits) > 1:
+            self.found |= any(self._is_register(operand) for operand in node.qubits)
+
+    def _is_register(self, operand: ast.Expression) -> bool:
+        if isinstance(operand, ast.Identifier):
+            return operand.name in self.registers
+        if isinstance(operand, ast.IndexedIdentifier):
+            return any(
+                isinstance(index, (ast.RangeDefinition, ast.DiscreteSet))
+                for indices in operand.indices
+                for index in (indices if isinstance(indices, list) else [indices])
+            )
+        return False
 
 
 def _unroll(qasm: str) -> str:

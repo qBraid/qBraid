@@ -142,6 +142,7 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
         "qubit[1] q;\nbit c;\nc = measure q[0];\nc = ~c;\n",
         'qubit[1] q;\nbit[2] c = "01";\nc[0] = measure q[0];\n',
         "qubit[1] q;\nbit[2] c;\nfor int i in [0:1] { c[i] = 1; }\n",
+        "qubit[2] q;\nbox { x q[0]; delay[10ns] q[1]; }\n",
     ],
     ids=[
         "bit-condition",
@@ -155,12 +156,50 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
         "bit-write-whole-register",
         "bit-initializer",
         "bit-write-in-loop",
+        "delay-in-box",
     ],
 )
 def test_statement_qasm2_cannot_express_raises(body):
     """The transpiler tries its next conversion path on ValueError."""
     with pytest.raises(ValueError, match="OpenQASM 2 cannot"):
         qasm3_to_qasm2(HEADER + body)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "qubit[2] a;\nqubit[2] b;\ncx a, b;\n",
+        "qubit[4] q;\ncx q[0:1], q[2:3];\n",
+        "qubit[4] q;\nlet a = q[0:1];\nlet b = q[2:3];\ncx a, b;\n",
+        "def f(qubit[2] a, qubit[2] b) { cx a, b; }\nqubit[2] r;\nqubit[2] s;\nf(r, s);\n",
+    ],
+    ids=["two-registers", "slices", "alias", "subroutine-registers"],
+)
+def test_multi_qubit_broadcast_raises(body):
+    """pyqasm would unroll these to the wrong circuit, so the transpiler takes the Cirq path."""
+    with pytest.raises(ValueError, match="broadcast over a register"):
+        qasm3_to_qasm2(HEADER + body)
+
+
+def test_multi_qubit_broadcast_falls_back_to_a_correct_circuit():
+    """pyqasm pairs ``cx a, b`` within each register (qBraid/pyqasm#384); Cirq pairs across."""
+    qasm2 = transpile(HEADER + "qubit[2] a;\nqubit[2] b;\nx a;\ncx a, b;\n", "qasm2")
+    gates = qasm2.replace(", ", ",")
+    assert "cx q[0],q[2];" in gates and "cx q[1],q[3];" in gates
+
+
+def test_single_qubit_broadcast_and_gate_parameters_stay_direct():
+    """A one-qubit broadcast, and a two-qubit gate inside a definition, are not broadcasts."""
+    body = "gate g a, b { cx a, b; }\nqubit[2] q;\nbit[2] c;\nx q;\ng q[0], q[1];\nc = measure q;\n"
+    qasm2 = qasm3_to_qasm2(HEADER + body)
+    assert "x q[0];\nx q[1];" in qasm2 and "creg c[2];" in qasm2
+
+
+def test_box_keeps_its_body():
+    """A box only schedules its body, so the body converts and the box is dropped."""
+    body = "qubit[2] q;\nbit[2] c;\nbox[200ns] { x q[0]; cx q[0], q[1]; }\nc = measure q;\n"
+    qasm2 = qasm3_to_qasm2(HEADER + body)
+    assert "box" not in qasm2 and "x q[0];\ncx q[0], q[1];" in qasm2
 
 
 def test_measurement_without_target_gets_its_own_register():
