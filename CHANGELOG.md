@@ -32,6 +32,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- `QbraidDevice.best_qubits()` no longer selects a qubit whose readout or gate error, or an edge whose two-qubit gate error, the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. Flags on T1, T2 and frequency are ignored. When one qubit is requested or the device has no couplers, the ranking also leaves out qubits with an error of 1 or outside `[0, 1]`, such as IBM's unflagged 1.0 placeholders, which it used to rank last. When too few usable qubits remain, it raises `ValueError` instead of returning unusable ones ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 - `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 
 ### Deprecated
@@ -55,6 +56,7 @@ Writing an entry:
 - `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
+- Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 - Raised the `amazon-braket-sdk` floor from `>=1.83.0` to `>=1.108.0`, the first release whose `AwsDevice.run` accepts `experimental_capabilities`. Earlier releases ignore it or reject it after creating the task ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 
 ## [0.13.0] - 2026-10-02
