@@ -55,6 +55,16 @@ _GATE_ALIASES = {
 }
 
 
+def _bits_by_register(keys) -> dict[str, set[int]]:
+    """Group per-bit keys such as ``c_0`` into the bit indices of each register."""
+    bits: dict[str, set[int]] = {}
+    for key in keys:
+        match = _BIT_INDEX.match(key)
+        if match:
+            bits.setdefault(match["register"], set()).add(int(match["index"]))
+    return bits
+
+
 def _merge_terminal_register_measurements(
     circuit: cirq.Circuit, register_sizes: dict[str, int]
 ) -> cirq.Circuit:
@@ -86,10 +96,16 @@ def _merge_terminal_register_measurements(
     for moment_index, operation in indexed_operations:
         if isinstance(operation.gate, cirq.MeasurementGate):
             measurements_by_key.setdefault(operation.gate.key, []).append((moment_index, operation))
+    # Grouped once so each register's checks cost what was measured, not what was
+    # declared: ``bit[4000000000] c`` with one measurement must not loop 4e9 times.
+    measured_bits = _bits_by_register(measurements_by_key)
+    conditioned_bits = _bits_by_register(conditioned)
     selected: set[tuple[int, cirq.Operation]] = set()
     merged: list[cirq.Operation] = []
     for name, size in register_sizes.items():
-        if any(f"{name}_{index}" in conditioned for index in range(size)):
+        if sum(index < size for index in measured_bits.get(name, ())) != size:
+            continue
+        if any(index < size for index in conditioned_bits.get(name, ())):
             continue
         # A merged key ``r_1`` would read as bit 1 of register ``r`` wherever keys are
         # ordered by ``(register, index)``, interleaving it with ``r``'s bits.

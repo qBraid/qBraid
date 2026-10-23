@@ -12,11 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Shared validation for Cirq conversion functions."""
+"""Shared helpers for Cirq conversion functions."""
+
+import re
 
 import cirq
 
 from qbraid.transpiler.exceptions import ProgramConversionError
+
+_DIGITS = re.compile(r"(\d+)")
+
+
+def _natural_key(name: str) -> tuple:
+    """Sort key that orders the numbers in ``name`` by value, so ``q(2)`` precedes ``q(10)``.
+
+    Splitting on digit runs alternates text and numbers from a text part, so two keys
+    always compare a string with a string and an int with an int.
+    """
+    return tuple(int(part) if i % 2 else part for i, part in enumerate(_DIGITS.split(name)))
 
 
 def _validate_resolved_parameters(circuit: cirq.Circuit, target: str) -> None:

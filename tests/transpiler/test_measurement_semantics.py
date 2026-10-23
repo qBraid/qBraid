@@ -179,6 +179,80 @@ def test_qasm3_register_merging_does_not_rescan_every_measurement():
     assert key_reads < 100 * num_registers
 
 
+def _forbid_wide_ranges(monkeypatch, limit=1_000):
+    """Make ``range`` in the qasm3_to_cirq module fail on a width no measurement backs."""
+    import builtins  # pylint: disable=import-outside-toplevel
+    import importlib  # pylint: disable=import-outside-toplevel
+
+    # The package re-exports the function under the module's name, so import the module.
+    module = importlib.import_module("qbraid.transpiler.conversions.qasm3.qasm3_to_cirq")
+
+    def guarded_range(*args):
+        assert max(args) <= limit, f"range{args} scales with a declared register width"
+        return builtins.range(*args)
+
+    monkeypatch.setattr(module, "range", guarded_range, raising=False)
+
+
+def test_qasm3_register_merging_cost_follows_measurements_not_declared_width(monkeypatch):
+    """A huge ``bit[n]`` with one measurement must not loop over its declared width.
+
+    The width comes straight from the program text, so ``bit[4000000000] c`` cost minutes
+    of CPU on a few dozen bytes of input.
+    """
+    from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    _forbid_wide_ranges(monkeypatch)
+    circuit = qasm3_to_cirq(
+        "OPENQASM 3.0;\nqubit[1] q;\nbit[4000000000] c;\nc[0] = measure q[0];\n"
+    )
+
+    # The register is partial, so its bit keeps a per-bit key.
+    assert [op.gate.key for op in circuit.all_operations() if cirq.is_measurement(op)] == ["c_0"]
+
+
+def test_qasm3_register_merging_still_merges_complete_registers(monkeypatch):
+    """The early width check leaves complete registers merged, as before."""
+    from qbraid.transpiler.conversions.qasm3.qasm3_to_cirq import (  # pylint: disable=import-outside-toplevel
+        qasm3_to_cirq,
+    )
+
+    _forbid_wide_ranges(monkeypatch)
+    circuit = qasm3_to_cirq(
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[4] q;\nbit[3] c;\nbit[2] d;\nh q[0];\n'
+        "c[0] = measure q[0];\nc[1] = measure q[1];\nc[2] = measure q[2];\n"
+        "d[1] = measure q[3];\n"
+    )
+
+    keys = sorted(op.gate.key for op in circuit.all_operations() if cirq.is_measurement(op))
+    assert keys == ["c", "d_1"]
+
+
+def test_cirq_to_pyquil_orders_numbered_keys_by_value():
+    """Cirq's default keys ``q(2)`` and ``q(10)`` keep qubit order in the readout.
+
+    Ordering the names as text put ``q(10)`` between ``q(1)`` and ``q(2)``, so on eleven
+    or more qubits every bit from ``ro[2]`` up came back from the wrong qubit.
+    """
+    pytest.importorskip("pyquil", reason="pyquil not installed")
+    from qbraid.transpiler.conversions.cirq import (  # pylint: disable=import-outside-toplevel
+        cirq_to_pyquil,
+    )
+
+    qubits = cirq.LineQubit.range(11)
+    program = cirq_to_pyquil(cirq.Circuit(cirq.X(qubits[0]), cirq.measure_each(*qubits)))
+
+    measured = {}
+    for line in program.out().splitlines():
+        match = re.fullmatch(r"MEASURE (\d+) \S+\[(\d+)\]", line)
+        if match:
+            measured[int(match.group(2))] = int(match.group(1))
+
+    assert measured == {bit: bit for bit in range(11)}
+
+
 @pytest.mark.parametrize("preamble", ["", "/* generated\n   by a tool */\n"])
 def test_qasm3_to_cirq_keeps_per_bit_keys_for_qasm2_input(preamble):
     """QASM 2 text passed to qasm3_to_cirq keeps its per-bit measurement keys."""

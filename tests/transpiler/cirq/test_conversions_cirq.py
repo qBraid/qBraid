@@ -159,6 +159,16 @@ def test_cirq_to_qasm2_sorts_unindexed_creg_names():
     assert len({line.split("->")[1].strip() for line in measures}) == len(keys)
 
 
+def test_cirq_to_qasm2_orders_numbered_creg_names_by_value():
+    """Numbered keys declare their registers in numeric order: ``m_m2`` before ``m_m10``."""
+    q = cirq.LineQubit.range(11)
+    circuit = cirq.Circuit([cirq.ops.measure(qb, key=f"m{i}") for i, qb in enumerate(q)])
+
+    cregs = [line for line in cirq_to_qasm2(circuit).splitlines() if line.startswith("creg")]
+
+    assert cregs == [f"creg m_m{i}[1];" for i in range(11)]
+
+
 def test_cirq_to_qasm2_rejects_unresolved_parameters():
     """The direct QASM 2 edge reports every unresolved parameter by name."""
     alpha, theta = sympy.symbols("alpha theta")

@@ -31,6 +31,8 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
+from ._utils import _natural_key
+
 try:
     from .cirq_quil_output import QuilOutput
 except ImportError:  # pragma: no cover
@@ -70,7 +72,8 @@ def _classical_bit_order(
     suffix -- not the moment the operation happens to sit in -- is the bit position the
     result belongs at: ``measure q[2] -> c[0]`` must land q_2 in bit 0 even though a
     measurement on q_0 may appear earlier. A key without an index names a complete
-    register; its qubits already follow the register's bit order.
+    register; its qubits already follow the register's bit order. Names compare with
+    their numbers by value, so Cirq's default keys ``q(2)`` and ``q(10)`` keep qubit order.
 
     A circuit measuring into multiple registers merges them in register-name order, since
     cirq keys do not record declaration order. ``cirq -> qasm2`` sorts cregs by the same key
@@ -79,7 +82,10 @@ def _classical_bit_order(
     indexed = []
     for op in terminal:
         match = _BIT_INDEX.match(op.gate.key)
-        key = (match["register"], int(match["index"])) if match else (op.gate.key, 0)
+        if match:
+            key = (_natural_key(match["register"]), int(match["index"]))
+        else:
+            key = (_natural_key(op.gate.key), 0)
         indexed.append((key, op))
     return [op for _, op in sorted(indexed, key=lambda pair: pair[0])]
 

@@ -102,7 +102,8 @@ a returned program means "correct". Therefore:
   Complete terminal QASM 3 registers use one Cirq key per register; partial registers
   keep per-bit keys, as do registers a classical condition reads. Both Cirq-to-pyQuil
   routes sort complete registers as `(name, 0)` alongside indexed keys, preserving
-  each register's internal bit order. QASM 2 input keeps its per-bit keys.
+  each register's internal bit order, and compare numbers in names by value (`r2`
+  before `r10`). QASM 2 input keeps its per-bit keys.
 
 ## Weight governance
 
