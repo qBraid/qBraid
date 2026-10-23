@@ -23,6 +23,7 @@ import datetime
 import warnings
 from typing import TYPE_CHECKING
 
+import pyqasm
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
@@ -33,6 +34,7 @@ from braket.experimental_capabilities.experimental_capability_context import (
 from braket.ir.openqasm import Program as OpenQasmProgram
 
 from qbraid._logging import logger
+from qbraid.passes.qasm import branches_on_measurement, contains_feedforward
 from qbraid.programs import (
     NATIVE_REGISTRY,
     QPROGRAM_REGISTRY,
@@ -42,7 +44,7 @@ from qbraid.programs import (
 )
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError, ProgramValidationError
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.transpiler import transpile
 
@@ -160,6 +162,49 @@ class BraketDevice(QuantumDevice):
                 num_queued = num_queued[1:]
             total_queued += int(num_queued)
         return total_queued
+
+    def transpile(
+        self,
+        run_input: qbraid.programs.QPROGRAM,
+        run_input_spec: qbraid.programs.ProgramSpec,
+    ) -> qbraid.programs.QPROGRAM:
+        """Reject OpenQASM feed-forward the device doesn't list, then transpile.
+
+        Only checked when the profile carries ``supported_operations``; without them the
+        device's support for ``if`` is unknown and the program is passed through.
+
+        Raises:
+            ProgramValidationError: If the program branches on a measurement result and
+                ``if`` is not among the device's supported operations.
+        """
+        supported_operations = self.profile.get("supported_operations")
+        if (
+            run_input_spec.alias in {"qasm2", "qasm3"}
+            and supported_operations is not None
+            and "if" not in {operation.lower() for operation in supported_operations}
+        ):
+            try:
+                module = pyqasm.loads(run_input)
+            except Exception:  # pylint: disable=broad-exception-caught
+                module = None  # leave parse errors to the conversion step
+            # Unrolling is slow on large programs, so only unroll one that has a branch.
+            if module is not None and contains_feedforward(module.original_program):
+                try:
+                    module.unroll()
+                    # unrolling keeps any ``if`` on a bit, so check what it reads
+                    feedforward = branches_on_measurement(module.unrolled_ast)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    feedforward = branches_on_measurement(module.original_program)
+            else:
+                feedforward = False
+            if feedforward:
+                raise ProgramValidationError(
+                    f"Device '{self.id}' does not support classical feed-forward ('if' on "
+                    "measurement results). Remove the conditional, or submit it as "
+                    "OpenQASM 3 to a device that runs it, such as IQM Emerald or Garnet, "
+                    'with experimental_capabilities="ALL".'
+                )
+        return super().transpile(run_input, run_input_spec)
 
     def transform(
         self, run_input: Circuit | AnalogHamiltonianSimulation

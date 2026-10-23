@@ -35,6 +35,7 @@ from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 from braket.ir.openqasm import Program as OpenQasmProgram
+from pyqasm.modules.base import QasmModule
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
@@ -637,6 +638,95 @@ def test_device_transform_without_capabilities_leaves_gates():
     assert device.transform(circuit) == circuit
 
 
+FEEDFORWARD_QASM3 = """
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[2] c;
+qubit[2] q;
+h q[0];
+c[0] = measure q[0];
+if (c[0]) {
+  x q[1];
+}
+c[1] = measure q[1];
+"""
+
+QASM3_SPEC = ProgramSpec(str, alias="qasm3")
+
+
+def test_device_transpile_rejects_feedforward_the_device_does_not_list():
+    """A device without ``if`` rejects feed-forward before any conversion is attempted."""
+    device = _qpu_device("Rigetti", ["h", "x", "cnot"])
+    with patch.object(QuantumDevice, "transpile") as base_transpile:
+        with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
+            device.transpile(FEEDFORWARD_QASM3, QASM3_SPEC)
+    base_transpile.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "supported_operations",
+    [["h", "x", "cnot", "if"], None],
+    ids=["lists-if", "unknown-capabilities"],
+)
+def test_device_transpile_passes_feedforward_through(supported_operations):
+    """Feed-forward reaches the conversion step when the device lists ``if`` or its
+    capabilities are unknown."""
+    device = _qpu_device("IQM", supported_operations)
+    with patch.object(QuantumDevice, "transpile", return_value="converted") as base_transpile:
+        assert device.transpile(FEEDFORWARD_QASM3, QASM3_SPEC) == "converted"
+    base_transpile.assert_called_once_with(FEEDFORWARD_QASM3, QASM3_SPEC)
+
+
+@pytest.mark.parametrize(
+    "qasm",
+    [
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nint n = 1;\n'
+        "if (n == 1) { cx q[0], q[1]; }\n",
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[1] c = "1";\n'
+        "if (c[0]) { x q[1]; }\nc[0] = measure q[0];\n",
+        "OPENQASM 3.0;\nqubit[1] q;\nnot_a_gate q[0];\n",
+        "OPENQASM 3.0;\nqubit[1] q;\nh q[0]\n",
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nbit c;\nif (c) { x q[0]; }\n',
+    ],
+    ids=[
+        "static-branch",
+        "constant-bit-branch",
+        "unparsable",
+        "syntax-error",
+        "unroll-fails-unmeasured",
+    ],
+)
+def test_device_transpile_feedforward_check_leaves_other_programs(qasm):
+    """Static branches, branches on a bit that is never measured, and programs pyqasm
+    cannot read or unroll are left to the conversion step."""
+    device = _qpu_device("Rigetti", ["h", "cnot"])
+    with patch.object(QuantumDevice, "transpile", return_value="converted"):
+        assert device.transpile(qasm, QASM3_SPEC) == "converted"
+
+
+def test_device_transpile_rejects_feedforward_on_single_bit():
+    """``if (c)`` on a single bit fails pyqasm's unroll, and the device still rejects it."""
+    qasm = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit c;\nh q[0];\n'
+        "c = measure q[0];\nif (c) { x q[1]; }\n"
+    )
+    device = _qpu_device("Rigetti", ["h", "x", "cnot"])
+    with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
+        device.transpile(qasm, QASM3_SPEC)
+
+
+def test_device_transpile_skips_unroll_without_a_branch():
+    """A program with no ``if`` or ``switch`` is not unrolled by the feed-forward check."""
+    device = _qpu_device("Rigetti", ["h", "cnot"])
+    qasm = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n'
+    with (
+        patch.object(QasmModule, "unroll") as unroll,
+        patch.object(QuantumDevice, "transpile", return_value="converted"),
+    ):
+        assert device.transpile(qasm, QASM3_SPEC) == "converted"
+    unroll.assert_not_called()
+
+
 IQM_FEEDFORWARD_QASM3 = """OPENQASM 3.0;
 #pragma braket verbatim
 box {
@@ -662,6 +752,20 @@ def test_device_run_experimental_submits_openqasm_as_written(batch):
     assert submitted == OpenQasmProgram(source=IQM_FEEDFORWARD_QASM3)
     assert device._device.run_batch.call_args.kwargs["experimental_capabilities"] == "ALL"
     assert isinstance(result, list) is batch
+
+
+def test_device_run_experimental_skips_the_feedforward_check():
+    """With experimental capabilities, a generic ``if`` reaches Braket as written; without
+    them, a device that does not list ``if`` rejects it."""
+    device = _qpu_device("IQM", ["h", "x", "cnot"])
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+
+    device.run(FEEDFORWARD_QASM3, shots=100, experimental_capabilities="ALL")
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert submitted == OpenQasmProgram(source=FEEDFORWARD_QASM3)
+
+    with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
+        device.run(FEEDFORWARD_QASM3, shots=100)
 
 
 @pytest.mark.parametrize(

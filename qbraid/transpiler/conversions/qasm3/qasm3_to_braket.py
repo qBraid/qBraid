@@ -27,11 +27,20 @@ from pyqasm.exceptions import ValidationError
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
+    branches_on_measurement,
     remove_stdgates_include,
     replace_gate_names,
 )
 from qbraid.programs.exceptions import QasmError, describe_error
 from qbraid.transpiler.annotations import weight
+
+_FEEDFORWARD_ERROR = (
+    "Amazon Braket circuits cannot express classical feed-forward "
+    "('if' on measurement results). On a device that runs it, such as IQM "
+    "Emerald or Garnet, submit the program as OpenQASM 3 with "
+    'experimental_capabilities="ALL" to run it as written. Otherwise, remove the '
+    "conditional."
+)
 
 braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
 braket_openqasm = LazyLoader("braket_openqasm", globals(), "braket.ir.openqasm")
@@ -105,7 +114,7 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
 
     Raises:
         QasmError: If qasm to braket conversion fails, or if the program contains
-            a delay instruction, which Braket cannot represent.
+            a delay instruction or classical feed-forward, which Braket cannot represent.
 
     """
     prior_errors: list[tuple[str, BaseException]] = []
@@ -124,12 +133,24 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
     if module is not None and contains_delay(module.original_program):
         raise QasmError("Delay instructions are not supported by Amazon Braket.")
 
+    # Checked before unrolling, which fails on some feed-forward, such as ``if (c)`` on
+    # a single bit, and would hide it behind an unrelated error.
+    if module is not None and branches_on_measurement(module.original_program):
+        raise QasmError(_FEEDFORWARD_ERROR)
+
     if module is not None:
         try:
             module.unroll()
             qasm = pyqasm.dumps(module)
         except ValidationError as err:
             prior_errors.append(("PyQASM validation", err))
+        else:
+            # A braket Circuit has no conditional operations, and Circuit.from_ir reports
+            # an ``if`` on a measured bit only as "Identifier 'c' is not initialized".
+            # Unrolling keeps any ``if`` on a bit, measured or not, and from_ir evaluates
+            # one on a constant bit, so only a branch that reads a measurement is rejected.
+            if branches_on_measurement(module.unrolled_ast):
+                raise QasmError(_FEEDFORWARD_ERROR)
 
     try:
         qasm = transform_notation(qasm)

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: disable=too-many-lines
+
 """
 Unit tests for qasm2/qasm3 to IonQDictType transpilation
 
@@ -956,3 +958,80 @@ def test_openqasm3_to_ionq_rejects_hardware_qubits(gate_line):
     with pytest.raises(ValueError) as excinfo:
         openqasm3_to_ionq(qasm)
     assert "is not supported by the IonQ format" in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "qasm",
+    [
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        bit[2] c;
+        qubit[2] q;
+        h q[0];
+        c[0] = measure q[0];
+        if (c[0]) {
+          x q[1];
+        }
+        """,
+        """
+        OPENQASM 2.0;
+        include "qelib1.inc";
+        qreg q[2];
+        creg c[2];
+        h q[0];
+        measure q[0] -> c[0];
+        if(c==1) x q[1];
+        """,
+    ],
+    ids=["qasm3", "qasm2"],
+)
+def test_openqasm3_to_ionq_rejects_feedforward(qasm):
+    """IonQ's format has no conditionals, so an ``if`` must raise rather than be dropped."""
+    with pytest.raises(ProgramConversionError, match="do not support classical feed-forward"):
+        qasm3_to_ionq(qasm)
+
+
+def test_openqasm3_to_ionq_static_branch_keeps_body():
+    """A branch on a compile-time constant is resolved by unrolling, and its body kept."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    int n = 1;
+    h q[0];
+    if (n == 1) { cx q[0], q[1]; }
+    """
+    circuit = openqasm3_to_ionq(qasm)["circuit"]
+    assert [gate["gate"] for gate in circuit] == ["h", "cnot"]
+
+
+def test_openqasm3_to_ionq_static_switch_keeps_body():
+    """A ``switch`` on a constant is resolved by unrolling, and its body kept."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    const int i = 1;
+    h q[0];
+    switch (i) { case 1 { x q[1]; } default { } }
+    """
+    circuit = openqasm3_to_ionq(qasm)["circuit"]
+    assert [gate["gate"] for gate in circuit] == ["h", "x"]
+
+
+def test_openqasm3_to_ionq_rejects_switch_on_measurement():
+    """A ``switch`` on a measured value must raise rather than be dropped."""
+    qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    bit[2] c;
+    h q[0];
+    c[0] = measure q[0];
+    int i = c;
+    switch (i) { case 1 { x q[1]; } default { } }
+    h q[1];
+    """
+    with pytest.raises(ProgramConversionError, match="do not support classical feed-forward"):
+        openqasm3_to_ionq(qasm)

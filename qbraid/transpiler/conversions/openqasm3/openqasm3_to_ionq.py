@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
 
-from qbraid.passes.qasm.compat import convert_qasm_pi_to_decimal
+from qbraid.passes.qasm.compat import contains_feedforward, convert_qasm_pi_to_decimal
 from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES, IonQProgram
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
@@ -194,7 +194,8 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
     # Fall back to the unrolled AST only when gates are hidden inside compound
     # statements (for-loops, subroutine calls, etc.) and thus invisible at the top level.
     has_top_level_gates = any(isinstance(s, openqasm3.ast.QuantumGate) for s in original.statements)
-    if has_top_level_gates:
+    # Unrolling resolves an ``if`` on a constant, whose body the loop below would skip.
+    if has_top_level_gates and not contains_feedforward(original):
         ast_program = original
     else:
         unrolled = program.module.unrolled_ast
@@ -493,7 +494,8 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
         dict: IonQ JSON format equivalent to input OpenQASM string.
 
     Raises:
-        ProgramConversionError: For failure to parse gate data from OpenQASM string.
+        ProgramConversionError: For failure to parse gate data from OpenQASM string, or
+            if the program contains classical feed-forward.
     """
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
 
@@ -503,6 +505,15 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
         program.module.unroll()
     except Exception:  # pylint: disable=broad-exception-caught
         pass
+
+    # _parse_gates skips ``if`` blocks, so a conditional would otherwise be dropped
+    # silently and the circuit would run without it.
+    unrolled = program.module.unrolled_ast
+    if contains_feedforward(unrolled if unrolled.statements else program.module.original_program):
+        raise ProgramConversionError(
+            "IonQ devices do not support classical feed-forward ('if' on measurement "
+            "results). Remove the conditional, or use a device that supports dynamic circuits."
+        )
 
     if program._module.has_measurements():
         warnings.warn(
