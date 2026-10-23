@@ -40,6 +40,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- `OQCJob` created without a device, as `load_job(task_id, "oqc")` does, no longer fails with a 404 for a task on any QPU but the client's default. It now finds the QPU that holds the task ([#1467](https://github.com/qBraid/qBraid/pull/1467))
 - Device validation no longer rejects a program the OpenQASM parser can't read, such as one using a vendor instruction like IQM's `measure_ff`. The qubit-count check is skipped for it instead ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Programs that fail to parse as OpenQASM now say why. A string with no `OPENQASM` header no longer fails with "No conversion path found from 'str'", and syntax errors name the offending token, line and column instead of an empty reason ([#1490](https://github.com/qBraid/qBraid/pull/1490))
 - Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
