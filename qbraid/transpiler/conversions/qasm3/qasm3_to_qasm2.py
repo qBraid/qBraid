@@ -47,6 +47,7 @@ _QASM2_IDENTIFIER = re.compile(r"[a-z][A-Za-z0-9_]*")
 
 _DECLARATION = re.compile(r"^(qubit|bit)\[(\d+)\] (\w+);$")
 _MEASUREMENT = re.compile(r"^(\w+\[\d+\]) = measure (\w+\[\d+\]);$")
+_UNTARGETED_MEASUREMENT = re.compile(r"^measure (\w+\[\d+\]);$")
 _GATE = re.compile(r"^(\w+)(?:\([^)]*\))? [^;]+;$")
 _GATE_DEFINITION = re.compile(r"\bgate\s+(\w+)")
 _EXPONENT_WITHOUT_POINT = re.compile(r"(?<![\w.])(\d+)([eE][-+]?\d+)")
@@ -60,11 +61,14 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
     place, so a backend that counts each register separately keeps the correlations
     between its bits.
 
+    A measurement with no target bit gets the next bit of an added ``m_m`` register, the
+    name the Cirq path gives it.
+
     Raises:
         ValueError: If the program has a statement OpenQASM 2 cannot express, such as a
-            classical write to a bit, a condition on a single bit, a measurement with no
-            target, a physical qubit (``$1``), or a register name OpenQASM 2 cannot use.
-            The transpiler then tries its next conversion path.
+            classical write to a bit, a condition on a single bit, a physical qubit
+            (``$1``), or a register name OpenQASM 2 cannot use. The transpiler then tries
+            its next conversion path.
     """
     # Unrolling drops a write such as ``c[1] = 1;`` without a trace, and the whole
     # register would then report that bit as 0.
@@ -78,6 +82,8 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
         raise ValueError("OpenQASM 2 cannot express a physical qubit.")
 
     lines = ["OPENQASM 2.0;", 'include "qelib1.inc";']
+    untargeted = _untargeted_register(unrolled)
+    untargeted_bits = declaration_at = 0
     for statement in unrolled.splitlines():
         statement = statement.strip()
         if not statement or statement.startswith(("OPENQASM", "include")):
@@ -90,6 +96,11 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
         elif measurement := _MEASUREMENT.match(statement):
             clbit, qubit = measurement.groups()
             lines.append(f"measure {qubit} -> {clbit};")
+        elif measurement := _UNTARGETED_MEASUREMENT.match(statement):
+            if not untargeted_bits:
+                declaration_at = len(lines)
+            lines.append(f"measure {measurement.group(1)} -> {untargeted}[{untargeted_bits}];")
+            untargeted_bits += 1
         elif statement.startswith(("reset ", "barrier ")):
             lines.append(statement)
         elif statement.startswith("gphase"):
@@ -100,7 +111,19 @@ def qasm3_to_qasm2(qasm: Qasm3StringType) -> Qasm2StringType:
         else:
             raise ValueError(f"OpenQASM 2 cannot express the statement: {statement}")
 
+    if untargeted_bits:
+        lines.insert(declaration_at, f"creg {untargeted}[{untargeted_bits}];")
     return "\n".join(lines) + "\n"
+
+
+def _untargeted_register(unrolled: str) -> str:
+    """A register name for measurements with no target that no declaration already uses."""
+    declared = {match.group(3) for match in map(_DECLARATION.match, unrolled.splitlines()) if match}
+    name, suffix = "m_m", 0
+    while name in declared:
+        suffix += 1
+        name = f"m_m{suffix}"
+    return name
 
 
 class _BitWriteFinder(QASMVisitor):

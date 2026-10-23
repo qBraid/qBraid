@@ -132,7 +132,6 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
     "body",
     [
         "qubit[2] q;\nbit[1] c;\nc[0] = measure q[0];\nif (c[0]) { x q[1]; }\n",
-        "qubit[1] q;\nmeasure q[0];\n",
         "bit[1] c;\nh $1;\nc[0] = measure $1;\n",
         "qubit[1] Q;\nh Q[0];\n",
         "qubit[1] _q;\nh _q[0];\n",
@@ -146,7 +145,6 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
     ],
     ids=[
         "bit-condition",
-        "measurement-without-target",
         "physical-qubit",
         "uppercase-name",
         "underscore-name",
@@ -163,6 +161,30 @@ def test_statement_qasm2_cannot_express_raises(body):
     """The transpiler tries its next conversion path on ValueError."""
     with pytest.raises(ValueError, match="OpenQASM 2 cannot"):
         qasm3_to_qasm2(HEADER + body)
+
+
+def test_measurement_without_target_gets_its_own_register():
+    """Untargeted measurements fill ``m_m`` in order, beside the declared registers."""
+    body = "qubit[3] q;\nbit[1] c;\nc[0] = measure q[1];\nmeasure q[0];\nmeasure q[2];\n"
+    qasm2 = qasm3_to_qasm2(HEADER + body)
+
+    assert "qreg q[3];\ncreg c[1];" in qasm2
+    assert (
+        "measure q[1] -> c[0];\ncreg m_m[2];\nmeasure q[0] -> m_m[0];\nmeasure q[2] -> m_m[1];"
+        in qasm2
+    )
+
+
+def test_measurement_without_target_avoids_a_declared_name():
+    """A program that already declares ``m_m`` gets the next free name."""
+    body = "qubit[1] q;\nbit[1] m_m;\nm_m[0] = measure q[0];\nmeasure q[0];\n"
+    assert "creg m_m1[1];\nmeasure q[0] -> m_m1[0];" in qasm3_to_qasm2(HEADER + body)
+
+
+def test_transpiler_converts_measurement_without_target():
+    """Converted on main by the third path, which the new edge would otherwise push out."""
+    qasm2 = transpile(HEADER + "qubit[1] q;\nx q[0];\nmeasure q[0];\n", "qasm2")
+    assert "measure q[0] -> m_m[0];" in qasm2
 
 
 def test_classical_writes_to_other_types_are_kept_out_of_the_check():
