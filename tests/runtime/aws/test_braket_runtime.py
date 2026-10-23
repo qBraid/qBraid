@@ -685,9 +685,16 @@ def test_device_transpile_passes_feedforward_through(supported_operations):
         'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nbit[1] c = "1";\n'
         "if (c[0]) { x q[1]; }\nc[0] = measure q[0];\n",
         "OPENQASM 3.0;\nqubit[1] q;\nnot_a_gate q[0];\n",
+        "OPENQASM 3.0;\nqubit[1] q;\nh q[0]\n",
         'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nbit c;\nif (c) { x q[0]; }\n',
     ],
-    ids=["static-branch", "constant-bit-branch", "unparsable", "unroll-fails-unmeasured"],
+    ids=[
+        "static-branch",
+        "constant-bit-branch",
+        "unparsable",
+        "syntax-error",
+        "unroll-fails-unmeasured",
+    ],
 )
 def test_device_transpile_feedforward_check_leaves_other_programs(qasm):
     """Static branches, branches on a bit that is never measured, and programs pyqasm

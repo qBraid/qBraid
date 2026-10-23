@@ -380,6 +380,25 @@ def test_qasm3_to_braket_switch_on_measurement_raises():
         qasm3_to_braket(qasm_input)
 
 
+def test_qasm3_to_braket_loop_carried_feedforward_raises():
+    """An ``if`` that precedes the measurement in a loop body reads it on the next
+    iteration, which only the unrolled program shows."""
+    qasm_input = textwrap.dedent(
+        """
+        OPENQASM 3.0;
+        include "stdgates.inc";
+        qubit[2] q;
+        bit[1] c;
+        for int i in [0:1] {
+          if (c[0]) { x q[1]; }
+          c[0] = measure q[0];
+        }
+        """
+    ).strip()
+    with pytest.raises(QasmError, match="cannot express classical feed-forward"):
+        qasm3_to_braket(qasm_input)
+
+
 def test_qasm3_to_braket_branch_on_constant_bit_converts():
     """Unrolling keeps an ``if`` on a bit that is never measured; Braket evaluates it."""
     qasm_input = textwrap.dedent(
