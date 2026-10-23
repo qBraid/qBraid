@@ -946,13 +946,13 @@ class TestQuantinuumDevice:
 
         mock_execute.assert_called_once()
 
-    @pytest.mark.parametrize("level", [-1, 4, 5])
+    @pytest.mark.parametrize("level", [-1, 4, 5, 1.5, True])
     @patch("qnexus.circuits.upload")
     @patch("qnexus.projects.get_or_create")
     def test_submit_rejects_out_of_range_opt_level_before_upload(
         self, mock_get_or_create, mock_upload, level
     ):
-        """An out-of-range ``optimisation_level`` fails before anything reaches NEXUS.
+        """A non-integer or out-of-range ``optimisation_level`` fails before anything reaches NEXUS.
 
         NEXUS accepts 0-3 and otherwise answers the compile request with a raw 422.
         """
@@ -960,7 +960,7 @@ class TestQuantinuumDevice:
         from pytket import Circuit
 
         device = _make_device()
-        with pytest.raises(ValueError, match=f"between 0 and 3, got {level}"):
+        with pytest.raises(ValueError, match=f"integer between 0 and 3, got {level!r}"):
             device.submit(Circuit(2), shots=100, optimisation_level=level)
         mock_get_or_create.assert_not_called()
         mock_upload.assert_not_called()

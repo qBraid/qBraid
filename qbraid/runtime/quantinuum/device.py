@@ -142,8 +142,8 @@ class QuantinuumDevice(QuantumDevice):
             optimisation_level: pytket optimisation level (0-3) passed to the
                 NEXUS compile stage. Falls back to the
                 ``QUANTINUUM_NEXUS_OPT_LEVEL`` environment variable, and
-                ultimately to ``1``. Out-of-range values raise ``ValueError``
-                before anything is uploaded.
+                ultimately to ``1``. Non-integer or out-of-range values raise
+                ``ValueError`` before anything is uploaded.
             job_properties: Key/value metadata recorded on the NEXUS execute
                 job. NEXUS indexes these, so jobs sharing a project can still be
                 filtered by them (``qnx.jobs.get_all(properties=...)``). Each key
@@ -164,10 +164,14 @@ class QuantinuumDevice(QuantumDevice):
 
         # pylint: enable=import-outside-toplevel
 
-        if optimisation_level is not None and not 0 <= optimisation_level <= MAX_OPT_LEVEL:
+        if optimisation_level is not None and (
+            isinstance(optimisation_level, bool)
+            or not isinstance(optimisation_level, int)
+            or not 0 <= optimisation_level <= MAX_OPT_LEVEL
+        ):
             raise ValueError(
-                f"optimisation_level must be between 0 and {MAX_OPT_LEVEL}, "
-                f"got {optimisation_level}."
+                f"optimisation_level must be an integer between 0 and {MAX_OPT_LEVEL}, "
+                f"got {optimisation_level!r}."
             )
 
         circuits = run_input if isinstance(run_input, list) else [run_input]
