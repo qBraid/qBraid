@@ -32,6 +32,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 
 ### Deprecated
 
