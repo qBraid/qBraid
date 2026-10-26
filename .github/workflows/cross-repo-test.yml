@@ -46,13 +46,16 @@ jobs:
   # CROSS_REPO_TOKEN reaches only this job and the report job, and neither installs
   # anything. The test job installs about 250 unpinned packages, so it must not hold
   # the token: even a checkout with persist-credentials: false gets the token again
-  # in its post step, which runs after those installs.
+  # in its post step, which runs after those installs. The token is a secret of the
+  # cross-repo environment, so a repository admin approves each job that uses it.
   fetch-qbraid-core:
+    # Skipped, with no approval to wait for, when no qbraid-core branch is given
+    if: ${{ inputs.qbraid_core_branch != '' }}
     runs-on: ubuntu-latest
+    environment: cross-repo
 
     steps:
       - name: Checkout qbraid-core branch
-        if: ${{ inputs.qbraid_core_branch != '' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: qBraid/qbraid-core
@@ -62,11 +65,9 @@ jobs:
           persist-credentials: false
 
       - name: Pack qbraid-core branch
-        if: ${{ inputs.qbraid_core_branch != '' }}
         run: tar -czf "$RUNNER_TEMP/qbraid-core.tar.gz" -C qbraid-core --exclude=.git .
 
       - name: Upload qbraid-core branch
-        if: ${{ inputs.qbraid_core_branch != '' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: qbraid-core-source
@@ -75,6 +76,8 @@ jobs:
 
   cross-repo-test:
     needs: fetch-qbraid-core
+    # needs alone would skip this job when fetch-qbraid-core is skipped
+    if: ${{ !cancelled() && (needs.fetch-qbraid-core.result == 'success' || needs.fetch-qbraid-core.result == 'skipped') }}
     runs-on: ubuntu-latest
 
     steps:
@@ -175,6 +178,7 @@ jobs:
     # Run even if the tests fail so we always get a summary
     if: always()
     runs-on: ubuntu-latest
+    environment: cross-repo
 
     steps:
       - name: Checkout repo
