@@ -181,10 +181,12 @@ jobs:
     environment: cross-repo
 
     steps:
+      # The workflow's own commit, not the branch under test: this job runs
+      # parse_test_report.py with the token, so a branch must not supply the script.
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ inputs.qbraid_branch || github.ref }}
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - name: Set up Python
