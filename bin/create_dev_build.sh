@@ -78,14 +78,15 @@ git checkout -b "${TMP_BRANCH}"
 echo "Setting version to ${DEV_VERSION}"
 echo '__version__ = "'"${DEV_VERSION}"'"' > "${VERSION_FILE}"
 
-# Check if `build` module is installed
-if ! python -c "import build" 2>/dev/null; then
-    echo "'build' module is not installed. Please install it with 'pip install build'."
+# The build runs without isolation, so build and the backend must already be installed
+if ! python -c "import build, setuptools, wheel" 2>/dev/null; then
+    echo "build, setuptools and wheel are not installed. Install them with:"
+    echo "  pip install --require-hashes -r .github/requirements/build.txt"
     exit 1
 fi
 
 # Build the project
 echo "Building the project..."
-python -m build --outdir "${OUT_DIR}"
+python -m build --no-isolation --outdir "${OUT_DIR}"
 
 echo "Done."

@@ -1,1 +1,5 @@
 build
+# The build backend from pyproject.toml. Builds run with --no-isolation so these
+# hash-locked copies are used, not ones downloaded at build time.
+setuptools>=77
+wheel

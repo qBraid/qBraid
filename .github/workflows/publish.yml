@@ -43,7 +43,7 @@ jobs:
       - name: Build binary wheel + source tarball
         run: |
           python3 -m pip install --require-hashes -r .github/requirements/build.txt
-          python3 -m build
+          python3 -m build --no-isolation
 
       - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
