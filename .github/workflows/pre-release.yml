@@ -40,8 +40,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python3 -m pip install --upgrade pip
-          python3 -m pip install build
+          python3 -m pip install --require-hashes -r .github/requirements/build.txt
 
       - name: Build binary wheel + source tarball
         id: build-dev

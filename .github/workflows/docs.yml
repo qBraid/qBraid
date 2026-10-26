@@ -39,8 +39,7 @@ jobs:
         cache: pip
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox tox-uv
+        python3 -m pip install --require-hashes -r .github/requirements/tox.txt
     - name: Build docs
       run: |
         tox -e docs

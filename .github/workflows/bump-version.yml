@@ -52,8 +52,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install "qbraid-core>=0.1.17" pyyaml
+          python -m pip install --require-hashes -r .github/requirements/bump-version.txt
 
       - name: Setup Git config
         run: |

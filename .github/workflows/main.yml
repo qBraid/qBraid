@@ -51,8 +51,7 @@ jobs:
         cache: pip
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox tox-uv
+        python3 -m pip install --require-hashes -r .github/requirements/tox.txt
     - name: Tests
       # Coverage is only uploaded from the 3.11 job, so only that job pays the
       # instrumentation overhead; the rest run with --no-cov.
@@ -88,8 +87,7 @@ jobs:
         cache: pip
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox tox-uv
+        python3 -m pip install --require-hashes -r .github/requirements/tox.txt
     - name: AQT tests
       run: |
         tox -e unit-tests-aqt
@@ -122,8 +120,7 @@ jobs:
         cache: pip
     - name: Install dependencies
       run: |
-        python3 -m pip install --upgrade pip setuptools
-        python3 -m pip install tox tox-uv
+        python3 -m pip install --require-hashes -r .github/requirements/tox.txt
     - name: QPerfect tests
       run: |
         tox -e unit-tests-qperfect

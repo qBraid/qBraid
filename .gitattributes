@@ -1,0 +1,2 @@
+# Hash-locked CI requirements, compiled by uv. GitHub collapses them in diffs.
+.github/requirements/*.txt linguist-generated=true

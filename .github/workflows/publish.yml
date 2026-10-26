@@ -42,7 +42,7 @@ jobs:
 
       - name: Build binary wheel + source tarball
         run: |
-          python3 -m pip install --upgrade pip build
+          python3 -m pip install --require-hashes -r .github/requirements/build.txt
           python3 -m build
 
       - name: Publish package to PyPI
