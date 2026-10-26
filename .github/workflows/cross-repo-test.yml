@@ -37,20 +37,74 @@ on:
 permissions:
   contents: read
 
+env:
+  QBRAID_BRANCH: ${{ inputs.qbraid_branch }}
+  QBRAID_CORE_BRANCH: ${{ inputs.qbraid_core_branch }}
+  PYQASM_BRANCH: ${{ inputs.pyqasm_branch }}
+
 jobs:
-  cross-repo-test:
+  # CROSS_REPO_TOKEN reaches only this job and the report job, and neither installs
+  # anything. The test job installs about 250 unpinned packages, so it must not hold
+  # the token: even a checkout with persist-credentials: false gets the token again
+  # in its post step, which runs after those installs.
+  fetch-qbraid-core:
     runs-on: ubuntu-latest
 
-    env:
-      QBRAID_BRANCH: ${{ inputs.qbraid_branch }}
-      QBRAID_CORE_BRANCH: ${{ inputs.qbraid_core_branch }}
-      PYQASM_BRANCH: ${{ inputs.pyqasm_branch }}
+    steps:
+      - name: Checkout qbraid-core branch
+        if: ${{ inputs.qbraid_core_branch != '' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: qBraid/qbraid-core
+          ref: ${{ inputs.qbraid_core_branch }}
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          path: qbraid-core
+          persist-credentials: false
+
+      - name: Pack qbraid-core branch
+        if: ${{ inputs.qbraid_core_branch != '' }}
+        run: tar -czf "$RUNNER_TEMP/qbraid-core.tar.gz" -C qbraid-core --exclude=.git .
+
+      - name: Upload qbraid-core branch
+        if: ${{ inputs.qbraid_core_branch != '' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: qbraid-core-source
+          path: ${{ runner.temp }}/qbraid-core.tar.gz
+          retention-days: 1
+
+  cross-repo-test:
+    needs: fetch-qbraid-core
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ inputs.qbraid_branch || github.ref }}
+          persist-credentials: false
+
+      - name: Download qbraid-core branch
+        if: ${{ inputs.qbraid_core_branch != '' }}
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: qbraid-core-source
+          path: ${{ runner.temp }}/qbraid-core-source
+
+      - name: Unpack qbraid-core branch
+        if: ${{ inputs.qbraid_core_branch != '' }}
+        run: |
+          mkdir -p _siblings/qbraid-core
+          tar -xzf "$RUNNER_TEMP/qbraid-core-source/qbraid-core.tar.gz" -C _siblings/qbraid-core
+
+      - name: Checkout pyqasm branch
+        if: ${{ inputs.pyqasm_branch != '' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: qBraid/pyqasm
+          ref: ${{ inputs.pyqasm_branch }}
+          path: _siblings/pyqasm
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -60,19 +114,16 @@ jobs:
 
       - name: Install current repo
         run: |
-          python3 -m pip install --upgrade pip setuptools
-          python3 -m pip install -r requirements-dev.txt
-          python3 -m pip install .
+          python3 -m pip install -r requirements.txt -r requirements-dev.txt
+          python3 -m pip install --no-deps -e .
 
       - name: Override qbraid-core from branch
         if: ${{ inputs.qbraid_core_branch != '' }}
-        run: |
-          pip install --force-reinstall "git+https://${{ secrets.CROSS_REPO_TOKEN }}@github.com/qBraid/qbraid-core.git@${QBRAID_CORE_BRANCH}"
+        run: python3 -m pip install --force-reinstall ./_siblings/qbraid-core
 
       - name: Override pyqasm from branch
         if: ${{ inputs.pyqasm_branch != '' }}
-        run: |
-          pip install --force-reinstall "git+https://${{ secrets.CROSS_REPO_TOKEN }}@github.com/qBraid/pyqasm.git@${PYQASM_BRANCH}"
+        run: python3 -m pip install --force-reinstall ./_siblings/pyqasm
 
       - name: Log installed versions
         run: |
@@ -95,17 +146,18 @@ jobs:
           GLIBC_TUNABLES: glibc.rtld.optional_static_tls=2048
         continue-on-error: true
 
-      # Run even if pytest crashes (e.g. import error, segfault) so we always get a summary
-      - name: Generate summary and post to PR
+      # Upload even if pytest crashes (e.g. import error, segfault) so the report job
+      # always has something to summarize
+      - name: Upload test report
         if: always()
-        run: python .github/scripts/parse_test_report.py
-        env:
-          REPORT_XML: report.xml
-          SUMMARY_OUTPUT: test-summary.md
-          PR_NUMBER: ${{ inputs.pr_number }}
-          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: cross-repo-test-report
+          path: report.xml
+          if-no-files-found: ignore
+          retention-days: 5
 
-      # Ensure workflow fails after summary is posted, not before
+      # Ensure workflow fails after the report is uploaded, not before
       - name: Fail if tests failed
         if: always()
         run: |
@@ -117,3 +169,39 @@ jobs:
             echo "Tests failed with exit code $EXIT_CODE"
             exit 1
           fi
+
+  report:
+    needs: cross-repo-test
+    # Run even if the tests fail so we always get a summary
+    if: always()
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.qbraid_branch || github.ref }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      # A missing report (the test job failed before pytest wrote one) is not an
+      # error: the script summarizes that case too.
+      - name: Download test report
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: cross-repo-test-report
+          # Outside the workspace, so the download cannot overwrite the script below
+          path: ${{ runner.temp }}/report
+        continue-on-error: true
+
+      - name: Generate summary and post to PR
+        run: python .github/scripts/parse_test_report.py
+        env:
+          REPORT_XML: ${{ runner.temp }}/report/report.xml
+          SUMMARY_OUTPUT: test-summary.md
+          PR_NUMBER: ${{ inputs.pr_number }}
+          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
