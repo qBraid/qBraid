@@ -755,17 +755,122 @@ def test_device_run_experimental_submits_openqasm_as_written(batch):
 
 
 def test_device_run_experimental_skips_the_feedforward_check():
-    """With experimental capabilities, a generic ``if`` reaches Braket as written; without
+    """With experimental capabilities, a generic ``if`` reaches Braket unconverted; without
     them, a device that does not list ``if`` rejects it."""
     device = _qpu_device("IQM", ["h", "x", "cnot"])
     device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
 
     device.run(FEEDFORWARD_QASM3, shots=100, experimental_capabilities="ALL")
     (submitted,) = device._device.run_batch.call_args.args[0]
-    assert submitted == OpenQasmProgram(source=FEEDFORWARD_QASM3)
+    assert "if (c[0]) {" in submitted.source
 
     with pytest.raises(ProgramValidationError, match="does not support classical feed-forward"):
         device.run(FEEDFORWARD_QASM3, shots=100)
+
+
+QISKIT_FEEDFORWARD_QASM3 = """OPENQASM 3.0;
+include "stdgates.inc";
+bit[2] c;
+qubit[2] q;
+h q[0];
+c[0] = measure q[0];
+if (c[0]) {
+  cx q[0], q[1];
+}
+c[1] = measure q[1];
+"""
+
+
+def test_device_run_experimental_rewrites_stdgates_programs_for_braket():
+    """Braket rejects ``include``, so a program written against ``stdgates.inc``, as Qiskit
+    exports, is submitted without it and with Braket's gate names."""
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+
+    device.run(QISKIT_FEEDFORWARD_QASM3, shots=100, experimental_capabilities="ALL")
+
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert "include" not in submitted.source
+    assert "cnot q[0], q[1];" in submitted.source
+    assert "if (c[0]) {" in submitted.source
+
+
+def test_device_run_experimental_keeps_verbatim_box_when_rewriting():
+    """A ``stdgates.inc`` program with a verbatim box keeps the box and IQM's native
+    instructions. The pragma loses its ``#``, which Braket accepts."""
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+    program = IQM_FEEDFORWARD_QASM3.replace(
+        "OPENQASM 3.0;\n", 'OPENQASM 3.0;\ninclude "stdgates.inc";\n'
+    )
+
+    device.run(program, shots=100, experimental_capabilities="ALL")
+
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert "include" not in submitted.source
+    assert "pragma braket verbatim" in submitted.source
+    for instruction in (
+        "prx(1.5707963, 0) $0;",
+        "measure_ff(0) $0;",
+        "cc_prx(3.1415926, 0, 0) $1;",
+    ):
+        assert instruction in submitted.source
+
+
+@pytest.mark.parametrize(
+    "body, missing",
+    [
+        ("crz(0.3) q[0], q[1];\nch q[0], q[1];", "ch, crz"),
+        ("for int i in [0:1] { cx q[0], q[1]; }", "cx"),
+        ("gate g a, b { cx a, b; }\ng q[0], q[1];", "cx"),
+        ("box { sx q[0]; }", "sx"),
+    ],
+)
+def test_device_run_experimental_rejects_gates_braket_does_not_recognise(body, missing):
+    """A stdgates gate left after the rewrite, with no Braket equivalent or nested where
+    it is not renamed, fails before submission instead of being rejected by Braket."""
+    device = _qpu_device("IQM")
+    program = f'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\n{body}\n'
+
+    with pytest.raises(ProgramValidationError, match=f"does not recognise the gates {missing} "):
+        device.run(program, shots=100, experimental_capabilities="ALL")
+    device._device.run_batch.assert_not_called()
+
+
+def test_device_run_experimental_allows_a_gate_the_program_defines():
+    """A program may define its own gate with a stdgates name in Braket's gates."""
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\n'
+        "gate ch a, b { h b; cz a, b; h b; }\nch q[0], q[1];\n"
+    )
+
+    device.run(program, shots=100, experimental_capabilities="ALL")
+
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert "ch q[0], q[1];" in submitted.source
+
+
+def test_device_run_experimental_rewrites_qiskit_circuit_export():
+    """A Qiskit feed-forward circuit exported to OpenQASM 3 reaches Braket without the include."""
+    qiskit = pytest.importorskip("qiskit")
+    qasm3 = pytest.importorskip("qiskit.qasm3")
+
+    circuit = qiskit.QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.measure(0, 0)
+    with circuit.if_test((circuit.clbits[0], 1)):
+        circuit.x(1)
+    circuit.measure(1, 1)
+
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+    device.run(qasm3.dumps(circuit), shots=100, experimental_capabilities="ALL")
+
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert "include" not in submitted.source
+    assert "x q[1];" in submitted.source
 
 
 @pytest.mark.parametrize(
