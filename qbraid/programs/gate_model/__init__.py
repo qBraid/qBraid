@@ -46,6 +46,7 @@ Submodules
 
 """
 import importlib
+import importlib.util
 
 from ._model import GateModelProgram
 
@@ -53,21 +54,32 @@ _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 CIRCUIT_SUBMODULE_CHECKS = NATIVE_REGISTRY.copy()
 
-submodules = []
 base_path = "qbraid.programs.gate_model."
 
-key_set = set(CIRCUIT_SUBMODULE_CHECKS.keys())
+# Submodules wrap optional SDKs, so they are imported on first attribute access
+# rather than here. find_spec on a child module does not execute it.
+submodules = [
+    lib for lib in CIRCUIT_SUBMODULE_CHECKS if importlib.util.find_spec(base_path + lib) is not None
+]
 
-for lib in key_set:
-    try:
-        imported_lib = importlib.import_module(base_path + lib)
-        submodules.append(lib)
-        globals()[lib] = imported_lib
 
-    except ImportError:
-        pass
+def __getattr__(name):
+    if name in submodules:
+        try:
+            module = importlib.import_module(base_path + name)
+        except ImportError as err:
+            # The SDK was found on disk but does not import; behave as if absent.
+            submodules.remove(name)
+            raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from err
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = ["GateModelProgram"]
 
-__all__.extend(submodules)
+# SDK wrappers stay out of __all__: a star-import would otherwise import every SDK.
+
+
+def __dir__():
+    return sorted(set(globals()) | set(submodules))
