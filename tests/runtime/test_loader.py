@@ -82,6 +82,7 @@ def test_get_providers():
             "azure",
             "ibm",
             "ionq",
+            "iqm",
             "openquantum",
             "oqc",
             "origin",

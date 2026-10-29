@@ -134,3 +134,37 @@ jobs:
         files: ./build/coverage/coverage.xml
         flags: qperfect
         verbose: true
+
+  test-iqm:
+    # iqm-client pins packaging<25 while pyquil 5 requires packaging>=26, so
+    # the iqm extra cannot coexist with the main test environment. This job
+    # runs the IQM suite against only its own extras; Codecov merges this
+    # upload with the matrix job's report for the same commit.
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        persist-credentials: false
+    - name: Set up Python 3.11
+      uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+      with:
+        python-version: '3.11'
+        cache: pip
+    - name: Install dependencies
+      run: |
+        python3 -m pip install --upgrade pip setuptools
+        python3 -m pip install tox tox-uv
+    - name: IQM tests
+      run: |
+        tox -e unit-tests-iqm
+      env:
+        QBRAID_RUN_REMOTE_TESTS: False
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        fail_ci_if_error: false
+        files: ./build/coverage/coverage.xml
+        flags: iqm
+        verbose: true
