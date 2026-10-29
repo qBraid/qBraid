@@ -79,8 +79,8 @@ echo "Setting version to ${DEV_VERSION}"
 echo '__version__ = "'"${DEV_VERSION}"'"' > "${VERSION_FILE}"
 
 # The build runs without isolation, so build and the backend must already be installed
-if ! python -c "import build, setuptools, wheel" 2>/dev/null; then
-    echo "build, setuptools and wheel are not installed. Install them with:"
+if ! python -c "import build, setuptools, wheel; assert int(setuptools.__version__.split('.')[0]) >= 77" 2>/dev/null; then
+    echo "build, wheel and setuptools>=77 are not installed. Install them with:"
     echo "  pip install --require-hashes -r .github/requirements/build.txt"
     exit 1
 fi

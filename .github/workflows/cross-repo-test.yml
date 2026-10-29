@@ -110,11 +110,19 @@ jobs:
           persist-credentials: false
 
       - name: Download qbraid-core branch
+        id: download-core
         if: ${{ inputs.qbraid_core_branch != '' }}
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: qbraid-core-source
           path: ${{ runner.temp }}/qbraid-core-source
+
+      # "Re-run failed jobs" reuses the first attempt's artifact, which is deleted once
+      # the tests pass and expires after a day.
+      - name: Explain missing qbraid-core artifact
+        if: ${{ failure() && steps.download-core.outcome == 'failure' }}
+        run: |
+          echo "::error::The qbraid-core artifact has expired or been deleted. Use 'Re-run all jobs' to fetch it again."
 
       - name: Decrypt and unpack qbraid-core branch
         if: ${{ inputs.qbraid_core_branch != '' }}
@@ -209,7 +217,8 @@ jobs:
     # Run even if the tests fail so we always get a summary
     if: always()
     runs-on: ubuntu-latest
-    environment: cross-repo
+    # The token is only needed to post to a PR, so a run without one needs no approval
+    environment: ${{ inputs.pr_number != '' && 'cross-repo' || '' }}
 
     steps:
       # The workflow's own commit, not the branch under test: this job runs
@@ -241,7 +250,8 @@ jobs:
           REPORT_XML: ${{ runner.temp }}/report/report.xml
           SUMMARY_OUTPUT: test-summary.md
           PR_NUMBER: ${{ inputs.pr_number }}
-          GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+          # Empty outside cross-repo, in case the secret is also defined for the repository
+          GH_TOKEN: ${{ inputs.pr_number != '' && secrets.CROSS_REPO_TOKEN || '' }}
 
   # Deletes the encrypted source once the tests pass, instead of after the 1-day
   # retention. A separate job, so the delete does not wait for the report approval.
