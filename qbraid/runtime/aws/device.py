@@ -47,6 +47,7 @@ from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError, ProgramValidationError
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.transpiler import transpile
+from qbraid.transpiler.conversions.qasm3.qasm3_to_braket import transform_notation
 
 from .availability import next_available_time
 from .job import BraketQuantumTask
@@ -73,6 +74,18 @@ def _enable_experimental_capabilities(kwargs: dict) -> bool:
             "experimental capabilities, or 'NONE' to disable them."
         )
     return False
+
+
+def _as_braket_openqasm(program: str) -> str:
+    """Return ``program`` in Braket's gate names if it includes ``stdgates.inc``.
+
+    Braket rejects ``include`` and names some standard gates differently (``cnot`` for
+    ``cx``). Programs without the include are returned unchanged, because the rewrite
+    reformats the source (``#pragma`` becomes ``pragma``).
+    """
+    if 'include "stdgates.inc";' not in program:
+        return program
+    return transform_notation(program)
 
 
 class BraketDevice(QuantumDevice):
@@ -278,15 +291,17 @@ class BraketDevice(QuantumDevice):
         """Run a quantum job or a list of quantum jobs on this quantum device.
 
         With ``experimental_capabilities="ALL"``, OpenQASM 3 programs are submitted as written,
-        without conversion or validation. Experimental instructions such as IQM's
-        ``measure_ff`` and ``cc_prx`` can only be converted inside Braket's process-wide
-        ``EnableExperimentalCapability`` context, which concurrent submissions would share.
+        without conversion or validation, except that a program including ``stdgates.inc``
+        (as Qiskit's exporter writes) has the include removed and its gates renamed to
+        Braket's. Experimental instructions such as IQM's ``measure_ff`` and ``cc_prx`` can
+        only be converted inside Braket's process-wide ``EnableExperimentalCapability``
+        context, which concurrent submissions would share.
         """
         programs = run_input if isinstance(run_input, list) else [run_input]
         if _enable_experimental_capabilities(kwargs) and all(
             get_program_type_alias(program, safe=True) == "qasm3" for program in programs
         ):
-            openqasm = [OpenQasmProgram(source=program) for program in programs]
+            openqasm = [OpenQasmProgram(source=_as_braket_openqasm(p)) for p in programs]
             return self.submit(
                 openqasm if isinstance(run_input, list) else openqasm[0], *args, **kwargs
             )
