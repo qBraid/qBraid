@@ -48,6 +48,15 @@ jobs:
   # the token: even a checkout with persist-credentials: false gets the token again
   # in its post step, which runs after those installs. The token is a secret of the
   # cross-repo environment, so a repository admin approves each job that uses it.
+  #
+  # qbraid-core is private, but any signed-in user can download this repository's
+  # artifacts. So the artifact is encrypted with QBRAID_CORE_ARTIFACT_KEY, and the
+  # cleanup job deletes it after the tests. The key grants no repository access. It
+  # is a secret of cross-repo for this job and of cross-repo-artifact, which has no
+  # reviewers, for the test job. The test job enters cross-repo-artifact only when a
+  # qbraid-core branch is given, so other runs never get the key. A one-time key in
+  # a job output does not work: GitHub drops masked outputs, and the next job prints
+  # unmasked ones in its public log.
   fetch-qbraid-core:
     # Skipped, with no approval to wait for, when no qbraid-core branch is given
     if: ${{ inputs.qbraid_core_branch != '' }}
@@ -64,14 +73,25 @@ jobs:
           path: qbraid-core
           persist-credentials: false
 
-      - name: Pack qbraid-core branch
-        run: tar -czf "$RUNNER_TEMP/qbraid-core.tar.gz" -C qbraid-core --exclude=.git .
+      - name: Pack and encrypt qbraid-core branch
+        env:
+          QBRAID_CORE_ARTIFACT_KEY: ${{ secrets.QBRAID_CORE_ARTIFACT_KEY }}
+        run: |
+          set -o pipefail
+          # Without the key, openssl would encrypt with an empty password
+          if [ -z "$QBRAID_CORE_ARTIFACT_KEY" ]; then
+            echo "::error::QBRAID_CORE_ARTIFACT_KEY is not set"
+            exit 1
+          fi
+          tar -czf - -C qbraid-core --exclude=.git . \
+            | openssl enc -aes-256-cbc -pbkdf2 -pass env:QBRAID_CORE_ARTIFACT_KEY \
+              -out "$RUNNER_TEMP/qbraid-core.tar.gz.enc"
 
       - name: Upload qbraid-core branch
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: qbraid-core-source
-          path: ${{ runner.temp }}/qbraid-core.tar.gz
+          path: ${{ runner.temp }}/qbraid-core.tar.gz.enc
           retention-days: 1
 
   cross-repo-test:
@@ -79,6 +99,8 @@ jobs:
     # needs alone would skip this job when fetch-qbraid-core is skipped
     if: ${{ !cancelled() && (needs.fetch-qbraid-core.result == 'success' || needs.fetch-qbraid-core.result == 'skipped') }}
     runs-on: ubuntu-latest
+    # An empty name runs the job without an environment
+    environment: ${{ inputs.qbraid_core_branch != '' && 'cross-repo-artifact' || '' }}
 
     steps:
       - name: Checkout repo
@@ -94,11 +116,20 @@ jobs:
           name: qbraid-core-source
           path: ${{ runner.temp }}/qbraid-core-source
 
-      - name: Unpack qbraid-core branch
+      - name: Decrypt and unpack qbraid-core branch
         if: ${{ inputs.qbraid_core_branch != '' }}
+        env:
+          QBRAID_CORE_ARTIFACT_KEY: ${{ secrets.QBRAID_CORE_ARTIFACT_KEY }}
         run: |
+          set -o pipefail
+          if [ -z "$QBRAID_CORE_ARTIFACT_KEY" ]; then
+            echo "::error::QBRAID_CORE_ARTIFACT_KEY is not set"
+            exit 1
+          fi
           mkdir -p _siblings/qbraid-core
-          tar -xzf "$RUNNER_TEMP/qbraid-core-source/qbraid-core.tar.gz" -C _siblings/qbraid-core
+          openssl enc -d -aes-256-cbc -pbkdf2 -pass env:QBRAID_CORE_ARTIFACT_KEY \
+              -in "$RUNNER_TEMP/qbraid-core-source/qbraid-core.tar.gz.enc" \
+            | tar -xzf - -C _siblings/qbraid-core
 
       - name: Checkout pyqasm branch
         if: ${{ inputs.pyqasm_branch != '' }}
@@ -211,3 +242,22 @@ jobs:
           SUMMARY_OUTPUT: test-summary.md
           PR_NUMBER: ${{ inputs.pr_number }}
           GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
+
+  # Deletes the encrypted source once the tests are done, instead of after the 1-day
+  # retention. A separate job, so the delete does not wait for the report approval.
+  cleanup:
+    needs: cross-repo-test
+    if: ${{ always() && inputs.qbraid_core_branch != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write  # delete the qbraid-core artifact
+
+    steps:
+      - name: Delete qbraid-core artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts?name=qbraid-core-source" \
+            --jq '.artifacts[].id' \
+            | xargs -r -I{} gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/{}"
