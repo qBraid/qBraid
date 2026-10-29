@@ -1,0 +1,5 @@
+# qbraid-core does the upload path rewriting and the publish calls.
+# Floors, not exact pins: lab-env-tools.txt holds the exact versions. qbraid-cli
+# needs a matching qbraid-core, so Dependabot must be free to raise both together.
+qbraid-cli[envs]>=0.16.10
+qbraid-core[environments]>=0.6.27

@@ -13,3 +13,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+  - package-ecosystem: "uv"
+    directory: "/.github/requirements"
+    schedule:
+      interval: "weekly"
+    groups:
+      workflow-tools:
+        patterns: ["*"]
