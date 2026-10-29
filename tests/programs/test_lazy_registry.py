@@ -420,10 +420,30 @@ def test_conversions_skip_sdk_that_fails_to_import(monkeypatch, caplog):
 
 
 @pytest.mark.usefixtures("restore_conversions")
-def test_conversions_surface_errors_in_qbraid_code(monkeypatch):
+def test_conversions_skip_when_another_sdk_fails_to_import(monkeypatch, caplog):
+    """A conversion module whose SDK loads, but which imports a broken second SDK, is skipped."""
+    with caplog.at_level(logging.WARNING):
+        conversions = _rebuild_conversions_with(
+            monkeypatch, "qasm3", ImportError("broken install", name="cirq")
+        )
+
+    assert "Skipping conversions for 'qasm3'" in caplog.text
+    assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
+    assert "qasm2_to_qasm3" in conversions.conversion_functions
+
+
+@pytest.mark.usefixtures("restore_conversions")
+@pytest.mark.parametrize(
+    "error",
+    [
+        NameError("bug in conversion module"),
+        ImportError("bug in conversion module", name="qbraid.transpiler.missing"),
+    ],
+)
+def test_conversions_surface_errors_in_qbraid_code(monkeypatch, error):
     """A failure in qbraid's own conversion module is raised, not skipped."""
-    with pytest.raises(NameError, match="bug in conversion module"):
-        _rebuild_conversions_with(monkeypatch, "qasm3", NameError("bug in conversion module"))
+    with pytest.raises(type(error), match="bug in conversion module"):
+        _rebuild_conversions_with(monkeypatch, "qasm3", error)
 
 
 @pytest.mark.parametrize("package", ["gate_model", "analog", "annealing"])

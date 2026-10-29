@@ -105,9 +105,12 @@ def _update_registered_conversions() -> None:
         except ModuleNotFoundError:
             pass
         except Exception as err:  # pylint: disable=broad-exception-caught
-            # Tolerate only an SDK that is on disk but fails to import. If the SDK itself
-            # loads, the failure is in qbraid's own conversion module and must surface.
-            if NATIVE_REGISTRY.get(lib) is not None:
+            # Tolerate only an SDK that is on disk but fails to import. That need not be
+            # lib's own SDK: pyquil's conversions import cirq, for example. Any other error
+            # while lib's SDK loads is in qbraid's own conversion code and must surface.
+            failed_module = getattr(err, "name", None) or ""
+            sdk_failed = isinstance(err, ImportError) and not failed_module.startswith("qbraid")
+            if not sdk_failed and NATIVE_REGISTRY.get(lib) is not None:
                 raise
             logger.warning("Skipping conversions for '%s': %s: %s", lib, type(err).__name__, err)
 
