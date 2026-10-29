@@ -40,6 +40,7 @@ Submodules
 """
 import importlib
 import inspect
+from pathlib import Path
 
 from qbraid._logging import logger
 
@@ -53,6 +54,20 @@ QPROGRAM_REGISTRY = getattr(_registry, "QPROGRAM_REGISTRY", {})
 valid_combinations_cache = set()
 
 conversion_functions = []
+
+_QBRAID_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _raised_in_qbraid(err: BaseException) -> bool:
+    """Whether the innermost frame of ``err``, ignoring frozen importlib frames, is in qbraid."""
+    # Walked by hand: traceback.extract_tb obeys sys.tracebacklimit, which some packages set.
+    filename = None
+    tb = err.__traceback__
+    while tb is not None:
+        if not tb.tb_frame.f_code.co_filename.startswith("<"):
+            filename = tb.tb_frame.f_code.co_filename
+        tb = tb.tb_next
+    return filename is not None and Path(filename).resolve().is_relative_to(_QBRAID_ROOT)
 
 
 def _update_registered_conversions() -> None:
@@ -102,15 +117,18 @@ def _update_registered_conversions() -> None:
                     valid_combinations_cache.add(pair)
                     valid_combinations_cache.add(reverse_pair)
 
-        except ModuleNotFoundError:
-            pass
         except Exception as err:  # pylint: disable=broad-exception-caught
-            # Tolerate only an SDK that is on disk but fails to import. That need not be
-            # lib's own SDK: pyquil's conversions import cirq, for example. Any other error
-            # while lib's SDK loads is in qbraid's own conversion code and must surface.
-            failed_module = getattr(err, "name", None) or ""
-            sdk_failed = isinstance(err, ImportError) and not failed_module.startswith("qbraid")
-            if not sdk_failed and NATIVE_REGISTRY.get(lib) is not None:
+            in_qbraid = _raised_in_qbraid(err)
+            missing = err.name if isinstance(err, ModuleNotFoundError) else None
+            if missing == base_path + lib:
+                continue
+            # qbraid importing an optional SDK that isn't installed is expected. A missing
+            # qbraid module is not, nor is any other error raised from qbraid's own code
+            # while lib's SDK loads. Failures raised inside an SDK, lib's own or another
+            # one its conversions import, mean a broken install and are skipped.
+            if missing and in_qbraid and missing.split(".")[0] != "qbraid":
+                continue
+            if in_qbraid and NATIVE_REGISTRY.get(lib) is not None:
                 raise
             logger.warning("Skipping conversions for '%s': %s: %s", lib, type(err).__name__, err)
 

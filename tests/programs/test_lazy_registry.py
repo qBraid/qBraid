@@ -375,13 +375,24 @@ def test_conversion_graph_tolerates_aliases_dropped_while_building(monkeypatch):
     assert not graph.has_node("probe_a")
 
 
-def _rebuild_conversions_with(monkeypatch, failing_module, error):
-    """Rebuild the conversion table with one conversion module raising on import."""
+# A file under qbraid/, so an error raised "from" it counts as raised in qbraid's own code.
+_QBRAID_FILE = os.path.join(os.path.dirname(qbraid.programs.__file__), "_probe.py")
+
+
+def _rebuild_conversions_with(monkeypatch, failing_module, error, raised_in_qbraid=False):
+    """Rebuild the conversion table with one conversion module raising on import.
+
+    The error is raised from this test file, which stands in for code inside an SDK,
+    unless ``raised_in_qbraid`` is set.
+    """
     conversions = importlib.import_module("qbraid.transpiler.conversions")
     real_import_module = importlib.import_module
 
     def import_module(name, *args, **kwargs):
         if name == f"qbraid.transpiler.conversions.{failing_module}":
+            if raised_in_qbraid:
+                code = compile("raise error", _QBRAID_FILE, "exec")
+                exec(code, {"error": error})  # pylint: disable=exec-used
             raise error
         return real_import_module(name, *args, **kwargs)
 
@@ -409,9 +420,11 @@ def test_conversions_skip_sdk_that_fails_to_import(monkeypatch, caplog):
     registry["pytket"] = _LazyType("qbraid_probe_bad", "Program")
     monkeypatch.setattr(conversions, "NATIVE_REGISTRY", registry)
 
+    # Raised from qbraid's own import line, so only the failed registry lookup marks the
+    # SDK as broken.
     with caplog.at_level(logging.WARNING):
         conversions = _rebuild_conversions_with(
-            monkeypatch, "pytket", ImportError("broken install")
+            monkeypatch, "pytket", ImportError("broken install"), raised_in_qbraid=True
         )
 
     assert "Skipping conversions for 'pytket'" in caplog.text
@@ -420,12 +433,18 @@ def test_conversions_skip_sdk_that_fails_to_import(monkeypatch, caplog):
 
 
 @pytest.mark.usefixtures("restore_conversions")
-def test_conversions_skip_when_another_sdk_fails_to_import(monkeypatch, caplog):
+@pytest.mark.parametrize(
+    "error",
+    [
+        ImportError("broken install", name="cirq"),
+        AttributeError("broken install"),
+        ModuleNotFoundError("broken install", name="cirq_dependency"),
+    ],
+)
+def test_conversions_skip_when_another_sdk_fails_to_import(monkeypatch, caplog, error):
     """A conversion module whose SDK loads, but which imports a broken second SDK, is skipped."""
     with caplog.at_level(logging.WARNING):
-        conversions = _rebuild_conversions_with(
-            monkeypatch, "qasm3", ImportError("broken install", name="cirq")
-        )
+        conversions = _rebuild_conversions_with(monkeypatch, "qasm3", error)
 
     assert "Skipping conversions for 'qasm3'" in caplog.text
     assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
@@ -433,17 +452,30 @@ def test_conversions_skip_when_another_sdk_fails_to_import(monkeypatch, caplog):
 
 
 @pytest.mark.usefixtures("restore_conversions")
+def test_conversions_quietly_skip_sdk_that_is_not_installed(monkeypatch, caplog):
+    """A conversion module importing an optional SDK that isn't installed is skipped silently."""
+    with caplog.at_level(logging.WARNING):
+        conversions = _rebuild_conversions_with(
+            monkeypatch, "qasm3", ModuleNotFoundError("absent", name="cirq"), raised_in_qbraid=True
+        )
+
+    assert "Skipping conversions" not in caplog.text
+    assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
+
+
+@pytest.mark.usefixtures("restore_conversions")
 @pytest.mark.parametrize(
     "error",
     [
         NameError("bug in conversion module"),
-        ImportError("bug in conversion module", name="qbraid.transpiler.missing"),
+        ImportError("bug in conversion module", name="cirq.ops"),
+        ModuleNotFoundError("bug in conversion module", name="qbraid.transpiler.missing"),
     ],
 )
 def test_conversions_surface_errors_in_qbraid_code(monkeypatch, error):
-    """A failure in qbraid's own conversion module is raised, not skipped."""
+    """A failure raised from qbraid's own conversion module is raised, not skipped."""
     with pytest.raises(type(error), match="bug in conversion module"):
-        _rebuild_conversions_with(monkeypatch, "qasm3", error)
+        _rebuild_conversions_with(monkeypatch, "qasm3", error, raised_in_qbraid=True)
 
 
 @pytest.mark.parametrize("package", ["gate_model", "analog", "annealing"])
