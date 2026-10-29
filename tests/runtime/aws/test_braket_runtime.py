@@ -795,6 +795,28 @@ def test_device_run_experimental_rewrites_stdgates_programs_for_braket():
     assert "if (c[0]) {" in submitted.source
 
 
+def test_device_run_experimental_keeps_verbatim_box_when_rewriting():
+    """A ``stdgates.inc`` program with a verbatim box keeps the box and IQM's native
+    instructions. The pragma loses its ``#``, which Braket accepts."""
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+    program = IQM_FEEDFORWARD_QASM3.replace(
+        "OPENQASM 3.0;\n", 'OPENQASM 3.0;\ninclude "stdgates.inc";\n'
+    )
+
+    device.run(program, shots=100, experimental_capabilities="ALL")
+
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert "include" not in submitted.source
+    assert "pragma braket verbatim" in submitted.source
+    for instruction in (
+        "prx(1.5707963, 0) $0;",
+        "measure_ff(0) $0;",
+        "cc_prx(3.1415926, 0, 0) $1;",
+    ):
+        assert instruction in submitted.source
+
+
 def test_device_run_experimental_rewrites_qiskit_circuit_export():
     """A Qiskit feed-forward circuit exported to OpenQASM 3 reaches Braket without the include."""
     qiskit = pytest.importorskip("qiskit")
