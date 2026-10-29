@@ -80,8 +80,8 @@ def _as_braket_openqasm(program: str) -> str:
     """Return ``program`` in Braket's gate names if it includes ``stdgates.inc``.
 
     Braket rejects ``include`` and names some standard gates differently (``cnot`` for
-    ``cx``). Programs without the include are returned unchanged, because the rewrite
-    reformats the source (``#pragma`` becomes ``pragma``).
+    ``cx``). Programs without the include are returned unchanged, so a program already
+    written for Braket reaches it exactly as written.
     """
     if 'include "stdgates.inc";' not in program:
         return program
