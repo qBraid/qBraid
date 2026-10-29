@@ -51,7 +51,7 @@ jobs:
   #
   # qbraid-core is private, but any signed-in user can download this repository's
   # artifacts. So the artifact is encrypted with QBRAID_CORE_ARTIFACT_KEY, and the
-  # cleanup job deletes it after the tests. The key grants no repository access. It
+  # cleanup job deletes it once the tests pass. The key grants no repository access. It
   # is a secret of cross-repo for this job and of cross-repo-artifact, which has no
   # reviewers, for the test job. The test job enters cross-repo-artifact only when a
   # qbraid-core branch is given, so other runs never get the key. A one-time key in
@@ -243,11 +243,13 @@ jobs:
           PR_NUMBER: ${{ inputs.pr_number }}
           GH_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
 
-  # Deletes the encrypted source once the tests are done, instead of after the 1-day
+  # Deletes the encrypted source once the tests pass, instead of after the 1-day
   # retention. A separate job, so the delete does not wait for the report approval.
+  # After a failure the artifact stays, because "Re-run failed jobs" does not re-run
+  # fetch-qbraid-core and the re-run test job needs it. That re-run's cleanup deletes it.
   cleanup:
     needs: cross-repo-test
-    if: ${{ always() && inputs.qbraid_core_branch != '' }}
+    if: ${{ !cancelled() && inputs.qbraid_core_branch != '' && needs.cross-repo-test.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       actions: write  # delete the qbraid-core artifact
