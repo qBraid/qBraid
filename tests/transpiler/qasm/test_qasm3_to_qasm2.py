@@ -66,6 +66,42 @@ def test_gate_outside_qelib1_is_unrolled_into_qelib1_gates():
     assert "creg c[2];" in qasm2
 
 
+@pytest.mark.parametrize(
+    "gate",
+    [
+        "u3(0.1, 0.2, 0.3) q[0];",
+        "u2(0.1, 0.2) q[0];",
+        "ch q[0], q[1];",
+        "cy q[0], q[1];",
+        "crz(0.2) q[0], q[1];",
+        "cu1(0.2) q[0], q[1];",
+        "cswap q[0], q[1], q[2];",
+        "sxdg q[0];",
+    ],
+)
+def test_qelib1_gate_is_kept_as_written(gate):
+    """Unrolling a gate QASM 2 already has would only add gates, and error on hardware."""
+    qasm2 = qasm3_to_qasm2(HEADER + "qubit[3] q;\n" + gate + "\n")
+
+    assert qasm2.endswith("qreg q[3];\n" + gate + "\n")
+
+
+def test_a_gate_redefined_under_a_qelib1_name_is_unrolled():
+    """QASM 2 would run qelib1's ``ch``, not this one, so its body is what is sent."""
+    qasm2 = qasm3_to_qasm2(HEADER + "gate ch a, b { x a; x b; }\nqubit[2] q;\nch q[0], q[1];\n")
+
+    assert qasm2.endswith("qreg q[2];\nx q[0];\nx q[1];\n")
+
+
+def test_a_modifier_on_a_kept_gate_is_unrolled_with_it():
+    """``ctrl @ x`` has no QASM 2 form, so the program is unrolled whole, registers intact."""
+    qasm2 = qasm3_to_qasm2(
+        HEADER + "qubit[2] q;\nbit[2] c;\nctrl @ x q[0], q[1];\nc = measure q;\n"
+    )
+
+    assert "creg c[2];\ncx q[0], q[1];" in qasm2
+
+
 def test_custom_gates_are_unrolled_and_global_phase_dropped():
     """Gates outside ``qelib1.inc`` are decomposed, and ``gphase`` has no QASM 2 form."""
     qasm2 = qasm3_to_qasm2(
@@ -96,27 +132,104 @@ def test_exponent_literal_gains_the_decimal_point_qasm2_requires():
     "body",
     [
         "qubit[2] q;\nbit[1] c;\nc[0] = measure q[0];\nif (c[0]) { x q[1]; }\n",
-        "qubit[1] q;\nmeasure q[0];\n",
         "bit[1] c;\nh $1;\nc[0] = measure $1;\n",
         "qubit[1] Q;\nh Q[0];\n",
         "qubit[1] _q;\nh _q[0];\n",
         "qubit[1] q;\nbit[1] rzz;\nrzz[0] = measure q[0];\n",
         "qubit[1] q;\nbit[1] exp;\nexp[0] = measure q[0];\n",
+        "qubit[1] q;\nbit[2] c;\nc[0] = measure q[0];\nc[1] = 1;\n",
+        "qubit[1] q;\nbit[2] c;\nc[0] = measure q[0];\nc[1] = c[0];\n",
+        "qubit[1] q;\nbit c;\nc = measure q[0];\nc = ~c;\n",
+        'qubit[1] q;\nbit[2] c = "01";\nc[0] = measure q[0];\n',
+        "qubit[1] q;\nbit[2] c;\nfor int i in [0:1] { c[i] = 1; }\n",
+        "qubit[2] q;\nbox { x q[0]; delay[10ns] q[1]; }\n",
     ],
     ids=[
         "bit-condition",
-        "measurement-without-target",
         "physical-qubit",
         "uppercase-name",
         "underscore-name",
         "gate-name",
         "keyword-name",
+        "bit-write-constant",
+        "bit-write-copy",
+        "bit-write-whole-register",
+        "bit-initializer",
+        "bit-write-in-loop",
+        "delay-in-box",
     ],
 )
 def test_statement_qasm2_cannot_express_raises(body):
     """The transpiler tries its next conversion path on ValueError."""
     with pytest.raises(ValueError, match="OpenQASM 2 cannot"):
         qasm3_to_qasm2(HEADER + body)
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        "qubit[2] a;\nqubit[2] b;\ncx a, b;\n",
+        "qubit[4] q;\ncx q[0:1], q[2:3];\n",
+        "qubit[4] q;\nlet a = q[0:1];\nlet b = q[2:3];\ncx a, b;\n",
+        "def f(qubit[2] a, qubit[2] b) { cx a, b; }\nqubit[2] r;\nqubit[2] s;\nf(r, s);\n",
+    ],
+    ids=["two-registers", "slices", "alias", "subroutine-registers"],
+)
+def test_multi_qubit_broadcast_raises(body):
+    """pyqasm would unroll these to the wrong circuit, so the transpiler takes the Cirq path."""
+    with pytest.raises(ValueError, match="broadcast over a register"):
+        qasm3_to_qasm2(HEADER + body)
+
+
+def test_multi_qubit_broadcast_falls_back_to_a_correct_circuit():
+    """pyqasm pairs ``cx a, b`` within each register (qBraid/pyqasm#384); Cirq pairs across."""
+    qasm2 = transpile(HEADER + "qubit[2] a;\nqubit[2] b;\nx a;\ncx a, b;\n", "qasm2")
+    gates = qasm2.replace(", ", ",")
+    assert "cx q[0],q[2];" in gates and "cx q[1],q[3];" in gates
+
+
+def test_single_qubit_broadcast_and_gate_parameters_stay_direct():
+    """A one-qubit broadcast, and a two-qubit gate inside a definition, are not broadcasts."""
+    body = "gate g a, b { cx a, b; }\nqubit[2] q;\nbit[2] c;\nx q;\ng q[0], q[1];\nc = measure q;\n"
+    qasm2 = qasm3_to_qasm2(HEADER + body)
+    assert "x q[0];\nx q[1];" in qasm2 and "creg c[2];" in qasm2
+
+
+def test_box_keeps_its_body():
+    """A box only schedules its body, so the body converts and the box is dropped."""
+    body = "qubit[2] q;\nbit[2] c;\nbox[200ns] { x q[0]; cx q[0], q[1]; }\nc = measure q;\n"
+    qasm2 = qasm3_to_qasm2(HEADER + body)
+    assert "box" not in qasm2 and "x q[0];\ncx q[0], q[1];" in qasm2
+
+
+def test_measurement_without_target_gets_its_own_register():
+    """Untargeted measurements fill ``m_m`` in order, beside the declared registers."""
+    body = "qubit[3] q;\nbit[1] c;\nc[0] = measure q[1];\nmeasure q[0];\nmeasure q[2];\n"
+    qasm2 = qasm3_to_qasm2(HEADER + body)
+
+    assert "qreg q[3];\ncreg c[1];" in qasm2
+    assert (
+        "measure q[1] -> c[0];\ncreg m_m[2];\nmeasure q[0] -> m_m[0];\nmeasure q[2] -> m_m[1];"
+        in qasm2
+    )
+
+
+def test_measurement_without_target_avoids_a_declared_name():
+    """A program that already declares ``m_m`` gets the next free name."""
+    body = "qubit[1] q;\nbit[1] m_m;\nm_m[0] = measure q[0];\nmeasure q[0];\n"
+    assert "creg m_m1[1];\nmeasure q[0] -> m_m1[0];" in qasm3_to_qasm2(HEADER + body)
+
+
+def test_transpiler_converts_measurement_without_target():
+    """Converted on main by the third path, which the new edge would otherwise push out."""
+    qasm2 = transpile(HEADER + "qubit[1] q;\nx q[0];\nmeasure q[0];\n", "qasm2")
+    assert "measure q[0] -> m_m[0];" in qasm2
+
+
+def test_classical_writes_to_other_types_are_kept_out_of_the_check():
+    """An ``int`` loop counter is not a register, so writing to it still converts."""
+    body = "qubit[2] q;\nbit[2] c;\nint n = 0;\nn = 1;\nh q[0];\nc = measure q;\n"
+    assert "creg c[2];" in qasm3_to_qasm2(HEADER + body)
 
 
 def test_transpiler_prefers_the_direct_conversion():

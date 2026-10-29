@@ -31,11 +31,13 @@ from typing import ClassVar, Optional, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from requests import ConnectionError as RequestsConnectionError
 from requests import ReadTimeout
 
 try:
     from qbraid_core.decimal import USD
     from qcaas_client.client import (  # type: ignore
+        ConnectionFailureException,
         OQCClient,
         QPUTask,
         QPUTaskErrors,
@@ -938,6 +940,92 @@ def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):
     oqc_client.get_task_metadata.assert_called_once()
 
 
+def _metadata_only_on(home_qpu_id: str):
+    """A get_task_metadata stand-in that, like OQC, 404s on every QPU but the task's own."""
+
+    def get_task_metadata(task_id, qpu_id=None):
+        if qpu_id != home_qpu_id:
+            raise ServerException("404 Not Found", 404)
+        return {"qpu_id": qpu_id, "id": task_id}
+
+    return get_task_metadata
+
+
+def test_job_without_device_finds_its_qpu_past_a_404(toshiko_id, oqc_job, oqc_client):
+    """A task on Toshiko 404s on Lucy, which is listed first, so the lookup moves on."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=_metadata_only_on(toshiko_id))
+    oqc_job._client = oqc_client
+
+    assert oqc_job.qpu_id == toshiko_id
+    assert oqc_client.get_task_metadata.call_count == 2
+
+
+def test_job_without_device_raises_when_no_qpu_has_the_task(oqc_job, oqc_client):
+    """A task no QPU knows is reported as not found, not as a raw 404."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=_metadata_only_on("qpu:none"))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ResourceNotFoundError, match="not found on any OQC QPU"):
+        _ = oqc_job.qpu_id
+
+
+def test_job_without_device_reraises_errors_other_than_404(oqc_job, oqc_client):
+    """Only a 404 means "not on this QPU"; anything else is a real failure."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=ServerException("Forbidden", 403))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ServerException, match="Forbidden"):
+        _ = oqc_job.qpu_id
+    oqc_client.get_task_metadata.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    "make_error",
+    # Built in the test, since qcaas_client may not be installed when this module is collected.
+    [
+        lambda: ConnectionFailureException(503),
+        lambda: ConnectionFailureException("Timeout error"),
+        lambda: ServerException("Not Implemented", 501),
+        lambda: RequestsConnectionError("Failed to resolve 'jp.cloud.oqc.app'"),
+    ],
+    ids=["retryable-5xx", "timeout", "other-5xx", "no-connection"],
+)
+def test_job_without_device_skips_an_unreachable_qpu(toshiko_id, oqc_job, oqc_client, make_error):
+    """A QPU that times out or fails may not hold the task, so the lookup tries the rest."""
+    find_on_toshiko = _metadata_only_on(toshiko_id)
+
+    def get_task_metadata(task_id, qpu_id=None):
+        if qpu_id != toshiko_id:
+            raise make_error()
+        return find_on_toshiko(task_id, qpu_id)
+
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=get_task_metadata)
+    oqc_job._client = oqc_client
+
+    assert oqc_job.qpu_id == toshiko_id
+
+
+def test_job_without_device_reports_an_unreachable_qpu_if_no_other_has_the_task(
+    oqc_job, oqc_client
+):
+    """With the task nowhere else, the connection failure is the useful error."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(side_effect=ConnectionFailureException(503))
+    oqc_job._client = oqc_client
+
+    with pytest.raises(ConnectionFailureException):
+        _ = oqc_job.qpu_id
+
+
 def test_oqc_provider_raises_for_no_token(monkeypatch):
     """Test that the OQCProvider raises an error when no token is provided."""
     monkeypatch.setenv("OQC_AUTH_TOKEN", "")
@@ -959,6 +1047,41 @@ def test_build_compiler_config_invalid_value():
     """Test that the build_compiler_config method raises an error for invalid values."""
     with pytest.raises(ValueError, match="Invalid configuration option"):
         OQCDevice._build_compiler_config(optimizations="invalid_value")
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"shots": 0},
+        {"shots": -1},
+        {"shots": 0, "repeats": 1000},
+        {"repeats": 0},
+        {"repeats": -1},
+    ],
+)
+def test_oqc_run_rejects_nonpositive_repeats(oqc_device, qasm2_program, kwargs):
+    """Invalid shot counts must fail before OQC can schedule a paid task."""
+    with patch.object(oqc_device.client, "schedule_tasks") as schedule_tasks:
+        with pytest.raises(ValueError, match="shots or repeats must be at least 1"):
+            oqc_device.run(qasm2_program, **kwargs)
+
+    schedule_tasks.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "kwargs, expected_repeats",
+    [
+        ({}, None),
+        ({"shots": 1}, 1),
+        ({"repeats": 10}, 10),
+        ({"shots": 2, "repeats": 10}, 2),
+    ],
+)
+def test_build_compiler_config_repeat_selection(kwargs, expected_repeats):
+    """Explicit shots take precedence, while omitted shots retain the repeat fallback."""
+    config = OQCDevice._build_compiler_config(**kwargs)
+
+    assert config.repeats == expected_repeats
 
 
 @patch("qbraid.runtime.oqc.device.logger")

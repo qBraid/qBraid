@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- `BraketDevice.run(..., experimental_capabilities="ALL")` now submits an OpenQASM 3 program as written instead of converting it to a Braket `Circuit`, so IQM Emerald and Garnet can run feed-forward (`measure_ff`/`cc_prx` in a verbatim box), including through `QbraidProvider` with `runtime_options={"experimental_capabilities": "ALL"}`. `"NONE"`, which the Braket SDK rejects, now runs without the flag, and any other value raises a `ValueError` naming the accepted values before a task is created ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Added default AWS quantum task tags through `BraketDevice.set_options(tags=...)`. Defaults apply to single and batch submissions, and per-submission tags override matching keys ([#1471](https://github.com/qBraid/qBraid/pull/1471)).
 - Added the `Publish qBraid Lab environment` workflow (`publish-lab-env.yml`), run by hand for a released version. It builds a `qBraid-SDK (vX.Y.Z)` Lab environment with the main framework extras, smoke tests it, and publishes it on qBraid staging or production, as pyqasm does ([#1477](https://github.com/qBraid/qBraid/pull/1477))
 - Added `qbraid.runtime.aqt.set_token_store` and the `AQTTokenStore` protocol, so a service running several processes can share one AQT access token instead of each minting its own. The store loads and saves the token; the SDK still caches in memory, and within the last hour before expiry only the process that wins `claim_renewal` mints the replacement. A failing store falls back to the in-process cache rather than breaking authentication ([#1461](https://github.com/qBraid/qBraid/pull/1461))
@@ -31,6 +32,9 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- **Behavior change:** OpenQASM 3 programs sent to devices that accept only OpenQASM 2 (OQC, Azure Quantinuum, and qBraid-native devices without OpenQASM 3 input) now keep their classical registers and qubits as declared. A partly measured register stays one register under its own name, with unmeasured bits reading 0, instead of one-bit `m_c_0`-style registers. Its counts change shape (OQC's `get_counts()` returns one dict, not a list), and fully measured registers keep their name (`c`, not `m_c`). Unused qubits are no longer dropped, so the remaining qubits keep their indices. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
+- `QbraidDevice.best_qubits()` no longer selects a qubit whose readout or gate error, or an edge whose two-qubit gate error, the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. Flags on T1, T2 and frequency are ignored. When one qubit is requested or the device has no couplers, the ranking also leaves out qubits with an error of 1 or outside `[0, 1]`, such as IBM's unflagged 1.0 placeholders, which it used to rank last. When too few usable qubits remain, it raises `ValueError` instead of returning unusable ones ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
+- `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 - OpenQASM 3 that addresses physical qubits (`$1`) now runs on OQC devices as written, on exactly those qubits, instead of being converted to OpenQASM 2 and placed by OQC. Each CX must then follow its coupler's calibrated direction ([#1469](https://github.com/qBraid/qBraid/pull/1469))
 
 ### Deprecated
@@ -38,7 +42,12 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- Converting OpenQASM 3 to OpenQASM 2 now keeps each classical register whole and under its own name, instead of splitting a partly measured register into one-bit registers and renaming `c` to `m_c`. Devices that target OpenQASM 2 (OQC, IonQ, QUDORA and others) receive the registers as written. OQC results also name each register's counts in `data.extra["registerCounts"]` ([#1468](https://github.com/qBraid/qBraid/pull/1468))
+- `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))
+- OQC jobs now reject `shots` or `repeats` below 1 before submission, instead of silently using the default repeat count when `shots=0` ([#1442](https://github.com/qBraid/qBraid/pull/1442)).
+- `OQCJob` created without a device, as `load_job(task_id, "oqc")` does, no longer fails with a 404 for a task on any QPU but the client's default. It now finds the QPU that holds the task ([#1467](https://github.com/qBraid/qBraid/pull/1467))
+- Device validation no longer rejects a program the OpenQASM parser can't read, such as one using a vendor instruction like IQM's `measure_ff`. The qubit-count check is skipped for it instead ([#1494](https://github.com/qBraid/qBraid/pull/1494))
+- Programs that fail to parse as OpenQASM now say why. A string with no `OPENQASM` header no longer fails with "No conversion path found from 'str'", and syntax errors name the offending token, line and column instead of an empty reason ([#1490](https://github.com/qBraid/qBraid/pull/1490))
+- Circuits sent to Amazon Braket QPUs no longer fail with "uses GPhase" or "uses a gate: … not supported" when they contain `gphase`, `v`/`vi` or `ccnot` the device doesn't list. These are now rewritten into gates the device accepts ([#1486](https://github.com/qBraid/qBraid/pull/1486))
 - Converting a qrisp circuit to pytket no longer reorders qubits whose names sort differently as text and as numbers (for example `qb_99` and `qb_100`), which produced a circuit acting on the wrong qubits ([#1482](https://github.com/qBraid/qBraid/pull/1482))
 - Toffoli gates (`ccx`, `ccnot`, `toffoli`) in OpenQASM programs sent to IonQ no longer fail with "Failed to parse circuit" ([#1472](https://github.com/qBraid/qBraid/pull/1472))
 - `QPerfectProvider`'s `mimiq-emulator` no longer rejects circuits over 256 qubits before submission. The cap was a placeholder; MPS reach depends on entanglement rather than width, so MIMIQ now decides what it can run ([#1478](https://github.com/qBraid/qBraid/pull/1478))
@@ -52,6 +61,8 @@ Writing an entry:
 - `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
+- Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
+- Raised the `amazon-braket-sdk` floor from `>=1.83.0` to `>=1.108.0`, the first release whose `AwsDevice.run` accepts `experimental_capabilities`. Earlier releases ignore it or reject it after creating the task ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 
 ## [0.13.0] - 2026-10-02
 

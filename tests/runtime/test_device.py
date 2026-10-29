@@ -18,9 +18,11 @@
 Unit tests for QbraidDevice and QbraidProvider classes.
 
 """
+
 import importlib.util
 import json
 import logging
+import math
 import time
 from typing import Any
 from unittest.mock import Mock, patch
@@ -28,15 +30,17 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+from pyqasm.exceptions import PyQasmError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
-from qbraid._caching import cache_disabled
+from qbraid._caching import cache_disabled, clear_cache
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
 from qbraid.runtime import Result, TargetProfile, ValidationLevel
 from qbraid.runtime.exceptions import ProgramValidationError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
+from qbraid.runtime.native.calibrations import edge_costs, qubit_costs
 from qbraid.runtime.native.provider import (
     _serialize_sequence,
     get_program_spec_lambdas,
@@ -588,6 +592,26 @@ def test_device_validate_non_native_type_logs(mock_qbraid_device, caplog):
     )
 
 
+def test_device_validate_skips_qubit_count_the_parser_rejects(mock_qbraid_device, caplog):
+    """A program the parser can't count qubits for is passed on, not rejected."""
+    mock_qbraid_device._target_spec = None
+    program = "OPENQASM 3.0;\nqubit[2] q;\nmeasure_ff(0) q[0];\n"
+
+    with caplog.at_level(logging.INFO):
+        mock_qbraid_device.validate([program])
+
+    assert "Skipping qubit count validation: " in caplog.text
+
+
+def test_device_validate_raises_other_parser_errors(mock_qbraid_device):
+    """Only an unknown instruction skips the qubit count; other parser errors still raise."""
+    mock_qbraid_device._target_spec = None
+    program = "OPENQASM 3.0;\nqubit[2] q;\nh q[5];\n"
+
+    with pytest.raises(PyQasmError, match="out of range"):
+        mock_qbraid_device.validate([program])
+
+
 def test_device_validate_level_none(mock_qbraid_device):
     """Test that validate returns immediately if validate level set to 0."""
     mock_qbraid_device.set_options(validate=0)
@@ -793,6 +817,34 @@ def test_device_transpile_program_conversion_error():
     with pytest.raises(ProgramConversionError) as excinfo:
         device.transpile(circuit, ProgramSpec(IonQDict, "ionq"))
     assert "Transpile step failed after multiple attempts." in str(excinfo.value)
+
+
+@pytest.mark.parametrize("targets", [["qasm3"], ["qasm2", "qasm3"]])
+def test_transpile_unrecognized_string_explains_why(targets):
+    """A string that is not OpenQASM names the missing header and the parser's reason,
+    instead of reporting that no conversion path exists from 'str'."""
+    profile = TargetProfile(
+        device_id="fake_device",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=2,
+        program_spec=[ProgramSpec(str, alias) for alias in targets],
+    )
+    device = MockDevice(profile=profile)
+    program = "version 3.0\nqubit[2] q\n# comment\nH q[0]\n"
+
+    try:
+        with pytest.raises(ProgramConversionError) as excinfo:
+            device.apply_runtime_profile(program)
+    finally:
+        # apply_runtime_profile registers the bare 'str' alias, which would leak into
+        # later tests that expect an unrecognised string to raise ProgramTypeError
+        unregister_program_type("str", raise_error=False)
+
+    message = str(excinfo.value)
+    assert message.startswith("Program not recognised as OpenQASM 2 or 3: no 'OPENQASM")
+    assert "OpenQASM 3 parser error:" in message
+    assert "No conversion path found" not in message
 
 
 @pytest.fixture
@@ -1148,6 +1200,92 @@ def test_coupling_map_cached_per_device(mock_profile):
     client.get_device_calibrations.assert_called_once()
 
 
+@pytest.fixture
+def calibration_cache(monkeypatch):
+    """Turn method caching on, with an empty cache before and after the test."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    clear_cache()
+    yield
+    clear_cache()
+
+
+def _device(mock_profile, device_id: str, client: Mock) -> QbraidDevice:
+    """A QbraidDevice with ``device_id``, built on the shared mock profile."""
+    profile = mock_profile.model_copy(update={"device_id": device_id})
+    return QbraidDevice(profile=profile, client=client)
+
+
+def test_get_calibrations_cached_per_device(mock_profile, calibration_cache):
+    """Repeated calls within five minutes make one request."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    first = device.get_calibrations()
+    device.best_qubits(2)
+
+    assert device.get_calibrations() is first
+    client.get_device_calibrations.assert_called_once_with(device.id)
+
+
+def test_get_calibrations_refetched_after_five_minutes(mock_profile, calibration_cache):
+    """The cached snapshot expires after five minutes."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    with patch("qbraid._caching.time.time", return_value=1_000.0):
+        device.get_calibrations()
+    with patch("qbraid._caching.time.time", return_value=1_299.0):
+        device.get_calibrations()
+    assert client.get_device_calibrations.call_count == 1
+
+    with patch("qbraid._caching.time.time", return_value=1_301.0):
+        device.get_calibrations()
+    assert client.get_device_calibrations.call_count == 2
+
+
+def test_get_calibrations_cache_keyed_by_device_id(mock_profile, calibration_cache):
+    """Freed devices never hand their snapshot to a new device at the same address."""
+    client = Mock()
+    client.get_device_calibrations.side_effect = (
+        lambda device_id: _cepheus_calibration().model_copy(
+            update={"physical_device_id": device_id}
+        )
+    )
+
+    for i in range(50):
+        device_id = f"vendor:vendor:qpu:device-{i}"
+        calibration = _device(mock_profile, device_id, client).get_calibrations()
+        assert calibration.physical_device_id == device_id
+
+
+def test_get_calibrations_shared_by_same_device_id(mock_profile, calibration_cache):
+    """Two objects for one device share the cached snapshot."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    first = _device(mock_profile, CEPHEUS_QRN, client)
+    second = _device(mock_profile, CEPHEUS_QRN, client)
+
+    assert hash(first) == hash(second)
+    assert first != second
+    assert second.get_calibrations() is first.get_calibrations()
+    client.get_device_calibrations.assert_called_once()
+
+
+def test_get_calibrations_cache_disabled_fetches(mock_profile, calibration_cache):
+    """cache_disabled fetches a new snapshot."""
+    client = Mock()
+    client.get_device_calibrations.return_value = _cepheus_calibration()
+    device = QbraidDevice(profile=mock_profile, client=client)
+
+    device.get_calibrations()
+    with cache_disabled(device):
+        device.get_calibrations()
+
+    assert client.get_device_calibrations.call_count == 2
+
+
 class TestSupportedRunInputs:
     """Tests for QuantumDevice.supported_run_inputs."""
 
@@ -1341,7 +1479,7 @@ def test_best_qubits_more_qubits_than_calibrated_raises(mock_profile):
     """Requesting more qubits than the device calibrates raises rather than truncating."""
     calibration = _calibration({0: (0.02, 0.001), 1: (0.01, 0.001)}, [])
     device = _device_with(calibration, mock_profile)
-    with pytest.raises(ValueError, match="2 calibrated qubits; 3 requested"):
+    with pytest.raises(ValueError, match="2 usable calibrated qubits; 3 requested"):
         device.best_qubits(3)
 
 
@@ -1462,3 +1600,364 @@ def test_best_qubits_ignores_unpublished_metrics(mock_profile):
     )
     device = _device_with(calibration, mock_profile)
     assert device.best_qubits(1) == (0,)
+
+
+# ===========================================================================
+# Placeholder measurements (``calibrated: false``) and the gateError metric
+# ===========================================================================
+
+
+def _cepheus_fragment(flagged: bool) -> DeviceCalibration:
+    """Qubits 75, 76, 77, 84 and 85 of a Rigetti Cepheus-1-108Q calibration.
+
+    Rigetti reports four of the five CZ sites and qubit 76's RB as placeholders: value 0.5 with
+    ISA error 1.0. Only 75-84 is a real measurement. With ``flagged`` the fragment carries the
+    ``standardError`` and ``calibrated: false`` fields the extractor writes; without it, it is
+    the document stored today.
+    """
+    qubits: dict[str, dict[str, Any]] = {
+        "75": {"readoutError": 0.028000000000000025, "gateError": {"rb": 0.006639852248321976}},
+        "76": {"readoutError": 0.351, "gateError": {"rb": 0.5}},
+        "77": {"readoutError": 0.02200000000000002, "gateError": {"rb": 0.0035708370679333745}},
+        "84": {"readoutError": 0.026000000000000023, "gateError": {"rb": 0.0033688069125213937}},
+        "85": {"readoutError": 0.02400000000000002, "gateError": {"rb": 0.00508376392949883}},
+    }
+    placeholder = {"value": 0.5}
+    cz: list[dict[str, Any]] = [
+        {"source": 84, "target": 85, **placeholder},
+        {"source": 76, "target": 77, **placeholder},
+        {"source": 76, "target": 85, **placeholder},
+        {"source": 75, "target": 76, **placeholder},
+        {"source": 75, "target": 84, "value": 0.014112862795141234},
+    ]
+    if flagged:
+        rb_errors = {
+            "75": 0.0005311437696837728,
+            "76": 1.0,
+            "77": 0.00015177986222160233,
+            "84": 8.374343900832362e-05,
+            "85": 0.0002145653338261429,
+        }
+        for qubit_id, rb_error in rb_errors.items():
+            qubits[qubit_id]["standardError"] = {"gateError": {"rb": rb_error}}
+        qubits["76"]["calibrated"] = {"gateError": {"rb": False}}
+        for entry in cz:
+            if entry["value"] == 0.5:
+                entry.update(standardError=1.0, calibrated=False)
+            else:
+                entry["standardError"] = 0.0010657927894286365
+    return DeviceCalibration.model_validate(
+        {
+            "physicalDeviceId": "rigetti:qpu:cepheus-1-108q",
+            "deviceQRNs": [CEPHEUS_QRN],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-10-19T05:10:06Z",
+            "fetchedAt": "2026-10-19T07:00:42.514161+00:00",
+            "qubits": qubits,
+            "edges": {"gateError": {"cz": cz}},
+        }
+    )
+
+
+def _ibm_boston_fragment(flagged: bool) -> DeviceCalibration:
+    """Qubits 77, 84, 85 and 86 of an ibm_boston calibration.
+
+    Qubit 85 reports ``gate_error == 1`` on every physical 1Q gate, IBM's placeholder; its CZ
+    edges are real. As the extractor stores it, ``gateLength`` is in nanoseconds and the virtual
+    ``rz`` gate is left out.
+    """
+    gates = ("id", "sx", "x", "xslow")
+    qubits: dict[str, dict[str, Any]] = {
+        "77": {
+            "t1": 0.00010401203137568006,
+            "t2": 0.00017328203615092234,
+            "readoutError": 0.00341796875,
+            "gateError": dict.fromkeys(gates, 0.0002009336359245476),
+        },
+        "84": {
+            "t1": 0.00016686046270181183,
+            "t2": 0.0003541490550716008,
+            "readoutError": 0.0032958984375,
+            "gateError": dict.fromkeys(gates, 0.00013813311911529236),
+        },
+        "85": {
+            "t1": 9.092209756307555e-06,
+            "t2": 4.787052057181761e-05,
+            "readoutError": 0.1768798828125,
+            "gateError": dict.fromkeys(gates, 1),
+        },
+        "86": {
+            "t1": 0.00018449153383568294,
+            "t2": 8.721841448182351e-05,
+            "readoutError": 0.0068359375,
+            "gateError": dict.fromkeys(gates, 0.0001951447131770379),
+        },
+    }
+    if flagged:
+        qubits["85"]["calibrated"] = {"gateError": dict.fromkeys(gates, False)}
+    return DeviceCalibration.model_validate(
+        {
+            "deviceQRNs": ["ibm:ibm:qpu:ibm_boston"],
+            "provider": "ibm",
+            "lastCalibrated": "2026-10-19T12:12:33+05:30",
+            "fetchedAt": "2026-10-19T08:38:11.675664+00:00",
+            "qubits": qubits,
+            "edges": {
+                "gateError": {
+                    "cz": [
+                        {"source": 77, "target": 85, "value": 0.09033004648292975},
+                        {"source": 85, "target": 86, "value": 0.08681606977690809},
+                        {"source": 84, "target": 85, "value": 0.1333558312432479},
+                    ]
+                },
+                "gateLength": {
+                    "cz": [
+                        {"source": 77, "target": 85, "value": 68.0},
+                        {"source": 85, "target": 86, "value": 84.0},
+                        {"source": 84, "target": 85, "value": 68.0},
+                    ]
+                },
+            },
+        }
+    )
+
+
+def test_best_qubits_skips_flagged_cepheus_edges(mock_profile):
+    """A chain never runs through a measurement the vendor flagged as a placeholder.
+
+    Every 3-qubit chain in the fragment needs a flagged CZ edge, so today ``best_qubits(3)``
+    returns one built on a 0.5 placeholder. Flagged, those edges and qubit 76 are unusable.
+    """
+    device = _device_with(_cepheus_fragment(flagged=True), mock_profile)
+
+    assert device.best_qubits(1) == (77,)
+    assert device.best_qubits(2) == (75, 84)
+    with pytest.raises(ValueError, match="No connected chain of 3 qubits"):
+        device.best_qubits(3)
+    with pytest.raises(ValueError, match="No connected chain of 4 qubits"):
+        device.best_qubits(4, gate="cz")
+
+
+def test_best_qubits_unchanged_without_new_fields(mock_profile):
+    """A document without ``standardError`` or ``calibrated`` selects exactly as before."""
+    device = _device_with(_cepheus_fragment(flagged=False), mock_profile)
+
+    assert device.best_qubits(1) == (77,)
+    assert device.best_qubits(2) == (75, 84)
+    assert device.best_qubits(3) == (75, 84, 85)
+    assert device.best_qubits(4) == (77, 76, 75, 84)
+
+    production = _device_with(_cepheus_calibration(), mock_profile)
+    assert production.best_qubits(1) == (0,)
+    assert production.best_qubits(2) == (3, 12)
+
+
+def test_coupling_map_keeps_flagged_edges(mock_profile):
+    """A flagged edge is still a physical coupler, so the coupling map keeps it."""
+    device = _device_with(_cepheus_fragment(flagged=True), mock_profile)
+    assert device.coupling_map == ((75, 76), (75, 84), (76, 77), (76, 85), (84, 85))
+
+
+@pytest.mark.parametrize("value", [0.001, 0.5])
+def test_edge_costs_flagged_entry_costs_inf(value):
+    """The flag decides, not the value: a placeholder that looks good is still unusable."""
+    calibration = DeviceCalibration.model_validate(
+        {
+            "deviceQRNs": [CEPHEUS_QRN],
+            "provider": "rigetti",
+            "lastCalibrated": "2026-10-19T05:10:06Z",
+            "fetchedAt": "2026-10-19T07:00:42Z",
+            "qubits": {},
+            "edges": {
+                "gateError": {
+                    "cz": [
+                        {"source": 0, "target": 1, "value": value, "calibrated": False},
+                        {"source": 1, "target": 2, "value": 0.01, "calibrated": True},
+                        {"source": 2, "target": 3, "value": 0.01, "standardError": 1.0},
+                    ]
+                }
+            },
+        }
+    )
+    costs = edge_costs(calibration)
+    assert costs[(0, 1)] == math.inf
+    assert costs[(1, 2)] == pytest.approx(-math.log(0.99))
+    assert costs[(2, 3)] == pytest.approx(-math.log(0.99))
+
+
+def _document(calibration: DeviceCalibration) -> dict[str, Any]:
+    """Raw API document of ``calibration``, to edit and validate again."""
+    return calibration.model_dump(by_alias=True, exclude_none=True)
+
+
+def _with_qubit_flags(
+    calibration: DeviceCalibration, qubit_id: str, flags: dict[str, Any]
+) -> DeviceCalibration:
+    """Copy of ``calibration`` whose qubit ``qubit_id`` carries the ``calibrated`` flags."""
+    document = _document(calibration)
+    document["qubits"][qubit_id]["calibrated"] = flags
+    return DeviceCalibration.model_validate(document)
+
+
+def test_edge_costs_flagged_entry_falls_back_to_other_gate():
+    """A flagged entry costs the pair that gate only; a real entry for another gate still counts."""
+    document = _document(_calibration({}, [(0, 1, 0.02)], iswap=[(0, 1, 0.001)]))
+    document["edges"]["gateError"]["iswap"][0]["calibrated"] = False
+    calibration = DeviceCalibration.model_validate(document)
+    assert edge_costs(calibration) == {(0, 1): pytest.approx(-math.log(0.98))}
+    assert edge_costs(calibration, gate="iswap") == {(0, 1): math.inf}
+
+
+def test_best_qubits_prefers_real_edge_over_flagged_low_value(mock_profile):
+    """A flagged edge with a low placeholder value loses to a measured, worse edge."""
+    calibration = _calibration({q: (0.02, 0.001) for q in range(4)}, [(0, 1, 0.001), (2, 3, 0.03)])
+    document = _document(calibration)
+    document["edges"]["gateError"]["cz"][0]["calibrated"] = False
+    device = _device_with(DeviceCalibration.model_validate(document), mock_profile)
+    assert device.best_qubits(2) == (2, 3)
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [
+        {"gateError": {"rb": False}},
+        {"readoutError": False},
+    ],
+)
+def test_qubit_costs_flagged_metric_costs_inf(flags):
+    """A flagged readout or gate error makes the qubit unusable, whatever its value."""
+    calibration = _calibration({0: (0.001, 0.001), 1: (0.02, 0.002)}, [(0, 1, 0.01)])
+    costs = qubit_costs(_with_qubit_flags(calibration, "0", flags))
+    assert costs[0] == math.inf
+    assert costs[1] == pytest.approx(-math.log(0.98 * 0.998))
+
+
+@pytest.mark.parametrize(
+    "flags",
+    [
+        {"t1": False},
+        {"t2": False},
+        {"frequency": False},
+        {"gateError": {"sx": False}},
+        {"gateError": {"rb": True}, "readoutError": True},
+    ],
+)
+def test_qubit_costs_ignore_flags_on_unscored_metrics(flags):
+    """Flags on metrics the cost does not read change nothing.
+
+    IQM Emerald flags T2 on all 54 qubits. Costing that as ``inf`` would leave no usable qubit.
+    A flag for a gate the qubit does not report, or a ``true`` flag, is not a placeholder either.
+    """
+    calibration = _calibration({0: (0.001, 0.001), 1: (0.02, 0.002)}, [(0, 1, 0.01)])
+    assert qubit_costs(_with_qubit_flags(calibration, "0", flags)) == qubit_costs(calibration)
+
+
+def test_best_qubits_ranking_skips_flagged_qubits(mock_profile):
+    """Without a chain to build, ranking never returns a placeholder qubit either.
+
+    The device has no edges, so qubits are ranked. Qubit 1 has the best values but a flagged
+    RB. Ranking used to append it after the usable qubits instead of raising.
+    """
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.001, 0.001), 2: (0.03, 0.001)}, [])
+    device = _device_with(
+        _with_qubit_flags(calibration, "1", {"gateError": {"rb": False}}), mock_profile
+    )
+
+    assert device.best_qubits(2) == (0, 2)
+    with pytest.raises(ValueError, match="2 usable calibrated qubits; 3 requested"):
+        device.best_qubits(3)
+
+
+def test_best_qubits_ranking_drops_unflagged_full_error(mock_profile):
+    """Ranking leaves out a qubit whose published error is 1, flagged or not."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 1.0)}, [])
+    device = _device_with(calibration, mock_profile)
+
+    assert device.best_qubits(1) == (0,)
+    with pytest.raises(ValueError, match="1 usable calibrated qubits; 2 requested"):
+        device.best_qubits(2)
+
+
+def test_best_qubits_chain_error_names_flagged_qubits(mock_profile):
+    """A chain blocked by a flagged qubit says so, not only that the edges failed."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 0.001)}, [(0, 1, 0.01)])
+    device = _device_with(
+        _with_qubit_flags(calibration, "0", {"readoutError": False}), mock_profile
+    )
+
+    with pytest.raises(ValueError, match="using only usable qubits and two-qubit gate errors"):
+        device.best_qubits(2)
+
+
+def test_best_qubits_single_raises_when_every_qubit_flagged(mock_profile):
+    """``best_qubits(1)`` raises rather than return a placeholder when no qubit is usable."""
+    calibration = _calibration({0: (0.02, 0.001), 1: (0.02, 0.001)}, [(0, 1, 0.01)])
+    for qubit_id in ("0", "1"):
+        calibration = _with_qubit_flags(calibration, qubit_id, {"readoutError": False})
+    device = _device_with(calibration, mock_profile)
+
+    with pytest.raises(ValueError, match="0 usable calibrated qubits; 1 requested"):
+        device.best_qubits(1)
+
+
+def test_ibm_placeholder_flags_change_nothing(mock_profile):
+    """IBM's placeholder is 1.0, which already costs ``inf``; the flag agrees with it."""
+    flagged = _ibm_boston_fragment(flagged=True)
+    unflagged = _ibm_boston_fragment(flagged=False)
+
+    assert qubit_costs(flagged) == qubit_costs(unflagged)
+    assert qubit_costs(flagged)[85] == math.inf
+    assert edge_costs(flagged) == edge_costs(unflagged)
+    for calibration in (flagged, unflagged):
+        device = _device_with(calibration, mock_profile)
+        assert device.best_qubits(1) == (84,)
+        with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+            device.best_qubits(2)
+
+
+def test_edge_costs_read_only_gate_error():
+    """Edge cost comes from ``gateError`` alone; ``gateLength`` is a duration, not an error.
+
+    A gate length stored in seconds lies inside ``[0, 1]``, so it must not pass as a near-zero
+    error and make a poor pair look perfect.
+    """
+    document = _document(_calibration({}, [(0, 1, 0.01), (2, 3, 0.05)]))
+    document["edges"]["gateLength"] = {
+        "cz": [{"source": 2, "target": 3, "value": 6.8e-08}],
+        "iswap": [{"source": 0, "target": 1, "value": 6.8e-08}],
+    }
+    calibration = DeviceCalibration.model_validate(document)
+    costs = edge_costs(calibration)
+    assert costs == {
+        (0, 1): pytest.approx(-math.log(0.99)),
+        (2, 3): pytest.approx(-math.log(0.95)),
+    }
+    with pytest.raises(ValueError, match=r"Available gates: \['cz'\]"):
+        edge_costs(calibration, gate="iswap")
+
+
+def test_edge_costs_empty_without_gate_error():
+    """A document whose edges carry no ``gateError`` metric has no edge costs."""
+    document = _document(_calibration({0: (0.02, 0.001)}, []))
+    document["edges"] = {"gateLength": {"cz": [{"source": 0, "target": 1, "value": 68.0}]}}
+    assert not edge_costs(DeviceCalibration.model_validate(document))
+
+
+def test_best_qubits_stays_on_coupling_graph_without_gate_error(mock_profile):
+    """A device with couplers but no edge gate errors is not all-to-all.
+
+    Reproduces an IBM document where ``gate_error`` raised on every pair, so the edges hold an
+    empty ``gateError`` map beside ``gateLength``. Qubits 77, 84 and 86 couple only through 85.
+    Ranking them by readout would return three qubits with no coupler between any two.
+    """
+    document = _document(_ibm_boston_fragment(flagged=False))
+    document["edges"]["gateError"] = {}
+    device = _device_with(DeviceCalibration.model_validate(document), mock_profile)
+
+    assert device.best_qubits(1) == (84,)
+    with pytest.raises(ValueError, match="No connected chain of 2 qubits"):
+        device.best_qubits(2)
+    with pytest.raises(ValueError, match="No connected chain of 3 qubits"):
+        device.best_qubits(3)
+    with pytest.raises(ValueError, match=r"Gate 'cz' has no calibrated edges.*\[\]"):
+        device.best_qubits(3, gate="cz")

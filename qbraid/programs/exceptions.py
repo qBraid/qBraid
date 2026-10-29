@@ -73,3 +73,44 @@ class ValidationError(ProgramTypeError):
 
 class ProgramLoaderError(QbraidError):
     """Raised when an error occurs while loading a quantum program."""
+
+
+def _find_offending_token(err: BaseException) -> Optional[Any]:
+    """Return the first ANTLR token with a line and column chained to ``err``, if any."""
+    seen: set[int] = set()
+    stack: list[Any] = [err]
+    while stack:
+        current = stack.pop()
+        if not isinstance(current, BaseException) or id(current) in seen:
+            continue
+        seen.add(id(current))
+        token = getattr(current, "offendingToken", None)
+        if token is not None and hasattr(token, "line") and hasattr(token, "column"):
+            return token
+        # BailErrorStrategy wraps the RecognitionException in ParseCancellationException.args
+        stack.extend(current.args)
+        stack.extend([current.__context__, current.__cause__])
+    return None
+
+
+def describe_error(err: BaseException) -> str:
+    """Return ``str(err)``, recovering the parse location when the message is empty.
+
+    The ANTLR-based OpenQASM parsers (``openqasm3`` and Braket's copy of it) raise
+    ``QASM3ParsingError()`` with no message and leave the offending token on the chained
+    ANTLR exception. When ``str(err)`` is empty or ends in a dangling colon, that token's
+    position is appended, with a 1-based column.
+    """
+    message = str(err).strip()
+    if message and not message.endswith(":"):
+        return message
+    token = _find_offending_token(err)
+    if token is None:
+        return message or type(err).__name__
+    text = getattr(token, "text", None)
+    where = f"at line {token.line}, column {token.column + 1}"
+    if text is None or text == "<EOF>":
+        detail = f"syntax error: unexpected end of program {where}"
+    else:
+        detail = f"syntax error near '{text}' {where}"
+    return f"{message} {detail}" if message else detail
