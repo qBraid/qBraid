@@ -32,6 +32,9 @@ from braket.experimental_capabilities.experimental_capability_context import (
     EXPERIMENTAL_CAPABILITIES_ALL,
 )
 from braket.ir.openqasm import Program as OpenQasmProgram
+from openqasm3 import ast as qasm3_ast
+from openqasm3 import parse as parse_qasm3
+from openqasm3.visitor import QASMVisitor
 
 from qbraid._logging import logger
 from qbraid.passes.qasm import branches_on_measurement, contains_feedforward
@@ -76,16 +79,80 @@ def _enable_experimental_capabilities(kwargs: dict) -> bool:
     return False
 
 
+# stdgates.inc names Braket does not recognise. ``transform_notation`` renames some of these
+# (``cx`` to ``cnot``), but not inside gate definitions, loops or boxes, and some have no
+# Braket equivalent (``crz``). Any still called after the rewrite would be undefined.
+_STDGATES_WITHOUT_BRAKET_NAME = frozenset(
+    {
+        "p",
+        "sdg",
+        "tdg",
+        "sx",
+        "id",
+        "cx",
+        "ccx",
+        "cp",
+        "crx",
+        "cry",
+        "crz",
+        "ch",
+        "cu",
+        "CX",
+        "phase",
+        "cphase",
+        "u1",
+        "u2",
+        "u3",
+    }
+)
+
+
+class _GateCalls(QASMVisitor):
+    """Collect every gate called and every gate defined, at any depth."""
+
+    def __init__(self):
+        self.called: set[str] = set()
+        self.defined: set[str] = set()
+
+    # pylint: disable-next=invalid-name
+    def visit_QuantumGate(self, node: qasm3_ast.QuantumGate, context=None) -> None:
+        """Record a gate call."""
+        self.called.add(node.name.name)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_QuantumGateDefinition(
+        self, node: qasm3_ast.QuantumGateDefinition, context=None
+    ) -> None:
+        """Record a gate definition, then visit its body."""
+        self.defined.add(node.name.name)
+        self.generic_visit(node, context)
+
+
 def _as_braket_openqasm(program: str) -> str:
     """Return ``program`` in Braket's gate names if it includes ``stdgates.inc``.
 
     Braket rejects ``include`` and names some standard gates differently (``cnot`` for
     ``cx``). Programs without the include are returned unchanged, so a program already
     written for Braket reaches it exactly as written.
+
+    Raises:
+        ProgramValidationError: If the rewritten program still calls a standard gate
+            Braket has no name for, which Braket would reject after submission.
     """
     if 'include "stdgates.inc";' not in program:
         return program
-    return transform_notation(program)
+    rewritten = transform_notation(program)
+    gates = _GateCalls()
+    gates.visit(parse_qasm3(rewritten))
+    missing = sorted((gates.called & _STDGATES_WITHOUT_BRAKET_NAME) - gates.defined)
+    if missing:
+        raise ProgramValidationError(
+            f"Amazon Braket does not recognise the gates {', '.join(missing)} in this "
+            'program. With experimental_capabilities="ALL" it is sent without conversion, '
+            "so write them with Braket's gate names (cnot for cx) or decompose them first."
+        )
+    return rewritten
 
 
 class BraketDevice(QuantumDevice):

@@ -817,6 +817,41 @@ def test_device_run_experimental_keeps_verbatim_box_when_rewriting():
         assert instruction in submitted.source
 
 
+@pytest.mark.parametrize(
+    "body, missing",
+    [
+        ("crz(0.3) q[0], q[1];\nch q[0], q[1];", "ch, crz"),
+        ("for int i in [0:1] { cx q[0], q[1]; }", "cx"),
+        ("gate g a, b { cx a, b; }\ng q[0], q[1];", "cx"),
+        ("box { sx q[0]; }", "sx"),
+    ],
+)
+def test_device_run_experimental_rejects_gates_braket_does_not_recognise(body, missing):
+    """A stdgates gate left after the rewrite, with no Braket equivalent or nested where
+    it is not renamed, fails before submission instead of being rejected by Braket."""
+    device = _qpu_device("IQM")
+    program = f'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\n{body}\n'
+
+    with pytest.raises(ProgramValidationError, match=f"does not recognise the gates {missing} "):
+        device.run(program, shots=100, experimental_capabilities="ALL")
+    device._device.run_batch.assert_not_called()
+
+
+def test_device_run_experimental_allows_a_gate_the_program_defines():
+    """A program may define its own gate with a stdgates name in Braket's gates."""
+    device = _qpu_device("IQM")
+    device._device.run_batch.return_value.tasks = [MagicMock(id="arn:task")]
+    program = (
+        'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\n'
+        "gate ch a, b { h b; cz a, b; h b; }\nch q[0], q[1];\n"
+    )
+
+    device.run(program, shots=100, experimental_capabilities="ALL")
+
+    (submitted,) = device._device.run_batch.call_args.args[0]
+    assert "ch q[0], q[1];" in submitted.source
+
+
 def test_device_run_experimental_rewrites_qiskit_circuit_export():
     """A Qiskit feed-forward circuit exported to OpenQASM 3 reaches Braket without the include."""
     qiskit = pytest.importorskip("qiskit")
