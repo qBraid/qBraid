@@ -40,6 +40,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Feed-forward circuits exported from Qiskit now run on IQM Emerald and Garnet with `experimental_capabilities="ALL"` instead of failing with "include statements are not supported". The `stdgates.inc` include is removed and gates are renamed to Braket's ([#1515](https://github.com/qBraid/qBraid/pull/1515))
 - Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
 - `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))
 - OQC jobs now reject `shots` or `repeats` below 1 before submission, instead of silently using the default repeat count when `shots=0` ([#1442](https://github.com/qBraid/qBraid/pull/1442)).
