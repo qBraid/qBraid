@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import weight
-from qbraid.transpiler.conversions.pytket._utils import QASM_MAXWIDTH
 
 pytket_qasm = LazyLoader("pytket_qasm", globals(), "pytket.qasm")
 
@@ -43,4 +42,8 @@ def qasm2_to_pytket(qasm: Qasm2StringType) -> pytket.circuit.Circuit:
     Returns:
         pytket.circuit.Circuit: PyTKET circuit object equivalent to input OpenQASM 2 string.
     """
+    # This helper's package imports the optional SDK, so load it at call time.
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid.transpiler.conversions.pytket._utils import QASM_MAXWIDTH
+
     return pytket_qasm.circuit_from_qasm_str(qasm, maxwidth=QASM_MAXWIDTH)
