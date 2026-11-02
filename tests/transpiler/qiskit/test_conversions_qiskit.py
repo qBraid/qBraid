@@ -188,7 +188,9 @@ def test_common_gates_from_qiskit():
     qiskit_circuit.swap([0, 1], [2, 3])
     qiskit_circuit.cx(0, 1)
     cirq_circuit = transpile(qiskit_circuit, "cirq")
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+    # Strict qelib1 export lowers sx as well as swap. Qiskit records the sx
+    # decomposition's global phase separately, which QASM 2 cannot carry.
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 
 def test_phase_gates_from_qiskit():

@@ -14,8 +14,12 @@
 
 """Strict OpenQASM 2 export and circuit semantics."""
 
+import re
+
 import pytest
-from qiskit import QuantumCircuit, qasm2
+from qiskit import QuantumCircuit
+from qiskit import __version__ as qiskit_version
+from qiskit import qasm2
 from qiskit.circuit.library import PhaseGate, SdgGate, SGate, TGate
 from qiskit.quantum_info import Operator
 
@@ -106,3 +110,102 @@ def test_standard_export_preserves_custom_gate_phase():
     assert exported == qasm2.dumps(original)
     assert Operator(restored) == Operator(original)
     assert circuit == original
+
+
+@pytest.mark.parametrize("name,qubits", [("swap", 2), ("cswap", 3)])
+def test_swaps_export_strict_qelib1(name, qubits):
+    """Swap gates need decomposition because strict qelib1 has neither spelling."""
+    circuit = QuantumCircuit(qubits)
+    circuit.h(0)
+    getattr(circuit, name)(*range(qubits))
+    original = circuit.copy()
+
+    restored = qasm2.loads(qiskit_to_qasm2(circuit), strict=True)
+
+    assert Operator(restored).equiv(Operator(original))
+    assert circuit == original
+
+
+@pytest.mark.parametrize("name", ["rzz", "csx", "cp"])
+@pytest.mark.parametrize("condition_value", [0, 2])
+def test_lowered_gates_keep_the_register_condition(name, condition_value):
+    """Every lowered instruction keeps the guard and the outer qubit mapping."""
+    from qiskit import ClassicalRegister, QuantumRegister  # pylint: disable=import-outside-toplevel
+
+    left, right = QuantumRegister(2, "left"), QuantumRegister(1, "right")
+    condition = ClassicalRegister(2, "c")
+    circuit = QuantumCircuit(left, right, condition)
+
+    def append_gate():
+        if name == "csx":
+            return circuit.csx(right[0], left[1])
+        return getattr(circuit, name)(0.2, right[0], left[1])
+
+    if int(qiskit_version.split(".")[0]) < 2:
+        getattr(append_gate(), "c_if")(condition, condition_value)
+    else:
+        with circuit.if_test((condition, condition_value)):
+            append_gate()
+    original = circuit.copy()
+
+    exported = qiskit_to_qasm2(circuit)
+    restored = qasm2.loads(exported, strict=True)
+    prefix = rf"if\s*\(c\s*==\s*{condition_value}\)\s*"
+    body = [line for line in exported.splitlines() if re.match(r"if\s*\(", line)]
+    operation_lines = [
+        line
+        for line in exported.splitlines()
+        if line and not line.startswith(("OPENQASM", "include", "qreg", "creg"))
+    ]
+    assert body == operation_lines
+    assert body and all(re.match(prefix, line) for line in body)
+    if name != "cp":
+        assert len(body) > 1
+    # The matching branch must perform the same unitary; every instruction is
+    # guarded, so nonmatching register values leave the state unchanged.
+    unconditional = re.sub(rf"(?m)^{prefix}", "", exported)
+    expected = QuantumCircuit(3)
+    if name == "csx":
+        expected.csx(2, 1)
+    else:
+        getattr(expected, name)(0.2, 2, 1)
+    assert Operator(qasm2.loads(unconditional, strict=True)).equiv(Operator(expected))
+    assert restored.qregs == circuit.qregs and restored.cregs == circuit.cregs
+    assert circuit == original
+
+
+def test_standard_export_avoids_a_validation_parse(monkeypatch):
+    """A standard circuit exports exactly without constructing a parsed copy."""
+    import importlib  # pylint: disable=import-outside-toplevel
+
+    module = importlib.import_module("qbraid.transpiler.conversions.qiskit.qiskit_to_qasm2")
+    circuit = QuantumCircuit(2, 2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.measure(0, 1)
+    if int(qiskit_version.split(".")[0]) < 2:
+        getattr(circuit.x(1), "c_if")(circuit.cregs[0], 2)
+    else:
+        with circuit.if_test((circuit.cregs[0], 2)):
+            circuit.x(1)
+    original = circuit.copy()
+
+    def unexpected_parse(*args, **kwargs):
+        raise AssertionError("standard export should not need a validation parse")
+
+    monkeypatch.setattr(module, "qasm2_loads", unexpected_parse)
+    exported = qiskit_to_qasm2(circuit)
+
+    assert exported == qasm2.dumps(original)
+    qasm2.loads(exported, strict=True)
+    assert circuit == original
+
+
+def test_custom_gate_cannot_masquerade_as_standard():
+    """A custom gate named h with the wrong arity still needs strict validation."""
+    from qiskit.circuit import Gate  # pylint: disable=import-outside-toplevel
+
+    circuit = QuantumCircuit(2)
+    circuit.append(Gate("h", 2, []), [0, 1])
+    with pytest.raises(qasm2.QASM2ParseError):
+        qiskit_to_qasm2(circuit)

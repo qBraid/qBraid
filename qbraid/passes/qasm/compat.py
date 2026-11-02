@@ -22,8 +22,22 @@ import re
 from functools import reduce
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import BranchingStatement, Program, QuantumGate, Statement
+from openqasm3.ast import (
+    AssignmentOperator,
+    BranchingStatement,
+    ClassicalAssignment,
+    ClassicalDeclaration,
+    Identifier,
+    IndexedIdentifier,
+    Program,
+    QuantumGate,
+    QuantumMeasurement,
+    QuantumMeasurementStatement,
+    Statement,
+    SwitchStatement,
+)
 from openqasm3.parser import QASM3ParsingError
+from openqasm3.visitor import QASMVisitor
 
 from qbraid._logging import logger
 
@@ -244,6 +258,118 @@ def normalize_if_blocks(qasm: str) -> str:
         re.DOTALL,
     )
     return pattern.sub(_replace_if_block, qasm)
+
+
+class _BranchFinder(QASMVisitor):
+    """Records whether a program contains an ``if`` or ``switch`` statement."""
+
+    def __init__(self):
+        self.found = False
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_BranchingStatement(self, node: BranchingStatement, context=None) -> None:
+        """Record that the program contains an ``if`` statement."""
+        self.found = True
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_SwitchStatement(self, node: SwitchStatement, context=None) -> None:
+        """Record that the program contains a ``switch`` statement."""
+        self.found = True
+
+
+def contains_feedforward(program: Program) -> bool:
+    """Check whether an unrolled OpenQASM program still contains an ``if`` or ``switch``.
+
+    Pass ``QasmModule.unrolled_ast``, not the original program: unrolling resolves
+    ``if`` and ``switch`` statements on compile-time constants. It keeps any ``if`` on a
+    ``bit``, though, even one never measured; use :func:`branches_on_measurement` on the
+    unrolled program to tell those apart.
+    """
+    finder = _BranchFinder()
+    finder.visit(program)
+    return finder.found
+
+
+class _MeasuredBranchFinder(QASMVisitor):
+    """Records, in program order, measured variables and the ones branches read."""
+
+    def __init__(self):
+        self.measured: set[str] = set()
+        self.read: set[str] = set()
+
+    # pylint: disable-next=invalid-name
+    def visit_QuantumMeasurementStatement(
+        self, node: QuantumMeasurementStatement, context=None  # pylint: disable=unused-argument
+    ) -> None:
+        """Record the bit a measurement is assigned to."""
+        if node.target is not None:
+            self.measured.add(_base_name(node.target))
+
+    # pylint: disable-next=invalid-name
+    def visit_ClassicalDeclaration(self, node: ClassicalDeclaration, context=None) -> None:
+        """Record a variable initialised from a measurement or a measured variable."""
+        init = node.init_expression
+        if isinstance(init, QuantumMeasurement) or (
+            init is not None and _names(init) & self.measured
+        ):
+            self.measured.add(node.identifier.name)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_ClassicalAssignment(self, node: ClassicalAssignment, context=None) -> None:
+        """Track a variable assigned from a measured variable, or overwritten without one."""
+        if _names(node.rvalue) & self.measured:
+            self.measured.add(_base_name(node.lvalue))
+        elif node.op == AssignmentOperator["="] and isinstance(node.lvalue, Identifier):
+            self.measured.discard(node.lvalue.name)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_BranchingStatement(self, node: BranchingStatement, context=None) -> None:
+        """Record the measured names the condition reads."""
+        self.read |= _names(node.condition) & self.measured
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_SwitchStatement(self, node: SwitchStatement, context=None) -> None:
+        """Record the measured names the switch target reads."""
+        self.read |= _names(node.target) & self.measured
+        self.generic_visit(node, context)
+
+
+class _IdentifierCollector(QASMVisitor):
+    """Collects the identifier names in an expression."""
+
+    def __init__(self):
+        self.names: set[str] = set()
+
+    # pylint: disable-next=invalid-name,unused-argument
+    def visit_Identifier(self, node: Identifier, context=None) -> None:
+        """Record the identifier's name."""
+        self.names.add(node.name)
+
+
+def _base_name(target: Identifier | IndexedIdentifier) -> str:
+    """Return the variable an assignment target writes, without its index."""
+    return (target.name if isinstance(target, IndexedIdentifier) else target).name
+
+
+def _names(node) -> set[str]:
+    """Return the identifier names an AST node reads."""
+    collector = _IdentifierCollector()
+    collector.visit(node)
+    return collector.names
+
+
+def branches_on_measurement(program: Program) -> bool:
+    """Check whether an ``if`` or ``switch`` reads a measurement result.
+
+    For programs pyqasm can't unroll, where :func:`contains_feedforward` doesn't apply.
+    Follows copies into other variables in program order, but not through subroutines.
+    """
+    finder = _MeasuredBranchFinder()
+    finder.visit(program)
+    return bool(finder.read)
 
 
 def add_stdgates_include(qasm_str: str) -> str:

@@ -20,11 +20,14 @@ import re
 import textwrap
 
 import pytest
+from openqasm3.parser import parse
 
 from qbraid.passes.qasm.compat import (
     _evaluate_expression,
     _normalize_case_insensitive_map,
     add_stdgates_include,
+    branches_on_measurement,
+    contains_feedforward,
     convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
     insert_gate_def,
@@ -549,3 +552,36 @@ def test_normalize_if_blocks_no_change():
     """Test that QASM without if blocks is unchanged."""
     qasm = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[2];\nh q[0];\n'
     assert normalize_if_blocks(qasm) == qasm
+
+
+_MEASURED = "OPENQASM 3.0;\nqubit[2] q;\nbit[2] c;\nc[0] = measure q[0];\n"
+
+
+@pytest.mark.parametrize(
+    "branch, expected",
+    [
+        ("if (c[0]) { x q[1]; }", True),
+        ("int i = c;\nswitch (i) { case 1 { x q[1]; } default { } }", True),
+        ("int i;\ni = c;\nif (i == 1) { x q[1]; }", True),
+        ("int n = 1;\nif (n == 1) { x q[1]; }", False),
+        ("c = 1;\nif (c == 1) { x q[1]; }", False),
+    ],
+    ids=["if", "switch-through-copy", "if-through-assignment", "constant", "overwritten"],
+)
+def test_branches_on_measurement(branch, expected):
+    """Branches reading a measurement result are found, including through a copy."""
+    assert branches_on_measurement(parse(_MEASURED + branch)) is expected
+
+
+def test_contains_feedforward_finds_switch():
+    """A ``switch`` left after unrolling counts as feed-forward."""
+    program = parse(_MEASURED + "int i = c;\nswitch (i) { case 1 { x q[1]; } default { } }")
+    assert contains_feedforward(program)
+
+
+def test_branches_on_measurement_ignores_a_later_measurement():
+    """A branch before the measurement reads the variable's earlier, constant value."""
+    program = parse(
+        "OPENQASM 3.0;\nqubit[2] q;\nbit c = 1;\nif (c) { x q[1]; }\nc = measure q[0];\n"
+    )
+    assert not branches_on_measurement(program)

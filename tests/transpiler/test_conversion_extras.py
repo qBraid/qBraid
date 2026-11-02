@@ -18,6 +18,7 @@ Tests for qBraid transpiler conversion extras.
 """
 
 import importlib.util
+from types import SimpleNamespace
 from typing import Callable
 
 import braket.circuits
@@ -49,6 +50,7 @@ from qbraid.transpiler.conversions.qiskit import (
 )
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
+from qbraid.transpiler.exceptions import ProgramConversionError
 from qbraid.transpiler.graph import ConversionGraph
 
 
@@ -203,6 +205,16 @@ def test_autoqasm_shared15_to_qasm3_extra():
 
     assert isinstance(program, str)
     assert program == normalize_qasm_gate_params(qasm3_shared15_reference())
+
+
+@pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")
+def test_qiskit_to_ionq_rejects_conditioned_gate():
+    """qiskit<2 keeps a c_if condition on the gate, which qiskit-ionq would drop."""
+    gate = SimpleNamespace(operation=SimpleNamespace(name="x", condition=("c", 1)))
+    circuit = SimpleNamespace(data=[gate])
+
+    with pytest.raises(ProgramConversionError, match="do not support classical feed-forward"):
+        qiskit_to_ionq(circuit)
 
 
 @pytest.mark.skipif(not has_extra(qiskit_to_ionq), reason="Extra not installed")

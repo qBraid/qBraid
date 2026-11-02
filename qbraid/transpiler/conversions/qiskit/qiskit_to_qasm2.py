@@ -21,6 +21,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qiskit import transpile
+from qiskit.circuit import Barrier, IfElseOp, Measure, Reset
 from qiskit.qasm2 import QASM2ParseError
 from qiskit.qasm2 import dumps as qasm2_dumps
 from qiskit.qasm2 import loads as qasm2_loads
@@ -59,9 +60,78 @@ _QASM2_BASIS_GATES = [
     "crz",
     "cu1",
     "cu3",
-    "swap",
-    "cswap",
 ]
+
+
+_QASM2_GATE_NAMES = frozenset(_QASM2_BASIS_GATES)
+
+
+def _uses_standard_gates(circuit: qiskit_.QuantumCircuit) -> bool:
+    """Recognize standard built-ins without parsing an exported circuit copy."""
+    for instruction in circuit.data:
+        operation = instruction.operation
+        if isinstance(operation, IfElseOp):
+            if not all(_uses_standard_gates(block) for block in operation.blocks):
+                return False
+        elif isinstance(operation, (Barrier, Measure, Reset)):
+            continue
+        elif (
+            operation.name not in _QASM2_GATE_NAMES
+            or not operation.base_class.__module__.startswith(
+                "qiskit.circuit.library.standard_gates."
+            )
+        ):
+            # Custom gates can have standard names, so names alone are unsafe.
+            # Their definitions still go through Qiskit's strict parser.
+            return False
+    return True
+
+
+def _prepare_legacy_conditions(circuit: qiskit_.QuantumCircuit) -> qiskit_.QuantumCircuit:
+    """Keep Qiskit 1.x instruction conditions through basis translation."""
+    if not any(
+        not isinstance(item.operation, IfElseOp)
+        and getattr(item.operation, "condition", None) is not None
+        for item in circuit.data
+    ):
+        return circuit
+    result = circuit.copy_empty_like()
+    for instruction in circuit.data:
+        operation = instruction.operation
+        condition = getattr(operation, "condition", None)
+        if condition is not None and not isinstance(operation, IfElseOp):
+            operation = operation.to_mutable()
+            operation.condition = None
+            with result.if_test(condition):
+                result.append(operation, instruction.qubits, instruction.clbits)
+        else:
+            result.append(operation, instruction.qubits, instruction.clbits)
+    return result
+
+
+def _split_lowered_conditionals(circuit: qiskit_.QuantumCircuit) -> qiskit_.QuantumCircuit:
+    """Give each lowered instruction its own copy of the original condition."""
+    if not any(isinstance(item.operation, IfElseOp) for item in circuit.data):
+        return circuit
+    result = circuit.copy_empty_like()
+    for instruction in circuit.data:
+        operation = instruction.operation
+        if isinstance(operation, IfElseOp) and len(operation.blocks) == 1:
+            block = operation.blocks[0]
+            for inner in block.data:
+                qubits = [instruction.qubits[block.find_bit(q).index] for q in inner.qubits]
+                clbits = [instruction.clbits[block.find_bit(c).index] for c in inner.clbits]
+                inner_operation = inner.operation.to_mutable()
+                if hasattr(inner_operation, "condition"):
+                    # Qiskit 1.x dumps per-instruction conditions, not IfElseOp.
+                    inner_operation.condition = operation.condition
+                    result.append(inner_operation, qubits, clbits)
+                else:
+                    with result.if_test(operation.condition):
+                        result.append(inner_operation, qubits, clbits)
+        else:
+            result.append(instruction.operation, instruction.qubits, instruction.clbits)
+    return result
 
 
 # 1.0, not the 0.999 it carried from 2025-01 (#880): that value matched no benchmark and
@@ -78,10 +148,16 @@ def qiskit_to_qasm2(circuit: qiskit_.QuantumCircuit) -> Qasm2StringType:
         str: OpenQASM 2 representation of the input Qiskit circuit.
     """
     qasm = qasm2_dumps(circuit)
+    if _uses_standard_gates(circuit):
+        return qasm
     try:
         qasm2_loads(qasm, strict=True)
     except QASM2ParseError:
-        circuit = transpile(circuit, basis_gates=_QASM2_BASIS_GATES, optimization_level=0)
-        qasm = qasm2_dumps(circuit)
+        circuit = transpile(
+            _prepare_legacy_conditions(circuit),
+            basis_gates=_QASM2_BASIS_GATES,
+            optimization_level=0,
+        )
+        qasm = qasm2_dumps(_split_lowered_conditionals(circuit))
         qasm2_loads(qasm, strict=True)
     return qasm
