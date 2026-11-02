@@ -40,6 +40,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Converting Cirq circuits through OpenQASM 2 to pyQuil now keeps readout bits in the same order as the direct conversion, including Cirq's default measurement keys ([#1517](https://github.com/qBraid/qBraid/pull/1517)).
 - OpenQASM 3 programs that include `stdgates.inc`, as Qiskit exports them, no longer fail on IQM Emerald and Garnet with "include statements are not supported" when sent with `experimental_capabilities="ALL"`. The include is removed and gates are renamed to Braket's. A gate Braket does not recognise now fails before submission, naming the gate ([#1515](https://github.com/qBraid/qBraid/pull/1515))
 - Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
 - `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))

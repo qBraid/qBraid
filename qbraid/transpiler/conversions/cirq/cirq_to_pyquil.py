@@ -30,6 +30,8 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
+from ._utils import _classical_bit_order
+
 try:
     from .cirq_quil_output import QuilOutput
 except ImportError:  # pragma: no cover
@@ -55,31 +57,6 @@ def _declared_registers(circuit: cirq.circuits.Circuit) -> dict[str, int]:
         name, size = (match.group(1), int(match.group(2)) + 1) if match else (symbol, 1)
         sizes[name] = max(sizes.get(name, 0), size)
     return sizes
-
-
-_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
-
-
-def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Operation]:
-    """Order terminal measurements by the classical bit their key names.
-
-    QASM-derived circuits key single-qubit measurements ``c_0``, ``c_1``, ..., and that
-    suffix -- not the moment the operation happens to sit in -- is the bit position the
-    result belongs at: ``measure q[2] -> c[0]`` must land q_2 in bit 0 even though a
-    measurement on q_0 may appear earlier. Keys without an index fall back to qubit order,
-    matching the readout convention the Braket converters document.
-
-    A circuit measuring into multiple registers merges them in register-name order, since
-    cirq keys do not record declaration order. ``cirq -> qasm2`` sorts cregs by the same key
-    (#1345), so both routes from cirq to pyquil agree on the qubit-to-bit mapping.
-    """
-    indexed = []
-    for op in terminal:
-        match = _BIT_INDEX.match(op.gate.key)
-        if match is None or len(op.qubits) != 1:
-            return sorted(terminal, key=lambda op: min(op.qubits))
-        indexed.append(((match["register"], int(match["index"])), op))
-    return [op for _, op in sorted(indexed, key=lambda pair: pair[0])]
 
 
 def _unused_key(existing: set[str], preferred: str = "m") -> str:
