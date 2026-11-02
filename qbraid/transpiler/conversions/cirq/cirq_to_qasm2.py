@@ -28,45 +28,39 @@ from cirq import ops, value
 from qbraid._version import __version__ as qbraid_version
 from qbraid.transpiler.annotations import weight
 
-from ._utils import _validate_resolved_parameters
+from ._utils import _classical_bit_order, _validate_resolved_parameters
 
 if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm2StringType
 
 
-_CREG = re.compile(r"^creg\s+(?P<name>\w+)\s*\[(?P<size>\d+)\]\s*;\s*$")
-_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
+_CREG = re.compile(r"^creg\s+(?P<name>\w+)\s*\[(?P<size>\d+)\]\s*;\s*(?://.*)?$")
 
 
-def _order_cregs_by_key(qasm: str) -> str:
-    """Emit ``creg`` declarations in measurement-key order rather than moment order.
+def _order_cregs_by_key(qasm: str, output: cirq.QasmOutput) -> str:
+    """Order readout registers using the original Cirq measurement keys.
 
-    Cirq writes one ``creg`` per measurement key in the order the measurements are
-    scheduled, so an idle qubit whose measurement packs into an earlier moment gets its
-    register declared first. Nothing is wrong with the QASM -- each register is named and
-    its ``measure`` is correct -- but consumers that flatten the registers into one
-    readout region do so in declaration order (``openqasm3_to_pyquil``, matching how
-    ``RigettiJob`` reads them back, #1314). Declaration order therefore has to reflect the
-    keys, or the flattened bits come out permuted relative to the source.
-
-    Registers are sorted the way ``cirq_to_pyquil`` orders its merged measurements: by the
-    ``(register, index)`` parsed from the key, so ``m_c_0`` precedes ``m_c_2``. Names that
-    do not carry an index keep their relative order, and the declarations are rewritten in
-    place so surrounding statements are untouched.
+    Cirq assigns anonymous names (``m0``, ``m1``, ...) to keys such as ``q(0)``
+    in moment order. Recover their identities from the exporter's key map so a
+    later measurement on a busy qubit still lands in the right readout bit.
+    Use the same indexed-key / qubit-order rule as the direct Quil converter.
+    Only declarations move; measurement statements and register names are kept.
     """
     lines = qasm.splitlines(keepends=True)
     positions = [i for i, line in enumerate(lines) if _CREG.match(line)]
     if len(positions) < 2:
         return qasm
 
-    def sort_key(index: int) -> tuple:
-        name = _CREG.match(lines[index])["name"]
-        match = _BIT_INDEX.match(name)
-        if match is None:
-            return (1, "", 0, index)
-        return (0, match["register"], int(match["index"]), index)
+    order = {}
+    for op in _classical_bit_order(list(output.measurements)):
+        name = output.args.meas_key_id_map[op.gate.key]
+        # A repeated key shares one register; retain its first position.
+        if name not in order:
+            order[name] = len(order)
 
-    reordered = [lines[i] for i in sorted(positions, key=sort_key)]
+    reordered = sorted(
+        (lines[i] for i in positions), key=lambda line: order[_CREG.match(line)["name"]]
+    )
     for slot, line in zip(positions, reordered, strict=True):
         lines[slot] = line
     return "".join(lines)
@@ -156,6 +150,7 @@ def cirq_to_qasm2(
     """
     _validate_resolved_parameters(circuit, "OpenQASM 2")
     circuit = map_zpow_and_unroll(circuit)
-    qasm = _order_cregs_by_key(str(_to_qasm_output(circuit, header, precision, qubit_order)))
+    output = _to_qasm_output(circuit, header, precision, qubit_order)
+    qasm = _order_cregs_by_key(str(output), output)
     # format the qasm before returning
     return pyqasm.dumps(pyqasm.loads(qasm))

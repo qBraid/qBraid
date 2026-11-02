@@ -140,14 +140,88 @@ def test_cirq_to_pyquil_via_qasm2_keeps_readout_bit_order():
     assert bit_to_qubit == {0: 0, 1: 1, 2: 2}
 
 
-def test_cirq_to_qasm2_leaves_unindexed_creg_names_in_place():
-    """Keys without a trailing index keep their relative order and their own register.
+@pytest.mark.parametrize("num_qubits", [3, 12])
+@pytest.mark.parametrize("key_style", ["default", "invalid", "indexed", "mixed"])
+def test_cirq_qasm2_readout_uses_original_keys(num_qubits, key_style):
+    """Default and invalid keys must not rotate readout when moments differ (#1502)."""
+    pytest.importorskip("pyquil")
+    from qbraid.transpiler.conversions.cirq import (  # pylint: disable=import-outside-toplevel
+        cirq_to_pyquil,
+    )
+    from qbraid.transpiler.conversions.qasm2 import (  # pylint: disable=import-outside-toplevel
+        qasm2_to_pyquil,
+    )
 
-    Reordering only makes sense for keys that name a bit position (``c_0``, ``c_1``).
-    A key like ``alpha`` carries no index, so there is nothing to sort it by and the
-    declaration it produced is left where cirq put it -- each qubit still measures into
-    its own register, which is what the reorder must not disturb.
-    """
+    qubits = cirq.LineQubit.range(num_qubits)
+    if key_style == "default":
+        measurements = cirq.measure_each(*qubits)
+    else:
+        if key_style == "invalid":
+            # Include punctuation and already-valid names.
+            keys = [f"a({i})" if i % 2 else f"a_{i}_" for i in range(num_qubits)]
+        elif key_style == "indexed":
+            keys = [f"c_{num_qubits - 1 - i}" for i in range(num_qubits)]
+        else:
+            # The first two keys collide if punctuation is replaced with underscores.
+            keys = ["q(0)", "q_0_", "0", *[f"c_{i}" for i in range(3, num_qubits)]]
+        measurements = [cirq.measure(q, key=k) for q, k in zip(qubits, keys)]
+    circuit = cirq.Circuit(cirq.X(qubits[0]), measurements)
+    original = circuit.copy()
+    qasm = cirq_to_qasm2(circuit)
+    expected = (
+        {i: num_qubits - 1 - i for i in range(num_qubits)}
+        if key_style == "indexed"
+        else {i: i for i in range(num_qubits)}
+    )
+    for program in [cirq_to_pyquil(circuit), qasm2_to_pyquil(qasm)]:
+        mapping = {}
+        for line in program.out().splitlines():
+            if line.startswith("MEASURE"):
+                _, qubit, register = line.split()
+                mapping[int(register.split("[")[1].rstrip("]"))] = int(qubit)
+        assert mapping == expected
+    assert circuit == original
+
+
+@pytest.mark.parametrize("grouped", [False, True])
+def test_cirq_qasm2_readout_preserves_values_and_invert_masks(grouped):
+    """An asymmetric result survives anonymous keys, grouping and inverted readout."""
+    pytest.importorskip("pyquil")
+    from qbraid.transpiler.conversions.pyquil import (  # pylint: disable=import-outside-toplevel
+        pyquil_to_cirq,
+    )
+    from qbraid.transpiler.conversions.qasm2 import (  # pylint: disable=import-outside-toplevel
+        qasm2_to_pyquil,
+    )
+
+    q = cirq.LineQubit.range(4)
+    if grouped:
+        # Keep the order inside a multi-qubit measurement, even when reversed.
+        measurements = [cirq.measure(q[1], q[0]), cirq.measure(q[3], q[2], invert_mask=(True,))]
+        expected = [0, 1, 1, 0]
+    else:
+        measurements = [cirq.measure(qubit, invert_mask=(i == 2,)) for i, qubit in enumerate(q)]
+        expected = [1, 0, 1, 0]
+    circuit = cirq.Circuit(cirq.X(q[0]), measurements)
+    converted = pyquil_to_cirq(qasm2_to_pyquil(cirq_to_qasm2(circuit)))
+    result = cirq.Simulator().run(converted, repetitions=3).measurements
+    actual = [int(result[f"ro[{i}]"][0][0]) for i in range(4)]
+    assert actual == expected
+
+
+def test_cirq_qasm2_repeated_key_keeps_both_measurements():
+    """Repeated keys share one register without losing either measurement statement."""
+    q = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.measure(q[0]), cirq.X(q[0]), cirq.measure(q[0]), cirq.measure(q[1]))
+    qasm = cirq_to_qasm2(circuit)
+    assert len([line for line in qasm.splitlines() if line.startswith("creg")]) == 2
+    measures = [line for line in qasm.splitlines() if line.startswith("measure")]
+    assert measures.count("measure q[0] -> m0[0];") == 2
+    assert measures.count("measure q[1] -> m1[0];") == 1
+
+
+def test_cirq_to_qasm2_orders_unindexed_keys_by_qubit():
+    """Keys without a bit index follow qubit order, as in the direct Quil edge."""
     q = cirq.LineQubit.range(3)
     keys = ["alpha", "beta", "gamma"]
     circuit = cirq.Circuit(
@@ -157,7 +231,7 @@ def test_cirq_to_qasm2_leaves_unindexed_creg_names_in_place():
     )
     qasm = cirq_to_qasm2(circuit)
     cregs = [line for line in qasm.splitlines() if line.startswith("creg")]
-    assert sorted(cregs) == sorted(f"creg m_{key}[1];" for key in keys)
+    assert cregs == [f"creg m_{key}[1];" for key in keys]
 
     # every qubit still lands in its own register, one bit each
     measures = [line for line in qasm.splitlines() if line.startswith("measure")]

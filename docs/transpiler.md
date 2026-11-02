@@ -93,8 +93,11 @@ a returned program means "correct". Therefore:
 - **Readout order follows the classical bit, not encounter order.** Braket orders
   results by each `Measure`'s classical bit index; cirq QASM-derived keys encode the
   bit in the `c_N` suffix; pytket maps qubits to bits explicitly. Converters that
-  merge or re-append measurements must preserve that mapping — ordering by instruction
-  or moment order has shipped transposed readouts more than once.
+  merge or re-append measurements must preserve that mapping. Cirq exports order
+  indexed single-qubit keys by register and numeric bit index; other keys use
+  qubit order, shared with the direct Quil converter. Anonymous QASM register
+  names are resolved through Cirq's original key map before sorting. Ordering
+  by instruction or moment order has shipped transposed readouts more than once.
   → `tests/transpiler/test_measurement_semantics.py` executes converted circuits with
   an asymmetric bit pattern so any permutation changes the result;
   `tests/transpiler/test_measurement_coverage.py` sweeps every reachable pair with a
