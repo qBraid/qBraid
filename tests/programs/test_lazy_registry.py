@@ -25,12 +25,15 @@ import os
 import pickle
 import subprocess
 import sys
+import threading
+import time
 import types
 import typing
 
 import pytest
 
 import qbraid.programs
+import qbraid.programs._import as lazy_import
 from qbraid.programs._import import (
     _NATIVE_LAZY_TYPES,
     _NON_NATIVE_LAZY_TYPES,
@@ -281,6 +284,63 @@ def test_unregister_unloaded_alias_does_not_import():
     assert alias not in QPROGRAM_REGISTRY
     assert alias not in QPROGRAM_ALIASES
     assert "qbraid_probe_good" not in sys.modules
+
+
+def _remove_probe(registry: LazyTypeRegistry) -> None:
+    del registry["probe"]
+
+
+def _overwrite_probe(registry: LazyTypeRegistry) -> None:
+    registry["probe"] = dict
+
+
+@pytest.mark.parametrize("write", [_remove_probe, _overwrite_probe])
+def test_write_during_lazy_load_is_kept(monkeypatch, write):
+    """A write made while another thread imports the entry is not undone by that import."""
+    registry = LazyTypeRegistry({"probe": _LazyType("qbraid_probe_good", "Program")})
+    loading, release = threading.Event(), threading.Event()
+
+    def slow_load(_ref):
+        loading.set()
+        release.wait(5)
+        return int
+
+    monkeypatch.setattr(lazy_import, "_load_type", slow_load)
+    resolver = threading.Thread(target=registry.get, args=("probe",))
+    resolver.start()
+    assert loading.wait(5)
+
+    writer = threading.Thread(target=write, args=(registry,))
+    writer.start()
+    writer.join(0.2)
+    release.set()
+    resolver.join(5)
+    writer.join(5)
+
+    assert dict(registry._data) == ({} if write is _remove_probe else {"probe": dict})
+
+
+def test_lazy_load_rechecks_entry_after_waiting_for_lock(monkeypatch):
+    """An entry removed while a lookup waits for the lock is not loaded back in."""
+    registry = LazyTypeRegistry({"probe": _LazyType("qbraid_probe_good", "Program")})
+    monkeypatch.setattr(lazy_import, "_load_type", lambda _ref: int)
+    errors = []
+
+    def lookup():
+        try:
+            registry["probe"]
+        except KeyError as err:
+            errors.append(err)
+
+    with registry._lock:
+        resolver = threading.Thread(target=lookup)
+        resolver.start()
+        time.sleep(0.2)
+        del registry["probe"]
+    resolver.join(5)
+
+    assert "probe" not in registry
+    assert len(errors) == 1
 
 
 def test_broken_sdk_does_not_break_transpiler(tmp_path):

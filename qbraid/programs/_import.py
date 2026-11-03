@@ -136,6 +136,12 @@ class LazyTypeRegistry(MutableMapping):
             return value
 
         with self._lock:
+            # Another thread may have loaded, replaced or removed the entry meanwhile.
+            if alias not in self._data:
+                raise KeyError(alias)
+            value = self._data[alias]
+            if not isinstance(value, _LazyType):
+                return value
             try:
                 program_type = _load_type(value)
             except Exception as err:  # pylint: disable=broad-exception-caught
@@ -158,10 +164,12 @@ class LazyTypeRegistry(MutableMapping):
         return self._resolve(alias)
 
     def __setitem__(self, alias: str, program_type: Type[Any]) -> None:
-        self._data[alias] = program_type
+        with self._lock:
+            self._data[alias] = program_type
 
     def __delitem__(self, alias: str) -> None:
-        del self._data[alias]
+        with self._lock:
+            del self._data[alias]
 
     def __contains__(self, alias: object) -> bool:
         return alias in self._data
@@ -182,7 +190,8 @@ class LazyTypeRegistry(MutableMapping):
         return _ResolvedValuesView(self)
 
     def clear(self) -> None:
-        self._data.clear()
+        with self._lock:
+            self._data.clear()
 
     def copy(self) -> LazyTypeRegistry:
         """Return a shallow copy that keeps unresolved entries unresolved."""
@@ -216,7 +225,8 @@ class LazyTypeRegistry(MutableMapping):
 
     def update(self, other=(), /, **kwargs) -> None:  # pylint: disable=arguments-differ
         if isinstance(other, LazyTypeRegistry):
-            self._data.update(other._data)
+            with self._lock:
+                self._data.update(other._data)
             other = ()
         super().update(other, **kwargs)
 
