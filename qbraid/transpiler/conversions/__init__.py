@@ -40,17 +40,35 @@ Submodules
 """
 import importlib
 import inspect
+from pathlib import Path
+
+from qbraid._logging import logger
 
 # Dynamically import QPROGRAM_ALIASES when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
 _registry = importlib.import_module("qbraid.programs.registry")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
+_module_available = _qbraid._module_available  # pylint: disable=protected-access
 QPROGRAM_REGISTRY = getattr(_registry, "QPROGRAM_REGISTRY", {})
 
 # Cache for storing previously seen valid combinations, including reversed pairs
 valid_combinations_cache = set()
 
 conversion_functions = []
+
+_QBRAID_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _raised_in_qbraid(err: BaseException) -> bool:
+    """Whether the innermost frame of ``err``, ignoring frozen importlib frames, is in qbraid."""
+    # Walked by hand: traceback.extract_tb obeys sys.tracebacklimit, which some packages set.
+    filename = None
+    tb = err.__traceback__
+    while tb is not None:
+        if not tb.tb_frame.f_code.co_filename.startswith("<"):
+            filename = tb.tb_frame.f_code.co_filename
+        tb = tb.tb_next
+    return filename is not None and Path(filename).resolve().is_relative_to(_QBRAID_ROOT)
 
 
 def _update_registered_conversions() -> None:
@@ -100,8 +118,24 @@ def _update_registered_conversions() -> None:
                     valid_combinations_cache.add(pair)
                     valid_combinations_cache.add(reverse_pair)
 
-        except ModuleNotFoundError:
-            pass
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            in_qbraid = _raised_in_qbraid(err)
+            missing = err.name if isinstance(err, ModuleNotFoundError) else None
+            if missing == base_path + lib:
+                continue
+            # qbraid importing an optional SDK that isn't installed is expected. A missing
+            # qbraid module is not, nor is any other error raised from qbraid's own code
+            # while lib's SDK loads. Failures raised inside an SDK, lib's own or another
+            # one its conversions import, mean a broken install and are skipped.
+            # An installed SDK without the submodule qbraid imports is an incompatible
+            # version: skipped, but with the warning.
+            root = missing.split(".")[0] if missing else None
+            if missing and in_qbraid and root != "qbraid":
+                if not _module_available(root):
+                    continue
+            elif in_qbraid and NATIVE_REGISTRY.get(lib) is not None:
+                raise
+            logger.warning("Skipping conversions for '%s': %s: %s", lib, type(err).__name__, err)
 
 
 _update_registered_conversions()

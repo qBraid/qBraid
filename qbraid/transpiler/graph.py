@@ -211,7 +211,9 @@ class ConversionGraph(rx.PyDiGraph):
 
         if self._include_isolated:
             nodes = nodes or QPROGRAM_ALIASES
-            for alias in nodes:
+            # Iterate a snapshot: resolving an alias whose SDK fails to import drops it
+            # from QPROGRAM_ALIASES.
+            for alias in list(nodes):
                 if alias not in self._node_alias_id_map and (
                     not self.require_native or is_registered_alias_native(alias)
                 ):

@@ -23,18 +23,23 @@ from typing import TYPE_CHECKING, Optional, Type
 
 from .exceptions import ProgramTypeError
 from .exceptions import QasmError as QbraidQasmError
-from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
+from .registry import QPROGRAM_ALIASES, QPROGRAM_REGISTRY
 from .typer import GstString, IonQDict, get_qasm_type_alias
 
 if TYPE_CHECKING:
     import qbraid.programs
 
 
+def _loaded_items(registry: dict[str, Type]):
+    """Entries whose module is imported; a plain dict is returned as-is."""
+    return registry.loaded_items() if hasattr(registry, "loaded_items") else registry.items()
+
+
 def find_str_type_alias(registry: dict[str, Type] = QPROGRAM_REGISTRY) -> Optional[str]:
     """Find additional keys with type 'str' in the registry."""
     str_keys = [
         k
-        for k, v in registry.items()
+        for k, v in _loaded_items(registry)
         if v is str and k not in ("qasm2", "qasm3", "qasm2_kirin", "gst")
     ]
 
@@ -81,7 +86,8 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
         return IonQDict.__alias__
 
     matched = []
-    for alias, program_type in QPROGRAM_REGISTRY.items():
+    # A program can only match a type whose module is already imported.
+    for alias, program_type in _loaded_items(QPROGRAM_REGISTRY):
         if isinstance(program, (program_type, type(program_type))):
             matched.append(alias)
 
@@ -99,7 +105,7 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
     raise ProgramTypeError(
         message=(
             f"Program of type '{type(program)}' does not match any registered "
-            f"program types. Registered program types are: {QPROGRAM_TYPES}."
+            f"program types. Registered program types are: {sorted(QPROGRAM_ALIASES)}."
         )
     )
 

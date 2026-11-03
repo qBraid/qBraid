@@ -90,7 +90,6 @@ from .program import QuantumProgram
 from .registry import (
     QPROGRAM,
     QPROGRAM_ALIASES,
-    QPROGRAM_NATIVE,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
     derive_program_type_alias,
@@ -154,9 +153,13 @@ if TYPE_CHECKING:
     from .annealing import ProblemType as ProblemType
     from .annealing import QuboProblem as QuboProblem
     from .gate_model import GateModelProgram as GateModelProgram
+    from .registry import QPROGRAM_NATIVE as QPROGRAM_NATIVE
 
 
 def __getattr__(name):
+    if name == "QPROGRAM_NATIVE":
+        return getattr(importlib.import_module(".registry", __name__), name)
+
     for mod_name, objects in _lazy.items():
         if name == mod_name:
             module = importlib.import_module(f".{mod_name}", __name__)
