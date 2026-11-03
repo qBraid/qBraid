@@ -516,10 +516,28 @@ def test_conversions_quietly_skip_sdk_that_is_not_installed(monkeypatch, caplog)
     """A conversion module importing an optional SDK that isn't installed is skipped silently."""
     with caplog.at_level(logging.WARNING):
         conversions = _rebuild_conversions_with(
-            monkeypatch, "qasm3", ModuleNotFoundError("absent", name="cirq"), raised_in_qbraid=True
+            monkeypatch,
+            "qasm3",
+            ModuleNotFoundError("absent", name="qbraid_probe_absent_sdk"),
+            raised_in_qbraid=True,
         )
 
     assert "Skipping conversions" not in caplog.text
+    assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
+
+
+@pytest.mark.usefixtures("restore_conversions")
+def test_conversions_warn_when_installed_sdk_lacks_a_submodule(monkeypatch, caplog):
+    """An installed SDK missing a submodule that qbraid imports is skipped with a warning."""
+    with caplog.at_level(logging.WARNING):
+        conversions = _rebuild_conversions_with(
+            monkeypatch,
+            "qasm3",
+            ModuleNotFoundError("removed", name="json.removed_submodule"),
+            raised_in_qbraid=True,
+        )
+
+    assert "Skipping conversions for 'qasm3'" in caplog.text
     assert not any(name.startswith("qasm3_to_") for name in conversions.conversion_functions)
 
 

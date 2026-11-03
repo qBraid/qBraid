@@ -48,6 +48,7 @@ from qbraid._logging import logger
 _qbraid = importlib.import_module("qbraid.programs._import")
 _registry = importlib.import_module("qbraid.programs.registry")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
+_module_available = _qbraid._module_available  # pylint: disable=protected-access
 QPROGRAM_REGISTRY = getattr(_registry, "QPROGRAM_REGISTRY", {})
 
 # Cache for storing previously seen valid combinations, including reversed pairs
@@ -126,9 +127,13 @@ def _update_registered_conversions() -> None:
             # qbraid module is not, nor is any other error raised from qbraid's own code
             # while lib's SDK loads. Failures raised inside an SDK, lib's own or another
             # one its conversions import, mean a broken install and are skipped.
-            if missing and in_qbraid and missing.split(".")[0] != "qbraid":
-                continue
-            if in_qbraid and NATIVE_REGISTRY.get(lib) is not None:
+            # An installed SDK without the submodule qbraid imports is an incompatible
+            # version: skipped, but with the warning.
+            root = missing.split(".")[0] if missing else None
+            if missing and in_qbraid and root != "qbraid":
+                if not _module_available(root):
+                    continue
+            elif in_qbraid and NATIVE_REGISTRY.get(lib) is not None:
                 raise
             logger.warning("Skipping conversions for '%s': %s: %s", lib, type(err).__name__, err)
 
