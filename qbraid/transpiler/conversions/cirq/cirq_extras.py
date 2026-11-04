@@ -77,6 +77,28 @@ def cirq_to_pyqir(circuit: cirq.Circuit) -> pyqir.Module:
     return qbraid_qir.cirq.cirq_to_qir(circuit)
 
 
+def _split_register_measurements(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Split each multi-qubit measurement into per-bit keys ``key_0``, ``key_1``, ...
+
+    pytket-cirq converts only single-qubit measurements, so a register-wide measurement
+    (as ``qasm3_to_cirq`` produces for a complete ``bit[n]`` register) is unpacked in qubit
+    order, which is the register's bit order.
+    """
+    import cirq  # pylint: disable=import-outside-toplevel
+
+    def split(op: cirq.Operation, _: int) -> cirq.OP_TREE:
+        gate = op.gate
+        if not isinstance(gate, cirq.MeasurementGate) or len(op.qubits) == 1:
+            return op
+        mask = gate.full_invert_mask()
+        return [
+            cirq.measure(qubit, key=f"{gate.key}_{index}", invert_mask=(mask[index],))
+            for index, qubit in enumerate(op.qubits)
+        ]
+
+    return cirq.map_operations_and_unroll(circuit, split)
+
+
 @requires_extras("pytket.extensions.cirq")
 def cirq_to_pytket(circuit: cirq.Circuit) -> pytket.circuit.Circuit:
     """Returns a PyTKET circuit equivalent to the input Cirq circuit.
@@ -87,7 +109,7 @@ def cirq_to_pytket(circuit: cirq.Circuit) -> pytket.circuit.Circuit:
     Returns:
         pytket.circuit.Circuit: PyTKET circuit equivalent to input Cirq circuit.
     """
-    return pytket_cirq.cirq_to_tk(circuit)
+    return pytket_cirq.cirq_to_tk(_split_register_measurements(circuit))
 
 
 @requires_extras("qat.interop.cirq")
