@@ -25,6 +25,7 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 qbraid_qir_qiskit = LazyLoader("qbraid_qir_qiskit", globals(), "qbraid_qir.qiskit")
@@ -82,9 +83,26 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
 
     Returns:
         dict: IonQDict representing the circuit
+
+    Raises:
+        ProgramConversionError: If a gate is classically conditioned.
     """
     # pylint: disable-next=import-outside-toplevel
     from qbraid.programs.gate_model.ionq import GateSet, InputFormat
+
+    # qiskit<2 attaches a classical condition (c_if) to the gate itself, and
+    # qiskit-ionq converts the gate without it, so it would run unconditionally.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        conditioned = any(
+            getattr(instruction.operation, "condition", None) is not None
+            for instruction in circuit.data
+        )
+    if conditioned:
+        raise ProgramConversionError(
+            "IonQ devices do not support classical feed-forward ('if' on measurement "
+            "results). Remove the conditional, or use a device that supports dynamic circuits."
+        )
 
     instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
 

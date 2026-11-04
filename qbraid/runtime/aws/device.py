@@ -23,6 +23,7 @@ import datetime
 import warnings
 from typing import TYPE_CHECKING
 
+import pyqasm
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
@@ -31,8 +32,12 @@ from braket.experimental_capabilities.experimental_capability_context import (
     EXPERIMENTAL_CAPABILITIES_ALL,
 )
 from braket.ir.openqasm import Program as OpenQasmProgram
+from openqasm3 import ast as qasm3_ast
+from openqasm3 import parse as parse_qasm3
+from openqasm3.visitor import QASMVisitor
 
 from qbraid._logging import logger
+from qbraid.passes.qasm import branches_on_measurement, contains_feedforward
 from qbraid.programs import (
     NATIVE_REGISTRY,
     QPROGRAM_REGISTRY,
@@ -42,9 +47,10 @@ from qbraid.programs import (
 )
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError, ProgramValidationError
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.transpiler import transpile
+from qbraid.transpiler.conversions.qasm3.qasm3_to_braket import transform_notation
 
 from .availability import next_available_time
 from .job import BraketQuantumTask
@@ -71,6 +77,82 @@ def _enable_experimental_capabilities(kwargs: dict) -> bool:
             "experimental capabilities, or 'NONE' to disable them."
         )
     return False
+
+
+# stdgates.inc names Braket does not recognise. ``transform_notation`` renames some of these
+# (``cx`` to ``cnot``), but not inside gate definitions, loops or boxes, and some have no
+# Braket equivalent (``crz``). Any still called after the rewrite would be undefined.
+_STDGATES_WITHOUT_BRAKET_NAME = frozenset(
+    {
+        "p",
+        "sdg",
+        "tdg",
+        "sx",
+        "id",
+        "cx",
+        "ccx",
+        "cp",
+        "crx",
+        "cry",
+        "crz",
+        "ch",
+        "cu",
+        "CX",
+        "phase",
+        "cphase",
+        "u1",
+        "u2",
+        "u3",
+    }
+)
+
+
+class _GateCalls(QASMVisitor):
+    """Collect every gate called and every gate defined, at any depth."""
+
+    def __init__(self):
+        self.called: set[str] = set()
+        self.defined: set[str] = set()
+
+    # pylint: disable-next=invalid-name
+    def visit_QuantumGate(self, node: qasm3_ast.QuantumGate, context=None) -> None:
+        """Record a gate call."""
+        self.called.add(node.name.name)
+        self.generic_visit(node, context)
+
+    # pylint: disable-next=invalid-name
+    def visit_QuantumGateDefinition(
+        self, node: qasm3_ast.QuantumGateDefinition, context=None
+    ) -> None:
+        """Record a gate definition, then visit its body."""
+        self.defined.add(node.name.name)
+        self.generic_visit(node, context)
+
+
+def _as_braket_openqasm(program: str) -> str:
+    """Return ``program`` in Braket's gate names if it includes ``stdgates.inc``.
+
+    Braket rejects ``include`` and names some standard gates differently (``cnot`` for
+    ``cx``). Programs without the include are returned unchanged, so a program already
+    written for Braket reaches it exactly as written.
+
+    Raises:
+        ProgramValidationError: If the rewritten program still calls a standard gate
+            Braket has no name for, which Braket would reject after submission.
+    """
+    if 'include "stdgates.inc";' not in program:
+        return program
+    rewritten = transform_notation(program)
+    gates = _GateCalls()
+    gates.visit(parse_qasm3(rewritten))
+    missing = sorted((gates.called & _STDGATES_WITHOUT_BRAKET_NAME) - gates.defined)
+    if missing:
+        raise ProgramValidationError(
+            f"Amazon Braket does not recognise the gates {', '.join(missing)} in this "
+            'program. With experimental_capabilities="ALL" it is sent without conversion, '
+            "so write them with Braket's gate names (cnot for cx) or decompose them first."
+        )
+    return rewritten
 
 
 class BraketDevice(QuantumDevice):
@@ -161,6 +243,49 @@ class BraketDevice(QuantumDevice):
             total_queued += int(num_queued)
         return total_queued
 
+    def transpile(
+        self,
+        run_input: qbraid.programs.QPROGRAM,
+        run_input_spec: qbraid.programs.ProgramSpec,
+    ) -> qbraid.programs.QPROGRAM:
+        """Reject OpenQASM feed-forward the device doesn't list, then transpile.
+
+        Only checked when the profile carries ``supported_operations``; without them the
+        device's support for ``if`` is unknown and the program is passed through.
+
+        Raises:
+            ProgramValidationError: If the program branches on a measurement result and
+                ``if`` is not among the device's supported operations.
+        """
+        supported_operations = self.profile.get("supported_operations")
+        if (
+            run_input_spec.alias in {"qasm2", "qasm3"}
+            and supported_operations is not None
+            and "if" not in {operation.lower() for operation in supported_operations}
+        ):
+            try:
+                module = pyqasm.loads(run_input)
+            except Exception:  # pylint: disable=broad-exception-caught
+                module = None  # leave parse errors to the conversion step
+            # Unrolling is slow on large programs, so only unroll one that has a branch.
+            if module is not None and contains_feedforward(module.original_program):
+                try:
+                    module.unroll()
+                    # unrolling keeps any ``if`` on a bit, so check what it reads
+                    feedforward = branches_on_measurement(module.unrolled_ast)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    feedforward = branches_on_measurement(module.original_program)
+            else:
+                feedforward = False
+            if feedforward:
+                raise ProgramValidationError(
+                    f"Device '{self.id}' does not support classical feed-forward ('if' on "
+                    "measurement results). Remove the conditional, or submit it as "
+                    "OpenQASM 3 to a device that runs it, such as IQM Emerald or Garnet, "
+                    'with experimental_capabilities="ALL".'
+                )
+        return super().transpile(run_input, run_input_spec)
+
     def transform(
         self, run_input: Circuit | AnalogHamiltonianSimulation
     ) -> Circuit | AnalogHamiltonianSimulation:
@@ -233,15 +358,17 @@ class BraketDevice(QuantumDevice):
         """Run a quantum job or a list of quantum jobs on this quantum device.
 
         With ``experimental_capabilities="ALL"``, OpenQASM 3 programs are submitted as written,
-        without conversion or validation. Experimental instructions such as IQM's
-        ``measure_ff`` and ``cc_prx`` can only be converted inside Braket's process-wide
-        ``EnableExperimentalCapability`` context, which concurrent submissions would share.
+        without conversion or validation, except that a program including ``stdgates.inc``
+        (as Qiskit's exporter writes) has the include removed and its gates renamed to
+        Braket's. Experimental instructions such as IQM's ``measure_ff`` and ``cc_prx`` can
+        only be converted inside Braket's process-wide ``EnableExperimentalCapability``
+        context, which concurrent submissions would share.
         """
         programs = run_input if isinstance(run_input, list) else [run_input]
         if _enable_experimental_capabilities(kwargs) and all(
             get_program_type_alias(program, safe=True) == "qasm3" for program in programs
         ):
-            openqasm = [OpenQasmProgram(source=program) for program in programs]
+            openqasm = [OpenQasmProgram(source=_as_braket_openqasm(p)) for p in programs]
             return self.submit(
                 openqasm if isinstance(run_input, list) else openqasm[0], *args, **kwargs
             )

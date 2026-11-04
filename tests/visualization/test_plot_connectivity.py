@@ -16,10 +16,12 @@
 Unit tests for plotting device connectivity graphs.
 
 """
+
 from unittest.mock import Mock
 
 import matplotlib
 import pytest
+from matplotlib.colors import to_rgba
 from qbraid_core.services.runtime.schemas import DeviceCalibration
 
 from qbraid.visualization import plot_connectivity_graph
@@ -79,11 +81,22 @@ class TestLatticePositions:
     def test_square_lattice_row_major(self):
         """square-lattice ids map row-major: id = cols * row + col, y negated."""
         pos = lattice_positions({"type": "square-lattice", "rows": 2, "cols": 3}, range(6))
-        assert pos == {0: (0, 0), 1: (1, 0), 2: (2, 0), 3: (0, -1), 4: (1, -1), 5: (2, -1)}
+        assert pos == {
+            0: (0, 0),
+            1: (1, 0),
+            2: (2, 0),
+            3: (0, -1),
+            4: (1, -1),
+            5: (2, -1),
+        }
 
     def test_square_lattice_clipped_sequential_over_spans(self):
         """Clipped lattices number qubits sequentially across populated cells."""
-        topology = {"type": "square-lattice-clipped", "gridCols": 3, "rowSpans": [[1, 2], [0, 2]]}
+        topology = {
+            "type": "square-lattice-clipped",
+            "gridCols": 3,
+            "rowSpans": [[1, 2], [0, 2]],
+        }
         pos = lattice_positions(topology, range(5))
         assert pos == {0: (1, 0), 1: (2, 0), 2: (0, -1), 3: (1, -1), 4: (2, -1)}
 
@@ -184,3 +197,195 @@ class TestPlotConnectivityGraph:
         device = _device(topology={"type": "square-lattice", "rows": 1, "cols": 3})
         plot_connectivity_graph(device, show=True)
         assert shown == [True]
+
+    @pytest.mark.parametrize("reverse_error", [None, 0.02])
+    def test_invalid_errors_do_not_rescale_the_plot(self, monkeypatch, reverse_error):
+        """A negative error is unavailable, not the best value on either colorbar."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        gate_errors = [
+            {"source": 0, "target": 1, "value": -0.1},
+            {"source": 1, "target": 2, "value": 0.02},
+            {"source": 0, "target": 2, "value": 0.03},
+        ]
+        if reverse_error is not None:
+            gate_errors.append({"source": 1, "target": 0, "value": reverse_error})
+        calibration = _calibration(
+            edges={"cz": gate_errors},
+            qubits={
+                "0": {"readoutError": -0.1},
+                "1": {"readoutError": 0.04},
+                "2": {"readoutError": 0.08},
+            },
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1), (1, 2), (0, 2)),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 3},
+            show=False,
+        )
+
+        figure = figures[0]
+        ax = figure.axes[0]
+        assert figure.axes[1].get_ylim()[0] == pytest.approx(0.02)
+        assert figure.axes[2].get_ylim()[0] == pytest.approx(0.04)
+        expected_edge_color = (
+            to_rgba("#9ca3af") if reverse_error is None else mpl_plt.get_cmap("Purples_r")(0.0)
+        )
+        assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(expected_edge_color)
+        assert tuple(ax.collections[1].get_facecolors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+        assert ax.get_legend().get_texts()[0].get_text() == "No usable calibration"
+        original_close(figure)
+
+    def test_missing_errors_are_not_drawn_as_perfect(self, monkeypatch):
+        """An unmeasured edge or qubit is marked unavailable rather than zero error."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        calibration = _calibration(
+            edges={"cz": [{"source": 0, "target": 1, "value": 0.02}]},
+            qubits={"0": {"readoutError": 0.04}, "1": {"readoutError": 0.08}},
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1), (1, 2)),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 3},
+            show=False,
+        )
+
+        ax = figures[0].axes[0]
+        assert tuple(ax.collections[0].get_colors()[1]) == pytest.approx(to_rgba("#9ca3af"))
+        assert tuple(ax.collections[1].get_facecolors()[2]) == pytest.approx(to_rgba("#9ca3af"))
+        original_close(figures[0])
+
+    def test_plot_with_no_usable_errors(self, monkeypatch):
+        """A plot with only out-of-range errors remains drawable and marks them unknown."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        calibration = _calibration(
+            edges={"cz": [{"source": 0, "target": 1, "value": 1.2}]},
+            qubits={"0": {"readoutError": -0.1}, "1": {"readoutError": 1.1}},
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1),),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 2},
+            show=False,
+        )
+
+        ax = figures[0].axes[0]
+        assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+        assert all(
+            tuple(color) == pytest.approx(to_rgba("#9ca3af"))
+            for color in ax.collections[1].get_facecolors()
+        )
+        assert ax.get_legend() is not None
+        assert len(figures[0].axes) == 1
+        original_close(figures[0])
+
+    @pytest.mark.parametrize("calibrated", [False, True, None])
+    @pytest.mark.parametrize("reverse_error", [None, 0.02])
+    def test_placeholder_errors_do_not_rescale_the_plot(
+        self, monkeypatch, calibrated, reverse_error
+    ):
+        """Placeholder flags exclude errors, while true and absent flags keep them."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        gate_errors = [
+            {"source": 0, "target": 1, "value": 0.5, "calibrated": calibrated},
+            {"source": 1, "target": 2, "value": 0.014},
+            {"source": 0, "target": 2, "value": 0.03},
+        ]
+        if reverse_error is not None:
+            gate_errors.append({"source": 1, "target": 0, "value": reverse_error})
+        calibration = _calibration(
+            edges={"cz": gate_errors},
+            qubits={
+                "0": {
+                    "readoutError": 0.5,
+                    "calibrated": (
+                        {"readoutError": calibrated, "gateError": {"rb": False}}
+                        if calibrated is not None
+                        else None
+                    ),
+                },
+                "1": {"readoutError": 0.04},
+                "2": {"readoutError": 0.08},
+            },
+        )
+
+        plot_connectivity_graph(
+            coupling_map=((0, 1), (1, 2), (0, 2)),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 3},
+            show=False,
+        )
+
+        figure = figures[0]
+        try:
+            ax = figure.axes[0]
+            unavailable = calibrated is False
+            assert figure.axes[1].get_ylim() == pytest.approx((0.014, 0.03 if unavailable else 0.5))
+            assert figure.axes[2].get_ylim() == pytest.approx((0.04, 0.08 if unavailable else 0.5))
+            if unavailable:
+                edge_color = (
+                    to_rgba("#9ca3af")
+                    if reverse_error is None
+                    else mpl_plt.get_cmap("Purples_r")((reverse_error - 0.014) / (0.03 - 0.014))
+                )
+                node_color = to_rgba("#9ca3af")
+                assert ax.get_legend().get_texts()[0].get_text() == "No usable calibration"
+            else:
+                edge_color = node_color = mpl_plt.get_cmap("Purples_r")(1.0)
+                assert ax.get_legend() is None
+            assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(edge_color)
+            assert tuple(ax.collections[1].get_facecolors()[0]) == pytest.approx(node_color)
+        finally:
+            original_close(figure)
+
+    def test_all_placeholder_errors_have_no_colorbars(self, monkeypatch):
+        """A plot with only placeholders marks all readings unavailable."""
+        import matplotlib.pyplot as mpl_plt  # pylint: disable=import-outside-toplevel
+
+        figures = []
+        original_close = mpl_plt.close
+        monkeypatch.setattr(mpl_plt, "close", figures.append)
+        calibration = _calibration(
+            edges={"cz": [{"source": 0, "target": 1, "value": 0.5, "calibrated": False}]},
+            qubits={
+                str(q): {"readoutError": 0.5, "calibrated": {"readoutError": False}}
+                for q in range(2)
+            },
+        )
+        plot_connectivity_graph(
+            coupling_map=((0, 1),),
+            calibration=calibration,
+            topology={"type": "square-lattice", "rows": 1, "cols": 2},
+            show=False,
+        )
+        figure = figures[0]
+        try:
+            assert len(figure.axes) == 1
+            ax = figure.axes[0]
+            assert ax.get_legend().get_texts()[0].get_text() == "No usable calibration"
+            assert tuple(ax.collections[0].get_colors()[0]) == pytest.approx(to_rgba("#9ca3af"))
+            assert all(
+                tuple(color) == pytest.approx(to_rgba("#9ca3af"))
+                for color in ax.collections[1].get_facecolors()
+            )
+        finally:
+            original_close(figure)

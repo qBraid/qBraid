@@ -61,8 +61,6 @@ env:
   # Ubuntu 24.04 x86_64 with the system Python 3.12.3 at /usr/bin/python3.12, the
   # same as the ubuntu-24.04 runner, so the link works in Lab unchanged.
   LAB_PYTHON: /usr/bin/python3.12
-  QBRAID_CLI_VERSION: "0.16.10"
-  QBRAID_CORE_VERSION: "0.6.27"  # does the upload path rewriting and the publish calls
 
 jobs:
   publish:
@@ -93,10 +91,7 @@ jobs:
         run: '"$LAB_PYTHON" -m venv "$RUNNER_TEMP/tools" && echo "$RUNNER_TEMP/tools/bin" >> "$GITHUB_PATH"'
 
       - name: Install the qBraid CLI
-        run: >-
-          python -m pip install
-          "qbraid-cli[envs]==${QBRAID_CLI_VERSION}"
-          "qbraid-core[environments]==${QBRAID_CORE_VERSION}"
+        run: python -m pip install --require-hashes -r .github/requirements/lab-env-tools.txt
 
       - name: Preflight
         env:
