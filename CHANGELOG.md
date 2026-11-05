@@ -40,7 +40,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- Batch runs check device status once per call instead of once per circuit, while still validating every circuit ([#1518](https://github.com/qBraid/qBraid/issues/1518)).
+- Batch runs check device status once per call instead of once per circuit, while still validating every circuit ([#1521](https://github.com/qBraid/qBraid/pull/1521)).
 - OpenQASM 3 programs that include `stdgates.inc`, as Qiskit exports them, no longer fail on IQM Emerald and Garnet with "include statements are not supported" when sent with `experimental_capabilities="ALL"`. The include is removed and gates are renamed to Braket's. A gate Braket does not recognise now fails before submission, naming the gate ([#1515](https://github.com/qBraid/qBraid/pull/1515))
 - Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
 - `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))
