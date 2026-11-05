@@ -37,7 +37,7 @@ from qbraid._caching import cache_disabled, clear_cache
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
-from qbraid.runtime import Result, TargetProfile, ValidationLevel
+from qbraid.runtime import DeviceStatus, Result, TargetProfile, ValidationLevel
 from qbraid.runtime.exceptions import ProgramValidationError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.calibrations import edge_costs, qubit_costs
@@ -578,6 +578,79 @@ def test_device_merge_options(mock_profile, mock_client):
 
     device.set_options(validate=2)
     assert device._options == default_options
+
+
+@pytest.mark.parametrize("size", [0, 1, 5])
+@pytest.mark.parametrize("level", list(ValidationLevel))
+@pytest.mark.parametrize("as_batch", [False, True])
+def test_run_checks_device_status_once_per_batch(mock_qbraid_device, size, level, as_batch):
+    """A batch must not fetch device status once for every circuit (#1518)."""
+    device = mock_qbraid_device
+    device._target_spec = ProgramSpec(cirq.Circuit, alias="cirq")
+    device.set_options(transpile=False, transform=False, prepare=False, validate=level)
+    circuits = [cirq.Circuit(cirq.X(cirq.LineQubit(i))) for i in range(size)]
+
+    with (
+        patch.object(device.client, "get_device", wraps=device.client.get_device) as get_device,
+        patch.object(device._target_spec, "validate") as validate,
+        patch.object(device, "submit", return_value="submitted") as submit,
+    ):
+        for _ in range(2):
+            assert device.run(circuits, shots=10, as_batch=as_batch) == "submitted"
+        assert get_device.call_count == (2 if size and level != ValidationLevel.NONE else 0)
+        assert validate.call_count == (2 * size if level != ValidationLevel.NONE else 0)
+        submit.assert_called_with(circuits, shots=10, as_batch=as_batch)
+
+
+def test_run_checks_device_status_again_for_next_call(mock_basic_device):
+    """Status must be fresh for each run; an offline batch warns only once."""
+    device = mock_basic_device
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+
+    with (
+        patch.object(
+            device, "status", side_effect=[DeviceStatus.ONLINE, DeviceStatus.OFFLINE]
+        ) as status,
+        patch.object(device, "submit"),
+    ):
+        device.run(circuit)
+        with pytest.warns(UserWarning, match="Device is not online") as recorded:
+            device.run([circuit] * 5)
+        assert len(recorded) == 1
+        assert status.call_count == 2
+
+
+def test_apply_runtime_profile_checks_device_status_each_time(mock_basic_device):
+    """Standalone profile calls must keep their normal device status checks."""
+    device = mock_basic_device
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+
+    with patch.object(device, "status", wraps=device.status) as status:
+        assert device.apply_runtime_profile(circuit) == circuit
+        assert device.apply_runtime_profile(circuit) == circuit
+        assert status.call_count == 2
+
+
+def test_run_still_rejects_invalid_later_program(mock_basic_device):
+    """Checking status once must not skip validation for later circuits in a batch."""
+    device = mock_basic_device
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    small = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    large = cirq.Circuit(cirq.X.on_each(cirq.LineQubit.range(65)))
+
+    with (
+        patch.object(device, "status", wraps=device.status) as status,
+        patch.object(device, "submit") as submit,
+    ):
+        with pytest.raises(ProgramValidationError, match="exceeds the device's capacity"):
+            device.run([small, large])
+        status.assert_called_once()
+        submit.assert_not_called()
 
 
 def test_device_validate_non_native_type_logs(mock_qbraid_device, caplog):

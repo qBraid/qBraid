@@ -643,6 +643,23 @@ def test_ionq_session_cancel():
         assert session.cancel_job("fake_job_id") is None
 
 
+def test_ionq_run_checks_device_status_once_for_batch():
+    """IonQ's run override must also avoid one status request per circuit (#1518)."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True), Mock(spec=IonQSession)
+    )
+    device.set_options(transpile=False, transform=False, prepare=False)
+    program = {"qubits": 1, "circuit": [{"gate": "x", "target": 0}]}
+
+    with (
+        patch.object(device, "status", return_value=DeviceStatus.ONLINE) as status,
+        patch.object(device, "submit", return_value="submitted") as submit,
+    ):
+        assert device.run([program] * 5, shots=10) == "submitted"
+        status.assert_called_once()
+        submit.assert_called_once_with([program] * 5, shots=10)
+
+
 def test_ionq_average_queue_time():
     """Test getting the average queue time of an IonQDevice."""
     device = IonQDevice(
