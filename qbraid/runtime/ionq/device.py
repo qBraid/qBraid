@@ -262,7 +262,14 @@ class IonQDevice(QuantumDevice):
                         "type qiskit.QuantumCircuit. Ignoring..."
                     )
                 )
-            run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
+            run_input_compat = [
+                (
+                    self.apply_runtime_profile(program)
+                    if index == 0
+                    else self.apply_runtime_profile(program, suppress_device_warning=True)
+                )
+                for index, program in enumerate(run_input)
+            ]
 
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
         return self.submit(run_input_compat, *args, **kwargs)

@@ -468,9 +468,18 @@ class QuantumDevice(ABC):
         return target_spec.serialize(run_input)
 
     def apply_runtime_profile(
-        self, run_input: qbraid.programs.QPROGRAM
+        self,
+        run_input: qbraid.programs.QPROGRAM,
+        *,
+        suppress_device_warning: bool = False,
     ) -> qbraid.programs.QPROGRAM:
         """Process quantum program before passing to device run method.
+
+        Args:
+            run_input: Quantum program to process.
+            suppress_device_warning: Skip the device status check and warning when a
+                preceding program in the same batch has already checked it. Program
+                validation still follows the device's validation level.
 
         Returns:
             Transpiled and transformed quantum program
@@ -487,7 +496,7 @@ class QuantumDevice(ABC):
             logger.debug("Applying device-specific transformations (no-op in base class)")
             run_input = [self.transform(p) for p in cast(list, run_input)]
 
-        self.validate(run_input)
+        self.validate(run_input, suppress_device_warning=suppress_device_warning)
 
         run_input = [self.prepare(p) for p in cast(list, run_input)]
 
@@ -560,7 +569,14 @@ class QuantumDevice(ABC):
         """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
-        run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
+        run_input_compat = [
+            (
+                self.apply_runtime_profile(program)
+                if index == 0
+                else self.apply_runtime_profile(program, suppress_device_warning=True)
+            )
+            for index, program in enumerate(run_input)
+        ]
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
         logger.debug(
             "Submitting quantum program %s to device '%s'",
