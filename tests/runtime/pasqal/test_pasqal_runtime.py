@@ -14,9 +14,12 @@
 
 # pylint: disable=redefined-outer-name,missing-class-docstring,missing-function-docstring
 """Unit tests for Pasqal provider, device, and job classes."""
+
 from __future__ import annotations
 
+import copy
 import json
+import sys
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -26,6 +29,7 @@ pytest.importorskip("pasqal_cloud")
 pytest.importorskip("pulser")
 
 # pylint: disable=wrong-import-position
+from pasqal_cloud.utils.constants import BatchStatus  # noqa: E402
 from pulser import Register, Sequence  # noqa: E402
 from pulser.devices import AnalogDevice  # noqa: E402
 
@@ -35,26 +39,105 @@ from qbraid.runtime.exceptions import ResourceNotFoundError  # noqa: E402
 from qbraid.runtime.pasqal import PasqalDevice, PasqalJob, PasqalProvider  # noqa: E402
 from qbraid.runtime.pasqal.device import PasqalDeviceError  # noqa: E402
 from qbraid.runtime.pasqal.job import (  # noqa: E402
-    _PASQAL_STATUS_MAP,
     PasqalJobError,
     _map_pasqal_status,
+    _status_map,
 )
-from qbraid.runtime.pasqal.provider import _build_profile, _is_simulator  # noqa: E402
+from qbraid.runtime.pasqal.provider import (  # noqa: E402
+    PasqalProviderError,
+    PasqalSession,
+    _build_profile,
+)
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
 
+# Records as returned by Pasqal's GET /api/v1/devices (trimmed to the fields
+# qBraid reads). FRESNEL is deliberately absent: Pasqal drops a QPU from the
+# catalog while it is in maintenance.
+CATALOG: dict[str, dict[str, Any]] = {
+    "FRESNEL_CAN1": {
+        "device_type": "FRESNEL_CAN1",
+        "status": "UP",
+        "active": True,
+        "availability": "ACTIVE",
+        "average_queue_time": 0,
+        "max_atom_num": 100,
+        "is_emulator": False,
+    },
+    "EMU_MPS": {
+        "device_type": "EMU_MPS",
+        "status": "UP",
+        "active": True,
+        "availability": "ACTIVE",
+        "average_queue_time": 2,
+        "max_atom_num": 80,
+        "is_emulator": True,
+    },
+    "EMU_FREE": {
+        "device_type": "EMU_FREE",
+        "status": "UP",
+        "active": True,
+        "availability": "ACTIVE",
+        "average_queue_time": 1,
+        "max_atom_num": 12,
+        "is_emulator": True,
+    },
+    "EMU_TN": {
+        "device_type": "EMU_TN",
+        "status": "UP",
+        "active": True,
+        "availability": "ACTIVE",
+        "average_queue_time": 0,
+        "max_atom_num": 100,
+        "is_emulator": True,
+    },
+    "EMU_FRESNEL": {
+        "device_type": "EMU_FRESNEL",
+        "status": "UP",
+        "active": True,
+        "availability": "ACTIVE",
+        "average_queue_time": 0,
+        "max_atom_num": 100,
+        "is_emulator": True,
+    },
+    "EMU_SV": {
+        "device_type": "EMU_SV",
+        "status": "UP",
+        "active": True,
+        "availability": "ACTIVE",
+        "average_queue_time": 2,
+        "max_atom_num": 25,
+        "is_emulator": True,
+    },
+}
+
+ALL_DEVICE_TYPES = {
+    "FRESNEL",
+    "FRESNEL_CAN1",
+    "EMU_FREE",
+    "EMU_TN",
+    "EMU_FRESNEL",
+    "EMU_MPS",
+    "EMU_SV",
+}
+
 
 @pytest.fixture
-def mock_sdk():
-    sdk = MagicMock(name="PasqalSDK")
+def catalog(monkeypatch):
+    """Serve a mutable copy of :data:`CATALOG` in place of the live device catalog."""
+    records = copy.deepcopy(CATALOG)
+    monkeypatch.setattr(PasqalSession, "get_device_records", lambda self: records)
+    return records
+
+
+@pytest.fixture
+def mock_sdk(catalog):  # pylint: disable=unused-argument
+    """Return a stand-in ``pasqal_cloud`` client pointed at the production core URL."""
+    sdk = MagicMock(name="PasqalCloudClient")
     sdk.project_id = "proj-1"
-    sdk.get_device_specs_dict.return_value = {
-        "FRESNEL": '{"max_atom_num": 100}',
-        "EMU_FREE": '{"max_atom_num": 10}',
-        "EMU_TN": '{"max_atom_num": 20}',
-    }
+    sdk._client.endpoints.core = "https://apis.pasqal.cloud/core-fast"
     return sdk
 
 
@@ -74,11 +157,13 @@ def _make_job(status: str = "DONE", counter: dict[str, int] | None = None, job_i
     return job
 
 
-def _make_batch(
+def _make_batch(  # pylint: disable=too-many-arguments
     batch_id: str = "batch-1",
     status: str = "DONE",
     jobs: list[Any] | None = None,
     errors: list | None = None,
+    started: str | None = "2026-11-05T21:48:15.500000+00:00",
+    ended: str | None = "2026-11-05T21:48:17.750000+00:00",
 ):
     jobs = jobs if jobs is not None else [_make_job()]
     batch = MagicMock(name=f"PasqalBatch[{batch_id}]")
@@ -86,6 +171,9 @@ def _make_batch(
     batch.status = status
     batch.ordered_jobs = jobs
     batch.errors = errors
+    batch.created_at = "2026-11-05T21:48:13.648700+00:00"
+    batch.start_datetime = started
+    batch.end_datetime = ended
     return batch
 
 
@@ -104,18 +192,25 @@ class TestStatusMapping:
             ("ERROR", JobStatus.FAILED),
             ("CANCELED", JobStatus.CANCELLED),
             ("TIMED_OUT", JobStatus.FAILED),
-            ("PAUSED", JobStatus.QUEUED),
-            ("done", JobStatus.COMPLETED),  # case-insensitive
-            ("SOMETHING_NEW", JobStatus.UNKNOWN),
-            (None, JobStatus.UNKNOWN),
         ],
     )
     def test_map_pasqal_status(self, raw, expected):
+        """Each Pasqal batch status maps to the matching qBraid status."""
         assert _map_pasqal_status(raw) == expected
 
-    def test_status_map_covers_expected_states(self):
-        expected = {"PENDING", "RUNNING", "DONE", "ERROR", "CANCELED", "TIMED_OUT", "PAUSED"}
-        assert set(_PASQAL_STATUS_MAP.keys()) == expected
+    def test_paused_maps_to_queued(self):
+        """PAUSED, documented by Pasqal but absent from BatchStatus, reads as queued."""
+        assert _map_pasqal_status("PAUSED") == JobStatus.QUEUED
+
+    @pytest.mark.parametrize("raw", ["SOMETHING_NEW", "done"])
+    def test_unrecognized_status_raises(self, raw):
+        """An unknown status raises rather than returning non-terminal UNKNOWN."""
+        with pytest.raises(PasqalJobError, match="Unrecognized Pasqal batch status"):
+            _map_pasqal_status(raw)
+
+    def test_status_map_is_exhaustive(self):
+        """Every pasqal-cloud BatchStatus member is mapped."""
+        assert set(_status_map()) == set(BatchStatus)
 
 
 # ---------------------------------------------------------------------------
@@ -124,40 +219,115 @@ class TestStatusMapping:
 
 
 class TestProviderHelpers:
-    @pytest.mark.parametrize(
-        ("device_id", "is_sim"),
-        [
-            ("FRESNEL", False),
-            ("FRESNEL_CAN1", False),
-            ("EMU_FREE", True),
-            ("EMU_TN", True),
-            ("emu_sv", True),
-        ],
-    )
-    def test_is_simulator(self, device_id, is_sim):
-        assert _is_simulator(device_id) is is_sim
-
-    def test_build_profile_basic(self):
-        profile = _build_profile("EMU_FREE", num_qubits=10)
-        assert profile.device_id == "EMU_FREE"
+    def test_build_profile_from_catalog_record(self):
+        """A listed device takes its atom count and emulator flag from the catalog."""
+        profile = _build_profile("EMU_MPS", CATALOG["EMU_MPS"])
+        assert profile.device_id == "EMU_MPS"
         assert profile.simulator is True
         assert profile.experiment_type == ExperimentType.ANALOG
-        assert profile.num_qubits == 10
+        assert profile.num_qubits == 80
         assert profile.provider_name == "pasqal"
         assert profile.program_spec.alias == "pulser"
 
-    def test_build_profile_qpu(self):
-        profile = _build_profile("FRESNEL")
+    def test_build_profile_qpu_from_catalog_record(self):
+        """A listed QPU is not a simulator and carries its atom count."""
+        profile = _build_profile("FRESNEL_CAN1", CATALOG["FRESNEL_CAN1"])
         assert profile.simulator is False
-        assert profile.num_qubits is None
+        assert profile.num_qubits == 100
+
+    def test_build_profile_unlisted_device(self):
+        """An unlisted device has no atom count; the EMU_ prefix decides simulator."""
+        assert _build_profile("FRESNEL").simulator is False
+        assert _build_profile("FRESNEL").num_qubits is None
+        assert _build_profile("EMU_FREE").simulator is True
 
     def test_program_spec_serializer_uses_abstract_repr(self):
+        """The program spec serializes a Pulser Sequence to its abstract repr."""
         profile = _build_profile("EMU_FREE")
         seq = _make_pulser_sequence()
         serialized = profile.program_spec.serialize(seq)
         assert isinstance(serialized, str)
         data = json.loads(serialized)
         assert "register" in data
+
+
+class TestPasqalSession:
+    def _response(self, payload: Any, status_code: int = 200) -> MagicMock:
+        response = MagicMock(name="Response")
+        response.status_code = status_code
+        response.json.return_value = payload
+        if status_code >= 400:
+            response.raise_for_status.side_effect = RuntimeError(f"HTTP {status_code}")
+        return response
+
+    def test_get_device_records_keys_by_device_type(self):
+        """Catalog records are keyed by device type."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast/")
+        payload = {"data": list(CATALOG.values())}
+        with patch.object(session, "get", return_value=self._response(payload)) as get:
+            records = session.get_device_records()
+        get.assert_called_once_with(
+            "https://apis.pasqal.cloud/core-fast/api/v1/devices", timeout=30
+        )
+        assert records == CATALOG
+
+    def test_get_device_records_skips_records_without_device_type(self):
+        """A record without a device_type is dropped, not fatal."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast")
+        payload = {"data": [{"status": "UP"}, CATALOG["EMU_FREE"]]}
+        with patch.object(session, "get", return_value=self._response(payload)):
+            assert set(session.get_device_records()) == {"EMU_FREE"}
+
+    def test_get_device_records_is_cached_briefly(self):
+        """Repeated reads within the TTL make one request; a stale cache refetches."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast")
+        payload = {"data": list(CATALOG.values())}
+        with patch.object(session, "get", return_value=self._response(payload)) as get:
+            session.get_device_records()
+            session.get_device_records()
+            assert get.call_count == 1
+            session._cached_at -= PasqalSession.CACHE_TTL_SECONDS
+            session.get_device_records()
+            assert get.call_count == 2
+
+    def test_get_device_records_returns_a_copy(self):
+        """Changing a returned catalog does not change the cache."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast")
+        payload = {"data": list(CATALOG.values())}
+        with patch.object(session, "get", return_value=self._response(payload)):
+            session.get_device_records().pop("EMU_FREE")
+            assert "EMU_FREE" in session.get_device_records()
+
+    def test_get_device_records_remembers_a_failure_briefly(self):
+        """During an outage, callers re-raise the recent failure instead of refetching."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast")
+        with patch.object(session, "get", return_value=self._response({}, 503)) as get:
+            raised = []
+            for _ in range(3):
+                with pytest.raises(PasqalProviderError, match="device catalog") as exc_info:
+                    session.get_device_records()
+                raised.append(exc_info.value)
+            assert get.call_count == 1
+            # Each caller gets its own error, so tracebacks do not pile up on one object.
+            assert len({id(err) for err in raised}) == 3
+            session._failed_at -= PasqalSession.FAILURE_TTL_SECONDS
+            with pytest.raises(PasqalProviderError):
+                session.get_device_records()
+            assert get.call_count == 2
+
+    def test_get_device_records_http_error(self):
+        """An HTTP failure raises PasqalProviderError."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast")
+        with patch.object(session, "get", return_value=self._response({}, status_code=503)):
+            with pytest.raises(PasqalProviderError, match="device catalog"):
+                session.get_device_records()
+
+    def test_get_device_records_malformed_payload(self):
+        """A payload without ``data`` raises PasqalProviderError."""
+        session = PasqalSession("https://apis.pasqal.cloud/core-fast")
+        with patch.object(session, "get", return_value=self._response({"unexpected": []})):
+            with pytest.raises(PasqalProviderError, match="device catalog"):
+                session.get_device_records()
 
 
 class TestPasqalProvider:
@@ -169,17 +339,32 @@ class TestPasqalProvider:
             monkeypatch.delenv(key, raising=False)
 
     def test_init_requires_credentials(self):
+        """Constructing without any credential raises."""
         with pytest.raises(ValueError, match="Pasqal authentication is required"):
             PasqalProvider()
 
     def test_init_with_sdk_short_circuits(self, mock_sdk):
+        """A pre-built client is used as is."""
         provider = PasqalProvider(sdk=mock_sdk)
         assert provider.sdk is mock_sdk
 
+    def test_session_targets_client_core_url(self, mock_sdk):
+        """The catalog session uses the same core URL (region) as the client."""
+        mock_sdk._client.endpoints.core = "https://apis.sa.pasqal.cloud/core-fast"
+        provider = PasqalProvider(sdk=mock_sdk)
+        assert provider.session.base_url == "https://apis.sa.pasqal.cloud/core-fast"
+
+    def test_session_defaults_to_production_core_url(self):
+        """A client without endpoints falls back to the production core URL."""
+        sdk = MagicMock(name="PasqalCloudClient", spec=["project_id"])
+        provider = PasqalProvider(sdk=sdk)
+        assert provider.session.base_url == "https://apis.pasqal.cloud/core-fast"
+
     def test_init_with_username_password(self):
-        # Patch the SDK constructor used inside the provider.
-        sdk_mock = MagicMock(name="PasqalSDK")
-        with patch("pasqal_cloud.SDK", return_value=sdk_mock) as ctor:
+        """Username, password and project are forwarded to PasqalCloudClient."""
+        sdk_mock = MagicMock(name="PasqalCloudClient")
+        target = "pasqal_cloud.pasqal_cloud_client.PasqalCloudClient"
+        with patch(target, return_value=sdk_mock) as ctor:
             provider = PasqalProvider(
                 username="me@example.com",
                 password="hunter2",
@@ -193,12 +378,25 @@ class TestPasqalProvider:
         assert kwargs["token_provider"] is None
         assert provider.sdk is sdk_mock
 
+    def test_init_falls_back_to_legacy_sdk(self, monkeypatch):
+        """pasqal-cloud releases without PasqalCloudClient use the SDK class."""
+        sdk_mock = MagicMock(name="PasqalSDK")
+        with patch("pasqal_cloud.SDK", return_value=sdk_mock, create=True) as ctor:
+            # Block the new module only after patching: on pasqal-cloud 0.24 the
+            # deprecated ``SDK`` name is itself resolved lazily from it.
+            monkeypatch.setitem(sys.modules, "pasqal_cloud.pasqal_cloud_client", None)
+            provider = PasqalProvider(username="me@example.com", project_id="proj-9")
+        ctor.assert_called_once()
+        assert provider.sdk is sdk_mock
+
     def test_init_uses_env_vars(self, monkeypatch):
+        """Credentials fall back to the PASQAL_* environment variables."""
         monkeypatch.setenv("PASQAL_USERNAME", "env@example.com")
         monkeypatch.setenv("PASQAL_PASSWORD", "envpass")
         monkeypatch.setenv("PASQAL_PROJECT_ID", "env-proj")
-        sdk_mock = MagicMock(name="PasqalSDK")
-        with patch("pasqal_cloud.SDK", return_value=sdk_mock) as ctor:
+        sdk_mock = MagicMock(name="PasqalCloudClient")
+        target = "pasqal_cloud.pasqal_cloud_client.PasqalCloudClient"
+        with patch(target, return_value=sdk_mock) as ctor:
             PasqalProvider()
         kwargs = ctor.call_args.kwargs
         assert kwargs["username"] == "env@example.com"
@@ -206,59 +404,83 @@ class TestPasqalProvider:
         assert kwargs["project_id"] == "env-proj"
 
     def test_init_with_token_provider(self):
+        """A token provider is forwarded and no username is required."""
         token_provider = MagicMock(name="TokenProvider")
-        sdk_mock = MagicMock(name="PasqalSDK")
-        with patch("pasqal_cloud.SDK", return_value=sdk_mock) as ctor:
+        sdk_mock = MagicMock(name="PasqalCloudClient")
+        target = "pasqal_cloud.pasqal_cloud_client.PasqalCloudClient"
+        with patch(target, return_value=sdk_mock) as ctor:
             PasqalProvider(token_provider=token_provider, project_id="proj-1")
         kwargs = ctor.call_args.kwargs
         assert kwargs["token_provider"] is token_provider
         assert kwargs["username"] is None
 
-    def test_get_devices_uses_spec_keys(self, mock_sdk):
+    def test_get_devices_lists_every_device_type(self, mock_sdk):
+        """Every DeviceTypeName is listed, including a QPU absent from the catalog."""
         provider = PasqalProvider(sdk=mock_sdk)
         devices = provider.get_devices()
-        expected = {
-            "FRESNEL",
-            "FRESNEL_CAN1",
-            "EMU_FREE",
-            "EMU_TN",
-            "EMU_FRESNEL",
-            "EMU_MPS",
-            "EMU_SV",
-        }
-        assert {d.id for d in devices} == expected
+        assert {d.id for d in devices} == ALL_DEVICE_TYPES
+        by_id = {d.id: d for d in devices}
+        assert by_id["EMU_SV"].num_qubits == 25
+        assert by_id["FRESNEL"].num_qubits is None
         for device in devices:
             assert isinstance(device, PasqalDevice)
             assert device.profile.experiment_type == ExperimentType.ANALOG
 
-    def test_get_devices_fallback_when_specs_unavailable(self, mock_sdk):
-        mock_sdk.get_device_specs_dict.side_effect = RuntimeError("network down")
+    def test_get_devices_includes_new_catalog_device(self, mock_sdk, catalog):
+        """A device Pasqal lists before pasqal-cloud enumerates it is listed, but unavailable."""
+        catalog["EMU_NEW"] = {**CATALOG["EMU_SV"], "device_type": "EMU_NEW"}
         provider = PasqalProvider(sdk=mock_sdk)
-        devices = provider.get_devices()
-        expected = {
-            "FRESNEL",
-            "FRESNEL_CAN1",
-            "EMU_FREE",
-            "EMU_TN",
-            "EMU_FRESNEL",
-            "EMU_MPS",
-            "EMU_SV",
-        }
-        assert {d.id for d in devices} == expected
+        devices = {d.id: d for d in provider.get_devices()}
+        assert devices["EMU_NEW"].status() == DeviceStatus.UNAVAILABLE
+
+    def test_boolean_atom_count_is_ignored(self, mock_sdk, catalog):
+        """A boolean max_atom_num is not taken as a qubit count."""
+        catalog["EMU_SV"]["max_atom_num"] = True
+        assert PasqalProvider(sdk=mock_sdk).get_device("EMU_SV").num_qubits is None
+
+    def test_get_devices_tolerates_incomplete_records(self, mock_sdk, catalog):
+        """A record without an atom count or emulator flag still yields a device."""
+        del catalog["EMU_SV"]["max_atom_num"]
+        del catalog["EMU_SV"]["is_emulator"]
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_SV")
+        assert device.num_qubits is None
+        assert device.simulator is True
+
+    def test_get_devices_raises_when_catalog_unavailable(self, mock_sdk, monkeypatch):
+        """A catalog failure surfaces instead of returning guessed devices."""
+
+        def _fail(_self):
+            raise PasqalProviderError("Failed to fetch the Pasqal device catalog: down")
+
+        monkeypatch.setattr(PasqalSession, "get_device_records", _fail)
+        provider = PasqalProvider(sdk=mock_sdk)
+        with pytest.raises(PasqalProviderError, match="device catalog"):
+            provider.get_devices()
 
     def test_get_device_known(self, mock_sdk):
+        """Device lookup is case-insensitive and carries catalog limits."""
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("emu_free")  # case-insensitive
         assert isinstance(device, PasqalDevice)
         assert device.id == "EMU_FREE"
         assert device.profile.simulator is True
+        assert device.num_qubits == 12
+
+    def test_get_device_unlisted_device_type(self, mock_sdk):
+        """A device type Pasqal accepts but does not list still resolves."""
+        provider = PasqalProvider(sdk=mock_sdk)
+        device = provider.get_device("FRESNEL")
+        assert device.id == "FRESNEL"
+        assert device.num_qubits is None
 
     def test_get_device_unknown(self, mock_sdk):
+        """An unknown identifier raises ResourceNotFoundError."""
         provider = PasqalProvider(sdk=mock_sdk)
         with pytest.raises(ResourceNotFoundError, match="Device 'NOT_REAL' not found"):
             provider.get_device("NOT_REAL")
 
     def test_hashable(self, mock_sdk):
+        """The provider is hashable and its hash is stable."""
         provider = PasqalProvider(sdk=mock_sdk)
         # Hash must not raise and must be stable for the same instance.
         assert hash(provider) == hash(provider)
@@ -270,10 +492,68 @@ class TestPasqalProvider:
 
 
 class TestPasqalDevice:
-    def test_status_is_online(self, mock_sdk):
+    def test_status_online_when_up(self, mock_sdk):
+        """A listed, active device reporting UP is ONLINE."""
         provider = PasqalProvider(sdk=mock_sdk)
         device = provider.get_device("EMU_FREE")
         assert device.status() == DeviceStatus.ONLINE
+
+    def test_status_offline_when_unlisted(self, mock_sdk):
+        """A device type missing from the catalog (e.g. in maintenance) is OFFLINE."""
+        provider = PasqalProvider(sdk=mock_sdk)
+        assert provider.get_device("FRESNEL").status() == DeviceStatus.OFFLINE
+
+    def test_status_reads_catalog_live(self, mock_sdk, catalog):
+        """Status reflects the catalog at call time, not at construction."""
+        provider = PasqalProvider(sdk=mock_sdk)
+        device = provider.get_device("EMU_TN")
+        assert device.status() == DeviceStatus.ONLINE
+        del catalog["EMU_TN"]
+        assert device.status() == DeviceStatus.OFFLINE
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"status": "DOWN"},
+            {"active": False},
+            {"availability": "INACTIVE"},
+        ],
+    )
+    def test_status_unavailable(self, mock_sdk, catalog, overrides):
+        """A listed device that is down, inactive or not ACTIVE is UNAVAILABLE."""
+        catalog["EMU_MPS"].update(overrides)
+        provider = PasqalProvider(sdk=mock_sdk)
+        assert provider.get_device("EMU_MPS").status() == DeviceStatus.UNAVAILABLE
+
+    def test_status_unrecognized_value_is_unavailable(self, mock_sdk, catalog):
+        """An unknown status string is UNAVAILABLE, never guessed ONLINE."""
+        catalog["EMU_MPS"]["status"] = "CALIBRATING"
+        provider = PasqalProvider(sdk=mock_sdk)
+        with patch("qbraid.runtime.pasqal.device.logger") as log:
+            assert provider.get_device("EMU_MPS").status() == DeviceStatus.UNAVAILABLE
+        log.warning.assert_called_once()
+
+    def test_status_unavailable_when_record_incomplete(self, mock_sdk, catalog):
+        """A record missing a status field is UNAVAILABLE rather than raising."""
+        del catalog["EMU_MPS"]["availability"]
+        provider = PasqalProvider(sdk=mock_sdk)
+        assert provider.get_device("EMU_MPS").status() == DeviceStatus.UNAVAILABLE
+
+    def test_status_unavailable_when_pasqal_cloud_cannot_target(self, mock_sdk, catalog):
+        """A listed device the installed pasqal-cloud cannot submit to is UNAVAILABLE."""
+        catalog["FRESNEL_SA1"] = {**CATALOG["FRESNEL_CAN1"], "device_type": "FRESNEL_SA1"}
+        device = PasqalProvider(sdk=mock_sdk).get_device("FRESNEL_SA1")
+        with patch("qbraid.runtime.pasqal.device._WARNED_UNTARGETABLE", set()):
+            with patch("qbraid.runtime.pasqal.device.logger") as log:
+                assert device.status() == DeviceStatus.UNAVAILABLE
+                assert device.status() == DeviceStatus.UNAVAILABLE
+        log.warning.assert_called_once()
+
+    def test_metadata_for_unlisted_device(self, mock_sdk):
+        """Metadata works for an unlisted device and omits queue time."""
+        metadata = PasqalProvider(sdk=mock_sdk).get_device("FRESNEL").metadata()
+        assert metadata["status"] == "OFFLINE"
+        assert "average_queue_time" not in metadata
 
     def test_str(self, mock_sdk):
         provider = PasqalProvider(sdk=mock_sdk)
@@ -295,9 +575,53 @@ class TestPasqalDevice:
         mock_sdk.create_batch.assert_called_once()
         call_kwargs = mock_sdk.create_batch.call_args.kwargs
         assert call_kwargs["wait"] is False
+        assert call_kwargs["tags"] is None
         assert call_kwargs["jobs"] == [{"runs": 200, "serialized_sequence": '{"foo": 1}'}]
         # Device type must be the enum member for "EMU_FREE".
         assert str(call_kwargs["device_type"]) == "EMU_FREE"
+
+    def test_submit_forwards_tags(self, mock_sdk):
+        """Tags (e.g. a job name) are recorded on the Pasqal batch."""
+        mock_sdk.create_batch.return_value = _make_batch()
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        device.submit('{"stub": true}', tags=["qbraid:job:abc"])
+        assert mock_sdk.create_batch.call_args.kwargs["tags"] == ["qbraid:job:abc"]
+
+    def test_submit_accepts_platform_payload_dict(self, mock_sdk):
+        """The platform's {"sequence_builder": <dict>} payload is serialized to JSON."""
+        mock_sdk.create_batch.return_value = _make_batch()
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        abstract_repr = json.loads(_make_pulser_sequence().to_abstract_repr())
+
+        device.submit({"sequence_builder": abstract_repr}, shots=10)
+        payload = mock_sdk.create_batch.call_args.kwargs["jobs"][0]["serialized_sequence"]
+        assert json.loads(payload) == abstract_repr
+        # The payload must deserialize back into a Pulser Sequence.
+        assert isinstance(Sequence.from_abstract_repr(payload), Sequence)
+
+    def test_submit_accepts_platform_payload_string(self, mock_sdk):
+        """A {"sequence_builder": <str>} payload is passed through unchanged."""
+        mock_sdk.create_batch.return_value = _make_batch()
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        device.submit({"sequence_builder": '{"already": "serialized"}'}, shots=10)
+        payload = mock_sdk.create_batch.call_args.kwargs["jobs"][0]
+        assert payload["serialized_sequence"] == '{"already": "serialized"}'
+
+    def test_submit_to_device_unknown_to_pasqal_cloud_raises(self, mock_sdk, catalog):
+        """A catalog device the pinned pasqal-cloud cannot target fails before submission."""
+        catalog["EMU_NEW"] = {**CATALOG["EMU_SV"], "device_type": "EMU_NEW"}
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_NEW")
+        with pytest.raises(PasqalDeviceError, match="Unknown Pasqal device type"):
+            device.submit('{"stub": true}')
+        mock_sdk.create_batch.assert_not_called()
+
+    @pytest.mark.parametrize("bad_input", [{"register": {}}, {"sequence_builder": None}, 42])
+    def test_submit_rejects_unknown_payload(self, mock_sdk, bad_input):
+        """A payload that is neither form raises before anything is sent."""
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        with pytest.raises(PasqalDeviceError, match="abstract-representation"):
+            device.submit(bad_input)
+        mock_sdk.create_batch.assert_not_called()
 
     def test_submit_list_of_sequences(self, mock_sdk):
         batch = _make_batch(batch_id="batch-multi")
@@ -402,6 +726,45 @@ class TestPasqalJob:
         assert result.device_id == "EMU_FREE"
         assert result.job_id == "batch-1"
         assert result.data.get_counts() == counts
+
+    def test_result_time_stamps(self, mock_sdk):
+        """Results carry the batch's parsed timestamps and execution time in ms."""
+        mock_sdk.get_batch.return_value = _make_batch()
+        result = PasqalJob(job_id="batch-1", sdk=mock_sdk).result()
+        stamps = result.details["time_stamps"]
+        assert stamps["createdAt"].isoformat() == "2026-11-05T21:48:13.648700+00:00"
+        assert stamps["startedAt"].isoformat() == "2026-11-05T21:48:15.500000+00:00"
+        assert stamps["endedAt"].isoformat() == "2026-11-05T21:48:17.750000+00:00"
+        assert stamps["executionDuration"] == 2250
+
+    def test_time_stamps_accept_z_suffix(self, mock_sdk):
+        """A UTC timestamp written with a Z suffix parses, including on Python 3.10."""
+        mock_sdk.get_batch.return_value = _make_batch(
+            started="2026-11-05T21:48:15.500000Z", ended="2026-11-05T21:48:16.500000Z"
+        )
+        stamps = PasqalJob(job_id="batch-1", sdk=mock_sdk).result().details["time_stamps"]
+        assert stamps["startedAt"].utcoffset().total_seconds() == 0
+        assert stamps["executionDuration"] == 1000
+
+    def test_unparseable_time_stamp_raises_job_error(self, mock_sdk):
+        """A timestamp Pasqal sends in an unknown form raises PasqalJobError."""
+        mock_sdk.get_batch.return_value = _make_batch(started="yesterday")
+        with pytest.raises(PasqalJobError, match="Unrecognized Pasqal timestamp"):
+            PasqalJob(job_id="batch-1", sdk=mock_sdk).result()
+
+    def test_time_stamps_without_start(self, mock_sdk):
+        """A batch that never started has no start time or duration."""
+        mock_sdk.get_batch.return_value = _make_batch(status="DONE", started=None)
+        stamps = PasqalJob(job_id="batch-1", sdk=mock_sdk).result().details["time_stamps"]
+        assert stamps["startedAt"] is None
+        assert stamps["executionDuration"] is None
+
+    def test_status_raises_on_unrecognized_batch_status(self, mock_sdk):
+        """An unknown batch status surfaces as PasqalJobError."""
+        mock_sdk.get_batch.return_value = _make_batch(status="SOMETHING_NEW")
+        job = PasqalJob(job_id="batch-1", sdk=mock_sdk)
+        with pytest.raises(PasqalJobError, match="Unrecognized"):
+            job.status()
 
     def test_result_multi_job_returns_list(self, mock_sdk):
         counts_a = {"00": 100}

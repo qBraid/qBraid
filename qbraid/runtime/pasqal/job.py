@@ -19,6 +19,7 @@ Module defining Pasqal job class.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
@@ -31,37 +32,89 @@ if TYPE_CHECKING:
     from pasqal_cloud import SDK as PasqalSDK
     from pasqal_cloud.batch import Batch
     from pasqal_cloud.batch import Job as PasqalBatchJob
+    from pasqal_cloud.utils.constants import BatchStatus
 
     from qbraid.runtime.pasqal.device import PasqalDevice
 
 
-# Mapping from pasqal-cloud batch / job status strings to qBraid JobStatus.
-# Pasqal exposes the same vocabulary for batch and job records, so a single
-# table is reused for both lookups.
-_PASQAL_STATUS_MAP: dict[str, JobStatus] = {
-    "PENDING": JobStatus.QUEUED,
-    "RUNNING": JobStatus.RUNNING,
-    "DONE": JobStatus.COMPLETED,
-    "ERROR": JobStatus.FAILED,
-    "CANCELED": JobStatus.CANCELLED,
-    "TIMED_OUT": JobStatus.FAILED,
-    "PAUSED": JobStatus.QUEUED,
-}
+def _status_map() -> dict[BatchStatus, JobStatus]:
+    """Map every ``pasqal_cloud`` batch status to a qBraid :class:`JobStatus`.
+
+    Keyed on the vendor's ``BatchStatus`` members rather than their string
+    values, so a release that renames or adds a status fails the
+    exhaustiveness test instead of drifting silently.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from pasqal_cloud.utils.constants import BatchStatus as Status
+
+    return {
+        Status.PENDING: JobStatus.QUEUED,
+        Status.RUNNING: JobStatus.RUNNING,
+        Status.DONE: JobStatus.COMPLETED,
+        Status.ERROR: JobStatus.FAILED,
+        Status.CANCELED: JobStatus.CANCELLED,
+        Status.TIMED_OUT: JobStatus.FAILED,
+    }
+
+
+# Pasqal documents ``PAUSED`` as a batch status, but ``BatchStatus`` does not
+# include it. A paused batch has not finished, so it reads as queued.
+_UNENUMERATED_STATUSES: dict[str, JobStatus] = {"PAUSED": JobStatus.QUEUED}
 
 
 class PasqalJobError(QbraidRuntimeError):
     """Exception raised by :class:`PasqalJob`."""
 
 
-def _map_pasqal_status(raw_status: str | None) -> JobStatus:
-    """Map a pasqal-cloud status string to a qBraid :class:`JobStatus`.
+def _map_pasqal_status(raw_status: str) -> JobStatus:
+    """Map a pasqal-cloud batch status string to a qBraid :class:`JobStatus`.
 
-    Returns :attr:`JobStatus.UNKNOWN` for ``None`` and any unrecognised value
-    so the runtime never propagates a bare string further up.
+    Raises:
+        PasqalJobError: If Pasqal reports a status qBraid does not know.
+            ``UNKNOWN`` is not terminal, so returning it would leave
+            :meth:`PasqalJob.wait_for_final_state` polling a finished job
+            until it timed out.
     """
-    if raw_status is None:
-        return JobStatus.UNKNOWN
-    return _PASQAL_STATUS_MAP.get(raw_status.upper(), JobStatus.UNKNOWN)
+    # pylint: disable-next=import-outside-toplevel
+    from pasqal_cloud.utils.constants import BatchStatus as Status
+
+    if raw_status in _UNENUMERATED_STATUSES:
+        return _UNENUMERATED_STATUSES[raw_status]
+    try:
+        return _status_map()[Status(raw_status)]
+    except (ValueError, KeyError) as exc:
+        raise PasqalJobError(f"Unrecognized Pasqal batch status: {raw_status!r}.") from exc
+
+
+def _parse_timestamp(value: str) -> datetime:
+    """Parse a Pasqal ISO-8601 timestamp into a timezone-aware datetime (UTC if unmarked).
+
+    Raises:
+        PasqalJobError: If the value is not an ISO-8601 timestamp.
+    """
+    try:
+        # ``fromisoformat`` only accepts a ``Z`` suffix from Python 3.11.
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except (TypeError, ValueError) as exc:
+        raise PasqalJobError(f"Unrecognized Pasqal timestamp: {value!r}.") from exc
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def _time_stamps(batch: Batch) -> dict[str, Any]:
+    """Return the batch's creation, start and end times, and execution time in ms.
+
+    Pasqal reports ISO-8601 strings; ``startedAt``, ``endedAt`` and
+    ``executionDuration`` are ``None`` until the batch has started and ended.
+    """
+    started = _parse_timestamp(batch.start_datetime) if batch.start_datetime else None
+    ended = _parse_timestamp(batch.end_datetime) if batch.end_datetime else None
+    duration = int((ended - started).total_seconds() * 1000) if started and ended else None
+    return {
+        "createdAt": _parse_timestamp(batch.created_at),
+        "startedAt": started,
+        "endedAt": ended,
+        "executionDuration": duration,
+    }
 
 
 class PasqalJob(QuantumJob):
@@ -113,7 +166,7 @@ class PasqalJob(QuantumJob):
     def _fetch_batch(self) -> Batch:
         """Fetch the current Pasqal batch record, raising on transport error."""
         try:
-            return self._sdk.get_batch(self.id)
+            return self._sdk.get_batch(str(self.id))
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise PasqalJobError(f"Unable to retrieve Pasqal batch {self.id}: {exc}") from exc
 
@@ -134,7 +187,7 @@ class PasqalJob(QuantumJob):
     def cancel(self) -> None:
         """Cancel the underlying Pasqal batch."""
         try:
-            self._sdk.cancel_batch(self.id)
+            self._sdk.cancel_batch(str(self.id))
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise PasqalJobError(f"Failed to cancel Pasqal batch {self.id}: {exc}") from exc
 
@@ -176,6 +229,7 @@ class PasqalJob(QuantumJob):
             job_id=self.id,
             success=True,
             data=AnalogResultData(measurement_counts=measurement_counts),
+            time_stamps=_time_stamps(batch),
         )
 
     @staticmethod
