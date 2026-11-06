@@ -27,7 +27,7 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
-from .job import PasqalJob
+from .job import PasqalJob, _pasqal_cloud_errors
 
 if TYPE_CHECKING:
     from pasqal_cloud import SDK
@@ -207,7 +207,7 @@ class PasqalDevice(QuantumDevice):
                 wait=wait,
                 tags=tags,
             )
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except _pasqal_cloud_errors() as exc:
             raise PasqalDeviceError(
                 f"Failed to submit batch to Pasqal device '{self.id}': {exc}"
             ) from exc

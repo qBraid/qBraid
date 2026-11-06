@@ -19,6 +19,7 @@ Module defining Pasqal job class.
 
 from __future__ import annotations
 
+import functools
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -64,6 +65,30 @@ _UNENUMERATED_STATUSES: dict[str, JobStatus] = {"PAUSED": JobStatus.QUEUED}
 
 class PasqalJobError(QbraidRuntimeError):
     """Exception raised by :class:`PasqalJob`."""
+
+
+@functools.cache
+def _pasqal_cloud_errors() -> tuple[type[BaseException], ...]:
+    """Return ``Exception`` plus every error class ``pasqal_cloud.errors`` defines.
+
+    Most pasqal-cloud errors, including the ones raised when a batch is rejected, not
+    found or cannot be cancelled, derive from ``BaseException``, so ``except Exception``
+    does not catch them. Catch this tuple wherever a pasqal-cloud call is wrapped.
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from pasqal_cloud import errors
+
+    return (
+        Exception,
+        *(
+            cls
+            for cls in vars(errors).values()
+            if isinstance(cls, type)
+            and issubclass(cls, BaseException)
+            and not issubclass(cls, Exception)
+            and cls.__module__ == errors.__name__
+        ),
+    )
 
 
 def _map_pasqal_status(raw_status: str) -> JobStatus:
@@ -167,7 +192,7 @@ class PasqalJob(QuantumJob):
         """Fetch the current Pasqal batch record, raising on transport error."""
         try:
             return self._sdk.get_batch(str(self.id))
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except _pasqal_cloud_errors() as exc:
             raise PasqalJobError(f"Unable to retrieve Pasqal batch {self.id}: {exc}") from exc
 
     def status(self) -> JobStatus:
@@ -188,7 +213,7 @@ class PasqalJob(QuantumJob):
         """Cancel the underlying Pasqal batch."""
         try:
             self._sdk.cancel_batch(str(self.id))
-        except Exception as exc:  # pylint: disable=broad-exception-caught
+        except _pasqal_cloud_errors() as exc:
             raise PasqalJobError(f"Failed to cancel Pasqal batch {self.id}: {exc}") from exc
 
     def result(self) -> Result[AnalogResultData]:
@@ -239,11 +264,16 @@ class PasqalJob(QuantumJob):
         Prefers ``Job.result`` (already the ``"counter"`` slice of the full
         result), falling back to ``Job.full_result['counter']``.
         """
-        counts = job.result
-        if counts is None:
-            full_result = job.full_result
-            if isinstance(full_result, dict):
-                counts = full_result.get("counter")
+        try:
+            counts = job.result
+            if counts is None:
+                full_result = job.full_result
+                if isinstance(full_result, dict):
+                    counts = full_result.get("counter")
+        except _pasqal_cloud_errors() as exc:  # the results are downloaded on first access
+            raise PasqalJobError(
+                f"Unable to download the results of Pasqal job {job.id}: {exc}"
+            ) from exc
         if counts is None:
             raise PasqalJobError(f"Pasqal job {job.id} has no counter result available.")
         return dict(counts)
