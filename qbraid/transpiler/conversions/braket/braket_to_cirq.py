@@ -28,6 +28,7 @@ from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
+from scipy.linalg import fractional_matrix_power
 
 try:
     import cirq
@@ -113,11 +114,60 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     return converted
 
 
+# Integer powers above this become one matrix gate rather than repeated operations.
+_MAX_REPEATED_POWER = 16
+
+
 def _from_braket_instruction(
     instr: BKInstruction, qubit_mapping: dict[int, cirq_devices.LineQubit]
 ) -> list[cirq_ops.Operation]:
-    """Converts the braket instruction to an equivalent Cirq operation or list
-    of Cirq operations.
+    """Converts the braket instruction, including its power and control
+    modifiers, to an equivalent list of Cirq operations.
+
+    Raises:
+        ProgramConversionError: If the instruction cannot be converted to Cirq.
+    """
+    ops = _from_braket_target_instruction(instr, qubit_mapping)
+    if instr.power == 1 and not instr.control:
+        return ops
+
+    try:
+        targets = [qubit_mapping[int(q)] for q in instr.target]
+        if instr.power == 0:
+            # Keep the qubits in the circuit rather than emitting nothing.
+            ops = [cirq.IdentityGate(len(targets)).on(*targets)]
+        elif instr.power != 1:
+            integer = float(instr.power).is_integer()
+            if integer and abs(instr.power) <= _MAX_REPEATED_POWER:
+                base = ops if instr.power > 0 else cirq.inverse(ops)
+                ops = list(base) * abs(int(instr.power))
+            else:
+                # Braket takes the principal matrix power; Cirq's gate powers may pick
+                # another branch.
+                base_matrix = instr.operator.to_matrix()
+                if integer:
+                    matrix = np.linalg.matrix_power(base_matrix, int(instr.power))
+                else:
+                    matrix = fractional_matrix_power(base_matrix, instr.power)
+                ops = [cirq.MatrixGate(matrix).on(*targets)]
+
+        # Controlling each operation separately is only correct because every
+        # target-gate mapping above matches Braket's matrix exactly, global phase included.
+        controls = [qubit_mapping[int(q)] for q in instr.control]
+        control_values = instr.control_state.as_tuple
+        return [op.controlled_by(*controls, control_values=control_values) for op in ops]
+    except Exception as err:
+        raise ProgramConversionError(
+            f"qBraid transpiler doesn't support operator {instr.operator} with modifiers "
+            f"(power={instr.power}, control={list(instr.control)})"
+        ) from err
+
+
+def _from_braket_target_instruction(
+    instr: BKInstruction, qubit_mapping: dict[int, cirq_devices.LineQubit]
+) -> list[cirq_ops.Operation]:
+    """Converts the braket instruction, ignoring any power or control modifiers,
+    to an equivalent Cirq operation or list of Cirq operations.
 
     Args:
         instr: Braket instruction to convert.
@@ -132,6 +182,9 @@ def _from_braket_instruction(
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
     try:
+        if nqubits == 0 and isinstance(instr.operator, braket_gates.GPhase):
+            return [cirq.global_phase_operation(np.exp(1j * instr.operator.angle))]
+
         if nqubits == 1:
             return _from_one_qubit_braket_instruction(instr, qubits)
 
