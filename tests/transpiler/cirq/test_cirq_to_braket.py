@@ -122,6 +122,36 @@ def test_to_braket_bell_circuit(qreg):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+@pytest.mark.parametrize(
+    "qubits",
+    (
+        [cirq.NamedQubit("a_0"), cirq.NamedQubit("a_1"), cirq.NamedQubit("b_0")],
+        [cirq.GridQubit(0, 0), cirq.GridQubit(0, 1), cirq.GridQubit(1, 0)],
+        [cirq.NamedQubit("x"), cirq.NamedQubit("y"), cirq.NamedQubit("z")],
+    ),
+)
+def test_to_braket_qubits_without_distinct_integer_labels(qubits):
+    """Test that qubits whose integer labels collide or are missing stay distinct"""
+    cirq_circuit = Circuit(ops.CZ(qubits[0], qubits[1]), ops.H(qubits[2]))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert braket_circuit.qubit_count == 3
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+@pytest.mark.parametrize(
+    "qubits",
+    (
+        [cirq.NamedQubit("a_1"), cirq.NamedQubit("b_0"), cirq.NamedQubit("b_2")],
+        [cirq.NamedQubit("a_1"), cirq.NamedQubit("a_4"), cirq.NamedQubit("b_0")],
+    ),
+)
+def test_to_braket_keeps_qubit_order_when_labels_out_of_order(qubits):
+    """Test that distinct integer labels out of Cirq's qubit order don't permute qubits"""
+    cirq_circuit = Circuit(ops.CNOT(qubits[0], qubits[1]), ops.H(qubits[2]))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
 def test_to_braket_non_parameterized_single_qubit_gates():
     """Test converting circuit containing non-parameterized single-qubits gates"""
     qreg = LineQubit.range(4)
@@ -433,6 +463,19 @@ def test_three_qubit_error():
     with pytest.raises(ProgramConversionError):
         with patch("cirq.protocols.unitary", side_effect=TypeError):
             cirq_to_braket(cirq_circuit)
+
+
+def test_circuit_operation_is_unrolled():
+    """Test that (nested) CircuitOperations convert with their qubit maps and repetitions"""
+    a, b = cirq.NamedQubit("a"), cirq.NamedQubit("b")
+    q0, q1 = cirq.NamedQubit("q_0"), cirq.NamedQubit("q_1")
+    inner = cirq.CircuitOperation(cirq.FrozenCircuit(cirq.S(a)), repetitions=3)
+    outer = cirq.CircuitOperation(
+        cirq.FrozenCircuit(cirq.H(a), inner, cirq.CNOT(a, b)), qubit_map={a: q1, b: q0}
+    )
+    cirq_circuit = Circuit(outer)
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_invalid_gate_instruction():

@@ -21,8 +21,7 @@ Module for converting Braket circuits to Cirq circuits
 """
 from __future__ import annotations
 
-import itertools
-from copy import deepcopy
+import re
 from typing import TYPE_CHECKING, Iterator, Optional, Union
 
 import numpy as np
@@ -42,7 +41,7 @@ except ImportError:  # pragma: no cover
 
 from cirq import Circuit
 from cirq import ops as cirq_ops
-from cirq import protocols
+from cirq import protocols, unroll_circuit_op
 from cirq.linalg.decompositions import kak_decomposition
 
 try:
@@ -79,15 +78,12 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
         ProgramConversionError: If the circuit cannot be represented by an Amazon Braket circuit.
     """
     _validate_resolved_parameters(circuit, "Amazon Braket")
-    cirq_qubits = list(circuit.all_qubits())
-    cirq_int_qubits = [
-        qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
-    ]
-    braket_int_qubits = deepcopy(cirq_int_qubits)
-    qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
-    # A running count of measured qubits, so each Measure gets its own classical bit.
-    # Braket defaults Measure's index to 0, which would collapse every readout onto b[0].
-    measured = itertools.count()
+    # CircuitOperations (e.g. QASM custom gates read by Cirq) have no gate to map.
+    circuit = unroll_circuit_op(circuit, deep=True, tags_to_check=None)
+    qubit_mapping = _braket_qubit_mapping(circuit)
+    # Each Measure needs its own classical bit: Braket defaults Measure's index to 0, which
+    # would collapse every readout onto b[0].
+    measured = iter(_classical_bits(circuit))
     try:
         return BKCircuit(
             _to_braket_instruction(operation, qubit_mapping, measured)
@@ -102,17 +98,68 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
         ) from err
 
 
+def _braket_qubit_mapping(circuit: Circuit) -> dict[cirq_ops.Qid, int]:
+    """Maps each Cirq qubit to a distinct Braket qubit index.
+
+    Keeps each qubit's integer label (e.g. ``LineQubit(5)`` -> 5) when the labels rise
+    strictly in Cirq's sorted order, which is the order of Cirq's own unitary. Otherwise
+    the qubits are numbered 0, 1, ... in that order: labels can collide
+    (``NamedQubit("a_0")`` and ``NamedQubit("b_0")`` both label as 0, as do
+    ``GridQubit(0, 0)`` and ``GridQubit(0, 1)``) or run out of order (``a_1`` sorts
+    before ``b_0``), and either would change the circuit.
+    """
+    qubits = sorted(circuit.all_qubits())
+    try:
+        labels = [qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in qubits]
+    except ValueError:
+        labels = []
+    if len(labels) != len(qubits) or any(a >= b for a, b in zip(labels, labels[1:])):
+        labels = list(range(len(qubits)))
+    return dict(zip(qubits, labels))
+
+
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
+
+
+def _classical_bits(circuit: Circuit) -> list[int]:
+    """Braket bit index for each measured qubit, in the order the measurements occur.
+
+    Bits follow the ``(register, index)`` parsed from keys such as ``c_3``, as in
+    ``cirq_to_qasm2`` and ``cirq_to_pyquil``, so ``c[3] = measure q[0]`` stays after
+    ``c[2]`` whichever is measured first. Keys without an index come after, in
+    measurement order.
+    """
+    slots = []
+    measurements = (
+        op
+        for op in circuit.all_operations()
+        if qbraid.programs.gate_model.cirq.CirqCircuit.is_measurement_gate(op)
+    )
+    for position, operation in enumerate(measurements):
+        match = _BIT_INDEX.match(protocols.measurement_key_name(operation))
+        for offset in range(len(operation.qubits)):
+            if match is None:
+                slots.append((1, "", 0, position, offset))
+            else:
+                slots.append((0, match["register"], int(match["index"]), position, offset))
+    order = sorted(range(len(slots)), key=slots.__getitem__)
+    bits = [0] * len(slots)
+    for bit, slot in enumerate(order):
+        bits[slot] = bit
+    return bits
+
+
 def _to_braket_instruction(
     operation: cirq_ops.Operation,
-    qubit_mapping: dict[int, int],
+    qubit_mapping: dict[cirq_ops.Qid, int],
     measured: Iterator[int],
 ) -> list[braket.circuits.Instruction]:
     """Converts Cirq operation to equivalent Braket instruction(s).
 
     Args:
         operation: Cirq operation to convert.
-        qubit_mapping: Mappings of input / output qubit indicies
-        measured: Counter supplying the next free classical bit index.
+        qubit_mapping: Braket qubit index for each Cirq qubit.
+        measured: Classical bit index for each measured qubit, in measurement order.
 
     Raises:
         ProgramConversionError: If the operation cannot be converted to Braket.
@@ -130,11 +177,7 @@ def _to_braket_instruction(
         )
 
     nqubits = protocols.num_qubits(operation)
-    cirq_qubits = operation.qubits
-    cirq_qubits = [
-        qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
-    ]
-    qubits = [qubit_mapping[x] for x in cirq_qubits]
+    qubits = [qubit_mapping[q] for q in operation.qubits]
 
     if nqubits == 1:
         target = qubits[0]
@@ -172,14 +215,14 @@ def _to_braket_instruction(
 
 def _to_braket_measure_instructions(
     operation: cirq_ops.Operation,
-    qubit_mapping: dict[int, int],
+    qubit_mapping: dict[cirq_ops.Qid, int],
     measured: Iterator[int],
 ) -> list[braket.circuits.Instruction]:
     """Converts a Cirq measurement operation to Braket Measure instruction(s).
 
-    Cirq measurement keys have no Braket equivalent; readout order follows the order the
-    qubits are measured in. Inverted bits (``invert_mask``) are realized as an X before
-    the measure.
+    Cirq measurement keys have no Braket equivalent; readout order follows the keys, as
+    assigned by ``_classical_bits``. Inverted bits (``invert_mask``) are realized as an X
+    before the measure.
 
     Each ``Measure`` is given its own classical bit index from ``measured``. Braket
     defaults that index to 0, which silently collapses every readout onto ``b[0]`` --
@@ -194,7 +237,7 @@ def _to_braket_measure_instructions(
     instructions = []
     invert_mask = gate.invert_mask + (False,) * (len(operation.qubits) - len(gate.invert_mask))
     for qubit, inverted in zip(operation.qubits, invert_mask, strict=True):
-        target = qubit_mapping[qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(qubit)]
+        target = qubit_mapping[qubit]
         if inverted:
             instructions.append(BKInstruction(braket_gates.X(), target))
         instructions.append(BKInstruction(BKMeasure(index=next(measured)), target))
