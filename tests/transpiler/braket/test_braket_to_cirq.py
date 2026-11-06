@@ -146,6 +146,26 @@ def test_from_braket_three_qubit_gates():
 
 
 @pytest.mark.parametrize(
+    "instr",
+    [
+        Instruction(braket_gates.V(), target=0, power=-1),
+        Instruction(braket_gates.S(), target=0, power=3),
+        Instruction(braket_gates.Z(), target=0, power=0.5),
+        Instruction(braket_gates.T(), target=1, control=0),
+        Instruction(braket_gates.Ti(), target=2, control=[0, 1], power=-1),
+        Instruction(braket_gates.Z(), target=1, control=0, control_state=0),
+        Instruction(braket_gates.CY(), target=[1, 2], control=0),
+        Instruction(braket_gates.CPhaseShift(0.7), target=[2, 0], control=1, power=2),
+    ],
+)
+def test_from_braket_instruction_modifiers(instr):
+    """Test that power, control and control_state modifiers are converted"""
+    braket_circuit = BKCircuit().add_instruction(instr)
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+@pytest.mark.parametrize(
     "noise_gate, target_gate",
     [
         (braket_noise_gate.BitFlip, cirq_ops.BitFlipChannel),
