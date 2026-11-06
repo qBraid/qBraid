@@ -23,6 +23,9 @@ from __future__ import annotations
 
 import warnings
 from abc import ABC, abstractmethod
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from typing import TYPE_CHECKING, Any, cast
 
 from pyqasm.exceptions import PyQasmError, QasmParsingError
@@ -51,6 +54,24 @@ from .options import RuntimeOptions
 if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
+
+
+class _StatusCheck:
+    """Whether the enclosing run() has checked ``device``'s status yet."""
+
+    __slots__ = ("device", "done")
+
+    def __init__(self, device: QuantumDevice):
+        self.device = device
+        self.done = False
+
+
+# Set by run() so that validate() fetches device status once per batch rather than once per
+# program (#1518). A ContextVar rather than instance state because one device is often shared,
+# and concurrent run() calls must each check status for themselves.
+_STATUS_CHECK: ContextVar[_StatusCheck | None] = ContextVar(
+    "qbraid_device_status_check", default=None
+)
 
 
 class QuantumDevice(ABC):
@@ -391,6 +412,25 @@ class QuantumDevice(ABC):
         """
         return run_input
 
+    @contextmanager
+    def _status_checked_once(self) -> Iterator[None]:
+        """Within this block, :meth:`validate` fetches this device's status at most once."""
+        token = _STATUS_CHECK.set(_StatusCheck(self))
+        try:
+            yield
+        finally:
+            _STATUS_CHECK.reset(token)
+
+    def _claim_status_check(self) -> bool:
+        """Return whether :meth:`validate` should fetch status now, recording that it has."""
+        check = _STATUS_CHECK.get()
+        if check is None or check.device is not self:
+            return True
+        if check.done:
+            return False
+        check.done = True
+        return True
+
     def validate(
         self,
         run_input_batch: list[qbraid.programs.QPROGRAM],
@@ -408,12 +448,13 @@ class QuantumDevice(ABC):
         if level == ValidationLevel.NONE:
             return None
 
-        if not suppress_device_warning and self.status() != DeviceStatus.ONLINE:
-            warnings.warn(
-                "Device is not online. Submitting this job may result in an exception "
-                "or a long wait time.",
-                UserWarning,
-            )
+        if not suppress_device_warning and self._claim_status_check():
+            if self.status() != DeviceStatus.ONLINE:
+                warnings.warn(
+                    "Device is not online. Submitting this job may result in an exception "
+                    "or a long wait time.",
+                    UserWarning,
+                )
 
         for run_input in run_input_batch:
             try:
@@ -560,7 +601,8 @@ class QuantumDevice(ABC):
         """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
-        run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
+        with self._status_checked_once():
+            run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
         logger.debug(
             "Submitting quantum program %s to device '%s'",
