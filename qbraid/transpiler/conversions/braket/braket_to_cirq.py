@@ -114,6 +114,10 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     return converted
 
 
+# Integer powers above this become one matrix gate rather than repeated operations.
+_MAX_REPEATED_POWER = 16
+
+
 def _from_braket_instruction(
     instr: BKInstruction, qubit_mapping: dict[int, cirq_devices.LineQubit]
 ) -> list[cirq_ops.Operation]:
@@ -133,13 +137,18 @@ def _from_braket_instruction(
             # Keep the qubits in the circuit rather than emitting nothing.
             ops = [cirq.IdentityGate(len(targets)).on(*targets)]
         elif instr.power != 1:
-            if float(instr.power).is_integer():
+            integer = float(instr.power).is_integer()
+            if integer and abs(instr.power) <= _MAX_REPEATED_POWER:
                 base = ops if instr.power > 0 else cirq.inverse(ops)
                 ops = list(base) * abs(int(instr.power))
             else:
                 # Braket takes the principal matrix power; Cirq's gate powers may pick
                 # another branch.
-                matrix = fractional_matrix_power(instr.operator.to_matrix(), instr.power)
+                base_matrix = instr.operator.to_matrix()
+                if integer:
+                    matrix = np.linalg.matrix_power(base_matrix, int(instr.power))
+                else:
+                    matrix = fractional_matrix_power(base_matrix, instr.power)
                 ops = [cirq.MatrixGate(matrix).on(*targets)]
 
         # Controlling each operation separately is only correct because every
