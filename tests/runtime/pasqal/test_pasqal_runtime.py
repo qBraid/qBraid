@@ -270,7 +270,7 @@ class TestPasqalSession:
         with patch.object(session, "get", return_value=self._response(payload)) as get:
             records = session.get_device_records()
         get.assert_called_once_with(
-            "https://apis.pasqal.cloud/core-fast/api/v1/devices", timeout=30
+            "https://apis.pasqal.cloud/core-fast/api/v1/devices", timeout=10.0
         )
         assert records == CATALOG
 
@@ -459,6 +459,35 @@ class TestPasqalProvider:
         provider = PasqalProvider(sdk=mock_sdk)
         with pytest.raises(PasqalProviderError, match="device catalog"):
             provider.get_devices()
+
+    def test_get_device_without_catalog_can_still_submit(self, mock_sdk, monkeypatch):
+        """A catalog outage does not block submission, which never reads the catalog.
+
+        Before the fallback, get_device raised here, so a platform submit failed while
+        Pasqal itself was accepting batches.
+        """
+
+        def _fail(_self):
+            raise PasqalProviderError("Failed to fetch the Pasqal device catalog: down")
+
+        monkeypatch.setattr(PasqalSession, "get_device_records", _fail)
+        mock_sdk.create_batch.return_value = _make_batch(batch_id="batch-xyz")
+        device = PasqalProvider(sdk=mock_sdk).get_device("emu_mps")
+        assert device.id == "EMU_MPS"
+        assert device.num_qubits is None
+        assert device.submit('{"foo": 1}', shots=10).id == "batch-xyz"
+        with pytest.raises(PasqalProviderError, match="device catalog"):
+            device.status()
+
+    def test_get_device_unknown_without_catalog(self, mock_sdk, monkeypatch):
+        """Without the catalog, only device types pasqal-cloud accepts resolve."""
+
+        def _fail(_self):
+            raise PasqalProviderError("Failed to fetch the Pasqal device catalog: down")
+
+        monkeypatch.setattr(PasqalSession, "get_device_records", _fail)
+        with pytest.raises(ResourceNotFoundError, match="FRESNEL_SA1"):
+            PasqalProvider(sdk=mock_sdk).get_device("FRESNEL_SA1")
 
     def test_get_device_known(self, mock_sdk):
         """Device lookup is case-insensitive and carries catalog limits."""
