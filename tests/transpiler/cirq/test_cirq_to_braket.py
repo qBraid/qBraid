@@ -415,6 +415,18 @@ def test_custom_controlled_three_qubit_gate():
     assert circuits_allclose(braket_circuit, cirq_circuit)
 
 
+@pytest.mark.parametrize(
+    "sub_gate",
+    [cirq.rx(np.pi), cirq.rx(-np.pi), cirq.ry(np.pi), cirq.rx(0.3), cirq.XX**0.5, cirq.ISWAP**0.5],
+)
+def test_controlled_gate_keeps_sub_gate_phase(sub_gate):
+    """Test that a sub-gate's global phase, which a control makes relative, is kept."""
+    qubits = cirq.LineQubit.range(1 + cirq.num_qubits(sub_gate))
+    cirq_circuit = cirq.Circuit(ops.ControlledGate(sub_gate).on(*qubits))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
 def test_three_qubit_matrix_gate():
     """Test three qubit matrix gate"""
     q0, q1, q2 = cirq.LineQubit.range(3)
