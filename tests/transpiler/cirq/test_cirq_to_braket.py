@@ -465,6 +465,19 @@ def test_three_qubit_error():
             cirq_to_braket(cirq_circuit)
 
 
+def test_circuit_operation_is_unrolled():
+    """Test that (nested) CircuitOperations convert with their qubit maps and repetitions"""
+    a, b = cirq.NamedQubit("a"), cirq.NamedQubit("b")
+    q0, q1 = cirq.NamedQubit("q_0"), cirq.NamedQubit("q_1")
+    inner = cirq.CircuitOperation(cirq.FrozenCircuit(cirq.S(a)), repetitions=3)
+    outer = cirq.CircuitOperation(
+        cirq.FrozenCircuit(cirq.H(a), inner, cirq.CNOT(a, b)), qubit_map={a: q1, b: q0}
+    )
+    cirq_circuit = Circuit(outer)
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
 def test_invalid_gate_instruction():
     """Test error for invalid gate instruction"""
     with pytest.raises(ValueError):

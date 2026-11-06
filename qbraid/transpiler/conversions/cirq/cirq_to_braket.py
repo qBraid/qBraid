@@ -41,7 +41,7 @@ except ImportError:  # pragma: no cover
 
 from cirq import Circuit
 from cirq import ops as cirq_ops
-from cirq import protocols
+from cirq import protocols, unroll_circuit_op
 from cirq.linalg.decompositions import kak_decomposition
 
 try:
@@ -78,6 +78,8 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
         ProgramConversionError: If the circuit cannot be represented by an Amazon Braket circuit.
     """
     _validate_resolved_parameters(circuit, "Amazon Braket")
+    # CircuitOperations (e.g. QASM custom gates read by Cirq) have no gate to map.
+    circuit = unroll_circuit_op(circuit, deep=True, tags_to_check=None)
     qubit_mapping = _braket_qubit_mapping(circuit)
     # Each Measure needs its own classical bit: Braket defaults Measure's index to 0, which
     # would collapse every readout onto b[0].
