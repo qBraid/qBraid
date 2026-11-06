@@ -157,7 +157,7 @@ def _to_braket_instruction(
     Args:
         operation: Cirq operation to convert.
         qubit_mapping: Braket qubit index for each Cirq qubit.
-        measured: Counter supplying the next free classical bit index.
+        measured: Classical bit index for each measured qubit, in measurement order.
 
     Raises:
         ProgramConversionError: If the operation cannot be converted to Braket.
@@ -219,8 +219,8 @@ def _to_braket_measure_instructions(
     """Converts a Cirq measurement operation to Braket Measure instruction(s).
 
     Cirq measurement keys have no Braket equivalent; readout order follows the keys, as
-    assigned by ``_classical_bits``. Inverted bits (``invert_mask``) are realized as an X before
-    the measure.
+    assigned by ``_classical_bits``. Inverted bits (``invert_mask``) are realized as an X
+    before the measure.
 
     Each ``Measure`` is given its own classical bit index from ``measured``. Braket
     defaults that index to 0, which silently collapses every readout onto ``b[0]`` --
