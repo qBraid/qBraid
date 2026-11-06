@@ -30,7 +30,10 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+import requests
 from pyqasm.exceptions import PyQasmError
+from qbraid_core.exceptions import RequestsApiError
+from qbraid_core.services.runtime import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled, clear_cache
@@ -280,6 +283,64 @@ def test_provider_get_devices_raises_for_no_results(mock_client):
     provider = QbraidProvider(client=client)
     with pytest.raises(ResourceNotFoundError, match="Device .* not found"):
         provider.get_device("nonexistent:device:id")
+
+
+def _device_lookup_error(status: int | None, message: str) -> QuantumRuntimeServiceRequestError:
+    """Build the chain the client raises: service error -> API error -> HTTP error."""
+    api_err = RequestsApiError(message, status_code=status)
+    if status is not None:
+        response = Mock(status_code=status)
+        http_err = requests.HTTPError(message)
+        http_err.response = response
+        api_err.__cause__ = http_err
+    service_err = QuantumRuntimeServiceRequestError(f"Failed to retrieve device: {message}")
+    service_err.__cause__ = api_err
+    return service_err
+
+
+@pytest.mark.parametrize("method", ["get_device", "get_devices"])
+def test_provider_device_lookup_404_is_not_found(mock_client, method):
+    """Only a 404 from the API is reported as a missing device."""
+    provider = QbraidProvider(client=mock_client)
+    error = _device_lookup_error(404, "Device not found.")
+    client_method = "get_device" if method == "get_device" else "list_devices"
+    with (
+        patch.object(mock_client, client_method, side_effect=error),
+        cache_disabled(provider),
+    ):
+        with pytest.raises(ResourceNotFoundError):
+            if method == "get_device":
+                provider.get_device("qbraid:qbraid:sim:qir-sv")
+            else:
+                provider.get_devices()
+
+
+@pytest.mark.parametrize("method", ["get_device", "get_devices"])
+@pytest.mark.parametrize(
+    "status, message",
+    [
+        (429, "Too many requests from user, please try again later."),
+        (500, "Internal server error."),
+        (None, "Connection aborted."),
+    ],
+)
+def test_provider_device_lookup_other_errors_surface(mock_client, method, status, message):
+    """A rate limit, outage or connection error is raised as itself, not as "not found" (#1518)."""
+    provider = QbraidProvider(client=mock_client)
+    error = _device_lookup_error(status, message)
+    client_method = "get_device" if method == "get_device" else "list_devices"
+    with (
+        patch.object(mock_client, client_method, side_effect=error),
+        cache_disabled(provider),
+    ):
+        with pytest.raises(QuantumRuntimeServiceRequestError) as exc_info:
+            if method == "get_device":
+                provider.get_device("qbraid:qbraid:sim:qir-sv")
+            else:
+                provider.get_devices()
+    assert exc_info.value is error
+    assert exc_info.value.status_code == status
+    assert message in str(exc_info.value)
 
 
 def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
