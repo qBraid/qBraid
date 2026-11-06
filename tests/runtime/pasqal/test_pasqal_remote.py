@@ -169,29 +169,29 @@ def completed_job_context():
         "job_id": job.id,
         "provider": provider,
         "device": device,
-        "sdk": provider.sdk,
+        "client": provider.client,
     }
 
 
 @pytest.mark.remote
 def test_completed_job_status(completed_job_context):
     """Completed job reports COMPLETED status."""
-    sdk = completed_job_context["sdk"]
+    client = completed_job_context["client"]
     job_id = completed_job_context["job_id"]
     device = completed_job_context["device"]
 
-    reconstructed = PasqalJob(job_id=job_id, sdk=sdk, device=device)
+    reconstructed = PasqalJob(job_id=job_id, client=client, device=device)
     assert reconstructed.status() == JobStatus.COMPLETED
 
 
 @pytest.mark.remote
 def test_completed_job_result(completed_job_context):
     """Completed job returns valid AnalogResultData with counts."""
-    sdk = completed_job_context["sdk"]
+    client = completed_job_context["client"]
     job_id = completed_job_context["job_id"]
     device = completed_job_context["device"]
 
-    reconstructed = PasqalJob(job_id=job_id, sdk=sdk, device=device)
+    reconstructed = PasqalJob(job_id=job_id, client=client, device=device)
     result = reconstructed.result()
 
     assert result.success is True
