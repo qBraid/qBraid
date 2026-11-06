@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- `PasqalDevice.submit()` accepts the `{"sequence_builder": ...}` payload qBraid stores for Pulser programs, and `submit()` and `run()` take `tags` to record on the Pasqal batch and `backend_configuration`, a Pulser `EmulationConfig` for emulator settings such as noise or bond dimension ([#1520](https://github.com/qBraid/qBraid/pull/1520), [#1524](https://github.com/qBraid/qBraid/pull/1524))
 - `BraketDevice.run(..., experimental_capabilities="ALL")` now submits an OpenQASM 3 program as written instead of converting it to a Braket `Circuit`, so IQM Emerald and Garnet can run feed-forward (`measure_ff`/`cc_prx` in a verbatim box), including through `QbraidProvider` with `runtime_options={"experimental_capabilities": "ALL"}`. `"NONE"`, which the Braket SDK rejects, now runs without the flag, and any other value raises a `ValueError` naming the accepted values before a task is created ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Added default AWS quantum task tags through `BraketDevice.set_options(tags=...)`. Defaults apply to single and batch submissions, and per-submission tags override matching keys ([#1471](https://github.com/qBraid/qBraid/pull/1471)).
 - Added the `Publish qBraid Lab environment` workflow (`publish-lab-env.yml`), run by hand for a released version. It builds a `qBraid-SDK (vX.Y.Z)` Lab environment with the main framework extras, smoke tests it, and publishes it on qBraid staging or production, as pyqasm does ([#1477](https://github.com/qBraid/qBraid/pull/1477))
@@ -32,6 +33,7 @@ Writing an entry:
 - `QPerfectJob.result()` now reports MIMIQ's fidelity, gate-error estimate and simulator in `result.data.extra`, so an approximate MPS result can be told apart from an exact one. The new `accuracy_report` helper returns the same report for any `QCSResults` ([#1464](https://github.com/qBraid/qBraid/pull/1464))
 
 ### Improved / Modified
+- **Breaking.** `PasqalProvider`, `PasqalDevice` and `PasqalJob` expose the `pasqal-cloud` client as `client` (and take `client=`) instead of `sdk`; it is a `PasqalCloudClient` on pasqal-cloud 0.23+, and the `pasqal` extra now requires `pasqal-cloud>=0.21,<0.25`. `PasqalDevice.status()` reports Pasqal's live status instead of always `ONLINE`, and devices report their atom limit as `num_qubits` ([#1520](https://github.com/qBraid/qBraid/pull/1520), [#1528](https://github.com/qBraid/qBraid/pull/1528))
 - `QbraidDevice.best_qubits()` no longer selects a qubit whose readout or gate error, or an edge whose two-qubit gate error, the provider marks as a placeholder (`calibrated: false`), such as Rigetti's 0.5 CZ errors. Flags on T1, T2 and frequency are ignored. When one qubit is requested or the device has no couplers, the ranking also leaves out qubits with an error of 1 or outside `[0, 1]`, such as IBM's unflagged 1.0 placeholders, which it used to rank last. When too few usable qubits remain, it raises `ValueError` instead of returning unusable ones ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 - `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 
@@ -40,6 +42,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- A request Pasqal Cloud refuses, such as a rejected batch, raises `PasqalDeviceError` or `PasqalJobError` with Pasqal's reason instead of a raw `pasqal-cloud` error that `except Exception` misses, and an unrecognised batch status raises instead of leaving `wait_for_final_state()` polling a finished job ([#1520](https://github.com/qBraid/qBraid/pull/1520), [#1522](https://github.com/qBraid/qBraid/pull/1522))
 - OpenQASM 3 programs that include `stdgates.inc`, as Qiskit exports them, no longer fail on IQM Emerald and Garnet with "include statements are not supported" when sent with `experimental_capabilities="ALL"`. The include is removed and gates are renamed to Braket's. A gate Braket does not recognise now fails before submission, naming the gate ([#1515](https://github.com/qBraid/qBraid/pull/1515))
 - Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
 - `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))

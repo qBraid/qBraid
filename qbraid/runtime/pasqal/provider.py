@@ -19,51 +19,148 @@ Module defining Pasqal provider class.
 
 from __future__ import annotations
 
+import copy
 import os
-from typing import TYPE_CHECKING
+import threading
+import time
+from typing import TYPE_CHECKING, Any
+
+from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
+from qbraid._version import __version__ as qbraid_version
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
-from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import PasqalDevice
 
 if TYPE_CHECKING:
-    from pasqal_cloud import SDK as PasqalSDK
     from pasqal_cloud.authentication import TokenProvider
 
-
-# Default device IDs exposed by Pasqal Cloud. Mirrors
-# ``pasqal_cloud.device.DeviceTypeName``; kept here as a literal so we don't
-# need to import ``pasqal_cloud`` to enumerate devices ahead of authentication.
-_DEFAULT_DEVICE_IDS: tuple[str, ...] = (
-    "FRESNEL",
-    "FRESNEL_CAN1",
-    "EMU_FREE",
-    "EMU_TN",
-    "EMU_FRESNEL",
-    "EMU_MPS",
-    "EMU_SV",
-)
+    from .device import PasqalClient
 
 
-def _is_simulator(device_id: str) -> bool:
-    """Return ``True`` for emulator-style device IDs (``EMU_*``)."""
-    return device_id.upper().startswith("EMU_")
+class PasqalProviderError(QbraidRuntimeError):
+    """Exception raised by :class:`PasqalProvider`."""
 
 
-def _build_profile(device_id: str, num_qubits: int | None = None) -> TargetProfile:
+class PasqalSession(Session):
+    """Session for Pasqal Cloud's device catalog.
+
+    ``pasqal-cloud`` exposes device *specs* but not device *status*, so the
+    catalog (status and atom count) is read from ``GET /api/v1/devices``
+    directly. The endpoint is public; requests go through this session for its
+    connection pooling and retry policy.
+
+    The catalog is cached for :attr:`CACHE_TTL_SECONDS`, so listing every
+    device and reading each one's status costs one request rather than one per
+    device. A failed fetch is remembered for :attr:`FAILURE_TTL_SECONDS`, so
+    callers waiting on the lock during an outage re-raise it instead of each
+    repeating the request. ``qbraid.cache_disabled`` does not bypass this cache.
+    """
+
+    CACHE_TTL_SECONDS = 30.0
+    FAILURE_TTL_SECONDS = 5.0
+    # Read timeouts are retried, so a hung catalog costs about four of these.
+    REQUEST_TIMEOUT_SECONDS = 10.0
+
+    def __init__(self, core_url: str):
+        super().__init__(base_url=core_url.rstrip("/"))
+        self.add_user_agent(f"QbraidSDK/{qbraid_version}")
+        self.initialize_retry()
+        self._cache_lock = threading.Lock()
+        self._cached_records: dict[str, dict[str, Any]] | None = None
+        self._cached_at = 0.0
+        # The last fetch failure; a fresh error is raised from it each time, so a
+        # shared exception object does not accumulate tracebacks across callers.
+        self._failure: Exception | None = None
+        self._failed_at = 0.0
+
+    def get_device_records(self) -> dict[str, dict[str, Any]]:
+        """Return Pasqal's device catalog keyed by device type (e.g. ``"EMU_MPS"``).
+
+        A record without a ``device_type`` is skipped with a warning rather than
+        failing the whole catalog.
+
+        Returns:
+            A deep copy of the catalog; changing it, or a record in it, does not change the
+            cache.
+
+        Raises:
+            PasqalProviderError: If the catalog cannot be fetched or parsed, including when
+                ``data`` is not a list of records.
+        """
+        with self._cache_lock:
+            now = time.monotonic()
+            if self._cached_records is not None and now - self._cached_at < self.CACHE_TTL_SECONDS:
+                return copy.deepcopy(self._cached_records)
+            if self._failure is not None and now - self._failed_at < self.FAILURE_TTL_SECONDS:
+                raise PasqalProviderError(
+                    f"Failed to fetch the Pasqal device catalog: {self._failure}"
+                ) from self._failure
+
+            try:
+                response = self.get(
+                    f"{self.base_url}/api/v1/devices", timeout=self.REQUEST_TIMEOUT_SECONDS
+                )
+                response.raise_for_status()
+                records = response.json()["data"]
+                if not isinstance(records, list):
+                    raise TypeError(
+                        f"expected a list of device records, got {type(records).__name__}"
+                    )
+                catalog: dict[str, dict[str, Any]] = {}
+                for record in records:
+                    device_type = record.get("device_type") if isinstance(record, dict) else None
+                    if not device_type:
+                        logger.warning("Skipping Pasqal catalog record without a device_type.")
+                        continue
+                    catalog[device_type] = record
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                self._failure = exc
+                self._failed_at = time.monotonic()
+                raise PasqalProviderError(
+                    f"Failed to fetch the Pasqal device catalog: {exc}"
+                ) from exc
+
+            self._cached_records = catalog
+            self._cached_at = time.monotonic()
+            self._failure = None
+            return copy.deepcopy(catalog)
+
+
+def _core_url(client: PasqalClient) -> str:
+    """Return the core API URL the Pasqal client talks to.
+
+    Reading it off the client keeps the catalog in the same region and
+    environment as batch submission (e.g. ``region="sa"``).
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from pasqal_cloud.endpoints import CORE_API_URL
+
+    endpoints = getattr(getattr(client, "_client", None), "endpoints", None)
+    return getattr(endpoints, "core", None) or CORE_API_URL
+
+
+def _device_type_names() -> list[str]:
+    """Return every device type Pasqal Cloud accepts for batch submission."""
+    # pylint: disable-next=import-outside-toplevel
+    from pasqal_cloud.device import DeviceTypeName
+
+    return [member.value for member in DeviceTypeName]
+
+
+def _build_profile(device_id: str, record: dict[str, Any] | None = None) -> TargetProfile:
     """Build a :class:`TargetProfile` for a Pasqal device.
 
     Args:
         device_id: Pasqal device identifier (e.g. ``"FRESNEL"``, ``"EMU_FREE"``).
-        num_qubits: Optional max-qubit count, when known. Pasqal exposes device
-            constraints through ``SDK.get_device_specs_dict``; the value is
-            stored on the profile as additional metadata under
-            ``device_specs`` when provided by the caller.
+        record: The device's entry in Pasqal's catalog, when it is listed.
+            Supplies the maximum atom count. ``None`` for a device type
+            Pasqal accepts but does not currently list.
 
     Returns:
         A :class:`TargetProfile` describing the device for the qBraid runtime.
@@ -78,19 +175,52 @@ def _build_profile(device_id: str, num_qubits: int | None = None) -> TargetProfi
         alias="pulser",
         serialize=lambda sequence: sequence.to_abstract_repr(),
     )
+    record = record or {}
+    simulator = record.get("is_emulator")
+    if not isinstance(simulator, bool):
+        simulator = device_id.startswith("EMU_")
+    num_qubits = record.get("max_atom_num")
+    if isinstance(num_qubits, bool):
+        num_qubits = None
     return TargetProfile(
         device_id=device_id,
-        simulator=_is_simulator(device_id),
+        simulator=simulator,
         experiment_type=ExperimentType.ANALOG,
-        num_qubits=num_qubits,
+        num_qubits=num_qubits if isinstance(num_qubits, int) else None,
         program_spec=program_spec,
         provider_name="pasqal",
     )
 
 
+def _create_client(
+    username: str | None,
+    password: str | None,
+    project_id: str | None,
+    token_provider: TokenProvider | None,
+) -> PasqalClient:
+    """Construct the ``pasqal-cloud`` client.
+
+    ``pasqal-cloud`` 0.23 added ``PasqalCloudClient`` and deprecated ``SDK``
+    in its favour; 0.21 and 0.22 only have ``SDK``.
+    """
+    try:
+        # pylint: disable-next=import-outside-toplevel
+        from pasqal_cloud.pasqal_cloud_client import PasqalCloudClient as client_cls
+    except ImportError:  # pasqal-cloud 0.21 - 0.22
+        # pylint: disable-next=import-outside-toplevel
+        from pasqal_cloud import SDK as client_cls  # type: ignore[assignment,no-redef]
+
+    return client_cls(
+        username=username,
+        password=password,
+        token_provider=token_provider,
+        project_id=project_id,
+    )
+
+
 class PasqalProvider(QuantumProvider):
     """Implements qBraid's :class:`QuantumProvider` interface for Pasqal Cloud Services.
-    Authentication mirrors the ``pasqal_cloud.SDK`` constructor: provide a
+    Authentication mirrors the ``pasqal_cloud`` client constructor: provide a
     ``username`` / ``password`` pair, a ``token_provider``, or set the
     ``PASQAL_USERNAME``, ``PASQAL_PASSWORD``, and ``PASQAL_PROJECT_ID``
     environment variables.
@@ -112,7 +242,7 @@ class PasqalProvider(QuantumProvider):
         password: str | None = None,
         project_id: str | None = None,
         token_provider: TokenProvider | None = None,
-        sdk: PasqalSDK | None = None,
+        client: PasqalClient | None = None,
     ):
         """Initialize the Pasqal provider.
 
@@ -128,77 +258,73 @@ class PasqalProvider(QuantumProvider):
             token_provider: Custom :class:`pasqal_cloud.TokenProvider` for
                 machine-to-machine or pre-issued-token authentication. Takes
                 precedence over username/password when supplied.
-            sdk: Pre-built ``pasqal_cloud.SDK`` instance. When provided, all
-                other authentication arguments are ignored. Useful for testing
-                and advanced setups.
+            client: Pre-built ``pasqal_cloud`` client (``PasqalCloudClient`` or
+                the older ``SDK``). When provided, all other authentication
+                arguments are ignored. Useful for testing and advanced setups.
 
         Raises:
             ValueError: If no authentication material can be resolved.
         """
-        if sdk is not None:
-            self._sdk = sdk
-            return
+        if client is not None:
+            self._client = client
+        else:
+            # An unset CI secret exports as "", which must read as absent rather than be
+            # forwarded to the SDK as an empty credential.
+            resolved_project_id = project_id or os.getenv("PASQAL_PROJECT_ID") or None
+            resolved_username = username or os.getenv("PASQAL_USERNAME") or None
+            resolved_password = password or os.getenv("PASQAL_PASSWORD") or None
 
-        # pylint: disable-next=import-outside-toplevel
-        from pasqal_cloud import SDK
+            if token_provider is None and not resolved_username:
+                raise ValueError(
+                    "Pasqal authentication is required. Provide a `username` (and"
+                    " optionally a `password`), a `token_provider`, or set the"
+                    " PASQAL_USERNAME / PASQAL_PASSWORD environment variables."
+                )
 
-        # An unset CI secret exports as "", which must read as absent rather than be
-        # forwarded to the SDK as an empty credential.
-        resolved_project_id = project_id or os.getenv("PASQAL_PROJECT_ID") or None
-        resolved_username = username or os.getenv("PASQAL_USERNAME") or None
-        resolved_password = password or os.getenv("PASQAL_PASSWORD") or None
-
-        if token_provider is None and not resolved_username:
-            raise ValueError(
-                "Pasqal authentication is required. Provide a `username` (and"
-                " optionally a `password`), a `token_provider`, or set the"
-                " PASQAL_USERNAME / PASQAL_PASSWORD environment variables."
+            self._client = _create_client(
+                resolved_username, resolved_password, resolved_project_id, token_provider
             )
-
-        self._sdk = SDK(
-            username=resolved_username,
-            password=resolved_password,
-            token_provider=token_provider,
-            project_id=resolved_project_id,
-        )
+        self._session = PasqalSession(_core_url(self._client))
 
     @property
-    def sdk(self) -> PasqalSDK:
-        """Return the underlying :class:`pasqal_cloud.SDK` instance."""
-        return self._sdk
+    def client(self) -> PasqalClient:
+        """Return the underlying ``pasqal_cloud`` client."""
+        return self._client
 
-    def _device_specs(self) -> dict[str, str]:
-        """Return Pasqal device specs, swallowing transport errors.
+    @property
+    def session(self) -> PasqalSession:
+        """Return the session used to read Pasqal's device catalog."""
+        return self._session
 
-        ``get_device_specs_dict`` may require authentication, so we degrade
-        gracefully and return an empty dict on failure -- callers can still
-        instantiate emulator devices without it.
-
-        """
-        try:
-            return self._sdk.get_device_specs_dict()
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.warning("Could not fetch Pasqal device specs: %s", exc)
-            return {}
+    def _make_device(self, device_id: str, record: dict[str, Any] | None) -> PasqalDevice:
+        """Build a :class:`PasqalDevice` sharing this provider's client and session."""
+        return PasqalDevice(
+            profile=_build_profile(device_id, record), client=self._client, session=self._session
+        )
 
     @cached_method
     def get_devices(self) -> list[PasqalDevice]:
-        """Return the list of Pasqal devices currently available to the caller.
+        """Return every Pasqal device type, with limits from Pasqal's live catalog.
 
-        Falls back to a static enumeration of well-known device IDs when the
-        cloud spec endpoint is unreachable, so users can still build emulator
-        runs offline.
+        Device types Pasqal accepts but does not currently list (for example
+        a QPU in maintenance) are included; their :meth:`PasqalDevice.status`
+        reports them as offline.
+
+        Raises:
+            PasqalProviderError: If the device catalog cannot be fetched.
         """
-        specs = self._device_specs()
-        device_ids = set(specs.keys()) | set(_DEFAULT_DEVICE_IDS)
-        return [
-            PasqalDevice(profile=_build_profile(device_id), sdk=self._sdk)
-            for device_id in device_ids
-        ]
+        records = self._session.get_device_records()
+        device_ids = sorted(set(_device_type_names()) | set(records))
+        return [self._make_device(device_id, records.get(device_id)) for device_id in device_ids]
 
     @cached_method
     def get_device(self, device_id: str) -> PasqalDevice:
         """Return a :class:`PasqalDevice` for the given device identifier.
+
+        If the device catalog cannot be fetched, a device type ``pasqal-cloud``
+        accepts is still returned, without its atom count, since submission does
+        not use the catalog; its :meth:`~PasqalDevice.status` raises until the
+        catalog is back.
 
         Args:
             device_id: Pasqal device identifier (case-insensitive). Common
@@ -206,20 +332,24 @@ class PasqalProvider(QuantumProvider):
                 ``"EMU_TN"``, ``"EMU_FRESNEL"``, ``"EMU_MPS"``, and ``"EMU_SV"``.
 
         Raises:
-            ResourceNotFoundError: If the device identifier is not recognised
-                by Pasqal Cloud and is not one of the well-known defaults.
+            ResourceNotFoundError: If Pasqal Cloud neither lists nor accepts
+                the device identifier.
         """
         normalized = device_id.strip().upper()
-        specs = self._device_specs()
-        known = set(specs.keys()) | set(_DEFAULT_DEVICE_IDS)
+        try:
+            records = self._session.get_device_records()
+        except PasqalProviderError as exc:
+            logger.warning("Using Pasqal's known device types without the catalog: %s", exc)
+            records = {}
+        known = set(_device_type_names()) | set(records)
         if normalized not in known:
             raise ResourceNotFoundError(
                 f"Device '{device_id}' not found in Pasqal Cloud. "
                 f"Available devices: {sorted(known)}"
             )
-        return PasqalDevice(profile=_build_profile(normalized), sdk=self._sdk)
+        return self._make_device(normalized, records.get(normalized))
 
     def __hash__(self) -> int:
         # The SDK holds credentials and a session; pasqal_cloud objects are not
         # hashable, so we key on the project_id plus instance identity.
-        return hash(("pasqal", getattr(self._sdk, "project_id", None), id(self._sdk)))
+        return hash(("pasqal", getattr(self._client, "project_id", None), id(self._client)))
