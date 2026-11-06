@@ -64,7 +64,13 @@ class PennylaneTape(GateModelProgram):
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the Pennylane tape"""
-        return qml.matrix(self.program, wire_order=self.qubits)
+        # tape.wires is in first-use order; sort so wire 0 is the most significant qubit.
+        # Mixed label types (e.g. 0 and "a") have no natural order, so keep first-use order.
+        try:
+            wire_order = sorted(self.qubits)
+        except TypeError:
+            wire_order = self.qubits
+        return qml.matrix(self.program, wire_order=wire_order)
 
     def remove_idle_qubits(self) -> None:
         """Applies a given wire map to all operations in a tape."""
