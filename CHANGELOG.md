@@ -39,7 +39,7 @@ Writing an entry:
 - `QbraidDevice.get_calibrations()` now caches its result for five minutes per device, so repeated `best_qubits` calls no longer wait on a request each time. Use `qbraid.cache_disabled(device)` to fetch a new snapshot sooner ([#1501](https://github.com/qBraid/qBraid/pull/1501))
 
 ### Deprecated
-- `PasqalProvider.sdk`, `PasqalDevice.sdk` and `PasqalJob.sdk`, and the `sdk=` argument of `PasqalProvider` and `PasqalJob`, are renamed `client`, since they hold a `pasqal-cloud` client rather than its deprecated `SDK`. The old names still work and raise a `DeprecationWarning` ([#PR](https://github.com/qBraid/qBraid/pull/PR))
+- `PasqalProvider.sdk`, `PasqalDevice.sdk` and `PasqalJob.sdk`, and the `sdk=` argument of `PasqalProvider` and `PasqalJob`, are renamed `client`, since they hold a `pasqal-cloud` client rather than its deprecated `SDK`. The old names still work and raise a `DeprecationWarning` ([#1528](https://github.com/qBraid/qBraid/pull/1528))
 
 ### Removed
 
