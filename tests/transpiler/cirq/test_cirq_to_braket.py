@@ -122,6 +122,22 @@ def test_to_braket_bell_circuit(qreg):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+@pytest.mark.parametrize(
+    "qubits",
+    (
+        [cirq.NamedQubit("a_0"), cirq.NamedQubit("a_1"), cirq.NamedQubit("b_0")],
+        [cirq.GridQubit(0, 0), cirq.GridQubit(0, 1), cirq.GridQubit(1, 0)],
+        [cirq.NamedQubit("x"), cirq.NamedQubit("y"), cirq.NamedQubit("z")],
+    ),
+)
+def test_to_braket_qubits_without_distinct_integer_labels(qubits):
+    """Test that qubits whose integer labels collide or are missing stay distinct"""
+    cirq_circuit = Circuit(ops.CZ(qubits[0], qubits[1]), ops.H(qubits[2]))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert braket_circuit.qubit_count == 3
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
 def test_to_braket_non_parameterized_single_qubit_gates():
     """Test converting circuit containing non-parameterized single-qubits gates"""
     qreg = LineQubit.range(4)
