@@ -94,6 +94,14 @@ def test_from_braket_parameterized_single_qubit_gates(qubit_index):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+def test_from_braket_gphase():
+    """Test converting a circuit containing a global phase gate."""
+    braket_circuit = BKCircuit().h(0).gphase(np.pi / 2)  # pylint: disable=no-member
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+    assert np.allclose(cirq.unitary(cirq_circuit), 1j * cirq.unitary(cirq.H))
+
+
 def test_from_braket_non_parameterized_two_qubit_gates():
     """Test converting circuit containing non-parameterized two-qubit gates."""
     braket_circuit = BKCircuit()

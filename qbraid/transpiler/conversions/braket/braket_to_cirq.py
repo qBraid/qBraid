@@ -173,6 +173,9 @@ def _from_braket_target_instruction(
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
     try:
+        if nqubits == 0 and isinstance(instr.operator, braket_gates.GPhase):
+            return [cirq.global_phase_operation(np.exp(1j * instr.operator.angle))]
+
         if nqubits == 1:
             return _from_one_qubit_braket_instruction(instr, qubits)
 
