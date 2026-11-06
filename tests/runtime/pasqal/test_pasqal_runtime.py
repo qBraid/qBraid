@@ -700,6 +700,50 @@ class TestPasqalDevice:
             device.submit('{"stub": true}', shots=0)
 
 
+class TestBackendConfiguration:
+    """``PasqalDevice.submit(backend_configuration=...)``: the emulator settings sent to Pasqal."""
+
+    def test_submit_defaults_to_the_emulator_settings(self, mock_sdk):
+        """Without a configuration, none is sent and Pasqal uses the emulator's defaults."""
+        mock_sdk.create_batch.return_value = _make_batch()
+        PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE").submit('{"foo": 1}')
+        assert mock_sdk.create_batch.call_args.kwargs["backend_configuration"] is None
+
+    def test_submit_serializes_an_emulation_config(self, mock_sdk):
+        """A Pulser EmulationConfig is sent as its abstract representation."""
+        # pylint: disable-next=import-outside-toplevel
+        from pulser.backend import BitStrings, EmulationConfig
+
+        config = EmulationConfig(observables=[BitStrings()], prefer_device_noise_model=True)
+        mock_sdk.create_batch.return_value = _make_batch()
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        device.submit('{"foo": 1}', backend_configuration=config)
+        sent = mock_sdk.create_batch.call_args.kwargs["backend_configuration"]
+        assert sent == config.to_abstract_repr()
+        assert json.loads(sent)["prefer_device_noise_model"] is True
+
+    @pytest.mark.parametrize("as_dict", [False, True])
+    def test_submit_accepts_an_abstract_repr(self, mock_sdk, as_dict):
+        """The abstract representation is accepted as a string, or as the parsed dict."""
+        # pylint: disable-next=import-outside-toplevel
+        from pulser.backend import BitStrings, EmulationConfig
+
+        abstract_repr = EmulationConfig(observables=[BitStrings()]).to_abstract_repr()
+        mock_sdk.create_batch.return_value = _make_batch()
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        config = json.loads(abstract_repr) if as_dict else abstract_repr
+        device.submit('{"foo": 1}', backend_configuration=config)
+        sent = mock_sdk.create_batch.call_args.kwargs["backend_configuration"]
+        assert json.loads(sent) == json.loads(abstract_repr)
+
+    def test_submit_rejects_an_unreadable_configuration(self, mock_sdk):
+        """A configuration of the wrong type fails before anything is sent."""
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        with pytest.raises(PasqalDeviceError, match="EmulationConfig"):
+            device.submit('{"foo": 1}', backend_configuration=42)
+        mock_sdk.create_batch.assert_not_called()
+
+
 # ---------------------------------------------------------------------------
 # Job
 # ---------------------------------------------------------------------------
