@@ -258,13 +258,15 @@ class QbraidProvider(QuantumProvider):
 
     @cached_method(ttl=120)
     def get_devices(self, include_retired: bool = False, **kwargs) -> list[QbraidDevice]:
-        """Return a list of devices matching the specified filtering."""
+        """Return a list of devices matching the specified filtering.
 
-        try:
-            # TODO: Implement support for device query
-            devices = self.client.list_devices(include_retired=include_retired, **kwargs)
-        except (ValueError, QuantumRuntimeServiceRequestError) as err:
-            raise ResourceNotFoundError("No devices found matching given criteria.") from err
+        Raises:
+            ResourceNotFoundError: If no devices support direct access.
+            QuantumRuntimeServiceRequestError: If the service request fails.
+        """
+
+        # TODO: Implement support for device query
+        devices = self.client.list_devices(include_retired=include_retired, **kwargs)
 
         filtered_devices = [device for device in devices if device.directAccess is True]
 
@@ -282,13 +284,16 @@ class QbraidProvider(QuantumProvider):
             QuantumDevice: the quantum device corresponding to the given ID
 
         Raises:
-            ResourceNotFoundError: If device cannot be loaded from quantum service data
-            ValueError: If qBraid does not support direct access to the device
+            ResourceNotFoundError: If the service reports that the device does not exist (404).
+            QuantumRuntimeServiceRequestError: For other service or transport failures.
+            ValueError: If device data is invalid or direct access is unsupported.
         """
         try:
             device_model = self.client.get_device(device_id)
-        except (ValueError, QuantumRuntimeServiceRequestError) as err:
-            raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+        except QuantumRuntimeServiceRequestError as err:
+            if err.status_code == 404:
+                raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+            raise
 
         if not device_model.directAccess:
             raise ValueError(

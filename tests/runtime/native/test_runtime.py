@@ -17287,7 +17287,9 @@ class MockQuantumRuntimeClient(QuantumRuntimeClient):
         }
         if device_qrn in device_map:
             return device_map[device_qrn]
-        raise ValueError(f"Device {device_qrn} not found in mock data")
+        raise QuantumRuntimeServiceRequestError(
+            f"Device {device_qrn} not found in mock data"
+        ) from RequestsApiError("Device not found", status_code=404)
 
     def create_job(self, request: JobRequest) -> RuntimeJob:
         """Submits a new quantum job."""
