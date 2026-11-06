@@ -21,14 +21,16 @@ import copy
 import json
 import sys
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
+import requests
 
 pytest.importorskip("pasqal_cloud")
 pytest.importorskip("pulser")
 
 # pylint: disable=wrong-import-position
+from pasqal_cloud import errors as pasqal_errors  # noqa: E402
 from pasqal_cloud.utils.constants import BatchStatus  # noqa: E402
 from pulser import Register, Sequence  # noqa: E402
 from pulser.devices import AnalogDevice  # noqa: E402
@@ -41,6 +43,7 @@ from qbraid.runtime.pasqal.device import PasqalDeviceError  # noqa: E402
 from qbraid.runtime.pasqal.job import (  # noqa: E402
     PasqalJobError,
     _map_pasqal_status,
+    _pasqal_cloud_errors,
     _status_map,
 )
 from qbraid.runtime.pasqal.provider import (  # noqa: E402
@@ -808,4 +811,105 @@ class TestPasqalJob:
         mock_sdk.get_batch.return_value = _make_batch(jobs=[job_record])
         job = PasqalJob(job_id="batch-1", sdk=mock_sdk)
         with pytest.raises(PasqalJobError, match="no counter result"):
+            job.result()
+
+
+# ---------------------------------------------------------------------------
+# pasqal-cloud errors
+# ---------------------------------------------------------------------------
+
+# Response bodies Pasqal Cloud returned live (2026-11-05) for a 20-atom sequence on
+# EMU_FREE, an unknown batch id, and a cancel of a finished batch.
+ATOMS_EXCEEDED_422 = {
+    "status": "fail",
+    "message": "Unprocessable Content",
+    "code": "CB1119",
+    "data": {
+        "description": [
+            {
+                "loc": ["jobs", 0, "sequence"],
+                "msg": "The sequence's number of atoms (20) exceeds the maximum number of "
+                "atoms supported by this device (12)",
+            }
+        ]
+    },
+}
+BATCH_NOT_FOUND_404 = {
+    "status": "fail",
+    "message": "Not found.",
+    "code": "CB1100",
+    "data": {"id": "6aea658f-24fa-48a5-8387-3f63e678cb86", "description": "Batch not found."},
+}
+CANCEL_DONE_400 = {
+    "status": "fail",
+    "message": "Bad request.",
+    "code": "CB1104",
+    "data": {
+        "description": "Batch status is not PENDING or RUNNING but DONE and cannot be canceled."
+    },
+}
+
+
+def _http_error(status_code: int, body: dict[str, Any]) -> requests.HTTPError:
+    """The ``HTTPError`` pasqal-cloud wraps, carrying Pasqal's JSON error body."""
+    response = requests.Response()
+    response.status_code = status_code
+    response._content = json.dumps(body).encode()  # pylint: disable=protected-access
+    return requests.HTTPError(f"{status_code} Client Error", response=response)
+
+
+class TestPasqalCloudErrors:
+    """pasqal-cloud's errors derive from ``BaseException``, so ``except Exception`` missed them.
+
+    Each test raises the error pasqal-cloud itself raises for a response Pasqal returned
+    live; before the fix it escaped the SDK unwrapped.
+    """
+
+    def test_every_base_exception_error_is_caught(self):
+        expected = {
+            cls
+            for cls in vars(pasqal_errors).values()
+            if isinstance(cls, type) and issubclass(cls, BaseException)
+        }
+        caught = _pasqal_cloud_errors()
+        assert Exception in caught
+        assert all(issubclass(cls, caught) for cls in expected)
+
+    def test_submit_rejected_batch_raises_device_error(self, mock_sdk):
+        mock_sdk.create_batch.side_effect = pasqal_errors.BatchCreationError(
+            _http_error(422, ATOMS_EXCEEDED_422)
+        )
+        device = PasqalProvider(sdk=mock_sdk).get_device("EMU_FREE")
+        with pytest.raises(PasqalDeviceError, match="CB1119") as info:
+            device.submit('{"stub": true}')
+        assert isinstance(info.value.__cause__, pasqal_errors.BatchCreationError)
+
+    def test_status_of_unknown_batch_raises_job_error(self, mock_sdk):
+        mock_sdk.get_batch.side_effect = pasqal_errors.BatchFetchingError(
+            _http_error(404, BATCH_NOT_FOUND_404)
+        )
+        job = PasqalJob(job_id="batch-1", sdk=mock_sdk)
+        with pytest.raises(PasqalJobError, match="Batch not found") as info:
+            job.status()
+        assert isinstance(info.value.__cause__, pasqal_errors.BatchFetchingError)
+
+    def test_cancel_of_finished_batch_raises_job_error(self, mock_sdk):
+        mock_sdk.cancel_batch.side_effect = pasqal_errors.BatchCancellingError(
+            _http_error(400, CANCEL_DONE_400)
+        )
+        job = PasqalJob(job_id="batch-1", sdk=mock_sdk)
+        with pytest.raises(PasqalJobError, match="cannot be canceled"):
+            job.cancel()
+
+    def test_result_download_failure_raises_job_error(self, mock_sdk):
+        job_record = MagicMock()
+        job_record.id = "j1"
+        type(job_record).result = PropertyMock(
+            side_effect=pasqal_errors.WorkloadResultsConnectionError(
+                requests.ConnectionError("connection reset")
+            )
+        )
+        mock_sdk.get_batch.return_value = _make_batch(jobs=[job_record])
+        job = PasqalJob(job_id="batch-1", sdk=mock_sdk)
+        with pytest.raises(PasqalJobError, match="Unable to download the results"):
             job.result()
