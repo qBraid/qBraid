@@ -42,6 +42,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- `device.run()` on a batch checks device status once instead of once per program, so large batches no longer exhaust the device-lookup rate limit. Every program is still validated ([#1532](https://github.com/qBraid/qBraid/pull/1532))
 - A request Pasqal Cloud refuses, such as a rejected batch, raises `PasqalDeviceError` or `PasqalJobError` with Pasqal's reason instead of a raw `pasqal-cloud` error that `except Exception` misses, and an unrecognised batch status raises instead of leaving `wait_for_final_state()` polling a finished job ([#1520](https://github.com/qBraid/qBraid/pull/1520), [#1522](https://github.com/qBraid/qBraid/pull/1522))
 - OpenQASM 3 programs that include `stdgates.inc`, as Qiskit exports them, no longer fail on IQM Emerald and Garnet with "include statements are not supported" when sent with `experimental_capabilities="ALL"`. The include is removed and gates are renamed to Braket's. A gate Braket does not recognise now fails before submission, naming the gate ([#1515](https://github.com/qBraid/qBraid/pull/1515))
 - Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
