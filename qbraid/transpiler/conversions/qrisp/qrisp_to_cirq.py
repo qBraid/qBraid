@@ -33,6 +33,29 @@ if TYPE_CHECKING:
     from cirq import Circuit
 
 
+def _decompose_u3(qrisp_qc: qrisp_.QuantumCircuit) -> qrisp_.QuantumCircuit:
+    """Rewrite each ``u3`` as rz-ry-rz plus its global phase.
+
+    Qrisp's Cirq converter has no mapping for ``u3`` and can't decompose it, but
+    qiskit_to_qrisp lowers phase gates (sdg, tdg, p, u1) to ``u3``.
+    """
+    if not any(instr.op.name == "u3" for instr in qrisp_qc.data):
+        return qrisp_qc
+
+    decomposed = qrisp_qc.clearcopy()
+    for instr in qrisp_qc.data:
+        if instr.op.name != "u3":
+            decomposed.append(instr.op, instr.qubits, instr.clbits)
+            continue
+        theta, phi, lam = instr.op.params
+        qubit = instr.qubits[0]
+        decomposed.rz(lam, qubit)
+        decomposed.ry(theta, qubit)
+        decomposed.rz(phi, qubit)
+        decomposed.gphase((phi + lam) / 2 + instr.op.global_phase, qubit)
+    return decomposed
+
+
 @weight(1)
 def qrisp_to_cirq(qrisp_qc: qrisp_.QuantumCircuit) -> Circuit:
     """Returns a Cirq circuit equivalent to the input Qrisp circuit.
@@ -43,7 +66,7 @@ def qrisp_to_cirq(qrisp_qc: qrisp_.QuantumCircuit) -> Circuit:
     Returns:
         Cirq Circuit object equivalent to the input Qrisp circuit.
     """
-    circuit = qrisp_qc.to_cirq()
+    circuit = _decompose_u3(qrisp_qc).to_cirq()
     # qrisp emits extended-precision (numpy.longdouble) gate exponents, which cirq's QASM
     # exporter cannot format ("Invalid format specifier 'half_turns'"). Recast them to
     # plain Python float so downstream to_qasm() works.

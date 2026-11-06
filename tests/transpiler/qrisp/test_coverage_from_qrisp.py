@@ -27,6 +27,7 @@ import pytest
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler import ConversionGraph, transpile
+from qbraid.transpiler.conversions.qrisp import qrisp_to_cirq
 
 try:
     import qrisp
@@ -254,3 +255,21 @@ def test_qrisp_to_pytket_keeps_qubit_order_across_digit_boundaries(first, gate, 
 
     target = transpile(qc, "pytket", conversion_graph=conversion_graph)
     assert circuits_allclose(qc, target, strict_gphase=False)
+
+
+@pytest.mark.parametrize(
+    ("theta", "phi", "lam"), [(0.7, 1.1, -0.4), (0.0, 0.0, -np.pi / 2), (np.pi, 0.0, 0.0)]
+)
+def test_qrisp_to_cirq_u3(theta, phi, lam):
+    """qrisp -> cirq converts u3, which qiskit_to_qrisp emits for sdg, tdg and p."""
+    pytest.importorskip("cirq")
+
+    qc = qrisp.QuantumCircuit(1)
+    qc.u3(theta, phi, lam, 0)
+    expected = np.array(
+        [
+            [np.cos(theta / 2), -np.exp(1j * lam) * np.sin(theta / 2)],
+            [np.exp(1j * phi) * np.sin(theta / 2), np.exp(1j * (phi + lam)) * np.cos(theta / 2)],
+        ]
+    )
+    assert np.allclose(qrisp_to_cirq(qc).unitary(), expected)
