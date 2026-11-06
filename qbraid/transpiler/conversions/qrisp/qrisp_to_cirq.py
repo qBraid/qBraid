@@ -33,6 +33,33 @@ if TYPE_CHECKING:
     from cirq import Circuit
 
 
+_UNMAPPED_GATES = ("cy", "u3")
+
+
+def _contains_unmapped(op: qrisp_.Operation) -> bool:
+    if op.name in _UNMAPPED_GATES:
+        return True
+    return op.definition is not None and any(_contains_unmapped(i.op) for i in op.definition.data)
+
+
+def _inline_unmapped(qrisp_qc: qrisp_.QuantumCircuit) -> qrisp_.QuantumCircuit:
+    """Inline the composite gates that contain a ``cy`` or ``u3``, at any depth.
+
+    Qrisp's Cirq converter inlines composites itself, after the rewrites below have run,
+    so a nested ``cy`` or ``u3`` would otherwise still reach it.
+    """
+    if not any(_contains_unmapped(instr.op) for instr in qrisp_qc.data):
+        return qrisp_qc
+    # pylint: disable-next=import-outside-toplevel
+    from qrisp.circuit.transpiler import transpile
+
+    # cy and u3 themselves are kept: the rewrites below handle them exactly.
+    return transpile(
+        qrisp_qc,
+        transpile_predicate=lambda op: op.name not in _UNMAPPED_GATES and _contains_unmapped(op),
+    )
+
+
 def _decompose_u3(qrisp_qc: qrisp_.QuantumCircuit) -> qrisp_.QuantumCircuit:
     """Rewrite each ``u3`` as rz-ry-rz plus its global phase.
 
@@ -93,7 +120,7 @@ def qrisp_to_cirq(qrisp_qc: qrisp_.QuantumCircuit) -> Circuit:
     Returns:
         Cirq Circuit object equivalent to the input Qrisp circuit.
     """
-    circuit = _decompose_cy(_decompose_u3(qrisp_qc)).to_cirq()
+    circuit = _decompose_cy(_decompose_u3(_inline_unmapped(qrisp_qc))).to_cirq()
     # qrisp emits extended-precision (numpy.longdouble) gate exponents, which cirq's QASM
     # exporter cannot format ("Invalid format specifier 'half_turns'"). Recast them to
     # plain Python float so downstream to_qasm() works.
