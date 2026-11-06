@@ -19,6 +19,7 @@ Module defining Pasqal provider class.
 
 from __future__ import annotations
 
+import copy
 import os
 import threading
 import time
@@ -85,15 +86,17 @@ class PasqalSession(Session):
         failing the whole catalog.
 
         Returns:
-            A copy of the catalog; changing it does not change the cache.
+            A deep copy of the catalog; changing it, or a record in it, does not change the
+            cache.
 
         Raises:
-            PasqalProviderError: If the catalog cannot be fetched or parsed.
+            PasqalProviderError: If the catalog cannot be fetched or parsed, including when
+                ``data`` is not a list of records.
         """
         with self._cache_lock:
             now = time.monotonic()
             if self._cached_records is not None and now - self._cached_at < self.CACHE_TTL_SECONDS:
-                return dict(self._cached_records)
+                return copy.deepcopy(self._cached_records)
             if self._failure is not None and now - self._failed_at < self.FAILURE_TTL_SECONDS:
                 raise PasqalProviderError(
                     f"Failed to fetch the Pasqal device catalog: {self._failure}"
@@ -105,6 +108,10 @@ class PasqalSession(Session):
                 )
                 response.raise_for_status()
                 records = response.json()["data"]
+                if not isinstance(records, list):
+                    raise TypeError(
+                        f"expected a list of device records, got {type(records).__name__}"
+                    )
                 catalog: dict[str, dict[str, Any]] = {}
                 for record in records:
                     device_type = record.get("device_type") if isinstance(record, dict) else None
@@ -122,7 +129,7 @@ class PasqalSession(Session):
             self._cached_records = catalog
             self._cached_at = time.monotonic()
             self._failure = None
-            return dict(catalog)
+            return copy.deepcopy(catalog)
 
 
 def _core_url(client: PasqalClient) -> str:

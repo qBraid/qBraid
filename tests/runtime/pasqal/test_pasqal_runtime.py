@@ -18,6 +18,7 @@
 from __future__ import annotations
 
 import copy
+import importlib.util
 import json
 import sys
 from typing import Any
@@ -115,6 +116,10 @@ CATALOG: dict[str, dict[str, Any]] = {
         "is_emulator": True,
     },
 }
+
+# The class PasqalProvider builds: pasqal-cloud 0.21-0.22, which the extra allows, have only SDK.
+_HAS_CLIENT = importlib.util.find_spec("pasqal_cloud.pasqal_cloud_client") is not None
+CLIENT_CLASS = f"pasqal_cloud.{'pasqal_cloud_client.PasqalCloudClient' if _HAS_CLIENT else 'SDK'}"
 
 ALL_DEVICE_TYPES = {
     "FRESNEL",
@@ -294,12 +299,15 @@ class TestPasqalSession:
             assert get.call_count == 2
 
     def test_get_device_records_returns_a_copy(self):
-        """Changing a returned catalog does not change the cache."""
+        """Changing a returned catalog, or a record in it, does not change the cache."""
         session = PasqalSession("https://apis.pasqal.cloud/core-fast")
-        payload = {"data": list(CATALOG.values())}
+        payload = {"data": copy.deepcopy(list(CATALOG.values()))}
         with patch.object(session, "get", return_value=self._response(payload)):
             session.get_device_records().pop("EMU_FREE")
-            assert "EMU_FREE" in session.get_device_records()
+            session.get_device_records()["EMU_MPS"]["status"] = "DOWN"
+            records = session.get_device_records()
+        assert "EMU_FREE" in records
+        assert records["EMU_MPS"]["status"] == "UP"
 
     def test_get_device_records_remembers_a_failure_briefly(self):
         """During an outage, callers re-raise the recent failure instead of refetching."""
@@ -325,10 +333,13 @@ class TestPasqalSession:
             with pytest.raises(PasqalProviderError, match="device catalog"):
                 session.get_device_records()
 
-    def test_get_device_records_malformed_payload(self):
-        """A payload without ``data`` raises PasqalProviderError."""
+    @pytest.mark.parametrize(
+        "payload", [{"unexpected": []}, {"data": {"EMU_FREE": {}}}, {"data": "EMU_FREE"}]
+    )
+    def test_get_device_records_malformed_payload(self, payload):
+        """A payload without a list of records in ``data`` raises, not an empty catalog."""
         session = PasqalSession("https://apis.pasqal.cloud/core-fast")
-        with patch.object(session, "get", return_value=self._response({"unexpected": []})):
+        with patch.object(session, "get", return_value=self._response(payload)):
             with pytest.raises(PasqalProviderError, match="device catalog"):
                 session.get_device_records()
 
@@ -366,7 +377,7 @@ class TestPasqalProvider:
     def test_init_with_username_password(self):
         """Username, password and project are forwarded to PasqalCloudClient."""
         client_mock = MagicMock(name="PasqalCloudClient")
-        target = "pasqal_cloud.pasqal_cloud_client.PasqalCloudClient"
+        target = CLIENT_CLASS
         with patch(target, return_value=client_mock) as ctor:
             provider = PasqalProvider(
                 username="me@example.com",
@@ -398,7 +409,7 @@ class TestPasqalProvider:
         monkeypatch.setenv("PASQAL_PASSWORD", "envpass")
         monkeypatch.setenv("PASQAL_PROJECT_ID", "env-proj")
         client_mock = MagicMock(name="PasqalCloudClient")
-        target = "pasqal_cloud.pasqal_cloud_client.PasqalCloudClient"
+        target = CLIENT_CLASS
         with patch(target, return_value=client_mock) as ctor:
             PasqalProvider()
         kwargs = ctor.call_args.kwargs
@@ -410,7 +421,7 @@ class TestPasqalProvider:
         """A token provider is forwarded and no username is required."""
         token_provider = MagicMock(name="TokenProvider")
         client_mock = MagicMock(name="PasqalCloudClient")
-        target = "pasqal_cloud.pasqal_cloud_client.PasqalCloudClient"
+        target = CLIENT_CLASS
         with patch(target, return_value=client_mock) as ctor:
             PasqalProvider(token_provider=token_provider, project_id="proj-1")
         kwargs = ctor.call_args.kwargs
@@ -478,6 +489,7 @@ class TestPasqalProvider:
         assert device.submit('{"foo": 1}', shots=10).id == "batch-xyz"
         with pytest.raises(PasqalProviderError, match="device catalog"):
             device.status()
+        assert device.run(_make_pulser_sequence(), shots=10).id == "batch-xyz"
 
     def test_get_device_unknown_without_catalog(self, mock_client, monkeypatch):
         """Without the catalog, only device types pasqal-cloud accepts resolve."""
