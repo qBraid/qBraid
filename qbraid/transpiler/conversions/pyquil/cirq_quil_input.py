@@ -28,7 +28,7 @@ from typing import Callable, TypeAlias, Union, cast
 
 import numpy as np
 import sympy
-from cirq import Circuit, LineQubit
+from cirq import Circuit, LineQubit, inverse
 from cirq.ops import (
     CCNOT,
     CNOT,
@@ -449,6 +449,20 @@ def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
     return defgates
 
 
+def _apply_modifiers(gate: Gate, modifiers: list[str]) -> Gate:
+    """Applies Quil gate modifiers to a Cirq gate.
+
+    Quil modifiers apply right to left (the leftmost is outermost), and each ``CONTROLLED``
+    takes the next leading qubit as its control.
+    """
+    for modifier in reversed(modifiers):
+        if modifier == "DAGGER":
+            gate = inverse(gate)
+        elif modifier == "CONTROLLED":
+            gate = gate.controlled(1)
+    return gate
+
+
 def circuit_from_quil(quil: str) -> Circuit:
     """Convert a Quil program to a Cirq Circuit.
 
@@ -494,12 +508,15 @@ def circuit_from_quil(quil: str) -> Circuit:
             line_qubits = list(LineQubit(q.index) for q in inst.qubits)
             if quil_gate_name not in defined_gates:
                 raise UndefinedQuilGate(f"Quil gate {quil_gate_name} not supported in Cirq.")
+            if "FORKED" in inst.modifiers:
+                raise UnsupportedQuilInstruction(f"Quil FORKED modifier not supported: {inst}")
             cirq_gate_fn = defined_gates[quil_gate_name]
             if quil_gate_params:
                 cirq_params = [_quil_param_to_sympy(p, declared_sizes) for p in quil_gate_params]
-                circuit += cast(Callable[..., Gate], cirq_gate_fn)(*cirq_params)(*line_qubits)
+                cirq_gate = cast(Callable[..., Gate], cirq_gate_fn)(*cirq_params)
             else:
-                circuit += cirq_gate_fn(*line_qubits)
+                cirq_gate = cast(Gate, cirq_gate_fn)
+            circuit += _apply_modifiers(cirq_gate, inst.modifiers)(*line_qubits)
 
         # Convert pyQuil MEASURE operations to Cirq MeasurementGate objects.
         elif isinstance(inst, PyQuilMeasurement):

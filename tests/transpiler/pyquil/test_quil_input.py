@@ -228,3 +228,37 @@ def test_ising_gates_match_pyquil_unitary(gate_name):
         circuit.unitary(qubit_order=LineQubit.range(2)),
         program_unitary(Program(quil), n_qubits=2),
     )
+
+
+_S = np.diag([1, 1j])
+_Y = np.array([[0, -1j], [1j, 0]])
+_H = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+
+
+def _controlled(u: np.ndarray) -> np.ndarray:
+    return np.block([[np.eye(2), np.zeros((2, 2))], [np.zeros((2, 2)), u]])
+
+
+@pytest.mark.parametrize(
+    "quil, expected",
+    [
+        ("DAGGER S 0", _S.conj().T),
+        ("DAGGER RX(0.3) 0", rx(-0.3)._unitary_()),
+        ("CONTROLLED Y 0 1", _controlled(_Y)),
+        ("CONTROLLED H 1 0", np.kron(np.eye(2), np.diag([1, 0])) + np.kron(_H, np.diag([0, 1]))),
+        ("CONTROLLED DAGGER S 0 1", _controlled(_S.conj().T)),
+        ("DAGGER CONTROLLED S 0 1", _controlled(_S.conj().T)),
+        ("CONTROLLED CONTROLLED X 0 1 2", CCNOT._unitary_()),
+    ],
+)
+def test_gate_modifiers(quil, expected):
+    """DAGGER and CONTROLLED modifiers are applied, not dropped."""
+    circuit = circuit_from_quil(quil)
+    n_qubits = expected.shape[0].bit_length() - 1
+    assert np.allclose(circuit.unitary(qubit_order=LineQubit.range(n_qubits)), expected)
+
+
+def test_forked_modifier_raises():
+    """FORKED has no Cirq counterpart here, so it is refused rather than dropped."""
+    with pytest.raises(UnsupportedQuilInstruction):
+        circuit_from_quil("FORKED RX(0.1, 0.2) 0 1")
