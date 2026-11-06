@@ -31,6 +31,8 @@ import cirq
 import numpy as np
 import pytest
 from pyqasm.exceptions import PyQasmError
+from qbraid_core.exceptions import RequestsApiError
+from qbraid_core.services.runtime import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled, clear_cache
@@ -273,9 +275,8 @@ def test_provider_get_devices(mock_client):
     assert qir_device.id == "qbraid:qbraid:sim:qir-sv"
 
 
-def test_provider_get_devices_raises_for_no_results(mock_client):
-    """Test raising ResourceNotFoundError when no devices are found."""
-    # This test checks that get_device raises an error for a non-existent device
+def test_provider_get_device_reports_missing_resource(mock_client):
+    """A client 404 is reported as a missing device."""
     client = mock_client
     provider = QbraidProvider(client=client)
     with pytest.raises(ResourceNotFoundError, match="Device .* not found"):
@@ -343,12 +344,12 @@ def test_provider_get_devices_bypass_cache(mock_client, device_data_qir, monkeyp
     provider.get_devices.cache_clear()
 
 
-def test_provider_search_devices_raises_for_bad_client(mock_client):
-    """Test raising ResourceNotFoundError when the client fails to authenticate."""
+def test_provider_get_devices_keeps_client_value_error(mock_client):
+    """Invalid client data must retain its ValueError."""
     provider = QbraidProvider(client=mock_client)
     # Mock client.list_devices to raise an error
     mock_client.list_devices = Mock(side_effect=ValueError("Invalid status"))
-    with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria"):
+    with pytest.raises(ValueError, match="Invalid status"):
         provider.get_devices()
 
 
@@ -457,7 +458,9 @@ class FakeClient:
 
     def get_device(self, qbraid_id):
         """Mock get device."""
-        raise ValueError("Device not found")
+        raise QuantumRuntimeServiceRequestError("Device not found") from RequestsApiError(
+            "Device not found", status_code=404
+        )
 
 
 def test_save_config():

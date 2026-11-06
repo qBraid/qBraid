@@ -20,6 +20,7 @@ Module defining mock data and classes for testing the runtime module.
 from typing import Any
 from unittest.mock import MagicMock
 
+from qbraid_core.exceptions import RequestsApiError
 from qbraid_core.services.runtime.exceptions import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import (
     BatchResult,
@@ -533,7 +534,9 @@ class MockClient:
                     break
 
         if device_data is None:
-            raise ValueError(f"Device {device_qrn} not found in mock data")
+            raise QuantumRuntimeServiceRequestError(
+                f"Device {device_qrn} not found in mock data"
+            ) from RequestsApiError("Device not found", status_code=404)
 
         return RuntimeDevice.model_validate(device_data["data"])
 
