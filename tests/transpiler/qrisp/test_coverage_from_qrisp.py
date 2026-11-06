@@ -273,3 +273,30 @@ def test_qrisp_to_cirq_u3(theta, phi, lam):
         ]
     )
     assert np.allclose(qrisp_to_cirq(qc).unitary(), expected)
+
+
+@pytest.mark.parametrize(("control", "target"), [(0, 1), (1, 0)])
+def test_qrisp_to_cirq_cy(control, target):
+    """qrisp -> cirq converts cy, which qiskit_to_qrisp keeps in its basis."""
+    pytest.importorskip("cirq")
+
+    qc = qrisp.QuantumCircuit(2)
+    qc.cy(control, target)
+    y = np.array([[0, -1j], [1j, 0]])
+    factors = {control: (np.diag([1, 0]), np.diag([0, 1])), target: (np.eye(2), y)}
+    expected = np.kron(factors[0][0], factors[1][0]) + np.kron(factors[0][1], factors[1][1])
+    assert np.allclose(qrisp_to_cirq(qc).unitary(), expected)
+
+
+def test_qrisp_to_cirq_cy_open_control():
+    """qrisp -> cirq applies Y when an open-controlled cy's control is |0>."""
+    pytest.importorskip("cirq")
+    qiskit = pytest.importorskip("qiskit")
+    # pylint: disable-next=import-outside-toplevel
+    from qrisp.interface.converter import convert_from_qiskit
+
+    source = qiskit.QuantumCircuit(2)
+    source.cy(0, 1, ctrl_state=0)
+    y = np.array([[0, -1j], [1j, 0]])
+    expected = np.kron(np.diag([1, 0]), y) + np.kron(np.diag([0, 1]), np.eye(2))
+    assert np.allclose(qrisp_to_cirq(convert_from_qiskit(source)).unitary(), expected)
