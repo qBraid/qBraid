@@ -27,7 +27,7 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
-from .job import PasqalJob, _pasqal_cloud_errors, _warn_sdk_renamed
+from .job import PasqalJob, _pasqal_cloud_errors
 
 if TYPE_CHECKING:
     from pasqal_cloud import SDK
@@ -119,12 +119,6 @@ class PasqalDevice(QuantumDevice):
     @property
     def client(self) -> PasqalClient:
         """Return the underlying ``pasqal_cloud`` client."""
-        return self._client
-
-    @property
-    def sdk(self) -> PasqalClient:
-        """Deprecated alias for :attr:`client`."""
-        _warn_sdk_renamed("PasqalDevice")
         return self._client
 
     def __str__(self):

@@ -20,7 +20,6 @@ Module defining Pasqal job class.
 from __future__ import annotations
 
 import functools
-import warnings
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -65,15 +64,6 @@ _UNENUMERATED_STATUSES: dict[str, JobStatus] = {"PAUSED": JobStatus.QUEUED}
 
 class PasqalJobError(QbraidRuntimeError):
     """Exception raised by :class:`PasqalJob`."""
-
-
-def _warn_sdk_renamed(owner: str) -> None:
-    """Warn that ``<owner>.sdk`` / ``sdk=`` is now ``client``."""
-    warnings.warn(
-        f"{owner}'s `sdk` is deprecated and will be removed in a future release; use `client`.",
-        DeprecationWarning,
-        stacklevel=3,
-    )
 
 
 @functools.cache
@@ -166,8 +156,6 @@ class PasqalJob(QuantumJob):
         job_id: str,
         client: PasqalClient | None = None,
         device: PasqalDevice | None = None,
-        *,
-        sdk: PasqalClient | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the Pasqal job.
@@ -178,7 +166,6 @@ class PasqalJob(QuantumJob):
                 client is taken from ``device.client``; one of the two must be
                 provided.
             device: The :class:`PasqalDevice` the job was submitted to.
-            sdk: Deprecated alias for ``client``.
             **kwargs: Forwarded to :class:`QuantumJob`.
 
         Raises:
@@ -186,9 +173,6 @@ class PasqalJob(QuantumJob):
                 is available.
         """
         super().__init__(job_id=job_id, device=device, **kwargs)
-        if sdk is not None:
-            _warn_sdk_renamed("PasqalJob")
-            client = client if client is not None else sdk
         if client is None and device is not None:
             client = device.client
         if client is None:
@@ -202,12 +186,6 @@ class PasqalJob(QuantumJob):
     @property
     def client(self) -> PasqalClient:
         """Return the underlying ``pasqal_cloud`` client."""
-        return self._client
-
-    @property
-    def sdk(self) -> PasqalClient:
-        """Deprecated alias for :attr:`client`."""
-        _warn_sdk_renamed("PasqalJob")
         return self._client
 
     def _fetch_batch(self) -> Batch:

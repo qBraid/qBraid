@@ -35,7 +35,6 @@ from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import PasqalDevice
-from .job import _warn_sdk_renamed
 
 if TYPE_CHECKING:
     from pasqal_cloud.authentication import TokenProvider
@@ -237,8 +236,6 @@ class PasqalProvider(QuantumProvider):
         project_id: str | None = None,
         token_provider: TokenProvider | None = None,
         client: PasqalClient | None = None,
-        *,
-        sdk: PasqalClient | None = None,
     ):
         """Initialize the Pasqal provider.
 
@@ -257,14 +254,10 @@ class PasqalProvider(QuantumProvider):
             client: Pre-built ``pasqal_cloud`` client (``PasqalCloudClient`` or
                 the older ``SDK``). When provided, all other authentication
                 arguments are ignored. Useful for testing and advanced setups.
-            sdk: Deprecated alias for ``client``.
 
         Raises:
             ValueError: If no authentication material can be resolved.
         """
-        if sdk is not None:
-            _warn_sdk_renamed("PasqalProvider")
-            client = client if client is not None else sdk
         if client is not None:
             self._client = client
         else:
@@ -289,12 +282,6 @@ class PasqalProvider(QuantumProvider):
     @property
     def client(self) -> PasqalClient:
         """Return the underlying ``pasqal_cloud`` client."""
-        return self._client
-
-    @property
-    def sdk(self) -> PasqalClient:
-        """Deprecated alias for :attr:`client`."""
-        _warn_sdk_renamed("PasqalProvider")
         return self._client
 
     @property
