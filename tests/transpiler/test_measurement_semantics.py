@@ -203,6 +203,25 @@ def test_cirq_to_braket_preserves_readout_order():
     assert _braket_counts(converted) == "".join(str(bit) for bit in PATTERN)
 
 
+def test_cirq_to_braket_readout_index_follows_key():
+    """The Braket bit for a qubit must be the index its key names, not its measurement order."""
+    pytest.importorskip("braket", reason="amazon-braket-sdk not installed")
+    from qbraid.transpiler.conversions.cirq import (  # pylint: disable=import-outside-toplevel
+        cirq_to_braket,
+    )
+
+    qubits = cirq.LineQubit.range(NUM_QUBITS)
+    # q0 -> c_1, q1 -> c_2, q2 -> c_0, measured in qubit order, so key order is q2, q0, q1
+    qubit_to_key = {0: 1, 1: 2, 2: 0}
+    circuit = _measured_in_qubit_order(qubits, qubit_to_key)
+    key_to_qubit = {key: qubit for qubit, key in qubit_to_key.items()}
+
+    converted = cirq_to_braket(circuit)
+
+    expected = "".join(str(PATTERN[key_to_qubit[i]]) for i in range(NUM_QUBITS))
+    assert _braket_counts(converted) == expected
+
+
 def test_cirq_to_braket_invert_mask_lands_on_distinct_bits():
     """An inverted measurement flips its own bit and no other."""
     pytest.importorskip("braket", reason="amazon-braket-sdk not installed")
