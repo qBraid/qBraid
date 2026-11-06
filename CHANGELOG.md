@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- `PasqalDevice.submit()` and `run()` take `backend_configuration`, a Pulser `EmulationConfig` or its abstract representation, to set emulator options such as noise or bond dimension ([#1524](https://github.com/qBraid/qBraid/pull/1524))
 - `PasqalDevice.submit()` accepts the `{"sequence_builder": ...}` payload qBraid stores for Pulser programs, and a `tags` argument recorded on the Pasqal batch ([#1520](https://github.com/qBraid/qBraid/pull/1520))
 - `BraketDevice.run(..., experimental_capabilities="ALL")` now submits an OpenQASM 3 program as written instead of converting it to a Braket `Circuit`, so IQM Emerald and Garnet can run feed-forward (`measure_ff`/`cc_prx` in a verbatim box), including through `QbraidProvider` with `runtime_options={"experimental_capabilities": "ALL"}`. `"NONE"`, which the Braket SDK rejects, now runs without the flag, and any other value raises a `ValueError` naming the accepted values before a task is created ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 - Added default AWS quantum task tags through `BraketDevice.set_options(tags=...)`. Defaults apply to single and batch submissions, and per-submission tags override matching keys ([#1471](https://github.com/qBraid/qBraid/pull/1471)).
