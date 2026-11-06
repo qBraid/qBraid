@@ -32,6 +32,7 @@ from .job import PasqalJob
 if TYPE_CHECKING:
     from pasqal_cloud import SDK
     from pasqal_cloud.pasqal_cloud_client import PasqalCloudClient
+    from pulser.backend import EmulationConfig
     from typing_extensions import TypeAlias
 
     from qbraid.runtime.profile import TargetProfile
@@ -68,6 +69,27 @@ def _serialize_run_input(run_input: str | dict[str, Any]) -> str:
         "Expected a Pulser abstract-representation string or a "
         "{'sequence_builder': ...} payload, got "
         f"{type(run_input).__name__}."
+    )
+
+
+def _serialize_backend_configuration(
+    config: EmulationConfig | str | dict[str, Any] | None,
+) -> str | None:
+    """Return the abstract-representation string Pasqal expects for ``backend_configuration``.
+
+    Raises:
+        PasqalDeviceError: If ``config`` is not an ``EmulationConfig``, a string or a dict.
+    """
+    if config is None or isinstance(config, str):
+        return config
+    if isinstance(config, dict):
+        return json.dumps(config)
+    to_abstract_repr = getattr(config, "to_abstract_repr", None)
+    if callable(to_abstract_repr):
+        return to_abstract_repr()
+    raise PasqalDeviceError(
+        "Expected `backend_configuration` to be a Pulser EmulationConfig or its abstract "
+        f"representation (a JSON string or dict), got {type(config).__name__}."
     )
 
 
@@ -151,6 +173,7 @@ class PasqalDevice(QuantumDevice):
         shots: int = 100,
         wait: bool = False,
         tags: list[str] | None = None,
+        backend_configuration: EmulationConfig | str | dict[str, Any] | None = None,
     ) -> PasqalJob:
         """Submit a Pulser sequence (or batch of them) to the Pasqal device.
 
@@ -172,6 +195,10 @@ class PasqalDevice(QuantumDevice):
             wait: When ``True``, block until the underlying batch reaches a
                 terminal state before returning. Defaults to ``False``.
             tags: Optional tags recorded on the Pasqal batch, e.g. a job name.
+            backend_configuration: Emulator settings, as a Pulser ``EmulationConfig``
+                (e.g. ``RemoteMPSBackend.default_config.with_changes(max_bond_dim=100)``)
+                or its abstract representation. Pasqal validates it and rejects the
+                batch if it cannot read it. Defaults to the emulator's own settings.
 
         Returns:
             A :class:`PasqalJob` referencing the submitted Pasqal Cloud batch.
@@ -198,6 +225,7 @@ class PasqalDevice(QuantumDevice):
         ]
 
         device_type = self._resolve_device_type(DeviceTypeName)
+        serialized_config = _serialize_backend_configuration(backend_configuration)
 
         try:
             batch = self._sdk.create_batch(
@@ -206,6 +234,7 @@ class PasqalDevice(QuantumDevice):
                 device_type=device_type,
                 wait=wait,
                 tags=tags,
+                backend_configuration=serialized_config,
             )
         except Exception as exc:  # pylint: disable=broad-exception-caught
             raise PasqalDeviceError(
