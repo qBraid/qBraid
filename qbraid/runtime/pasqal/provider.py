@@ -235,7 +235,7 @@ class PasqalProvider(QuantumProvider):
         password: str | None = None,
         project_id: str | None = None,
         token_provider: TokenProvider | None = None,
-        sdk: PasqalClient | None = None,
+        client: PasqalClient | None = None,
     ):
         """Initialize the Pasqal provider.
 
@@ -251,15 +251,15 @@ class PasqalProvider(QuantumProvider):
             token_provider: Custom :class:`pasqal_cloud.TokenProvider` for
                 machine-to-machine or pre-issued-token authentication. Takes
                 precedence over username/password when supplied.
-            sdk: Pre-built ``pasqal_cloud`` client (``PasqalCloudClient`` or
+            client: Pre-built ``pasqal_cloud`` client (``PasqalCloudClient`` or
                 the older ``SDK``). When provided, all other authentication
                 arguments are ignored. Useful for testing and advanced setups.
 
         Raises:
             ValueError: If no authentication material can be resolved.
         """
-        if sdk is not None:
-            self._sdk = sdk
+        if client is not None:
+            self._client = client
         else:
             # An unset CI secret exports as "", which must read as absent rather than be
             # forwarded to the SDK as an empty credential.
@@ -274,15 +274,15 @@ class PasqalProvider(QuantumProvider):
                     " PASQAL_USERNAME / PASQAL_PASSWORD environment variables."
                 )
 
-            self._sdk = _create_client(
+            self._client = _create_client(
                 resolved_username, resolved_password, resolved_project_id, token_provider
             )
-        self._session = PasqalSession(_core_url(self._sdk))
+        self._session = PasqalSession(_core_url(self._client))
 
     @property
-    def sdk(self) -> PasqalClient:
+    def client(self) -> PasqalClient:
         """Return the underlying ``pasqal_cloud`` client."""
-        return self._sdk
+        return self._client
 
     @property
     def session(self) -> PasqalSession:
@@ -292,7 +292,7 @@ class PasqalProvider(QuantumProvider):
     def _make_device(self, device_id: str, record: dict[str, Any] | None) -> PasqalDevice:
         """Build a :class:`PasqalDevice` sharing this provider's client and session."""
         return PasqalDevice(
-            profile=_build_profile(device_id, record), sdk=self._sdk, session=self._session
+            profile=_build_profile(device_id, record), client=self._client, session=self._session
         )
 
     @cached_method
@@ -345,4 +345,4 @@ class PasqalProvider(QuantumProvider):
     def __hash__(self) -> int:
         # The SDK holds credentials and a session; pasqal_cloud objects are not
         # hashable, so we key on the project_id plus instance identity.
-        return hash(("pasqal", getattr(self._sdk, "project_id", None), id(self._sdk)))
+        return hash(("pasqal", getattr(self._client, "project_id", None), id(self._client)))
