@@ -138,6 +138,20 @@ def test_to_braket_qubits_without_distinct_integer_labels(qubits):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+@pytest.mark.parametrize(
+    "qubits",
+    (
+        [cirq.NamedQubit("a_1"), cirq.NamedQubit("b_0"), cirq.NamedQubit("b_2")],
+        [cirq.NamedQubit("a_1"), cirq.NamedQubit("a_4"), cirq.NamedQubit("b_0")],
+    ),
+)
+def test_to_braket_keeps_qubit_order_when_labels_out_of_order(qubits):
+    """Test that distinct integer labels out of Cirq's qubit order don't permute qubits"""
+    cirq_circuit = Circuit(ops.CNOT(qubits[0], qubits[1]), ops.H(qubits[2]))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
 def test_to_braket_non_parameterized_single_qubit_gates():
     """Test converting circuit containing non-parameterized single-qubits gates"""
     qreg = LineQubit.range(4)
