@@ -42,9 +42,9 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- `PasqalProvider.get_device()` no longer fails when Pasqal's device catalog is unreachable: it returns the device without its atom count, so submissions still go through ([#1523](https://github.com/qBraid/qBraid/pull/1523))
 - `PasqalJob.status()` raises `PasqalJobError` for a batch status it does not recognise instead of returning `UNKNOWN`, which left `wait_for_final_state()` polling a finished job until it timed out ([#1520](https://github.com/qBraid/qBraid/pull/1520))
 - OpenQASM 3 programs that include `stdgates.inc`, as Qiskit exports them, no longer fail on IQM Emerald and Garnet with "include statements are not supported" when sent with `experimental_capabilities="ALL"`. The include is removed and gates are renamed to Braket's. A gate Braket does not recognise now fails before submission, naming the gate ([#1515](https://github.com/qBraid/qBraid/pull/1515))
+- `PasqalProvider.get_device()` no longer fails when Pasqal's device catalog is unreachable: it returns the device without its atom count, so submissions still go through ([#1523](https://github.com/qBraid/qBraid/pull/1523))
 - Connectivity plots exclude missing, invalid or placeholder calibration values from their color scales and use a valid reverse-direction reading when the forward reading is unavailable ([#1435](https://github.com/qBraid/qBraid/pull/1435)).
 - `QuantinuumDevice.submit()` now rejects an out-of-range `optimisation_level` with a `ValueError` before uploading anything, and accepts level 3, which NEXUS supports ([#1498](https://github.com/qBraid/qBraid/pull/1498))
 - OQC jobs now reject `shots` or `repeats` below 1 before submission, instead of silently using the default repeat count when `shots=0` ([#1442](https://github.com/qBraid/qBraid/pull/1442)).
