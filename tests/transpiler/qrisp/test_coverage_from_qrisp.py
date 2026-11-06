@@ -27,6 +27,7 @@ import pytest
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler import ConversionGraph, transpile
+from qbraid.transpiler.conversions.qrisp import qrisp_to_cirq
 
 try:
     import qrisp
@@ -254,3 +255,64 @@ def test_qrisp_to_pytket_keeps_qubit_order_across_digit_boundaries(first, gate, 
 
     target = transpile(qc, "pytket", conversion_graph=conversion_graph)
     assert circuits_allclose(qc, target, strict_gphase=False)
+
+
+@pytest.mark.parametrize(
+    ("theta", "phi", "lam"), [(0.7, 1.1, -0.4), (0.0, 0.0, -np.pi / 2), (np.pi, 0.0, 0.0)]
+)
+def test_qrisp_to_cirq_u3(theta, phi, lam):
+    """qrisp -> cirq converts u3, which qiskit_to_qrisp emits for sdg, tdg and p."""
+    pytest.importorskip("cirq")
+
+    qc = qrisp.QuantumCircuit(1)
+    qc.u3(theta, phi, lam, 0)
+    expected = np.array(
+        [
+            [np.cos(theta / 2), -np.exp(1j * lam) * np.sin(theta / 2)],
+            [np.exp(1j * phi) * np.sin(theta / 2), np.exp(1j * (phi + lam)) * np.cos(theta / 2)],
+        ]
+    )
+    assert np.allclose(qrisp_to_cirq(qc).unitary(), expected)
+
+
+@pytest.mark.parametrize(("control", "target"), [(0, 1), (1, 0)])
+def test_qrisp_to_cirq_cy(control, target):
+    """qrisp -> cirq converts cy, which qiskit_to_qrisp keeps in its basis."""
+    pytest.importorskip("cirq")
+
+    qc = qrisp.QuantumCircuit(2)
+    qc.cy(control, target)
+    y = np.array([[0, -1j], [1j, 0]])
+    factors = {control: (np.diag([1, 0]), np.diag([0, 1])), target: (np.eye(2), y)}
+    expected = np.kron(factors[0][0], factors[1][0]) + np.kron(factors[0][1], factors[1][1])
+    assert np.allclose(qrisp_to_cirq(qc).unitary(), expected)
+
+
+def test_qrisp_to_cirq_cy_open_control():
+    """qrisp -> cirq applies Y when an open-controlled cy's control is |0>."""
+    pytest.importorskip("cirq")
+    qiskit = pytest.importorskip("qiskit")
+    # pylint: disable-next=import-outside-toplevel
+    from qrisp.interface.converter import convert_from_qiskit
+
+    source = qiskit.QuantumCircuit(2)
+    source.cy(0, 1, ctrl_state=0)
+    y = np.array([[0, -1j], [1j, 0]])
+    expected = np.kron(np.diag([1, 0]), y) + np.kron(np.diag([0, 1]), np.eye(2))
+    assert np.allclose(qrisp_to_cirq(convert_from_qiskit(source)).unitary(), expected)
+
+
+def test_qrisp_to_cirq_cy_u3_inside_composite_gate():
+    """qrisp -> cirq converts cy and u3 nested inside composite gates."""
+    pytest.importorskip("cirq")
+
+    block = qrisp.QuantumCircuit(2)
+    block.cy(0, 1)
+    block.u3(0.3, 0.2, 0.1, 0)
+    outer = qrisp.QuantumCircuit(2)
+    outer.append(block.to_gate("block"), outer.qubits)
+    outer.swap(0, 1)
+    qc = qrisp.QuantumCircuit(3)
+    qc.h(2)
+    qc.append(outer.to_gate("outer"), qc.qubits[:2])
+    assert np.allclose(qrisp_to_cirq(qc).unitary(), qc.get_unitary())
