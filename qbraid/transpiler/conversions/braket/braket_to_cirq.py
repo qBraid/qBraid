@@ -128,7 +128,11 @@ def _from_braket_instruction(
         return ops
 
     try:
-        if instr.power != 1:
+        targets = [qubit_mapping[int(q)] for q in instr.target]
+        if instr.power == 0:
+            # Keep the qubits in the circuit rather than emitting nothing.
+            ops = [cirq.IdentityGate(len(targets)).on(*targets)]
+        elif instr.power != 1:
             if float(instr.power).is_integer():
                 base = ops if instr.power > 0 else cirq.inverse(ops)
                 ops = list(base) * abs(int(instr.power))
@@ -136,7 +140,6 @@ def _from_braket_instruction(
                 # Braket takes the principal matrix power; Cirq's gate powers may pick
                 # another branch.
                 matrix = fractional_matrix_power(instr.operator.to_matrix(), instr.power)
-                targets = [qubit_mapping[int(q)] for q in instr.target]
                 ops = [cirq.MatrixGate(matrix).on(*targets)]
 
         # Controlling each operation separately is only correct because every

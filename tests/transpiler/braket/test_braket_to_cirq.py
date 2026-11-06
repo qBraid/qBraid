@@ -156,6 +156,7 @@ def test_from_braket_three_qubit_gates():
         Instruction(braket_gates.Z(), target=1, control=0, control_state=0),
         Instruction(braket_gates.CY(), target=[1, 2], control=0),
         Instruction(braket_gates.CPhaseShift(0.7), target=[2, 0], control=1, power=2),
+        Instruction(braket_gates.CY(), target=[1, 2], control=0, power=0),
     ],
 )
 def test_from_braket_instruction_modifiers(instr):
