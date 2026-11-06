@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 from qbraid._logging import logger
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.enums import DeviceStatus, ValidationLevel
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
 from .job import PasqalJob, _pasqal_cloud_errors
@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from pulser.backend import EmulationConfig
     from typing_extensions import TypeAlias
 
+    import qbraid.programs
     from qbraid.runtime.profile import TargetProfile
 
     from .provider import PasqalSession
@@ -128,6 +129,28 @@ class PasqalDevice(QuantumDevice):
     def _catalog_record(self) -> dict[str, Any] | None:
         """Return this device's live catalog entry, or ``None`` when Pasqal does not list it."""
         return self._session.get_device_records().get(self.id)
+
+    def validate(
+        self,
+        run_input_batch: list[qbraid.programs.QPROGRAM],
+        suppress_device_warning: bool = False,
+    ) -> None:
+        """Validate run input; if the device catalog is unreachable, skip only the status check.
+
+        Submission does not use the catalog, so :meth:`run` is not refused because the
+        device's status cannot be read.
+        """
+        level = ValidationLevel(self._options.get("validate", 0))
+        if level != ValidationLevel.NONE and not suppress_device_warning:
+            # pylint: disable-next=import-outside-toplevel
+            from .provider import PasqalProviderError
+
+            try:
+                self.status()
+            except PasqalProviderError as exc:
+                logger.warning("Skipping the Pasqal device status check: %s", exc)
+                suppress_device_warning = True
+        super().validate(run_input_batch, suppress_device_warning=suppress_device_warning)
 
     def status(self) -> DeviceStatus:
         """Return the device's live status from Pasqal's device catalog.
