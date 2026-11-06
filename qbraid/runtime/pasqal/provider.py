@@ -63,6 +63,8 @@ class PasqalSession(Session):
 
     CACHE_TTL_SECONDS = 30.0
     FAILURE_TTL_SECONDS = 5.0
+    # Read timeouts are retried, so a hung catalog costs about four of these.
+    REQUEST_TIMEOUT_SECONDS = 10.0
 
     def __init__(self, core_url: str):
         super().__init__(base_url=core_url.rstrip("/"))
@@ -98,7 +100,9 @@ class PasqalSession(Session):
                 ) from self._failure
 
             try:
-                response = self.get(f"{self.base_url}/api/v1/devices", timeout=30)
+                response = self.get(
+                    f"{self.base_url}/api/v1/devices", timeout=self.REQUEST_TIMEOUT_SECONDS
+                )
                 response.raise_for_status()
                 records = response.json()["data"]
                 catalog: dict[str, dict[str, Any]] = {}
@@ -310,6 +314,11 @@ class PasqalProvider(QuantumProvider):
     def get_device(self, device_id: str) -> PasqalDevice:
         """Return a :class:`PasqalDevice` for the given device identifier.
 
+        If the device catalog cannot be fetched, a device type ``pasqal-cloud``
+        accepts is still returned, without its atom count, since submission does
+        not use the catalog; its :meth:`~PasqalDevice.status` raises until the
+        catalog is back.
+
         Args:
             device_id: Pasqal device identifier (case-insensitive). Common
                 values include ``"FRESNEL"`` (QPU), ``"EMU_FREE"``,
@@ -318,10 +327,13 @@ class PasqalProvider(QuantumProvider):
         Raises:
             ResourceNotFoundError: If Pasqal Cloud neither lists nor accepts
                 the device identifier.
-            PasqalProviderError: If the device catalog cannot be fetched.
         """
         normalized = device_id.strip().upper()
-        records = self._session.get_device_records()
+        try:
+            records = self._session.get_device_records()
+        except PasqalProviderError as exc:
+            logger.warning("Using Pasqal's known device types without the catalog: %s", exc)
+            records = {}
         known = set(_device_type_names()) | set(records)
         if normalized not in known:
             raise ResourceNotFoundError(
