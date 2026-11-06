@@ -170,7 +170,8 @@ def test_cirq_to_quil_output_rzz():
     """
 
     p = Program()
-    p += CZ(0, 1)
+    p += Z(0)
+    p += Z(1)
     p += I(0)
     p += I(1)
     p += RZZ(np.pi / 2, 0, 1)

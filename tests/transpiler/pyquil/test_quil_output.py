@@ -663,6 +663,19 @@ def test_rzz_inexact_angle_unitary(rads):
     assert np.allclose(pyquil_unitary, cirq_unitary)
 
 
+def test_rzz_rads_1_unitary():
+    """RZZ(pi) is Z (x) Z up to global phase, not CZ."""
+    pyquil = pytest.importorskip("pyquil")
+    pyquil_simulation_tools = pytest.importorskip("pyquil.simulation.tools")
+    q0, q1 = _make_qubits(2)
+    operations = [RZZGate(1)(q0, q1)]
+    output = QuilOutput(operations, (q0, q1))
+    program = pyquil.Program(str(output))
+    pyquil_unitary = pyquil_simulation_tools.program_unitary(program, n_qubits=2)
+    cirq_unitary = cirq.Circuit(operations).unitary()
+    assert cirq.allclose_up_to_global_phase(pyquil_unitary, cirq_unitary)
+
+
 def test_reset_channel_output():
     """A Cirq reset renders as a Quil RESET on the target qubit. Reproduces the
     bug where ``cirq.ResetChannel`` raised ``ValueError: Cannot output operation
