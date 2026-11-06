@@ -27,7 +27,7 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 
-from .job import PasqalJob, _pasqal_cloud_errors
+from .job import PasqalJob, _pasqal_cloud_errors, _warn_sdk_renamed
 
 if TYPE_CHECKING:
     from pasqal_cloud import SDK
@@ -100,24 +100,32 @@ class PasqalDevice(QuantumDevice):
     serialized Pulser sequences as Pasqal Cloud batches.
     """
 
-    def __init__(self, profile: TargetProfile, sdk: PasqalClient, session: PasqalSession, **kwargs):
+    def __init__(
+        self, profile: TargetProfile, client: PasqalClient, session: PasqalSession, **kwargs
+    ):
         """Initialize the Pasqal device.
 
         Args:
             profile: The :class:`TargetProfile` describing this device.
-            sdk: Authenticated ``pasqal_cloud`` client used to submit and
+            client: Authenticated ``pasqal_cloud`` client used to submit and
                 track batches.
             session: Session reading Pasqal's device catalog, for status.
             **kwargs: Forwarded to :class:`QuantumDevice`.
         """
         super().__init__(profile=profile, **kwargs)
-        self._sdk = sdk
+        self._client = client
         self._session = session
 
     @property
-    def sdk(self) -> PasqalClient:
+    def client(self) -> PasqalClient:
         """Return the underlying ``pasqal_cloud`` client."""
-        return self._sdk
+        return self._client
+
+    @property
+    def sdk(self) -> PasqalClient:
+        """Deprecated alias for :attr:`client`."""
+        _warn_sdk_renamed("PasqalDevice")
+        return self._client
 
     def __str__(self):
         """String representation of the :class:`PasqalDevice`."""
@@ -228,7 +236,7 @@ class PasqalDevice(QuantumDevice):
         serialized_config = _serialize_backend_configuration(backend_configuration)
 
         try:
-            batch = self._sdk.create_batch(
+            batch = self._client.create_batch(
                 serialized_sequence=None,
                 jobs=jobs,
                 device_type=device_type,
@@ -241,7 +249,7 @@ class PasqalDevice(QuantumDevice):
                 f"Failed to submit batch to Pasqal device '{self.id}': {exc}"
             ) from exc
 
-        return PasqalJob(job_id=batch.id, sdk=self._sdk, device=self)
+        return PasqalJob(job_id=batch.id, client=self._client, device=self)
 
     def _resolve_device_type(self, device_type_enum):
         """Map this device's id to a ``pasqal_cloud.DeviceTypeName`` member.

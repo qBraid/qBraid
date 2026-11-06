@@ -20,6 +20,7 @@ Module defining Pasqal job class.
 from __future__ import annotations
 
 import functools
+import warnings
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any
 
@@ -30,12 +31,11 @@ from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import AnalogResultData
 
 if TYPE_CHECKING:
-    from pasqal_cloud import SDK as PasqalSDK
     from pasqal_cloud.batch import Batch
     from pasqal_cloud.batch import Job as PasqalBatchJob
     from pasqal_cloud.utils.constants import BatchStatus
 
-    from qbraid.runtime.pasqal.device import PasqalDevice
+    from qbraid.runtime.pasqal.device import PasqalClient, PasqalDevice
 
 
 def _status_map() -> dict[BatchStatus, JobStatus]:
@@ -65,6 +65,15 @@ _UNENUMERATED_STATUSES: dict[str, JobStatus] = {"PAUSED": JobStatus.QUEUED}
 
 class PasqalJobError(QbraidRuntimeError):
     """Exception raised by :class:`PasqalJob`."""
+
+
+def _warn_sdk_renamed(owner: str) -> None:
+    """Warn that ``<owner>.sdk`` / ``sdk=`` is now ``client``."""
+    warnings.warn(
+        f"{owner}'s `sdk` is deprecated and will be removed in a future release; use `client`.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
 
 
 @functools.cache
@@ -155,43 +164,56 @@ class PasqalJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        sdk: PasqalSDK | None = None,
+        client: PasqalClient | None = None,
         device: PasqalDevice | None = None,
+        *,
+        sdk: PasqalClient | None = None,
         **kwargs: Any,
     ) -> None:
         """Initialize the Pasqal job.
 
         Args:
             job_id: The Pasqal Cloud batch id this job tracks.
-            sdk: Authenticated ``pasqal_cloud.SDK`` instance. If omitted, the
-                SDK is taken from ``device.sdk``; one of the two must be
+            client: Authenticated ``pasqal_cloud`` client. If omitted, the
+                client is taken from ``device.client``; one of the two must be
                 provided.
             device: The :class:`PasqalDevice` the job was submitted to.
+            sdk: Deprecated alias for ``client``.
             **kwargs: Forwarded to :class:`QuantumJob`.
 
         Raises:
-            PasqalJobError: If neither ``sdk`` nor a usable ``device.sdk`` is
-                available.
+            PasqalJobError: If neither ``client`` nor a usable ``device.client``
+                is available.
         """
         super().__init__(job_id=job_id, device=device, **kwargs)
-        resolved_sdk = sdk if sdk is not None else (device.sdk if device is not None else None)
-        if resolved_sdk is None:
+        if sdk is not None:
+            _warn_sdk_renamed("PasqalJob")
+            client = client if client is not None else sdk
+        if client is None and device is not None:
+            client = device.client
+        if client is None:
             raise PasqalJobError(
-                "PasqalJob requires either an explicit `sdk` argument or a "
+                "PasqalJob requires either an explicit `client` argument or a "
                 "device that carries one."
             )
-        self._sdk = resolved_sdk
+        self._client = client
         self._terminal_status: JobStatus | None = None
 
     @property
-    def sdk(self) -> PasqalSDK:
-        """Return the underlying ``pasqal_cloud.SDK`` instance."""
-        return self._sdk
+    def client(self) -> PasqalClient:
+        """Return the underlying ``pasqal_cloud`` client."""
+        return self._client
+
+    @property
+    def sdk(self) -> PasqalClient:
+        """Deprecated alias for :attr:`client`."""
+        _warn_sdk_renamed("PasqalJob")
+        return self._client
 
     def _fetch_batch(self) -> Batch:
         """Fetch the current Pasqal batch record, raising on transport error."""
         try:
-            return self._sdk.get_batch(str(self.id))
+            return self._client.get_batch(str(self.id))
         except _pasqal_cloud_errors() as exc:
             raise PasqalJobError(f"Unable to retrieve Pasqal batch {self.id}: {exc}") from exc
 
@@ -212,7 +234,7 @@ class PasqalJob(QuantumJob):
     def cancel(self) -> None:
         """Cancel the underlying Pasqal batch."""
         try:
-            self._sdk.cancel_batch(str(self.id))
+            self._client.cancel_batch(str(self.id))
         except _pasqal_cloud_errors() as exc:
             raise PasqalJobError(f"Failed to cancel Pasqal batch {self.id}: {exc}") from exc
 
