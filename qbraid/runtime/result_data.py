@@ -19,6 +19,7 @@ Module containing models for schema-conformant ResultData classes.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Optional, Type, TypeVar, Union
 
@@ -448,8 +449,49 @@ class AnnealingResultData(ResultData):
         }
 
 
+class OtherResultData(ResultData, Mapping[str, Any]):
+    """The result of a job whose output is not circuit results, such as a qBraid Compress
+    job, whose result is a compressed program and a report.
+
+    Read it like a dict: ``result.data["compressedProgram"]``. The keys are the device's
+    own, so they are kept as the device sent them.
+    """
+
+    def __init__(self, data: Optional[dict[str, Any]] = None):
+        self._data = dict(data or {})
+        # The payload is the result itself, not metadata to copy into Result.details.
+        self._unscoped_data = {}
+
+    @property
+    def experiment_type(self) -> ExperimentType:
+        """Returns the experiment type."""
+        return ExperimentType.OTHER
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> OtherResultData:
+        """Creates a new OtherResultData instance from a dictionary."""
+        return cls(data)
+
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a copy of the result data as sent by the device."""
+        return dict(self._data)
+
+    def __getitem__(self, key: str) -> Any:
+        return self._data[key]
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._data)
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __repr__(self) -> str:
+        return f"OtherResultData(keys={list(self._data)})"
+
+
 _EXPERIMENT_TYPE_TO_RESULT_DATA = {
     ExperimentType.GATE_MODEL: GateModelResultData,
     ExperimentType.ANALOG: AnalogResultData,
     ExperimentType.ANNEALING: AnnealingResultData,
+    ExperimentType.OTHER: OtherResultData,
 }
