@@ -74,6 +74,32 @@ _STATUS_CHECK: ContextVar[_StatusCheck | None] = ContextVar(
 )
 
 
+def _program_type_alias(program: Any) -> str | None:
+    """The program's type alias, or ``None``; recorded for analytics, so it never fails a run."""
+    try:
+        return get_program_type_alias(program, safe=True)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+class _RunInputTypes:
+    """Program type aliases of the programs the enclosing run() passed to ``device``."""
+
+    __slots__ = ("device", "aliases")
+
+    def __init__(self, device: QuantumDevice, aliases: list[str | None]):
+        self.device = device
+        self.aliases = aliases
+
+
+# Set by run() around submit(), which only sees the converted programs, so that a device can
+# report which framework each one was written in. A ContextVar for the same reason as above,
+# and so that submit() keeps its signature for subclasses that override it.
+_RUN_INPUT_TYPES: ContextVar[_RunInputTypes | None] = ContextVar(
+    "qbraid_device_run_input_types", default=None
+)
+
+
 class QuantumDevice(ABC):
     """Abstract interface for quantum devices."""
 
@@ -421,6 +447,17 @@ class QuantumDevice(ABC):
         finally:
             _STATUS_CHECK.reset(token)
 
+    def _run_input_types(self) -> list[str | None] | None:
+        """Aliases of the programs given to :meth:`run`, in the order :meth:`submit` gets them.
+
+        ``None`` when :meth:`submit` was called directly rather than from :meth:`run`. An entry
+        is ``None`` for a program whose type is not registered.
+        """
+        current = _RUN_INPUT_TYPES.get()
+        if current is None or current.device is not self:
+            return None
+        return current.aliases
+
     def _claim_status_check(self) -> bool:
         """Return whether :meth:`validate` should fetch status now, recording that it has."""
         check = _STATUS_CHECK.get()
@@ -609,4 +646,9 @@ class QuantumDevice(ABC):
             "batch" if not is_single_input else "",
             self.id,
         )
-        return self.submit(run_input_compat, *args, **kwargs)
+        aliases = [_program_type_alias(program) for program in run_input]
+        token = _RUN_INPUT_TYPES.set(_RunInputTypes(self, aliases))
+        try:
+            return self.submit(run_input_compat, *args, **kwargs)
+        finally:
+            _RUN_INPUT_TYPES.reset(token)
