@@ -23,9 +23,11 @@ import time
 from unittest.mock import patch
 
 import pytest
+from qbraid_core.services.runtime.schemas import Result as CoreResult
+from qbraid_core.services.runtime.schemas import RuntimeJob
 
 from qbraid.programs import ExperimentType
-from qbraid.runtime import QuantumJob
+from qbraid.runtime import OtherResultData, QuantumJob, result_data
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import (
     DeviceProgramTypeMismatchError,
@@ -125,9 +127,6 @@ class FakeQbraidClient:
 
     def get_job(self, job_qrn):  # pylint: disable=unused-argument
         """Get the job data."""
-        # pylint: disable=import-outside-toplevel
-        from qbraid_core.services.runtime.schemas import RuntimeJob
-
         status_data_copy = self._job_data.copy()
         if self._job_data["status"] == "CANCELLING":
             self._job_data["statusMsg"] = None
@@ -337,7 +336,64 @@ def test_job_status_enum_call_method():
     assert new_status == status
 
 
-def test_job_get_result_cls_raises_for_mismatch_expt_type():
-    """Test that ResultData.from_object raises a ValueError for unsupported experiment type."""
-    with pytest.raises(ValueError, match="Unsupported experiment_type: 'OTHER'"):
+def test_every_experiment_type_has_a_result_class():
+    """A device of any experiment type returns a readable result (qBraid#1537: OTHER did not)."""
+    assert set(result_data._EXPERIMENT_TYPE_TO_RESULT_DATA) == set(ExperimentType)
+
+
+def test_job_get_result_cls_raises_for_an_unmapped_expt_type():
+    """Test that ResultData.from_object raises a ValueError for an unmapped experiment type."""
+    with (
+        patch.dict(result_data._EXPERIMENT_TYPE_TO_RESULT_DATA, clear=True),
+        pytest.raises(ValueError, match="Unsupported experiment_type: 'OTHER'"),
+    ):
         ResultData.from_object(None, ExperimentType.OTHER)
+
+
+def test_result_of_a_compress_job_is_its_output():
+    """A qBraid Compress job (experiment type OTHER) returns its compressed program and report."""
+    qrn = "qbraid:qbraid:sim:compress-3cd0-qjob-1"
+    output = {
+        "compressedProgram": "OPENQASM 3.0;\nqubit[2] q;\nh q[0];\n",
+        "irType": "qasm3",
+        "compression": {"gatesBefore": 56, "gatesAfter": 39, "exact": True},
+    }
+    time_stamps = {
+        "createdAt": "2026-11-07T16:20:51Z",
+        "endedAt": "2026-11-07T16:21:24Z",
+        "executionDuration": 33315,
+    }
+    job_data = RuntimeJob(
+        jobQrn=qrn,
+        deviceQrn="qbraid:qbraid:sim:compress",
+        status="COMPLETED",
+        shots=1,
+        numCircuits=1,
+        experimentType="other",
+        cost=0,
+        estimatedCost=0,
+        vendor="qbraid",
+        provider="qbraid",
+        timeStamps=time_stamps,
+    )
+
+    class Client:
+        """Answers for the one completed Compress job."""
+
+        def get_job(self, _qrn):
+            """The job record."""
+            return job_data
+
+        def get_job_result(self, _qrn):
+            """The device's output."""
+            return CoreResult(status="COMPLETED", cost=0, timeStamps=time_stamps, resultData=output)
+
+    result = QbraidJob(qrn, client=Client()).result()
+
+    assert result.success is True
+    assert isinstance(result.data, OtherResultData)
+    assert result.data["compressedProgram"] == output["compressedProgram"]
+    assert result.data["compression"]["gatesAfter"] == 39
+    assert dict(result.data) == output
+    # The output is the result, not metadata copied into details.
+    assert "compressedProgram" not in result.details
