@@ -25,7 +25,8 @@ from qbraid_core import sessions as core_sessions
 from qbraid_core.services.runtime.schemas import Program
 
 from qbraid import __version__
-from qbraid.runtime import QbraidDevice
+from qbraid.runtime import DeviceStatus, QbraidDevice, QuantumDevice
+from qbraid.runtime.native import device as native_device
 
 QASM2 = 'OPENQASM 2.0;\ninclude "qelib1.inc";\nqreg q[1];\nh q[0];'
 QASM3 = "OPENQASM 3.0;\nqubit[1] q;\nh q[0];"
@@ -141,7 +142,29 @@ def test_as_batch_keeps_its_positional_slot(mock_profile, mock_client):
 def test_a_failing_type_lookup_does_not_fail_the_run(device):
     """The alias is recorded for analytics only; an error looking it up records none."""
     with patch(
-        "qbraid.runtime.device.get_program_type_alias", side_effect=RuntimeError("registry")
+        "qbraid.runtime.native.device.get_program_type_alias", side_effect=RuntimeError("registry")
     ):
         device.run(QASM3, shots=10)
     assert _sent(device) == [{}]
+
+
+def test_other_providers_make_no_program_type_lookup(mock_profile):
+    """Only QbraidDevice records program types; another provider's run() never looks one up."""
+    seen = []
+
+    class OtherDevice(QuantumDevice):
+        """A non-qBraid provider."""
+
+        def status(self):
+            return DeviceStatus.ONLINE
+
+        def submit(self, run_input, *args, **kwargs):
+            seen.append(native_device._RUN_INPUT_TYPES.get())  # pylint: disable=protected-access
+            return run_input
+
+    other = OtherDevice(profile=mock_profile)
+    other.apply_runtime_profile = Mock(return_value=CONVERTED)
+    with patch.object(native_device, "_program_type_alias") as lookup:
+        other.run([QASM2, QASM3], shots=10)
+    lookup.assert_not_called()
+    assert seen == [None]

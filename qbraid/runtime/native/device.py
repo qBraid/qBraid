@@ -22,6 +22,7 @@ Module defining QbraidDevice class
 from __future__ import annotations
 
 import math
+from contextvars import ContextVar
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, overload
 
@@ -30,7 +31,7 @@ from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
-from qbraid.programs import ExperimentType
+from qbraid.programs import ExperimentType, get_program_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
@@ -42,7 +43,25 @@ if TYPE_CHECKING:
     import qbraid_core.services.runtime
     from qbraid_core.services.runtime.schemas import DeviceCalibration
 
+    import qbraid.programs
     import qbraid.runtime
+
+
+def _program_type_alias(program: Any) -> str | None:
+    """The program's type alias, or ``None``; recorded for analytics, so it never fails a run."""
+    try:
+        return get_program_type_alias(program, safe=True)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+# Set by QbraidDevice.run() around the base run(), so that submit(), which only sees the
+# converted programs, can record which framework each was written in. A ContextVar because
+# one device is often shared and concurrent runs must each record their own programs, and
+# so that submit() keeps its signature for subclasses that override it.
+_RUN_INPUT_TYPES: ContextVar[tuple[QbraidDevice, list[str | None]] | None] = ContextVar(
+    "qbraid_native_run_input_types", default=None
+)
 
 
 class QbraidDevice(QuantumDevice):
@@ -205,14 +224,34 @@ class QbraidDevice(QuantumDevice):
 
         return self.profile.noise_models.get(noise_model).name
 
+    def run(
+        self,
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
+        *args,
+        **kwargs,
+    ) -> QbraidJob | list[QbraidJob]:
+        """Run as :meth:`QuantumDevice.run` does, recording each input's program type.
+
+        :meth:`submit` sends the type as ``metadata.programType``, so a job records the
+        framework the program was written in rather than the format it was converted to.
+        """
+        programs = run_input if isinstance(run_input, list) else [run_input]
+        token = _RUN_INPUT_TYPES.set((self, [_program_type_alias(p) for p in programs]))
+        try:
+            return super().run(run_input, *args, **kwargs)
+        finally:
+            _RUN_INPUT_TYPES.reset(token)
+
     def _job_program_types(self, num_jobs: int, as_batch: bool) -> list[str | list[str] | None]:
         """The ``programType`` of each job :meth:`submit` creates, ``None`` where unknown.
 
-        A batch job holding programs of several types records their sorted aliases.
+        ``None`` throughout when :meth:`submit` was called directly rather than from
+        :meth:`run`. A batch job holding programs of several types records their sorted aliases.
         """
-        aliases = self._run_input_types()
-        if aliases is None:
+        current = _RUN_INPUT_TYPES.get()
+        if current is None or current[0] is not self:
             return [None] * num_jobs
+        aliases = current[1]
         if not as_batch:
             return list(aliases) if len(aliases) == num_jobs else [None] * num_jobs
         known = sorted({alias for alias in aliases if alias is not None})
