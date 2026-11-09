@@ -69,6 +69,17 @@ def test_batch_job_records_one_type_or_the_sorted_types(mock_profile, mock_clien
     assert _sent(device) == [{"programType": "qasm3"}, {"programType": ["qasm2", "qasm3"]}]
 
 
+def test_batch_of_unregistered_types_records_no_program_type(mock_profile, mock_client):
+    """A batch job whose programs are all of unregistered types records none."""
+    device = QbraidDevice(
+        profile=mock_profile.model_copy(update={"batch_job_support": True}), client=mock_client
+    )
+    device.apply_runtime_profile = Mock(return_value=CONVERTED)
+    device.client.create_job = Mock(return_value=Mock(jobQrn="qbraid:job:1"))
+    device.run([object(), object()], shots=10, as_batch=True)
+    assert _sent(device) == [{}]
+
+
 def test_user_metadata_is_sent_and_program_type_overrides_it(device):
     """User values pass through; the SDK's programType replaces the user's."""
     metadata = {"experiment": "e-7", "programType": "mine"}
