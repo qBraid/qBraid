@@ -32,7 +32,7 @@ import numpy as np
 import pytest
 import requests
 from pyqasm.exceptions import PyQasmError
-from qbraid_core.exceptions import RequestsApiError
+from qbraid_core.exceptions import AuthError, RequestsApiError
 from qbraid_core.services.runtime import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
@@ -289,7 +289,8 @@ def _device_lookup_error(status: int | None, message: str) -> QuantumRuntimeServ
     """Build the chain the client raises: service error -> API error -> HTTP error."""
     api_err = RequestsApiError(message, status_code=status)
     if status is not None:
-        response = Mock(status_code=status)
+        headers = {"Retry-After": "30"} if status == 429 else {}
+        response = Mock(status_code=status, headers=headers)
         http_err = requests.HTTPError(message)
         http_err.response = response
         api_err.__cause__ = http_err
@@ -340,7 +341,40 @@ def test_provider_device_lookup_other_errors_surface(mock_client, method, status
                 provider.get_devices()
     assert exc_info.value is error
     assert exc_info.value.status_code == status
+    assert exc_info.value.retry_after == (30.0 if status == 429 else None)
     assert message in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "status, message",
+    [
+        (429, "Too many requests from user, please try again later."),
+        (503, "Service unavailable."),
+        (None, "Connection aborted."),
+    ],
+)
+def test_provider_client_verify_failure_surfaces(status, message):
+    """A 429, outage or connection error on the credentials check is not an auth failure."""
+    cause = _device_lookup_error(status, message).__cause__
+    provider = QbraidProvider(api_key="test-key")
+    with patch("qbraid.runtime.native.provider.QuantumRuntimeClient", side_effect=cause):
+        with pytest.raises(QuantumRuntimeServiceRequestError) as exc_info:
+            _ = provider.client
+    assert exc_info.value.__cause__ is cause
+    assert exc_info.value.status_code == status
+    assert exc_info.value.retry_after == (30.0 if status == 429 else None)
+    assert message in str(exc_info.value)
+
+
+def test_provider_client_auth_failure_is_not_found():
+    """Rejected credentials still raise ResourceNotFoundError."""
+    provider = QbraidProvider(api_key="test-key")
+    with patch(
+        "qbraid.runtime.native.provider.QuantumRuntimeClient",
+        side_effect=AuthError("Access denied due to missing or invalid credentials"),
+    ):
+        with pytest.raises(ResourceNotFoundError, match="Failed to authenticate"):
+            _ = provider.client
 
 
 def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):

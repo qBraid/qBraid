@@ -24,7 +24,7 @@ import re
 from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
-from qbraid_core.exceptions import AuthError
+from qbraid_core.exceptions import AuthError, RequestsApiError
 from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
@@ -193,6 +193,11 @@ class QbraidProvider(QuantumProvider):
                 raise ResourceNotFoundError(
                     "Failed to authenticate with the Quantum Runtime service."
                 ) from err
+            except RequestsApiError as err:
+                # A 429, 5xx or dropped connection on the credentials check. Raised as the
+                # same error a failed device lookup raises; status_code and retry_after
+                # are read from the chain.
+                raise QuantumRuntimeServiceRequestError(str(err)) from err
         return self._client
 
     @staticmethod
@@ -292,7 +297,7 @@ class QbraidProvider(QuantumProvider):
                 cannot be loaded.
             QuantumRuntimeServiceRequestError: If the lookup fails for any other
                 reason, such as a rate limit (429) or an outage; ``status_code``
-                holds the HTTP status.
+                holds the HTTP status and ``retry_after`` the seconds to wait on a 429.
             ValueError: If qBraid does not support direct access to the device
         """
         try:
