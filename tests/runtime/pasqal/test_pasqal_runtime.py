@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: disable=redefined-outer-name,missing-class-docstring,missing-function-docstring
+# pylint: disable=redefined-outer-name,missing-class-docstring,missing-function-docstring,too-many-lines
 """Unit tests for Pasqal provider, device, and job classes."""
 
 from __future__ import annotations
@@ -162,6 +162,7 @@ def _make_job(status: str = "DONE", counter: dict[str, int] | None = None, job_i
     job.status = status
     job.result = counter
     job.full_result = {"counter": counter}
+    job.errors = []
     return job
 
 
@@ -880,6 +881,27 @@ class TestPasqalJob:
         mock_client.get_batch.return_value = _make_batch(status="ERROR", errors=["bad"])
         job = PasqalJob(job_id="batch-1", client=mock_client)
         with pytest.raises(PasqalJobError, match="did not complete"):
+            job.result()
+
+    @pytest.mark.parametrize(
+        "job_status, expected", [("ERROR", JobStatus.FAILED), ("CANCELED", JobStatus.CANCELLED)]
+    )
+    def test_status_of_done_batch_follows_unfinished_job(self, mock_client, job_status, expected):
+        """Pasqal marks a batch DONE even when its job errored or was cancelled."""
+        jobs = [_make_job(job_id="job-1"), _make_job(status=job_status, job_id="job-2")]
+        mock_client.get_batch.return_value = _make_batch(status="DONE", jobs=jobs)
+        job = PasqalJob(job_id="batch-1", client=mock_client)
+        assert job.status() == expected
+
+    def test_result_of_errored_job_in_done_batch_raises_pasqal_error(self, mock_client):
+        error = "No instructions given for the channels in the sequence."
+        errored = _make_job(status="ERROR")
+        errored.result = errored.full_result = None
+        errored.errors = [error]
+        mock_client.get_batch.return_value = _make_batch(status="DONE", jobs=[errored])
+        job = PasqalJob(job_id="batch-1", client=mock_client)
+        assert job.status() == JobStatus.FAILED
+        with pytest.raises(PasqalJobError, match=f"status=FAILED: {error}"):
             job.result()
 
     def test_result_raises_when_no_jobs(self, mock_client):

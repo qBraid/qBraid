@@ -110,6 +110,29 @@ def _map_pasqal_status(raw_status: str) -> JobStatus:
         raise PasqalJobError(f"Unrecognized Pasqal batch status: {raw_status!r}.") from exc
 
 
+def _batch_status(batch: Batch) -> JobStatus:
+    """Return the qBraid status of a batch, taking its jobs into account.
+
+    Pasqal marks a batch ``DONE`` once every job has finished, even if a job errored
+    while running (for example, a sequence with no pulses) or was cancelled. Such a
+    batch has no results to read, so it maps to ``FAILED`` or ``CANCELLED``.
+    """
+    status = _map_pasqal_status(batch.status)
+    if status != JobStatus.COMPLETED:
+        return status
+    job_statuses = {job.status for job in batch.ordered_jobs}
+    if "ERROR" in job_statuses:
+        return JobStatus.FAILED
+    if "CANCELED" in job_statuses:
+        return JobStatus.CANCELLED
+    return status
+
+
+def _job_errors(batch: Batch) -> list[str]:
+    """Return the errors Pasqal recorded on the batch's jobs."""
+    return [str(error) for job in batch.ordered_jobs for error in (job.errors or [])]
+
+
 def _parse_timestamp(value: str) -> datetime:
     """Parse a Pasqal ISO-8601 timestamp into a timezone-aware datetime (UTC if unmarked).
 
@@ -200,9 +223,7 @@ class PasqalJob(QuantumJob):
         if self._terminal_status is not None:
             return self._terminal_status
 
-        batch = self._fetch_batch()
-        raw_status = batch.status
-        job_status = _map_pasqal_status(raw_status)
+        job_status = _batch_status(self._fetch_batch())
 
         if job_status in JobStatus.terminal_states():
             self._terminal_status = job_status
@@ -226,15 +247,19 @@ class PasqalJob(QuantumJob):
         list of counter dicts in submission order.
 
         Raises:
-            PasqalJobError: If the batch finished in a non-completed state
-                or carries no readable job results.
+            PasqalJobError: If the batch or any of its jobs did not complete,
+                with the errors Pasqal recorded, or if it carries no readable
+                job results.
         """
         self.wait_for_final_state()
         batch = self._fetch_batch()
 
-        if self.status() != JobStatus.COMPLETED:
+        status = _batch_status(batch)
+        if status != JobStatus.COMPLETED:
+            errors = "; ".join(_job_errors(batch))
             raise PasqalJobError(
-                f"Pasqal batch {self.id} did not complete successfully: " f"status={batch.status}"
+                f"Pasqal batch {self.id} did not complete successfully: "
+                f"status={status.name}" + (f": {errors}" if errors else "")
             )
 
         ordered_jobs = list(batch.ordered_jobs)

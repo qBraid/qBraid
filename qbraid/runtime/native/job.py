@@ -55,6 +55,7 @@ class QbraidJob(QuantumJob):
         self._device = device
         self._client = client
         self._compiled_program: Program | list[Program] | None = None
+        self._compressed_program: Program | None = None
 
     @property
     def client(self) -> qbraid_core.services.runtime.QuantumRuntimeClient:
@@ -133,6 +134,25 @@ class QbraidJob(QuantumJob):
                     return None
                 raise
         return self._compiled_program
+
+    def compressed_program(self) -> Program | None:
+        """Return the program qBraid Compress produced, which the device ran in place of
+        the submitted one.
+
+        For a job submitted with ``runtime_options={"compression": {...}}``. Returns
+        ``None`` when the job was not compressed: compression was not requested, did not
+        apply, or found nothing smaller (``metadata()["metadata"]["compression"]["reason"]``
+        says why). Other request failures propagate. Cached once found, like
+        :meth:`compiled_program`.
+        """
+        if self._compressed_program is None:
+            try:
+                self._compressed_program = self.client.get_job_compressed_program(self.id)
+            except QuantumRuntimeServiceRequestError as err:
+                if err.status_code == 404:
+                    return None
+                raise
+        return self._compressed_program
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
