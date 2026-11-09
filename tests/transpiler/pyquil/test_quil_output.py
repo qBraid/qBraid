@@ -649,7 +649,7 @@ def test_cphase_inexact_angle_unitary(denominator):
     assert np.allclose(pyquil_unitary, cirq_unitary)
 
 
-@pytest.mark.parametrize("rads", [1 / 17, 1 / 25, 0.3183])
+@pytest.mark.parametrize("rads", [1, 1 / 17, 1 / 25, 0.3183])
 def test_rzz_inexact_angle_unitary(rads):
     """RZZ angles that aren't tidy fractions of pi must survive exactly."""
     pyquil = pytest.importorskip("pyquil")

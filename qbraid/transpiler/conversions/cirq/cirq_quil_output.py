@@ -404,8 +404,6 @@ def _zzpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
 
 def _rzz_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     gate = cast(RZZGate, op.gate)
-    if gate._rads == 1:
-        return formatter.format("CZ {0} {1}\n", op.qubits[0], op.qubits[1])
     if gate._rads == 0:
         return formatter.format("I {0}\nI {1}\n", op.qubits[0], op.qubits[1])
     return formatter.format(

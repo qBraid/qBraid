@@ -170,13 +170,13 @@ def test_cirq_to_quil_output_rzz():
     """
 
     p = Program()
-    p += CZ(0, 1)
+    p += RZZ(np.pi, 0, 1)
     p += I(0)
     p += I(1)
     p += RZZ(np.pi / 2, 0, 1)
     cirq_circuit = qasm2_to_cirq(qasm)
     p_test: Program = cirq_to_pyquil(cirq_circuit)
-    assert p_test.out().replace("pi/2", f"{np.pi/2}") == p.out()
+    assert p_test.out().replace("pi/2", f"{np.pi/2}").replace("(pi)", f"({np.pi})") == p.out()
 
 
 @pytest.mark.parametrize(
