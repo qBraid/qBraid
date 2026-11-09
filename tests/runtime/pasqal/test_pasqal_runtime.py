@@ -211,6 +211,10 @@ class TestStatusMapping:
         """PAUSED, documented by Pasqal but absent from BatchStatus, reads as queued."""
         assert _map_pasqal_status("PAUSED") == JobStatus.QUEUED
 
+    def test_canceling_maps_to_cancelling(self):
+        """Pasqal reports CANCELING, absent from BatchStatus, for a moment after a cancel."""
+        assert _map_pasqal_status("CANCELING") == JobStatus.CANCELLING
+
     @pytest.mark.parametrize("raw", ["SOMETHING_NEW", "done"])
     def test_unrecognized_status_raises(self, raw):
         """An unknown status raises rather than returning non-terminal UNKNOWN."""
