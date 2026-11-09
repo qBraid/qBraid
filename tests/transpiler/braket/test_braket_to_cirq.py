@@ -94,6 +94,14 @@ def test_from_braket_parameterized_single_qubit_gates(qubit_index):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+def test_from_braket_gphase():
+    """Test converting a circuit containing a global phase gate."""
+    braket_circuit = BKCircuit().h(0).gphase(np.pi / 2)  # pylint: disable=no-member
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+    assert np.allclose(cirq.unitary(cirq_circuit), 1j * cirq.unitary(cirq.H))
+
+
 def test_from_braket_non_parameterized_two_qubit_gates():
     """Test converting circuit containing non-parameterized two-qubit gates."""
     braket_circuit = BKCircuit()
@@ -141,6 +149,29 @@ def test_from_braket_three_qubit_gates():
     ]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
+    cirq_circuit = braket_to_cirq(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+@pytest.mark.parametrize(
+    "instr",
+    [
+        Instruction(braket_gates.V(), target=0, power=-1),
+        Instruction(braket_gates.S(), target=0, power=3),
+        Instruction(braket_gates.Z(), target=0, power=0.5),
+        Instruction(braket_gates.T(), target=1, control=0),
+        Instruction(braket_gates.Ti(), target=2, control=[0, 1], power=-1),
+        Instruction(braket_gates.Z(), target=1, control=0, control_state=0),
+        Instruction(braket_gates.CY(), target=[1, 2], control=0),
+        Instruction(braket_gates.CPhaseShift(0.7), target=[2, 0], control=1, power=2),
+        Instruction(braket_gates.CY(), target=[1, 2], control=0, power=0),
+        Instruction(braket_gates.CY(), target=[1, 2], control=0, power=10**6 + 1),
+        Instruction(braket_gates.T(), target=0, power=-(10**6 + 3)),
+    ],
+)
+def test_from_braket_instruction_modifiers(instr):
+    """Test that power, control and control_state modifiers are converted"""
+    braket_circuit = BKCircuit().add_instruction(instr)
     cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
