@@ -420,3 +420,20 @@ def test_from_braket_fractional_power_matches_braket_simulator(braket_circuit):
     qubits = [LineQubit(q) for q in range(braket_circuit.qubit_count)]
     actual = cirq.final_state_vector(cirq_circuit, qubit_order=qubits, dtype=np.complex128)
     assert abs(np.vdot(expected, actual)) ** 2 == pytest.approx(1.0)
+
+
+@pytest.mark.parametrize(
+    "braket_circuit",
+    [BKCircuit().cy(0, 1, power=2), BKCircuit().cphaseshift01(0, 1, 0.3, power=0.5)],
+)
+def test_from_braket_power_on_multi_operation_gate_raises(braket_circuit):
+    """Test that a power on a gate converted to several Cirq ops raises."""
+    with pytest.raises(ProgramConversionError):
+        braket_to_cirq(braket_circuit)
+
+
+def test_from_braket_unsupported_power_raises():
+    """Test that a power unsupported by the target Cirq gate raises."""
+    with pytest.raises(ProgramConversionError):
+        braket_to_cirq(BKCircuit().gpi(0, 0.7, power=2))
+
