@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
@@ -55,5 +56,14 @@ def braket_to_pytket(circuit: braket.circuits.Circuit) -> pytket.circuit.Circuit
 
     Returns:
         pytket.circuit.Circuit: PyTKET circuit object equivalent to input Braket circuit.
+
+    Raises:
+        ProgramConversionError: If an instruction has a power or control modifier, which
+            pytket-braket drops.
     """
+    for instr in circuit.instructions:
+        if instr.control or instr.power != 1:
+            raise ProgramConversionError(
+                f"pytket-braket drops the power and control modifiers of {instr}."
+            )
     return pytket_braket.braket_convert.braket_to_tk(circuit)
