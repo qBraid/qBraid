@@ -69,7 +69,7 @@ Writing an entry:
 - `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
-- Capped `openqasm3` below 1.0.2. That release rejects every `OPENQASM 2.0` program in `pyqasm.loads`, which broke OpenQASM 2 conversions on fresh installs (qBraid/pyqasm#472)
+- Capped `openqasm3` below 1.0.2. That release rejects every `OPENQASM 2.0` program in `pyqasm.loads`, which broke OpenQASM 2 conversions on fresh installs ([#1554](https://github.com/qBraid/qBraid/pull/1554))
 - Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 - Raised the `amazon-braket-sdk` floor from `>=1.83.0` to `>=1.108.0`, the first release whose `AwsDevice.run` accepts `experimental_capabilities`. Earlier releases ignore it or reject it after creating the task ([#1494](https://github.com/qBraid/qBraid/pull/1494))
 
