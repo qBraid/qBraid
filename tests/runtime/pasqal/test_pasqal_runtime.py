@@ -540,7 +540,7 @@ class TestPasqalProvider:
 # ---------------------------------------------------------------------------
 
 
-class TestPasqalDevice:
+class TestPasqalDevice:  # pylint: disable=too-many-public-methods
     def test_status_online_when_up(self, mock_client):
         """A listed, active device reporting UP is ONLINE."""
         provider = PasqalProvider(client=mock_client)
@@ -655,6 +655,17 @@ class TestPasqalDevice:
         device.submit({"sequence_builder": '{"already": "serialized"}'}, shots=10)
         payload = mock_client.create_batch.call_args.kwargs["jobs"][0]
         assert payload["serialized_sequence"] == '{"already": "serialized"}'
+
+    def test_submit_unwraps_platform_payload_sent_as_text(self, mock_client):
+        """The {"sequence_builder": ...} payload as JSON text, as the CLI sends it, is unwrapped."""
+        mock_client.create_batch.return_value = _make_batch()
+        device = PasqalProvider(client=mock_client).get_device("EMU_FREE")
+        abstract_repr = json.loads(_make_pulser_sequence().to_abstract_repr())
+
+        device.submit(json.dumps({"sequence_builder": abstract_repr}), shots=10)
+        payload = mock_client.create_batch.call_args.kwargs["jobs"][0]["serialized_sequence"]
+        assert json.loads(payload) == abstract_repr
+        assert isinstance(Sequence.from_abstract_repr(payload), Sequence)
 
     def test_submit_to_device_unknown_to_pasqal_cloud_raises(self, mock_client, catalog):
         """A catalog device the pinned pasqal-cloud cannot target fails before submission."""
