@@ -22,6 +22,7 @@ Module defining QbraidDevice class
 from __future__ import annotations
 
 import math
+from contextvars import ContextVar
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, overload
 
@@ -30,7 +31,7 @@ from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
-from qbraid.programs import ExperimentType
+from qbraid.programs import ExperimentType, get_program_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
@@ -42,7 +43,25 @@ if TYPE_CHECKING:
     import qbraid_core.services.runtime
     from qbraid_core.services.runtime.schemas import DeviceCalibration
 
+    import qbraid.programs
     import qbraid.runtime
+
+
+def _program_type_alias(program: Any) -> str | None:
+    """The program's type alias, or ``None``; recorded for analytics, so it never fails a run."""
+    try:
+        return get_program_type_alias(program, safe=True)
+    except Exception:  # pylint: disable=broad-exception-caught
+        return None
+
+
+# Set by QbraidDevice.run() around the base run(), so that submit(), which only sees the
+# converted programs, can record which framework each was written in. A ContextVar because
+# one device is often shared and concurrent runs must each record their own programs, and
+# so that submit() keeps its signature for subclasses that override it.
+_RUN_INPUT_TYPES: ContextVar[tuple[QbraidDevice, list[str | None]] | None] = ContextVar(
+    "qbraid_native_run_input_types", default=None
+)
 
 
 class QbraidDevice(QuantumDevice):
@@ -205,6 +224,41 @@ class QbraidDevice(QuantumDevice):
 
         return self.profile.noise_models.get(noise_model).name
 
+    def run(
+        self,
+        run_input: qbraid.programs.QPROGRAM | list[qbraid.programs.QPROGRAM],
+        *args,
+        **kwargs,
+    ) -> QbraidJob | list[QbraidJob]:
+        """Run as :meth:`QuantumDevice.run` does, recording each input's program type.
+
+        :meth:`submit` sends the type as ``metadata.programType``, so a job records the
+        framework the program was written in rather than the format it was converted to.
+        """
+        programs = run_input if isinstance(run_input, list) else [run_input]
+        token = _RUN_INPUT_TYPES.set((self, [_program_type_alias(p) for p in programs]))
+        try:
+            return super().run(run_input, *args, **kwargs)
+        finally:
+            _RUN_INPUT_TYPES.reset(token)
+
+    def _job_program_types(self, num_jobs: int, as_batch: bool) -> list[str | list[str] | None]:
+        """The ``programType`` of each job :meth:`submit` creates, ``None`` where unknown.
+
+        ``None`` throughout when :meth:`submit` was called directly rather than from
+        :meth:`run`. A batch job holding programs of several types records their sorted aliases.
+        """
+        current = _RUN_INPUT_TYPES.get()
+        if current is None or current[0] is not self:
+            return [None] * num_jobs
+        aliases = current[1]
+        if not as_batch:
+            return list(aliases) if len(aliases) == num_jobs else [None] * num_jobs
+        known = sorted({alias for alias in aliases if alias is not None})
+        if not known:
+            return [None]
+        return [known[0] if len(known) == 1 else known]
+
     @overload
     def submit(
         self,
@@ -214,6 +268,8 @@ class QbraidDevice(QuantumDevice):
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
         as_batch: bool = False,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> QbraidJob: ...
 
     @overload
@@ -225,6 +281,8 @@ class QbraidDevice(QuantumDevice):
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
         as_batch: bool = False,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> list[QbraidJob]: ...
 
     @overload
@@ -236,6 +294,8 @@ class QbraidDevice(QuantumDevice):
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
         as_batch: bool = True,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> QbraidJob: ...
 
     def submit(
@@ -246,6 +306,8 @@ class QbraidDevice(QuantumDevice):
         tags: dict[str, str | int | bool] | None = None,
         runtime_options: dict[str, Any] | None = None,
         as_batch: bool = False,
+        *,
+        metadata: dict[str, Any] | None = None,
     ) -> QbraidJob | list[QbraidJob]:
         """Submit a program to the device.
 
@@ -259,6 +321,12 @@ class QbraidDevice(QuantumDevice):
             name: The name of the job.
             tags: A dictionary of tags to add to the job.
             runtime_options: A dictionary of runtime options to pass to the device.
+            metadata: Keyword-only. JSON values to store with the job, returned as
+                ``job.metadata()["metadata"]["client"]``. ``"programType"`` is reserved: a
+                value given here is dropped, and :meth:`run` sets it to the alias of the
+                program passed in, such as ``"qiskit"``, when that type is registered. The
+                8 KiB and 32-level limits apply to the metadata sent, ``programType``
+                included.
             as_batch: When True, submit all programs as a single batch job
                 (one API call, one QRN, one status). Returns a single QbraidJob.
                 Check QbraidDevice.profile.batch_job_support to verify if
@@ -294,18 +362,30 @@ class QbraidDevice(QuantumDevice):
             group_job_qrn,
         )
 
-        jobs = []
-
-        for program in run_input:
-            job_request = JobRequest(
-                deviceQrn=self.id,
-                program=program,
-                shots=shots,
-                name=name,
-                tags=tags,
-                runtimeOptions=runtime_options,
-                groupJobQrn=group_job_qrn,
+        program_types = self._job_program_types(len(run_input), as_batch)
+        # Build every request first, so invalid metadata fails before any job is created.
+        job_requests = []
+        for program, program_type in zip(run_input, program_types):
+            job_metadata = dict(metadata or {})
+            # Reserved: only the SDK records it, from the program passed to run().
+            job_metadata.pop("programType", None)
+            if program_type is not None:
+                job_metadata["programType"] = program_type
+            job_requests.append(
+                JobRequest(
+                    deviceQrn=self.id,
+                    program=program,
+                    shots=shots,
+                    name=name,
+                    tags=tags,
+                    runtimeOptions=runtime_options,
+                    groupJobQrn=group_job_qrn,
+                    metadata=job_metadata,
+                )
             )
+
+        jobs = []
+        for job_request in job_requests:
             job_data = self.client.create_job(job_request)
             job = QbraidJob(job_id=job_data.jobQrn, device=self, client=self.client)
             jobs.append(job)
