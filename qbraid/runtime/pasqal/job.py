@@ -57,9 +57,12 @@ def _status_map() -> dict[BatchStatus, JobStatus]:
     }
 
 
-# Pasqal documents ``PAUSED`` as a batch status, but ``BatchStatus`` does not
-# include it. A paused batch has not finished, so it reads as queued.
-_UNENUMERATED_STATUSES: dict[str, JobStatus] = {"PAUSED": JobStatus.QUEUED}
+# Statuses Pasqal reports that ``BatchStatus`` does not include. A paused batch has not
+# finished, so it reads as queued; a batch reads as ``CANCELING`` briefly after a cancel.
+_UNENUMERATED_STATUSES: dict[str, JobStatus] = {
+    "PAUSED": JobStatus.QUEUED,
+    "CANCELING": JobStatus.CANCELLING,
+}
 
 
 class PasqalJobError(QbraidRuntimeError):

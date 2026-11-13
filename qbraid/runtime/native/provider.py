@@ -24,7 +24,7 @@ import re
 from typing import TYPE_CHECKING, Any, Callable
 
 import pyqasm
-from qbraid_core.exceptions import AuthError
+from qbraid_core.exceptions import AuthError, RequestsApiError
 from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
@@ -193,6 +193,11 @@ class QbraidProvider(QuantumProvider):
                 raise ResourceNotFoundError(
                     "Failed to authenticate with the Quantum Runtime service."
                 ) from err
+            except RequestsApiError as err:
+                # A 429, 5xx or dropped connection on the credentials check. Raised as the
+                # same error a failed device lookup raises; status_code and retry_after
+                # are read from the chain.
+                raise QuantumRuntimeServiceRequestError(str(err)) from err
         return self._client
 
     @staticmethod
@@ -263,8 +268,14 @@ class QbraidProvider(QuantumProvider):
         try:
             # TODO: Implement support for device query
             devices = self.client.list_devices(include_retired=include_retired, **kwargs)
-        except (ValueError, QuantumRuntimeServiceRequestError) as err:
+        except ValueError as err:
             raise ResourceNotFoundError("No devices found matching given criteria.") from err
+        except QuantumRuntimeServiceRequestError as err:
+            # Only a 404 means nothing matched. A rate limit, outage or connection error
+            # surfaces as itself, with its status_code.
+            if err.status_code == 404:
+                raise ResourceNotFoundError("No devices found matching given criteria.") from err
+            raise
 
         filtered_devices = [device for device in devices if device.directAccess is True]
 
@@ -282,13 +293,21 @@ class QbraidProvider(QuantumProvider):
             QuantumDevice: the quantum device corresponding to the given ID
 
         Raises:
-            ResourceNotFoundError: If device cannot be loaded from quantum service data
+            ResourceNotFoundError: If the device does not exist (404) or its data
+                cannot be loaded.
+            QuantumRuntimeServiceRequestError: If the lookup fails for any other
+                reason, such as a rate limit (429) or an outage; ``status_code``
+                holds the HTTP status and ``retry_after`` the seconds to wait on a 429.
             ValueError: If qBraid does not support direct access to the device
         """
         try:
             device_model = self.client.get_device(device_id)
-        except (ValueError, QuantumRuntimeServiceRequestError) as err:
+        except ValueError as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+        except QuantumRuntimeServiceRequestError as err:
+            if err.status_code == 404:
+                raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
+            raise
 
         if not device_model.directAccess:
             raise ValueError(
