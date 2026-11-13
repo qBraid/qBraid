@@ -222,6 +222,32 @@ def test_cirq_to_braket_readout_index_follows_key():
     assert _braket_counts(converted) == expected
 
 
+@pytest.mark.parametrize(
+    "measurements, expected",
+    [
+        # keys without an index come after indexed ones
+        ([((2,), "res"), ((0,), "c_1"), ((1,), "c_0")], "110"),
+        # registers sort by name before index: a_0, a_1, b_0
+        ([((0,), "b_0"), ((2,), "a_1"), ((1,), "a_0")], "101"),
+        # equal (register, index): earlier measurement first, then qubit order within it
+        ([((2, 0), "c_0"), ((1,), "c_00")], "011"),
+    ],
+)
+def test_cirq_to_braket_readout_key_ordering(measurements, expected):
+    """Braket bits follow (register, index) from the key, with unindexed keys last."""
+    pytest.importorskip("braket", reason="amazon-braket-sdk not installed")
+    from qbraid.transpiler.conversions.cirq import (  # pylint: disable=import-outside-toplevel
+        cirq_to_braket,
+    )
+
+    qubits = cirq.LineQubit.range(NUM_QUBITS)
+    circuit = _cirq_prepared(qubits)
+    for indices, key in measurements:
+        circuit.append(cirq.Moment(cirq_ops.measure(*(qubits[i] for i in indices), key=key)))
+
+    assert _braket_counts(cirq_to_braket(circuit)) == expected
+
+
 def test_cirq_to_braket_invert_mask_lands_on_distinct_bits():
     """An inverted measurement flips its own bit and no other."""
     pytest.importorskip("braket", reason="amazon-braket-sdk not installed")

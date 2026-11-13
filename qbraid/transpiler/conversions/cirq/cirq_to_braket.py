@@ -79,6 +79,11 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
     _validate_resolved_parameters(circuit, "Amazon Braket")
     # CircuitOperations (e.g. QASM custom gates read by Cirq) have no gate to map.
     circuit = unroll_circuit_op(circuit, deep=True, tags_to_check=None)
+    qudits = sorted(q for q in circuit.all_qubits() if q.dimension != 2)
+    if qudits:
+        raise ProgramConversionError(
+            f"Amazon Braket circuits act only on qubits, not qudits such as {qudits[0]}."
+        )
     qubit_mapping = _braket_qubit_mapping(circuit)
     # Each Measure needs its own classical bit: Braket defaults Measure's index to 0, which
     # would collapse every readout onto b[0].
@@ -100,19 +105,23 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
 def _braket_qubit_mapping(circuit: Circuit) -> dict[cirq_ops.Qid, int]:
     """Maps each Cirq qubit to a distinct Braket qubit index.
 
-    Keeps each qubit's integer label (e.g. ``LineQubit(5)`` -> 5) when the labels rise
-    strictly in Cirq's sorted order, which is the order of Cirq's own unitary. Otherwise
-    the qubits are numbered 0, 1, ... in that order: labels can collide
+    Keeps each qubit's integer label (e.g. ``LineQubit(5)`` -> 5) when the labels are
+    non-negative and rise strictly in Cirq's sorted order, which is the order of Cirq's own
+    unitary. Otherwise the qubits are numbered 0, 1, ... in that order: labels can collide
     (``NamedQubit("a_0")`` and ``NamedQubit("b_0")`` both label as 0, as do
-    ``GridQubit(0, 0)`` and ``GridQubit(0, 1)``) or run out of order (``a_1`` sorts
-    before ``b_0``), and either would change the circuit.
+    ``GridQubit(0, 0)`` and ``GridQubit(0, 1)``), run out of order (``a_1`` sorts before
+    ``b_0``) or be negative, which Braket rejects.
     """
     qubits = sorted(circuit.all_qubits())
     try:
         labels = [qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in qubits]
     except ValueError:
         labels = []
-    if len(labels) != len(qubits) or any(a >= b for a, b in zip(labels, labels[1:])):
+    if (
+        len(labels) != len(qubits)
+        or (labels and labels[0] < 0)
+        or any(a >= b for a, b in zip(labels, labels[1:]))
+    ):
         labels = list(range(len(qubits)))
     return dict(zip(qubits, labels))
 
@@ -120,10 +129,11 @@ def _braket_qubit_mapping(circuit: Circuit) -> dict[cirq_ops.Qid, int]:
 def _classical_bits(circuit: Circuit) -> list[int]:
     """Braket bit index for each measured qubit, in the order the measurements occur.
 
-    Bits follow the ``(register, index)`` parsed from keys such as ``c_3``, as in
-    ``cirq_to_qasm2`` and ``cirq_to_pyquil``, so ``c[3] = measure q[0]`` stays after
-    ``c[2]`` whichever is measured first. Keys without an index come after, in
-    measurement order.
+    Bits follow the ``(register, index)`` parsed from keys such as ``c_3``, so
+    ``c[3] = measure q[0]`` stays after ``c[2]`` whichever is measured first. Keys without
+    an index come after, in measurement order. This is the order ``cirq_to_qasm2`` declares
+    its registers in; ``cirq_to_pyquil`` agrees only when every key is a single-qubit
+    ``<register>_<index>``.
     """
     slots = []
     measurements = (

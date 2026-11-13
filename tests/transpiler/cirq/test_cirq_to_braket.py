@@ -152,6 +152,37 @@ def test_to_braket_keeps_qubit_order_when_labels_out_of_order(qubits):
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
+@pytest.mark.parametrize(
+    "qubits, expected",
+    (
+        ([LineQubit(2), LineQubit(5)], [2, 5]),
+        ([cirq.NamedQubit("q2"), cirq.NamedQubit("q10")], [2, 10]),
+        ([LineQubit(-1), LineQubit(2)], [0, 1]),
+    ),
+)
+def test_to_braket_qubit_labels(qubits, expected):
+    """Test that non-negative rising integer labels are kept, and others renumbered"""
+    cirq_circuit = Circuit(ops.CNOT(qubits[1], qubits[0]))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert sorted(int(q) for q in braket_circuit.qubits) == expected
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+@pytest.mark.parametrize(
+    "operation",
+    (
+        cirq.XPowGate(dimension=3).on(cirq.LineQid(0, dimension=3)),
+        cirq.ControlledGate(cirq.X, control_qid_shape=(3,), control_values=[2]).on(
+            cirq.LineQid(0, dimension=3), LineQubit(1)
+        ),
+    ),
+)
+def test_to_braket_rejects_qudits(operation):
+    """Test that qids of dimension other than 2 are rejected"""
+    with pytest.raises(ProgramConversionError, match="qudits"):
+        cirq_to_braket(Circuit(operation))
+
+
 def test_to_braket_non_parameterized_single_qubit_gates():
     """Test converting circuit containing non-parameterized single-qubits gates"""
     qreg = LineQubit.range(4)
