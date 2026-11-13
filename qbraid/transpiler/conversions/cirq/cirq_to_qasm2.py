@@ -28,14 +28,13 @@ from cirq import ops, value
 from qbraid._version import __version__ as qbraid_version
 from qbraid.transpiler.annotations import weight
 
-from ._utils import _validate_resolved_parameters
+from ._utils import _BIT_INDEX, _validate_resolved_parameters
 
 if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm2StringType
 
 
 _CREG = re.compile(r"^creg\s+(?P<name>\w+)\s*\[(?P<size>\d+)\]\s*;\s*$")
-_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 
 def _order_cregs_by_key(qasm: str) -> str:

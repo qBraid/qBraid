@@ -14,9 +14,14 @@
 
 """Shared validation for Cirq conversion functions."""
 
+import re
+
 import cirq
 
 from qbraid.transpiler.exceptions import ProgramConversionError
+
+# A measurement key such as ``c_3``: bit 3 of register ``c``.
+_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 
 def _validate_resolved_parameters(circuit: cirq.Circuit, target: str) -> None:

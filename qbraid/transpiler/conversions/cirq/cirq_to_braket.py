@@ -21,7 +21,6 @@ Module for converting Braket circuits to Cirq circuits
 """
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING, Iterator, Optional, Union
 
 import numpy as np
@@ -53,7 +52,7 @@ import qbraid.programs.gate_model.cirq
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
-from ._utils import _validate_resolved_parameters
+from ._utils import _BIT_INDEX, _validate_resolved_parameters
 
 try:
     from .braket_custom import C as BKControl
@@ -116,9 +115,6 @@ def _braket_qubit_mapping(circuit: Circuit) -> dict[cirq_ops.Qid, int]:
     if len(labels) != len(qubits) or any(a >= b for a, b in zip(labels, labels[1:])):
         labels = list(range(len(qubits)))
     return dict(zip(qubits, labels))
-
-
-_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 
 def _classical_bits(circuit: Circuit) -> list[int]:

@@ -30,6 +30,8 @@ from qbraid_core._import import LazyLoader
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
+from ._utils import _BIT_INDEX
+
 try:
     from .cirq_quil_output import QuilOutput
 except ImportError:  # pragma: no cover
@@ -55,9 +57,6 @@ def _declared_registers(circuit: cirq.circuits.Circuit) -> dict[str, int]:
         name, size = (match.group(1), int(match.group(2)) + 1) if match else (symbol, 1)
         sizes[name] = max(sizes.get(name, 0), size)
     return sizes
-
-
-_BIT_INDEX = re.compile(r"^(?P<register>.+)_(?P<index>\d+)$")
 
 
 def _classical_bit_order(terminal: list[cirq_ops.Operation]) -> list[cirq_ops.Operation]:
