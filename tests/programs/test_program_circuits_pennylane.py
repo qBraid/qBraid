@@ -50,6 +50,45 @@ def test_pennylane_tape(bell_circuit, bell_unitary):
 
 
 @pytest.mark.parametrize("wires", [(0, 1), ("a", "b")])
+def test_pennylane_unitary_sorts_wires(wires):
+    """Test that the unitary orders wires by label, not by first use."""
+    w1, w2 = wires
+    with QuantumTape() as tape:
+        qml.Hadamard(wires=w2)
+        qml.PauliX(wires=w1)
+
+    x = np.array([[0, 1], [1, 0]])
+    h = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    assert np.allclose(PennylaneTape(tape).unitary(), np.kron(x, h))
+
+
+def test_pennylane_unitary_mixed_wire_labels():
+    """Test that wires of mixed label types keep first-use order instead of failing to sort."""
+    with QuantumTape() as tape:
+        qml.Hadamard(wires="a")
+        qml.PauliX(wires=0)
+
+    x = np.array([[0, 1], [1, 0]])
+    h = np.array([[1, 1], [1, -1]]) / np.sqrt(2)
+    assert np.allclose(PennylaneTape(tape).unitary(), np.kron(h, x))
+
+
+def test_pennylane_mixed_wire_labels_remove_idle_and_reverse():
+    """Test that wires of mixed label types can be compacted and reversed without sorting."""
+    with QuantumTape() as tape:
+        qml.Hadamard(wires="a")
+        qml.PauliX(wires=0)
+
+    program = PennylaneTape(tape)
+    program.remove_idle_qubits()
+    assert program.program.wires.tolist() == [0, 1]
+
+    program = PennylaneTape(tape)
+    program.reverse_qubit_order()
+    assert [op.wires.tolist() for op in program.program.operations] == [[0], ["a"]]
+
+
+@pytest.mark.parametrize("wires", [(0, 1), ("a", "b")])
 def test_pennylane_reverse_qubit_order(wires):
     """Test PennylaneTape class with qubits in reverse order."""
     w1, w2 = wires

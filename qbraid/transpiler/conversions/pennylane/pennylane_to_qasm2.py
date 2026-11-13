@@ -42,4 +42,16 @@ def pennylane_to_qasm2(tape: QuantumTape) -> Qasm2StringType:
     """
     import pennylane  # pylint: disable=import-outside-toplevel
 
+    from qbraid.programs.gate_model.pennylane import (  # pylint: disable=import-outside-toplevel
+        wire_order,
+    )
+
+    wires = wire_order(tape.wires)
+    if wires != tape.wires.tolist():
+        # to_openqasm numbers qubits, measured ones included, by position in tape.wires, which
+        # is first-use order. A leading visual-only barrier makes that the label order and
+        # decomposes to nothing, so it adds no line to the output.
+        barrier = pennylane.Barrier(wires=wires, only_visual=True)
+        tape = tape.copy(operations=[barrier, *tape.operations])
+
     return pennylane.to_openqasm(tape, measure_all=False)
