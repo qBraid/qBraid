@@ -1,6 +1,6 @@
 rustworkx>=0.15.0
 numpy>=1.17
-openqasm3[parser]>=0.4.0
+openqasm3[parser]>=0.4.0,<1.0.2
 qbraid-core>=0.6.47,<1.0
 pydantic>2.0.0
 pydantic-core
