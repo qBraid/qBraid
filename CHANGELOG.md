@@ -42,7 +42,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
-- `cirq_to_braket` no longer merges or permutes qubits whose integer labels collide, are out of order or are negative. It orders classical bits by the `(register, index)` in each measurement key, as `cirq_to_qasm2` does, with keys that have no index last. It unrolls `CircuitOperation`s, and rejects qudits instead of converting them as qubits ([#1534](https://github.com/qBraid/qBraid/pull/1534))
+- `cirq_to_braket` no longer merges or permutes qubits whose integer labels collide, are out of order or are negative. It orders classical bits by the `(register, index)` in each measurement key, as `cirq_to_qasm2` does, with keys that have no index last. It unrolls `CircuitOperation`s, and raises `ProgramConversionError` for qudits ([#1534](https://github.com/qBraid/qBraid/pull/1534))
 - Counts from a partially measured circuit on an Amazon Braket device keep each result at its classical bit, as in `b[1] = measure q[0]`, instead of reordering them by measurement order ([#1534](https://github.com/qBraid/qBraid/pull/1534))
 - `device.run()` on a batch checks device status once instead of once per program, so large batches no longer exhaust the device-lookup rate limit. Every program is still validated ([#1532](https://github.com/qBraid/qBraid/pull/1532))
 - A request Pasqal Cloud refuses, such as a rejected batch, raises `PasqalDeviceError` or `PasqalJobError` with Pasqal's reason instead of a raw `pasqal-cloud` error that `except Exception` misses, and an unrecognised batch status raises instead of leaving `wait_for_final_state()` polling a finished job ([#1520](https://github.com/qBraid/qBraid/pull/1520), [#1522](https://github.com/qBraid/qBraid/pull/1522))
