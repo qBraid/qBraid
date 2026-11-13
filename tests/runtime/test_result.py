@@ -39,6 +39,7 @@ from qbraid.runtime.result_data import (
     AnalogShotResult,
     AnnealingResultData,
     GateModelResultData,
+    OtherResultData,
 )
 
 
@@ -912,3 +913,24 @@ class TestReverseBitOrder:
     def test_empty_input(self):
         """A job with no counts converts to an empty mapping rather than raising."""
         assert reverse_bit_order({}) == {}
+
+
+def test_other_result_data_reads_like_the_dict_the_device_sent():
+    """OtherResultData keeps an OTHER device's output as sent, readable like a dict."""
+    sent = {"compressedProgram": None, "statusMsg": "no verified improvement", "irType": "qasm2"}
+    data = OtherResultData.from_dict(sent)
+    assert data.experiment_type == ExperimentType.OTHER
+    assert data["statusMsg"] == "no verified improvement"
+    assert data.get("compression") is None and "irType" in data and len(data) == 3
+    assert data.to_dict() == sent and data.to_dict() is not sent
+    assert not data.extra
+    assert repr(data) == "OtherResultData(keys=['compressedProgram', 'statusMsg', 'irType'])"
+
+
+def test_other_result_data_copies_its_input():
+    """Changing the dict passed in does not change the result."""
+    sent = {"irType": "qasm3"}
+    data = OtherResultData(sent)
+    sent["irType"] = "changed"
+    assert data["irType"] == "qasm3"
+    assert not OtherResultData().to_dict()

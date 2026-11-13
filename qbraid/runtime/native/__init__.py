@@ -32,11 +32,16 @@ Classes
     QbraidJob
 
 """
-from qbraid_core import QbraidClientV1, QbraidSessionV1, Session
+from qbraid_core import QbraidClientV1, QbraidSessionV1, Session, register_client
+
+from qbraid._version import __version__
 
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
+
+# Tells the qBraid API that requests from this process come through the SDK.
+register_client("qbraid", __version__)
 
 __all__ = [
     "Session",

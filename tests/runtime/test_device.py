@@ -30,14 +30,17 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+import requests
 from pyqasm.exceptions import PyQasmError
+from qbraid_core.exceptions import AuthError, RequestsApiError
+from qbraid_core.services.runtime import QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import DeviceCalibration, Program, RuntimeDevice
 
 from qbraid._caching import cache_disabled, clear_cache
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
-from qbraid.runtime import Result, TargetProfile, ValidationLevel
+from qbraid.runtime import DeviceStatus, Result, TargetProfile, ValidationLevel
 from qbraid.runtime.exceptions import ProgramValidationError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.calibrations import edge_costs, qubit_costs
@@ -280,6 +283,98 @@ def test_provider_get_devices_raises_for_no_results(mock_client):
     provider = QbraidProvider(client=client)
     with pytest.raises(ResourceNotFoundError, match="Device .* not found"):
         provider.get_device("nonexistent:device:id")
+
+
+def _device_lookup_error(status: int | None, message: str) -> QuantumRuntimeServiceRequestError:
+    """Build the chain the client raises: service error -> API error -> HTTP error."""
+    api_err = RequestsApiError(message, status_code=status)
+    if status is not None:
+        headers = {"Retry-After": "30"} if status == 429 else {}
+        response = Mock(status_code=status, headers=headers)
+        http_err = requests.HTTPError(message)
+        http_err.response = response
+        api_err.__cause__ = http_err
+    service_err = QuantumRuntimeServiceRequestError(f"Failed to retrieve device: {message}")
+    service_err.__cause__ = api_err
+    return service_err
+
+
+@pytest.mark.parametrize("method", ["get_device", "get_devices"])
+def test_provider_device_lookup_404_is_not_found(mock_client, method):
+    """Only a 404 from the API is reported as a missing device."""
+    provider = QbraidProvider(client=mock_client)
+    error = _device_lookup_error(404, "Device not found.")
+    client_method = "get_device" if method == "get_device" else "list_devices"
+    with (
+        patch.object(mock_client, client_method, side_effect=error),
+        cache_disabled(provider),
+    ):
+        with pytest.raises(ResourceNotFoundError):
+            if method == "get_device":
+                provider.get_device("qbraid:qbraid:sim:qir-sv")
+            else:
+                provider.get_devices()
+
+
+@pytest.mark.parametrize("method", ["get_device", "get_devices"])
+@pytest.mark.parametrize(
+    "status, message",
+    [
+        (429, "Too many requests from user, please try again later."),
+        (500, "Internal server error."),
+        (None, "Connection aborted."),
+    ],
+)
+def test_provider_device_lookup_other_errors_surface(mock_client, method, status, message):
+    """A rate limit, outage or connection error is raised as itself, not as "not found" (#1518)."""
+    provider = QbraidProvider(client=mock_client)
+    error = _device_lookup_error(status, message)
+    client_method = "get_device" if method == "get_device" else "list_devices"
+    with (
+        patch.object(mock_client, client_method, side_effect=error),
+        cache_disabled(provider),
+    ):
+        with pytest.raises(QuantumRuntimeServiceRequestError) as exc_info:
+            if method == "get_device":
+                provider.get_device("qbraid:qbraid:sim:qir-sv")
+            else:
+                provider.get_devices()
+    assert exc_info.value is error
+    assert exc_info.value.status_code == status
+    assert exc_info.value.retry_after == (30.0 if status == 429 else None)
+    assert message in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "status, message",
+    [
+        (429, "Too many requests from user, please try again later."),
+        (503, "Service unavailable."),
+        (None, "Connection aborted."),
+    ],
+)
+def test_provider_client_verify_failure_surfaces(status, message):
+    """A 429, outage or connection error on the credentials check is not an auth failure."""
+    cause = _device_lookup_error(status, message).__cause__
+    provider = QbraidProvider(api_key="test-key")
+    with patch("qbraid.runtime.native.provider.QuantumRuntimeClient", side_effect=cause):
+        with pytest.raises(QuantumRuntimeServiceRequestError) as exc_info:
+            _ = provider.client
+    assert exc_info.value.__cause__ is cause
+    assert exc_info.value.status_code == status
+    assert exc_info.value.retry_after == (30.0 if status == 429 else None)
+    assert message in str(exc_info.value)
+
+
+def test_provider_client_auth_failure_is_not_found():
+    """Rejected credentials still raise ResourceNotFoundError."""
+    provider = QbraidProvider(api_key="test-key")
+    with patch(
+        "qbraid.runtime.native.provider.QuantumRuntimeClient",
+        side_effect=AuthError("Access denied due to missing or invalid credentials"),
+    ):
+        with pytest.raises(ResourceNotFoundError, match="Failed to authenticate"):
+            _ = provider.client
 
 
 def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
@@ -578,6 +673,113 @@ def test_device_merge_options(mock_profile, mock_client):
 
     device.set_options(validate=2)
     assert device._options == default_options
+
+
+@pytest.mark.parametrize("size", [0, 1, 5])
+@pytest.mark.parametrize("level", list(ValidationLevel))
+@pytest.mark.parametrize("as_batch", [False, True])
+def test_run_checks_device_status_once_per_batch(mock_qbraid_device, size, level, as_batch):
+    """A batch must not fetch device status once for every circuit (#1518)."""
+    device = mock_qbraid_device
+    device._target_spec = ProgramSpec(cirq.Circuit, alias="cirq")
+    device.set_options(transpile=False, transform=False, prepare=False, validate=level)
+    circuits = [cirq.Circuit(cirq.X(cirq.LineQubit(i))) for i in range(size)]
+
+    with (
+        patch.object(device.client, "get_device", wraps=device.client.get_device) as get_device,
+        patch.object(device._target_spec, "validate") as validate,
+        patch.object(device, "submit", return_value="submitted") as submit,
+    ):
+        for _ in range(2):
+            assert device.run(circuits, shots=10, as_batch=as_batch) == "submitted"
+        assert get_device.call_count == (2 if size and level != ValidationLevel.NONE else 0)
+        assert validate.call_count == (2 * size if level != ValidationLevel.NONE else 0)
+        submit.assert_called_with(circuits, shots=10, as_batch=as_batch)
+
+
+def test_run_checks_device_status_again_for_next_call(mock_basic_device):
+    """Status must be fresh for each run; an offline batch warns only once."""
+    device = mock_basic_device
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+
+    with (
+        patch.object(
+            device, "status", side_effect=[DeviceStatus.ONLINE, DeviceStatus.OFFLINE]
+        ) as status,
+        patch.object(device, "submit"),
+    ):
+        device.run(circuit)
+        with pytest.warns(UserWarning, match="Device is not online") as recorded:
+            device.run([circuit] * 5)
+        assert len(recorded) == 1
+        assert status.call_count == 2
+
+
+def test_apply_runtime_profile_checks_device_status_each_time(mock_basic_device):
+    """Standalone profile calls must keep their normal device status checks."""
+    device = mock_basic_device
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+
+    with patch.object(device, "status", wraps=device.status) as status:
+        assert device.apply_runtime_profile(circuit) == circuit
+        assert device.apply_runtime_profile(circuit) == circuit
+        assert status.call_count == 2
+
+
+def test_run_still_rejects_invalid_later_program(mock_basic_device):
+    """Checking status once must not skip validation for later circuits in a batch."""
+    device = mock_basic_device
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    small = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+    large = cirq.Circuit(cirq.X.on_each(cirq.LineQubit.range(65)))
+
+    with (
+        patch.object(device, "status", wraps=device.status) as status,
+        patch.object(device, "submit") as submit,
+    ):
+        with pytest.raises(ProgramValidationError, match="exceeds the device's capacity"):
+            device.run([small, large])
+        status.assert_called_once()
+        submit.assert_not_called()
+
+    # A failed run must not leave the batch's status record behind.
+    with patch.object(device, "status", wraps=device.status) as status:
+        device.apply_runtime_profile(small)
+        device.apply_runtime_profile(small)
+        assert status.call_count == 2
+
+
+def test_run_batch_keeps_working_with_old_signature_overrides(mock_profile):
+    """Subclasses that override validate or apply_runtime_profile with the original
+    one-argument signatures must still run batches, checking status once."""
+
+    class OldSignatureDevice(MockDevice):
+        """Overrides written before the batch status check existed."""
+
+        # pylint: disable=arguments-differ,useless-parent-delegation
+        def validate(self, run_input_batch):
+            return super().validate(run_input_batch)
+
+        def apply_runtime_profile(self, run_input):
+            return super().apply_runtime_profile(run_input)
+
+    device = OldSignatureDevice(profile=mock_profile)
+    device._target_spec = None
+    device.set_options(transform=False, prepare=False)
+    circuit = cirq.Circuit(cirq.X(cirq.LineQubit(0)))
+
+    with (
+        patch.object(device, "status", return_value=DeviceStatus.ONLINE) as status,
+        patch.object(device, "submit", return_value="submitted"),
+    ):
+        assert device.run(circuit) == "submitted"
+        assert device.run([circuit] * 3) == "submitted"
+        assert status.call_count == 2
 
 
 def test_device_validate_non_native_type_logs(mock_qbraid_device, caplog):

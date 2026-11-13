@@ -18010,3 +18010,69 @@ def test_compiled_program_does_not_leak_into_metadata():
     job.compiled_program()
 
     assert "compiledProgram" not in job.metadata()
+
+
+# ============================================================================
+# QbraidJob.compressed_program Tests
+# ============================================================================
+
+COMPRESSED_QASM3 = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[2] q;\nh q[0];\ncx q[0], q[1];\n'
+
+
+class MockClientCompressedProgram(MockQuantumRuntimeClient):
+    """Client whose compressed-program call is scripted per test."""
+
+    def __init__(self, *, result=None, error=None):
+        super().__init__()
+        self._result = result
+        self._error = error
+        self.calls = 0
+
+    def get_job_compressed_program(self, _job_qrn: str) -> Program:
+        """Return the scripted program, or raise the scripted error."""
+        self.calls += 1
+        if self._error is not None:
+            raise self._error
+        return self._result
+
+
+def test_compressed_program_returns_program():
+    """A compressed job returns the program its device ran."""
+    program = Program(format="qasm3", data=COMPRESSED_QASM3)
+    client = MockClientCompressedProgram(result=program)
+    job = QbraidJob(job_id=SV1_GET_JOB.jobQrn, client=client)
+
+    assert job.compressed_program() is program
+
+
+def test_compressed_program_none_when_not_compressed():
+    """A 404 means the job was not compressed, which is not an error."""
+    client = MockClientCompressedProgram(error=_service_error(404))
+    job = QbraidJob(job_id=SV1_GET_JOB.jobQrn, client=client)
+
+    assert job.compressed_program() is None
+
+
+@pytest.mark.parametrize("status", [500, 401, None])
+def test_compressed_program_reraises_non_404(status):
+    """Anything other than a 404 is a real failure and must propagate."""
+    client = MockClientCompressedProgram(error=_service_error(status))
+    job = QbraidJob(job_id=SV1_GET_JOB.jobQrn, client=client)
+
+    with pytest.raises(QuantumRuntimeServiceRequestError):
+        job.compressed_program()
+
+
+def test_compressed_program_is_cached_but_absence_is_not():
+    """Fetched at most once when found; a job asked before compression applied is asked again."""
+    program = Program(format="qasm3", data=COMPRESSED_QASM3)
+    client = MockClientCompressedProgram(error=_service_error(404))
+    job = QbraidJob(job_id=SV1_GET_JOB.jobQrn, client=client)
+
+    assert job.compressed_program() is None
+    client._error = None
+    client._result = program
+    assert job.compressed_program() is program
+    assert job.compressed_program() is program
+    assert client.calls == 2
+    assert "compressedProgram" not in job.metadata()

@@ -59,6 +59,7 @@ Classes
     AnalogResultData
     AnalogShotResult
     AnnealingResultData
+    OtherResultData
 
 Exceptions
 ------------
@@ -113,6 +114,7 @@ from .result_data import (
     AnalogShotResult,
     AnnealingResultData,
     GateModelResultData,
+    OtherResultData,
     ResultData,
 )
 
@@ -151,6 +153,7 @@ __all__ = [
     "AnalogResultData",
     "AnalogShotResult",
     "AnnealingResultData",
+    "OtherResultData",
     "ValidationLevel",
     "PROVIDERS",
 ]
