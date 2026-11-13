@@ -167,6 +167,9 @@ def test_from_braket_three_qubit_gates():
         Instruction(braket_gates.CY(), target=[1, 2], control=0, power=0),
         Instruction(braket_gates.CY(), target=[1, 2], control=0, power=10**6 + 1),
         Instruction(braket_gates.T(), target=0, power=-(10**6 + 3)),
+        Instruction(braket_gates.CY(), target=[0, 1], power=0.5),
+        Instruction(braket_gates.Rz(7.0), target=0, power=0.5),
+        Instruction(braket_gates.PhaseShift(5.0), target=0, power=0.5),
     ],
 )
 def test_from_braket_instruction_modifiers(instr):
@@ -174,6 +177,28 @@ def test_from_braket_instruction_modifiers(instr):
     braket_circuit = BKCircuit().add_instruction(instr)
     cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+@pytest.mark.parametrize("control_state", [[0, 1], 1])
+def test_from_braket_mixed_control_state(control_state):
+    """Test that control_state[i] applies to control[i].
+
+    Compared with an explicit circuit, as Braket's to_unitary() applies a mixed
+    control_state to the controls in reverse order.
+    """
+    instr = Instruction(braket_gates.X(), target=2, control=[0, 1], control_state=control_state)
+    cirq_circuit = braket_to_cirq(BKCircuit().add_instruction(instr))
+    expected = BKCircuit().x(0).ccnot(0, 1, 2).x(0).to_unitary()  # pylint: disable=no-member
+    assert np.allclose(cirq_circuit.unitary(qubit_order=LineQubit.range(3)), expected)
+
+
+@pytest.mark.parametrize("power", [2**40, 2**62, -(2**40 + 3)])
+def test_from_braket_large_power_of_dense_unitary(power):
+    """Test that a large integer power of a dense unitary converts to a unitary gate."""
+    matrix = cirq.testing.random_unitary(4, random_state=1)
+    instr = Instruction(braket_gates.Unitary(matrix), target=[0, 1], power=power)
+    unitary = cirq.unitary(braket_to_cirq(BKCircuit().add_instruction(instr)))
+    assert cirq.is_unitary(unitary)
 
 
 @pytest.mark.parametrize(

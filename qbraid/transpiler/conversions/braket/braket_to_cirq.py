@@ -118,6 +118,28 @@ def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
 _MAX_REPEATED_POWER = 16
 
 
+def _unitary_power(matrix: np.ndarray, power: int) -> np.ndarray:
+    """Return ``matrix**power`` for a unitary matrix and any integer power.
+
+    Squares repeatedly and projects each product back onto the nearest unitary, since
+    plain ``np.linalg.matrix_power`` drifts off-unitary over the ~log2(power) products.
+    """
+
+    def nearest_unitary(m: np.ndarray) -> np.ndarray:
+        u, _, vh = np.linalg.svd(m)
+        return u @ vh
+
+    if power < 0:
+        matrix, power = matrix.conj().T, -power
+    result = np.eye(len(matrix), dtype=complex)
+    while power:
+        if power & 1:
+            result = nearest_unitary(result @ matrix)
+        matrix = nearest_unitary(matrix @ matrix)
+        power >>= 1
+    return result
+
+
 def _from_braket_instruction(
     instr: BKInstruction, qubit_mapping: dict[int, cirq_devices.LineQubit]
 ) -> list[cirq_ops.Operation]:
@@ -146,7 +168,7 @@ def _from_braket_instruction(
                 # another branch.
                 base_matrix = instr.operator.to_matrix()
                 if integer:
-                    matrix = np.linalg.matrix_power(base_matrix, int(instr.power))
+                    matrix = _unitary_power(base_matrix, int(instr.power))
                 else:
                     matrix = fractional_matrix_power(base_matrix, instr.power)
                 ops = [cirq.MatrixGate(matrix).on(*targets)]
