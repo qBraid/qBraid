@@ -650,8 +650,8 @@ def test_cphase_inexact_angle_unitary(denominator):
 
 
 @pytest.mark.parametrize("rads", [1, 1 / 17, 1 / 25, 0.3183])
-def test_rzz_inexact_angle_unitary(rads):
-    """RZZ angles that aren't tidy fractions of pi must survive exactly."""
+def test_rzz_angle_unitary(rads):
+    """RZZ keeps its exact unitary at pi and at angles that aren't tidy fractions of pi."""
     pyquil = pytest.importorskip("pyquil")
     pyquil_simulation_tools = pytest.importorskip("pyquil.simulation.tools")
     q0, q1 = _make_qubits(2)
