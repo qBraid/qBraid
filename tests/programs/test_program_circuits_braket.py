@@ -212,6 +212,15 @@ def test_pad_measurements_multiple_partial_measurements():
     assert set(qprogram.program.partial_measurement_qubits) == {0, 2}
 
 
+def test_pad_measurements_records_qubits_in_classical_bit_order():
+    """Partial measurement qubits are recorded by classical bit, not instruction order."""
+    circuit = Circuit([Instruction(Measure(index=1), 0), Instruction(Measure(index=0), 1)])
+    circuit.i(2)
+    qprogram = BraketCircuit(circuit)
+    qprogram.pad_measurements()
+    assert qprogram.program.partial_measurement_qubits == [1, 0]
+
+
 def test_transform_with_ionq_device():
     """Test transform method with IonQ device calls pad_measurements."""
     circuit = Circuit().h(0).cnot(0, 1).measure(0)

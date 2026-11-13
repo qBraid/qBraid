@@ -1180,6 +1180,37 @@ def test_device_submit_batch_with_partial_measurements(mock_aws_device, sv1_prof
     assert results[1].id == "test_task_id"
 
 
+@patch("qbraid.runtime.aws.device.AwsDevice")
+def test_partial_measurement_counts_follow_classical_bits(mock_aws_device, sv1_profile):
+    """Padding a partially measured circuit keeps each result bit at its classical bit index."""
+    local = LocalSimulator()
+
+    def run(circuit, *args, tags=None, **kwargs):
+        task = local.run(circuit, *args, **kwargs)
+        task.metadata = lambda: {
+            "status": task.state(),
+            "quantumTaskArn": task.id,
+            "deviceArn": local.name,
+        }
+        task._aws_session = MagicMock()
+        task._aws_session.braket_client.get_quantum_task.return_value = {"tags": tags}
+        return task
+
+    mock_aws_device.return_value.run.side_effect = run
+    mock_aws_device.return_value.status = "ONLINE"
+    device = BraketDevice(sv1_profile)
+    # q2 is not measured, so the circuit is padded; q0 (|1>) is read into b[1], q1 into b[0]
+    circuit = Circuit.from_ir(
+        "OPENQASM 3.0;\nbit[2] b;\nqubit[3] q;\nx q[0];\ni q[2];\n"
+        "b[1] = measure q[0];\nb[0] = measure q[1];\n"
+    )
+
+    counts = device.run(circuit, shots=10).result().data.get_counts()
+
+    # qBraid bitstrings put b[0] last
+    assert counts == {"10": 10}
+
+
 @patch("qbraid.runtime.aws.job.BraketQuantumTask._get_partial_measurement_qubits_from_tags")
 @patch("qbraid.runtime.aws.job.AwsQuantumTask")
 def test_job_load_completed(mock_aws_quantum_task, mock_partial_measurements):

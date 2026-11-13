@@ -236,8 +236,13 @@ class BraketCircuit(GateModelProgram):
         for qubit in qubits_to_pad:
             self._program.measure(qubit)
 
-        # Store the original partial measurement qubits for result processing
-        self._program.partial_measurement_qubits = partial_measurement_qubits
+        # Store the original partial measurement qubits for result processing, in classical
+        # bit order: results are marginalised in this order, so instruction order would
+        # transpose a circuit such as ``b[1] = measure q[0]; b[0] = measure q[1];``.
+        self._program.partial_measurement_qubits = [
+            int(measure.target[0])
+            for measure in sorted(existing_measures, key=lambda m: m.operator._target_index)
+        ]
 
     def rewrite_unsupported_gates(self, supported_operations: Iterable[str]) -> None:
         """Rewrite gates missing from ``supported_operations`` into ones the device accepts.
