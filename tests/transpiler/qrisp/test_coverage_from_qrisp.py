@@ -162,7 +162,7 @@ ALL_TARGETS = [("cirq", 0.95), ("pytket", 0.88), ("qiskit", 0.95)]
 #: pytket case sat exactly on its 0.88 baseline with three failures and went red the moment
 #: a fourth appeared, regardless of which. That is what made it flake in CI.
 KNOWN_BAD_CONVERSIONS = {
-    "cirq": {"RGate"},
+    "cirq": set(),
     "pytket": {"CPGate", "RGate", "U1Gate"},
     "qiskit": {"RGate"},
 }
@@ -316,3 +316,64 @@ def test_qrisp_to_cirq_cy_u3_inside_composite_gate():
     qc.h(2)
     qc.append(outer.to_gate("outer"), qc.qubits[:2])
     assert np.allclose(qrisp_to_cirq(qc).unitary(), qc.get_unitary())
+
+
+def _assert_matches_qrisp_unitary(qc):
+    """The Cirq circuit's unitary equals qrisp's own, global phase included."""
+    cirq = pytest.importorskip("cirq")
+    out = qrisp_to_cirq(qc)
+    actual = out.unitary(qubit_order=cirq.LineQubit.range(qc.num_qubits()))
+    assert np.allclose(actual, qc.get_unitary())
+
+
+def test_qrisp_to_cirq_u3_global_phase():
+    """qrisp -> cirq keeps a u3's own global phase."""
+    qc = qrisp.QuantumCircuit(1)
+    qc.append(qrisp.U3Gate(0.7, -1.3, 0.45, global_phase=0.37), qc.qubits)
+    _assert_matches_qrisp_unitary(qc)
+
+
+@pytest.mark.parametrize("ctrl_state", ["11", "01", "00"])
+def test_qrisp_to_cirq_multi_controlled_y(ctrl_state):
+    """qrisp -> cirq converts a 2-controlled Y to Y, where qrisp's own decomposition gives -Y."""
+    qc = qrisp.QuantumCircuit(3)
+    qc.h(0)
+    qc.h(1)
+    qc.append(qrisp.YGate().control(2, ctrl_state=ctrl_state), qc.qubits)
+    _assert_matches_qrisp_unitary(qc)
+
+
+def test_qrisp_to_cirq_controlled_composite_with_cy():
+    """qrisp -> cirq converts a controlled composite gate, whose cy becomes a 2-controlled Y."""
+    block = qrisp.QuantumCircuit(2)
+    block.cy(0, 1)
+    block.u3(0.3, 0.2, 0.1, 0)
+    qc = qrisp.QuantumCircuit(3)
+    qc.h(0)
+    qc.append(block.to_gate("block").control(1), qc.qubits)
+    _assert_matches_qrisp_unitary(qc)
+
+
+def test_qrisp_to_cirq_r():
+    """qrisp -> cirq converts r, another U3Gate the converter has no mapping for."""
+    qc = qrisp.QuantumCircuit(1)
+    qc.r(0.7, -1.3, 0)
+    _assert_matches_qrisp_unitary(qc)
+
+
+def test_qrisp_to_cirq_inverted_composite_with_id():
+    """qrisp -> cirq converts an inverted composite gate, in which id becomes id_dg."""
+    block = qrisp.QuantumCircuit(2)
+    block.id(0)
+    block.rx(0.4, 0)
+    block.cx(0, 1)
+    qc = qrisp.QuantumCircuit(2)
+    qc.append(block.to_gate("block").inverse(), qc.qubits)
+    _assert_matches_qrisp_unitary(qc)
+
+
+def test_qrisp_to_cirq_longdouble_u3():
+    """qrisp -> cirq converts a u3 with numpy.longdouble angles, which become Rz and Ry."""
+    qc = qrisp.QuantumCircuit(1)
+    qc.u3(np.longdouble(0.7), np.longdouble(0.1), np.longdouble(0.2), 0)
+    _assert_matches_qrisp_unitary(qc)
