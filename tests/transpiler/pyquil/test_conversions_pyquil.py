@@ -158,6 +158,12 @@ def test_raise_error_from_pyquil_noisey():
         pyquil_to_cirq(p)
 
 
+def test_pyquil_to_cirq_error_names_cause():
+    """The conversion error carries the underlying reason, not a generic message."""
+    with pytest.raises(ProgramConversionError, match="FORKED modifier not supported"):
+        pyquil_to_cirq(Program("FORKED RX(0.1, 0.2) 0 1"))
+
+
 def test_cirq_to_quil_output_rzz():
     """Test that a RZZ gate is correctly converted to Quil."""
     qasm = """

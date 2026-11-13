@@ -449,16 +449,19 @@ def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
     return defgates
 
 
+_SUPPORTED_MODIFIERS = frozenset({"DAGGER", "CONTROLLED"})
+
+
 def _apply_modifiers(gate: Gate, modifiers: list[str]) -> Gate:
     """Applies Quil gate modifiers to a Cirq gate.
 
     Quil modifiers apply right to left (the leftmost is outermost), and each ``CONTROLLED``
-    takes the next leading qubit as its control.
+    takes the next leading qubit as its control. Expects only ``_SUPPORTED_MODIFIERS``.
     """
     for modifier in reversed(modifiers):
         if modifier == "DAGGER":
             gate = inverse(gate)
-        elif modifier == "CONTROLLED":
+        else:
             gate = gate.controlled(1)
     return gate
 
@@ -508,8 +511,11 @@ def circuit_from_quil(quil: str) -> Circuit:
             line_qubits = list(LineQubit(q.index) for q in inst.qubits)
             if quil_gate_name not in defined_gates:
                 raise UndefinedQuilGate(f"Quil gate {quil_gate_name} not supported in Cirq.")
-            if "FORKED" in inst.modifiers:
-                raise UnsupportedQuilInstruction(f"Quil FORKED modifier not supported: {inst}")
+            # Checked before the gate is built: FORKED doubles the parameter list, so building
+            # first would fail with an unrelated arity error.
+            for modifier in inst.modifiers:
+                if modifier not in _SUPPORTED_MODIFIERS:
+                    raise UnsupportedQuilInstruction(f"Quil {modifier} modifier not supported.")
             cirq_gate_fn = defined_gates[quil_gate_name]
             if quil_gate_params:
                 cirq_params = [_quil_param_to_sympy(p, declared_sizes) for p in quil_gate_params]

@@ -44,6 +44,4 @@ def pyquil_to_cirq(program: pyquil.quil.Program) -> cirq.circuits.Circuit:
     try:
         return circuit_from_quil(program.out())
     except Exception as err:
-        raise ProgramConversionError(
-            "qBraid transpiler doesn't yet support pyQuil noise gates."
-        ) from err
+        raise ProgramConversionError(f"Failed to convert pyQuil program to Cirq: {err}") from err
