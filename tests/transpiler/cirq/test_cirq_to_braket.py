@@ -26,6 +26,7 @@ import numpy as np
 import pytest
 import sympy
 from braket.circuits import Gate, Instruction, Measure, QubitSet
+from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
@@ -35,6 +36,7 @@ from qbraid.interface.random import random_unitary_matrix
 from qbraid.transpiler.conversions.cirq import cirq_to_braket
 from qbraid.transpiler.conversions.cirq.braket_custom import C
 from qbraid.transpiler.conversions.cirq.cirq_to_braket import (
+    _controlled_instruction,
     _to_one_qubit_braket_instruction,
     _to_two_qubit_braket_instruction,
 )
@@ -425,6 +427,41 @@ def test_controlled_gate_keeps_sub_gate_phase(sub_gate):
     cirq_circuit = cirq.Circuit(ops.ControlledGate(sub_gate).on(*qubits))
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+
+def test_controlled_gate_keeps_exact_named_sub_gate():
+    """Test that a sub-gate whose mapping is exact stays a named gate under the control."""
+    cirq_circuit = cirq.Circuit(ops.ControlledGate(cirq.rx(0.3)).on(*cirq.LineQubit.range(2)))
+    operator = cirq_to_braket(cirq_circuit).instructions[0].operator
+    assert isinstance(operator, C)
+    assert isinstance(operator.sub_gate, braket_gates.Rx)
+
+
+@pytest.mark.parametrize(
+    "gate",
+    [
+        ops.ControlledGate(cirq.X, control_values=[0]),
+        ops.ControlledGate(cirq.rx(np.pi), control_values=[0]),
+        ops.ControlledGate(cirq.XX**0.5, control_values=[0]),
+        ops.ControlledGate(cirq.H, control_values=[0, 1]),
+        ops.ControlledGate(cirq.H, control_values=cirq.SumOfProducts([[0, 1], [1, 0]])),
+        ops.ControlledGate(cirq.rx(np.pi), num_controls=2),
+        ops.ControlledGate(cirq.rz(0.4), num_controls=2),
+        ops.ControlledGate(cirq.GlobalPhaseGate(1j), num_controls=2),
+    ],
+)
+def test_controlled_gate_matches_cirq_unitary(gate):
+    """Test control values other than 1, and two controls on a one-qubit gate."""
+    cirq_circuit = cirq.Circuit(gate.on(*cirq.LineQubit.range(cirq.num_qubits(gate))))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert np.allclose(braket_circuit.to_unitary(), cirq.unitary(cirq_circuit))
+
+
+def test_controlled_gate_on_qudits_raises():
+    """Test that a qudit control is rejected rather than treated as a qubit."""
+    gate = ops.ControlledGate(cirq.X, control_qid_shape=(3,), control_values=[2])
+    with pytest.raises(ProgramConversionError, match="qudits"):
+        _controlled_instruction(gate, [0, 1])
 
 
 def test_three_qubit_matrix_gate():

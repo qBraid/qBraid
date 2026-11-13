@@ -149,10 +149,7 @@ def _to_braket_instruction(
         if operation == cirq_ops.FREDKIN.on(*operation.qubits):
             return [BKInstruction(braket_gates.CSwap(), qubits)]
         if isinstance(operation.gate, cirq_ops.ControlledGate):
-            sub_gate_instr = _to_two_qubit_braket_instruction(operation.gate.sub_gate, qubits[1:])
-            sub_gate = _exact_sub_gate(operation.gate.sub_gate, sub_gate_instr)
-            # return [BKInstruction(sub_gate, target=qubits[1:], control=qubits[:1])]
-            return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
+            return _controlled_instruction(operation.gate, qubits)
 
         try:
             matrix = protocols.unitary(operation)
@@ -170,19 +167,31 @@ def _to_braket_instruction(
     raise ProgramConversionError(f"Unable to convert {operation} to Braket")
 
 
-def _exact_sub_gate(
-    sub_gate: cirq_ops.Gate, instructions: list[braket.circuits.Instruction]
-) -> braket.circuits.Gate:
-    """Returns the Braket gate to put under a control for a Cirq sub-gate.
+def _controlled_instruction(
+    gate: cirq_ops.ControlledGate, qubits: list[int]
+) -> list[braket.circuits.Instruction]:
+    """Converts a Cirq controlled gate to a single Braket instruction on ``qubits``.
 
-    The gate mappings above are only exact up to global phase (e.g. ``cirq.rx(pi)`` becomes
-    ``X``), and a control turns that phase into a relative one. Falls back to the sub-gate's
-    exact matrix when the mapped gate differs from it, or when it took several instructions.
+    Keeps the mapped sub-gate under a ``C`` only when the result equals the Cirq gate's matrix.
+    The sub-gate mappings are exact only up to global phase (``cirq.rx(pi)`` becomes ``X``),
+    which a control makes relative, and ``C`` fires only when every control is 1. Anything
+    else becomes a ``Unitary`` of the whole controlled gate.
     """
-    matrix = protocols.unitary(sub_gate)
-    if len(instructions) == 1 and np.allclose(instructions[0].operator.to_matrix(), matrix):
-        return instructions[0].operator
-    return braket_gates.Unitary(matrix, display_name=str(sub_gate))
+    if any(dim != 2 for dim in protocols.qid_shape(gate)):
+        raise ProgramConversionError(f"Unable to convert {gate} to Braket: it acts on qudits.")
+    matrix = protocols.unitary(gate)
+    targets = qubits[gate.num_controls() :]
+    if len(targets) == 1:
+        sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, targets[0])
+    elif len(targets) == 2:
+        sub_gate_instr = _to_two_qubit_braket_instruction(gate.sub_gate, targets)
+    else:
+        sub_gate_instr = []
+    if len(sub_gate_instr) == 1:
+        controlled = BKControl(sub_gate_instr[0].operator, qubits)
+        if np.allclose(controlled.to_matrix(), matrix):
+            return [BKInstruction(controlled, qubits)]
+    return [BKInstruction(braket_gates.Unitary(matrix, display_name=str(gate)), qubits)]
 
 
 def _to_braket_measure_instructions(
@@ -379,10 +388,7 @@ def _to_two_qubit_braket_instruction(
     if isinstance(gate, cirq_ops.ZZPowGate):
         return [BKInstruction(braket_gates.ZZ(gate.exponent * np.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ControlledGate):
-        sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
-        sub_gate = _exact_sub_gate(gate.sub_gate, sub_gate_instr)
-        # return [BKInstruction(sub_gate, target=q2, control=q1)]
-        return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
+        return _controlled_instruction(gate, [q1, q2])
     if isinstance(gate, cirq_ops.DepolarizingChannel):
         return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
