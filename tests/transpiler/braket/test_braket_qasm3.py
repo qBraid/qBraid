@@ -23,13 +23,15 @@ from unittest.mock import Mock
 import numpy as np
 import pytest
 import qiskit
-from braket.circuits import Circuit
+from braket.circuits import Circuit, Instruction
+from braket.circuits import gates as braket_gates
 
 from qbraid.interface import circuits_allclose
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.conversions.braket import braket_to_qasm3
-from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket
+from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket, qasm3_to_qiskit
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 
 def test_braket_to_qasm3_bell_circuit():
@@ -210,6 +212,42 @@ def test_qiskit_to_qasm3_to_braket():
     qasm3_str = qiskit_to_qasm3(qc)
     circuit = qasm3_to_braket(qasm3_str)
     assert circuits_allclose(qc, circuit)
+
+
+@pytest.mark.parametrize(
+    "instr",
+    [
+        Instruction(braket_gates.CPhaseShift(0.5), target=[0, 1], power=-1),
+        Instruction(braket_gates.PSwap(0.5), target=[1, 2], power=-3),
+        Instruction(braket_gates.CY(), target=[2, 1], power=-1),
+    ],
+)
+def test_braket_to_qasm3_negative_power(instr):
+    """Test that a negative power is exported as a power of the gate's adjoint"""
+    circuit = Circuit().h(0).h(1).h(2).add_instruction(instr)  # pylint: disable=no-member
+    assert circuits_allclose(circuit, qasm3_to_qiskit(braket_to_qasm3(circuit)))
+
+
+def test_braket_to_qasm3_unitary_negative_power():
+    """Test that an inverted Unitary is exported as the adjoint matrix"""
+    instr = Instruction(braket_gates.Unitary(np.diag([1, 1j])), target=[0], power=-1)
+    circuit = Circuit().add_instruction(instr)
+    assert circuits_allclose(circuit, qasm3_to_braket(braket_to_qasm3(circuit)))
+
+
+@pytest.mark.parametrize(
+    "instr",
+    [
+        Instruction(braket_gates.Unitary(np.diag([1, 1j])), target=[1], control=0),
+        Instruction(braket_gates.Unitary(np.diag([1, 1j])), target=[1], power=2),
+        Instruction(braket_gates.CV(), target=[0, 1], power=-1),
+    ],
+)
+def test_braket_to_qasm3_unexportable_modifier_raises(instr):
+    """Test that modifiers the OpenQASM export would drop raise instead"""
+    circuit = Circuit().add_instruction(instr)
+    with pytest.raises(ProgramConversionError):
+        braket_to_qasm3(circuit)
 
 
 def test_qasm3_to_braket_prior_errors_included_in_final_error(monkeypatch):
