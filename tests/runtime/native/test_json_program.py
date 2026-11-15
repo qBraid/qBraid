@@ -19,6 +19,7 @@ devices.
 
 """
 import threading
+import warnings
 from unittest.mock import MagicMock
 
 import numpy as np
@@ -42,7 +43,7 @@ from qbraid.programs.typer import (
     is_json_program_type,
     json_program_type_rules,
 )
-from qbraid.runtime import DeviceStatus
+from qbraid.runtime import DeviceStatus, JobStatus
 from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.provider import get_program_spec_lambdas
@@ -427,6 +428,8 @@ def test_target_spec_narrowed_by_user_refuses_json():
         ({"type": "pulse.schedule.v1", "amp": float("nan")}, "nan"),
         ({"type": "pulse.schedule.v1", "amp": float("inf")}, "inf"),
         ({"type": "pulse.schedule.v1", ("a", "b"): 1}, "keys must be"),
+        ({"type": "pulse.schedule.v1", 1: "one"}, "not int (1)"),
+        ({"type": "pulse.schedule.v1", "instructions": [{"op": "play", 0: "d0"}]}, "not int (0)"),
     ],
 )
 @pytest.mark.parametrize("method", ["run", "submit"])
@@ -557,21 +560,8 @@ def test_result_keys_named_like_result_fields(raw):
     assert result.details["status"].name == "COMPLETED"
     assert result.details["cost"] == 0
     assert result.device_id == QRN
-    assert (
-        not set(raw)
-        - set(result.details)
-        - {
-            "status",
-            "data",
-            "cost",
-            "success",
-            "device_id",
-            "job_id",
-            "time_stamps",
-            "status_message",
-        }
-    )
-    assert "status_message" not in result.details
+    shadowed = {"status", "data", "cost", "success", "device_id", "job_id", "time_stamps"}
+    assert {k: v for k, v in raw.items() if k not in shadowed}.items() <= result.details.items()
     assert job.raw_result() == raw
 
 
@@ -588,3 +578,88 @@ def test_raw_result_of_a_batch_job():
         ],
     )
     assert job.raw_result() == [PULSE_RESULT, T1_RESULT]
+
+
+def _job_with_status(status, num_circuits=1, status_msg=None):
+    job = _job({})
+    job.client.get_job.return_value = job.client.get_job.return_value.model_copy(
+        update={"status": status, "numCircuits": num_circuits, "statusMsg": status_msg}
+    )
+    return job
+
+
+@pytest.mark.parametrize("status", ["FAILED", "CANCELLED"])
+def test_raw_result_of_a_job_that_did_not_complete(status):
+    """raw_result() returns {} for a job that did not complete, as result() has no data."""
+    job = _job_with_status(JobStatus(status))
+    assert job.raw_result() == {}
+    job.client.get_job_result.assert_not_called()
+    assert job.result().success is False
+
+
+@pytest.mark.parametrize("status", ["FAILED", "CANCELLED"])
+def test_raw_result_of_a_batch_job_that_did_not_complete(status):
+    """A batch job that did not complete returns one {} per circuit."""
+    job = _job_with_status(JobStatus(status), num_circuits=3)
+    assert job.raw_result() == [{}, {}, {}]
+    job.client.get_job_result.assert_not_called()
+
+
+def test_status_message_is_reserved_only_for_a_failed_job():
+    """A completed job keeps a device's "status_message"; a failed one reports the platform's."""
+    completed = _job({**T1_RESULT, "status_message": "fit converged"}).result()
+    assert completed.details["status_message"] == "fit converged"
+
+    failed = _job_with_status(JobStatus.FAILED, status_msg="site lost power").result()
+    assert failed.details["status_message"] == "site lost power"
+
+
+def _offline_device():
+    device, client = _device()
+    device.status = MagicMock(return_value=DeviceStatus.OFFLINE)
+    client.create_job.side_effect = None
+    client.create_job.return_value = MagicMock(jobQrn=f"{QRN}-qjob-1")
+    return device, client
+
+
+def _not_online_warnings(record):
+    return [w for w in record if "Device is not online" in str(w.message)]
+
+
+@requires_json_formats
+@pytest.mark.parametrize("run_input", [PULSE, [PULSE, {**PULSE, "instructions": []}]])
+def test_json_run_warns_once_when_the_device_is_offline(run_input):
+    """A JSON-only run() warns that the device is offline once, fetching status once."""
+    device, _ = _offline_device()
+
+    with pytest.warns(UserWarning, match="Device is not online") as record:
+        device.run(run_input, shots=10)
+    assert len(_not_online_warnings(record)) == 1
+    device.status.assert_called_once()
+
+
+@requires_json_formats
+def test_mixed_run_warns_once_when_the_device_is_offline():
+    """A run() of a circuit and a JSON program warns once, not once per program."""
+    device, _ = _offline_device()
+
+    with pytest.warns(UserWarning, match="Device is not online") as record:
+        device.run([BELL, PULSE], shots=10)
+    assert len(_not_online_warnings(record)) == 1
+    device.status.assert_called_once()
+
+
+@requires_json_formats
+def test_json_run_does_not_warn_when_online_or_validation_is_off():
+    """No warning for an online device; with validation off, status is not fetched."""
+    device, client = _device()
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        _sent(device, client, "run", PULSE)
+
+    device, _ = _offline_device()
+    device.set_options(validate=0)
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        device.run(PULSE, shots=10)
+    device.status.assert_not_called()

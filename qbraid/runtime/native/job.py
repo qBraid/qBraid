@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 # Keyword arguments result() passes to Result itself; result data keys of the same name are
 # kept out of result.details (they stay in result.data.extra).
 _RESULT_FIELDS = frozenset(
-    {"device_id", "job_id", "success", "data", "time_stamps", "cost", "status", "status_message"}
+    {"device_id", "job_id", "success", "data", "time_stamps", "cost", "status"}
 )
 
 
@@ -185,9 +185,14 @@ class QbraidJob(QuantumJob):
 
         Useful for programs whose output is not measurement counts, such as a qBraid OS
         ``calibration.v1`` routine (``{"routine": "rabi", "fit": {...}, ...}``). A batch job
-        returns one dict per circuit. Nothing is converted or dropped.
+        returns one dict per circuit. Nothing is converted or dropped. A job that did not
+        complete returns ``{}`` (one per circuit for a batch job), as :meth:`result` does.
         """
         self.wait_for_final_state(timeout=timeout)
+        job_data = self.client.get_job(self.id)
+        if job_data.status != JobStatus.COMPLETED:
+            num_circuits = job_data.numCircuits or 1
+            return [{} for _ in range(num_circuits)] if num_circuits > 1 else {}
         raw = self.client.get_job_result(self.id)
         if isinstance(raw, CoreBatchResult):
             return [dict(r.resultData) for r in raw.results]
@@ -241,7 +246,9 @@ class QbraidJob(QuantumJob):
             data = ResultData.from_object(core_result, job_data.experimentType)
             # A device's own keys, such as a calibration's "status", stay in data.extra; only
             # those that do not shadow a Result field are copied into result.details.
-            extra = {k: v for k, v in data.extra.items() if k not in _RESULT_FIELDS}
+            # "status_message" is reserved only when the job failed and result() sets it.
+            reserved = _RESULT_FIELDS | failure_details.keys()
+            extra = {k: v for k, v in data.extra.items() if k not in reserved}
             return Result[ResultDataType](
                 device_id=job_data.deviceQrn,
                 job_id=job_data.jobQrn,

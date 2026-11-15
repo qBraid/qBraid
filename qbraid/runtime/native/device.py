@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import math
+import warnings
 from contextvars import ContextVar
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, overload
@@ -36,6 +37,7 @@ from qbraid._logging import logger
 from qbraid.programs import ExperimentType, get_program_type_alias
 from qbraid.programs.typer import json_program_type_of
 from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.enums import DeviceStatus, ValidationLevel
 from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
@@ -59,15 +61,36 @@ def _program_type_alias(program: Any) -> str | None:
         return None
 
 
+def _first_non_str_key(value: Any) -> Any:
+    """The first dict key, at any depth, that is not a string; ``None`` if all are strings."""
+    stack = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, dict):
+            for key, child in item.items():
+                if not isinstance(key, str):
+                    return key
+                stack.append(child)
+        elif isinstance(item, (list, tuple)):
+            stack.extend(item)
+    return None
+
+
 def _serialize_json_program(program: dict[str, Any]) -> Program:
     """Wrap a JSON program as written, with its ``"type"`` as the program format.
 
     Raises:
         ProgramValidationError: If the program is not plain JSON (a NumPy array, a complex
-            number, NaN or infinity, a non-string key), or the installed qbraid-core predates
-            JSON program types.
+            number, NaN or infinity, a key that is not a string), or the installed qbraid-core
+            predates JSON program types.
     """
     program_type = program["type"]
+    key = _first_non_str_key(program)
+    if key is not None:
+        raise ProgramValidationError(
+            f"'{program_type}' program is not valid JSON: keys must be strings, "
+            f"not {type(key).__name__} ({key!r}), so the program is sent as written."
+        )
     try:
         json.dumps(program, allow_nan=False)
     except (TypeError, ValueError, RecursionError) as err:
@@ -289,6 +312,7 @@ class QbraidDevice(QuantumDevice):
             if not any(json_types):
                 return super().run(run_input, *args, **kwargs)
             with self._status_checked_once():
+                self._warn_if_offline()
                 compat = [
                     _serialize_json_program(p) if t else self.apply_runtime_profile(p)
                     for p, t in zip(programs, json_types)
@@ -296,6 +320,21 @@ class QbraidDevice(QuantumDevice):
             return self.submit(compat[0] if is_single_input else compat, *args, **kwargs)
         finally:
             _RUN_INPUT_TYPES.reset(token)
+
+    def _warn_if_offline(self) -> None:
+        """Warn, as :meth:`validate` does, when the device is not online.
+
+        JSON programs skip :meth:`validate`, so :meth:`run` calls this for them. It fetches the
+        status at most once per run, through the same check :meth:`validate` claims.
+        """
+        if ValidationLevel(self._options.get("validate", 0)) == ValidationLevel.NONE:
+            return
+        if self._claim_status_check() and self.status() != DeviceStatus.ONLINE:
+            warnings.warn(
+                "Device is not online. Submitting this job may result in an exception "
+                "or a long wait time.",
+                UserWarning,
+            )
 
     def _check_json_program(self, program: Any) -> None:
         """Refuse a JSON program whose type is not among this device's run input types.
