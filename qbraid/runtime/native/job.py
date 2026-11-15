@@ -40,6 +40,12 @@ if TYPE_CHECKING:
 
     import qbraid.runtime
 
+# Keyword arguments result() passes to Result itself; result data keys of the same name are
+# kept out of result.details (they stay in result.data.extra).
+_RESULT_FIELDS = frozenset(
+    {"device_id", "job_id", "success", "data", "time_stamps", "cost", "status", "status_message"}
+)
+
 
 class QbraidJob(QuantumJob):
     """Class representing a qBraid job."""
@@ -174,6 +180,19 @@ class QbraidJob(QuantumJob):
 
         logger.info("Success. Current status: %s", status.name)
 
+    def raw_result(self, timeout: int | None = None) -> dict[str, Any] | list[dict[str, Any]]:
+        """Return the job's result data exactly as the device reported it.
+
+        Useful for programs whose output is not measurement counts, such as a qBraid OS
+        ``calibration.v1`` routine (``{"routine": "rabi", "fit": {...}, ...}``). A batch job
+        returns one dict per circuit. Nothing is converted or dropped.
+        """
+        self.wait_for_final_state(timeout=timeout)
+        raw = self.client.get_job_result(self.id)
+        if isinstance(raw, CoreBatchResult):
+            return [dict(r.resultData) for r in raw.results]
+        return dict(raw.resultData)
+
     def result(
         self, timeout: int | None = None
     ) -> Result[ResultDataType] | BatchResult[ResultDataType]:
@@ -184,6 +203,10 @@ class QbraidJob(QuantumJob):
 
         A job that did not complete returns ``success=False`` with no data, and
         ``details["status_message"]`` carries the platform's reason when it gave one.
+
+        Result data keys other than measurements are in ``result.data.extra`` and, unless they
+        share a name with a :class:`~qbraid.runtime.Result` field (``status``, ``data``,
+        ``cost``, ...), in ``result.details``. Use :meth:`raw_result` for the data as reported.
         """
         self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
@@ -216,6 +239,9 @@ class QbraidJob(QuantumJob):
 
         def _build_result(core_result: CoreResult) -> Result[ResultDataType]:
             data = ResultData.from_object(core_result, job_data.experimentType)
+            # A device's own keys, such as a calibration's "status", stay in data.extra; only
+            # those that do not shadow a Result field are copied into result.details.
+            extra = {k: v for k, v in data.extra.items() if k not in _RESULT_FIELDS}
             return Result[ResultDataType](
                 device_id=job_data.deviceQrn,
                 job_id=job_data.jobQrn,
@@ -224,7 +250,7 @@ class QbraidJob(QuantumJob):
                 time_stamps=core_result.timeStamps,
                 cost=core_result.cost,
                 status=core_result.status,
-                **data.extra,
+                **extra,
                 **failure_details,
             )
 

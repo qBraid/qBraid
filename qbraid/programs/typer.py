@@ -271,27 +271,74 @@ class GstString(metaclass=GstStringMeta):
 
 
 # JSON program types (qBraid OS): ``<name>.v<N>`` (``calibration.v1``, ``ahs.v1``) or
-# ``<vendor>.<name>.v<N>`` (``pulse.schedule.v1``, ``acme.iq_trace.v1``), the rule every qBraid
-# repository uses. ``ionq.circuit.v0`` fits the pattern but is IonQ's own format.
-_JSON_PROGRAM_TYPE_PATTERN = re.compile(
+# ``<vendor>.<name>.v<N>`` (``pulse.schedule.v1``, ``acme.iq_trace.v1``), whose first segment is
+# not a reserved vendor prefix. The rule is qbraid-core's; these copies serve only qbraid-core
+# releases before 0.6.55, which do not define it.
+_FALLBACK_JSON_PROGRAM_TYPE_PATTERN = re.compile(
     r"^(?:[a-z][a-z0-9]{0,31}\.)?[a-z][a-z0-9_]{0,39}\.v[0-9]{1,4}$"
 )
-_NOT_JSON_PROGRAM_TYPES = frozenset({"ionq.circuit.v0"})
+_FALLBACK_RESERVED_PROGRAM_TYPE_PREFIXES = frozenset(
+    {
+        "ionq",
+        "qir",
+        "honeywell",
+        "quantinuum",
+        "rigetti",
+        "pasqal",
+        "microsoft",
+        "azure",
+        "aws",
+        "braket",
+        "ibm",
+        "qiskit",
+        "quil",
+        "openqasm",
+    }
+)
+
+
+@lru_cache(maxsize=1)
+def json_program_type_rules() -> tuple[re.Pattern[str], frozenset[str]]:
+    """The JSON program type pattern and reserved vendor prefixes, from qbraid-core if it has them.
+
+    Imported on first use, so importing ``qbraid.programs`` does not load the runtime schemas.
+    """
+    try:
+        # pylint: disable-next=import-outside-toplevel
+        from qbraid_core.services.runtime.schemas import (
+            JSON_PROGRAM_TYPE_PATTERN,
+            RESERVED_PROGRAM_TYPE_PREFIXES,
+        )
+    except ImportError:  # qbraid-core < 0.6.55
+        return _FALLBACK_JSON_PROGRAM_TYPE_PATTERN, _FALLBACK_RESERVED_PROGRAM_TYPE_PREFIXES
+    return JSON_PROGRAM_TYPE_PATTERN, frozenset(RESERVED_PROGRAM_TYPE_PREFIXES)
 
 
 def is_json_program_type(alias: Any) -> bool:
     """Whether ``alias`` names a JSON program type, such as ``"pulse.schedule.v1"``.
 
     A JSON program is a ``dict`` whose ``"type"`` key holds its type, and it is submitted to
-    the qBraid API as written, with that type as its program format.
+    the qBraid API as written, with that type as its program format. A type whose first
+    segment is a reserved vendor prefix, such as ``ionq.circuit.v0``, is not one.
     """
-    if not isinstance(alias, str) or alias in _NOT_JSON_PROGRAM_TYPES:
+    if not isinstance(alias, str):
         return False
-    return _JSON_PROGRAM_TYPE_PATTERN.fullmatch(alias) is not None
+    pattern, reserved = json_program_type_rules()
+    return pattern.fullmatch(alias) is not None and alias.split(".", 1)[0] not in reserved
+
+
+def json_program_type_of(program: Any) -> Optional[str]:
+    """The type of a JSON program, a ``dict`` such as ``{"type": "pulse.schedule.v1", ...}``."""
+    if isinstance(program, dict) and is_json_program_type(program.get("type")):
+        return program["type"]
+    return None
 
 
 class JsonProgramMeta(QbraidMetaType):
-    """Metaclass for JSON programs of one type: a ``dict`` whose ``"type"`` names that type."""
+    """Metaclass for JSON programs of one type: a ``dict`` whose ``"type"`` names that type.
+
+    Create and register one with :func:`qbraid.programs.registry.register_json_program_type`.
+    """
 
     _program_type: str
 
@@ -305,26 +352,6 @@ class JsonProgramMeta(QbraidMetaType):
 
     def __instancecheck__(cls, instance: Any) -> bool:
         return isinstance(instance, dict) and instance.get("type") == cls._program_type
-
-
-@lru_cache(maxsize=None)
-def json_program_type(alias: str) -> JsonProgramMeta:
-    """Return the marker class for JSON programs of type ``alias``, the same class each time.
-
-    Raises:
-        ValueError: If ``alias`` is not a JSON program type.
-    """
-    if not is_json_program_type(alias):
-        raise ValueError(f"'{alias}' is not a JSON program type.")
-    return JsonProgramMeta(
-        "JsonProgram",
-        (),
-        {
-            "_program_type": alias,
-            "__module__": __name__,
-            "__doc__": f"Marker class for '{alias}' JSON programs.",
-        },
-    )
 
 
 class QasmStringType(str):

@@ -31,12 +31,8 @@ from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 from qbraid._caching import cached_method
 from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
-from qbraid.programs.typer import (
-    Qasm2StringType,
-    Qasm3StringType,
-    is_json_program_type,
-    json_program_type,
-)
+from qbraid.programs.registry import register_json_program_type
+from qbraid.programs.typer import Qasm2StringType, Qasm3StringType, is_json_program_type
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.ionq.provider import IonQProvider
 from qbraid.runtime.noise import NoiseModelSet
@@ -217,7 +213,7 @@ class QbraidProvider(QuantumProvider):
         program_type = QPROGRAM_REGISTRY.get(run_package)
         if program_type is None and is_json_program_type(run_package):
             # A dict whose "type" is this alias, such as a qBraid OS "pulse.schedule.v1".
-            program_type = json_program_type(run_package)
+            program_type = register_json_program_type(run_package)
         if program_type is None:
             logger.info(
                 "The default runtime configuration for device '%s' includes "
