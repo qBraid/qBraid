@@ -40,6 +40,7 @@ from qbraid.runtime.provider import QuantumProvider
 from qbraid.transpiler import transpile
 
 from .device import QbraidDevice
+from .pasqal import validate_pulser_for_pasqal_qpu
 
 if TYPE_CHECKING:
     import pulser
@@ -134,7 +135,13 @@ def get_program_spec_lambdas(
         return {"serialize": _serialize_pyqir, "validate": None}
 
     if program_type_alias == "pulser":
-        return {"serialize": _serialize_sequence, "validate": None}
+        parts = device_id.split(":")
+        if len(parts) >= 3 and parts[0] == "pasqal" and parts[2] == "qpu":
+            # pylint: disable-next=unnecessary-lambda-assignment
+            validate = lambda p: validate_pulser_for_pasqal_qpu(p, device_id)
+        else:
+            validate = None
+        return {"serialize": _serialize_sequence, "validate": validate}
 
     if program_type_alias == "gst":
         return {"serialize": _serialize_gst, "validate": lambda p: validate_gst(p, device_id)}
