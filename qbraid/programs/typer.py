@@ -270,10 +270,12 @@ class GstString(metaclass=GstStringMeta):
     """Marker class for strings that are gate-set sequence (GST) circuits."""
 
 
-# JSON program types (qBraid OS): the named types of the qBraid OS contract, and device-declared
-# ``<vendor>.<name>.v<N>`` types. ``ionq.circuit.v0`` fits the pattern but is IonQ's own format.
-JSON_PROGRAM_TYPES = frozenset({"pulse.schedule.v1", "calibration.v1", "ahs.v1"})
-_JSON_PROGRAM_TYPE_PATTERN = re.compile(r"[a-z0-9]+\.[a-z0-9_]+\.v[0-9]+")
+# JSON program types (qBraid OS): ``<name>.v<N>`` (``calibration.v1``, ``ahs.v1``) or
+# ``<vendor>.<name>.v<N>`` (``pulse.schedule.v1``, ``acme.iq_trace.v1``), the rule every qBraid
+# repository uses. ``ionq.circuit.v0`` fits the pattern but is IonQ's own format.
+_JSON_PROGRAM_TYPE_PATTERN = re.compile(
+    r"^(?:[a-z][a-z0-9]{0,31}\.)?[a-z][a-z0-9_]{0,39}\.v[0-9]{1,4}$"
+)
 _NOT_JSON_PROGRAM_TYPES = frozenset({"ionq.circuit.v0"})
 
 
@@ -285,7 +287,7 @@ def is_json_program_type(alias: Any) -> bool:
     """
     if not isinstance(alias, str) or alias in _NOT_JSON_PROGRAM_TYPES:
         return False
-    return alias in JSON_PROGRAM_TYPES or _JSON_PROGRAM_TYPE_PATTERN.fullmatch(alias) is not None
+    return _JSON_PROGRAM_TYPE_PATTERN.fullmatch(alias) is not None
 
 
 class JsonProgramMeta(QbraidMetaType):

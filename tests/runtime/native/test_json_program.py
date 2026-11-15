@@ -39,7 +39,7 @@ requires_json_formats = pytest.mark.skipif(
 )
 
 QRN = "qbraid_os:0123456789abcdef01234567:qpu:lab-1.lab-transmon"
-JSON_TYPES = ["pulse.schedule.v1", "calibration.v1", "acme.iq_trace.v1"]
+JSON_TYPES = ["pulse.schedule.v1", "calibration.v1", "ahs.v1", "acme.iq_trace.v1"]
 
 # A device as qBraid OS registers it in qbraid-api (qbraid-os ``Store.registration_body``).
 DEVICE_DATA = {
@@ -105,16 +105,25 @@ def _device(run_input_types: list[str] | None = None, **fields) -> tuple[QbraidD
         ("calibration.v1", True),
         ("ahs.v1", True),
         ("acme.iq_trace.v1", True),
+        ("foo.v1", True),
+        ("a" * 32 + "." + "b" * 40 + ".v1234", True),  # at every length cap
         ("ionq.circuit.v0", False),  # IonQ's own format, with its own rules
         ("qasm3", False),
         ("pulser", False),
-        ("foo.v1", False),
+        ("foo", False),
+        ("1abc.v1", False),
+        ("a.b.c.v1", False),
+        ("a" * 33 + ".b.v1", False),
+        ("acme." + "b" * 41 + ".v1", False),
+        ("acme.b.v12345", False),
+        ("acme_x.b.v1", False),
         ("Acme.iq_trace.v1", False),
+        ("pulse.schedule.v1\n", False),
         (None, False),
     ],
 )
 def test_is_json_program_type(alias, expected):
-    """The JSON program types are the named ones and ``<vendor>.<name>.v<N>``."""
+    """JSON program types are ``<name>.v<N>`` or ``<vendor>.<name>.v<N>``, within length caps."""
     assert is_json_program_type(alias) is expected
 
 
@@ -164,7 +173,7 @@ def test_run_submits_pulse_program_untranspiled():
 
 
 @requires_json_formats
-@pytest.mark.parametrize("program_type", ["calibration.v1", "acme.iq_trace.v1"])
+@pytest.mark.parametrize("program_type", ["calibration.v1", "ahs.v1", "acme.iq_trace.v1"])
 def test_submit_accepts_a_json_program_dict(program_type):
     """submit() wraps a JSON program dict itself."""
     device, client = _device()
