@@ -26,13 +26,16 @@ from contextvars import ContextVar
 from functools import cached_property
 from typing import TYPE_CHECKING, Any, overload
 
+from pydantic import ValidationError as PydanticValidationError
 from qbraid_core.services.runtime import QuantumRuntimeClient
 from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
 from qbraid.programs import ExperimentType, get_program_type_alias
+from qbraid.programs.typer import is_json_program_type
 from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
 
@@ -53,6 +56,27 @@ def _program_type_alias(program: Any) -> str | None:
         return get_program_type_alias(program, safe=True)
     except Exception:  # pylint: disable=broad-exception-caught
         return None
+
+
+def _serialize_json_program(program: dict[str, Any]) -> Program:
+    """Wrap a JSON program as written, with its ``"type"`` as the program format.
+
+    Raises:
+        ProgramValidationError: If the installed qbraid-core predates JSON program types.
+    """
+    try:
+        return Program.model_validate({"format": program["type"], "data": program})
+    except PydanticValidationError as err:
+        raise ProgramValidationError(
+            f"Submitting '{program['type']}' programs requires qbraid-core 0.6.55 or later."
+        ) from err
+
+
+def _json_program_type(program: Any) -> str | None:
+    """The type of a JSON program, a ``dict`` such as ``{"type": "pulse.schedule.v1", ...}``."""
+    if isinstance(program, dict) and is_json_program_type(program.get("type")):
+        return program["type"]
+    return None
 
 
 # Set by QbraidDevice.run() around the base run(), so that submit(), which only sees the
@@ -236,11 +260,39 @@ class QbraidDevice(QuantumDevice):
         framework the program was written in rather than the format it was converted to.
         """
         programs = run_input if isinstance(run_input, list) else [run_input]
+        for program in programs:
+            self._check_json_program(program)
         token = _RUN_INPUT_TYPES.set((self, [_program_type_alias(p) for p in programs]))
         try:
             return super().run(run_input, *args, **kwargs)
         finally:
             _RUN_INPUT_TYPES.reset(token)
+
+    def _check_json_program(self, program: Any) -> None:
+        """Refuse a JSON program whose type is not among this device's run input types.
+
+        Raises:
+            ProgramValidationError: If ``program`` is a JSON program of a type the device's
+                profile does not list.
+        """
+        program_type = _json_program_type(program)
+        if program_type is None:
+            return
+        spec = self.profile.program_spec
+        specs = spec if isinstance(spec, list) else [spec] if spec else []
+        accepted = sorted(s.alias for s in specs)
+        if program_type not in accepted:
+            raise ProgramValidationError(
+                f"Device '{self.id}' does not accept '{program_type}' programs. "
+                f"Accepted program types: {', '.join(accepted) or 'none'}."
+            )
+
+    def _as_program(self, program: Any) -> Any:
+        """Wrap a JSON program as a :class:`Program` of its type; leave anything else as is."""
+        if _json_program_type(program) is None:
+            return program
+        self._check_json_program(program)
+        return _serialize_json_program(program)
 
     def _job_program_types(self, num_jobs: int, as_batch: bool) -> list[str | list[str] | None]:
         """The ``programType`` of each job :meth:`submit` creates, ``None`` where unknown.
@@ -262,7 +314,7 @@ class QbraidDevice(QuantumDevice):
     @overload
     def submit(
         self,
-        run_input: Program,
+        run_input: Program | dict[str, Any],
         shots: int | None = None,
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
@@ -300,7 +352,7 @@ class QbraidDevice(QuantumDevice):
 
     def submit(
         self,
-        run_input: Program | list[Program],
+        run_input: Program | dict[str, Any] | list[Program],
         shots: int | None = None,
         name: str | None = None,
         tags: dict[str, str | int | bool] | None = None,
@@ -316,7 +368,10 @@ class QbraidDevice(QuantumDevice):
         are registered with the session.
 
         Args:
-            run_input: A single program or a list of programs to submit to the device.
+            run_input: A single program or a list of programs to submit to the device. A JSON
+                program, a ``dict`` whose ``"type"`` is a JSON program type the device lists
+                (such as ``"pulse.schedule.v1"``), is sent as written with that type as its
+                format.
             shots: The number of shots to run the program(s).
             name: The name of the job.
             tags: A dictionary of tags to add to the job.
@@ -354,6 +409,14 @@ class QbraidDevice(QuantumDevice):
         # for batch (sends the full list as one API call → 1 QRN, N circuits).
         is_single_input = as_batch or not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
+        run_input = [
+            (
+                [self._as_program(p) for p in item]
+                if isinstance(item, list)
+                else self._as_program(item)
+            )
+            for item in run_input
+        ]
 
         logger.debug(
             "Submitting %s to device '%s' (group: %s)",

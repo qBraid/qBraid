@@ -31,7 +31,12 @@ from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 from qbraid._caching import cached_method
 from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
-from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
+from qbraid.programs.typer import (
+    Qasm2StringType,
+    Qasm3StringType,
+    is_json_program_type,
+    json_program_type,
+)
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.ionq.provider import IonQProvider
 from qbraid.runtime.noise import NoiseModelSet
@@ -39,7 +44,7 @@ from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 from qbraid.transpiler import transpile
 
-from .device import QbraidDevice
+from .device import QbraidDevice, _serialize_json_program
 
 if TYPE_CHECKING:
     import pulser
@@ -139,6 +144,9 @@ def get_program_spec_lambdas(
     if program_type_alias == "gst":
         return {"serialize": _serialize_gst, "validate": lambda p: validate_gst(p, device_id)}
 
+    if is_json_program_type(program_type_alias):
+        return {"serialize": _serialize_json_program, "validate": None}
+
     if program_type_alias in {"qasm2", "qasm3"}:
         vendor, provider = device_id.split(":")[:2]
 
@@ -207,6 +215,9 @@ class QbraidProvider(QuantumProvider):
             return None
 
         program_type = QPROGRAM_REGISTRY.get(run_package)
+        if program_type is None and is_json_program_type(run_package):
+            # A dict whose "type" is this alias, such as a qBraid OS "pulse.schedule.v1".
+            program_type = json_program_type(run_package)
         if program_type is None:
             logger.info(
                 "The default runtime configuration for device '%s' includes "

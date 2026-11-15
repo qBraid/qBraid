@@ -24,6 +24,7 @@ Writing an entry:
 ## [Unreleased]
 
 ### Added
+- `QbraidDevice.run()` and `submit()` accept a JSON program, a dict whose `"type"` is a qBraid OS program type such as `"pulse.schedule.v1"`, `"calibration.v1"` or a device-declared `"acme.iq_trace.v1"`, on a device whose run input types list it. It is sent as written, untranspiled; other devices refuse it. Requires qbraid-core 0.6.55 or later
 - `QbraidDevice.run()` and `submit()` take a keyword-only `metadata`, JSON values of up to 8 KiB and 32 levels (with `programType` included) stored with the job and returned in `job.metadata()["metadata"]["client"]`. `run()` also records the type of the program you passed, such as `"qiskit"`, as `programType` (a key reserved for the SDK), and the SDK now identifies itself in the API User-Agent. Requires `qbraid-core>=0.6.52` ([#1544](https://github.com/qBraid/qBraid/pull/1544))
 - `job.result()` now works for jobs on devices whose experiment type is `OTHER`, such as qBraid Compress (`qbraid:qbraid:sim:compress`), instead of raising `ValueError: Unsupported experiment_type: 'OTHER'`. Read the device's output from `result.data` like a dict, for example `result.data["compressedProgram"]` ([#1539](https://github.com/qBraid/qBraid/pull/1539))
 - `QbraidJob.compressed_program()` returns the program qBraid Compress produced for a job submitted with `runtime_options={"compression": {...}}`, the one the device ran, or `None` when the job was not compressed. Requires qbraid-core 0.6.47 or later ([#1540](https://github.com/qBraid/qBraid/pull/1540))

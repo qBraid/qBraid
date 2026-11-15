@@ -20,6 +20,7 @@ that use Python's built-in types.
 
 import re
 from abc import ABCMeta, abstractmethod
+from functools import lru_cache
 from typing import Any, Optional, Type, TypeVar
 
 from openqasm3.parser import parse
@@ -267,6 +268,61 @@ _GST_PATTERN = re.compile(r"[{(]*G[A-Za-z][\w:@(){}^,\s]*")
 
 class GstString(metaclass=GstStringMeta):
     """Marker class for strings that are gate-set sequence (GST) circuits."""
+
+
+# JSON program types (qBraid OS): the named types of the qBraid OS contract, and device-declared
+# ``<vendor>.<name>.v<N>`` types. ``ionq.circuit.v0`` fits the pattern but is IonQ's own format.
+JSON_PROGRAM_TYPES = frozenset({"pulse.schedule.v1", "calibration.v1", "ahs.v1"})
+_JSON_PROGRAM_TYPE_PATTERN = re.compile(r"[a-z0-9]+\.[a-z0-9_]+\.v[0-9]+")
+_NOT_JSON_PROGRAM_TYPES = frozenset({"ionq.circuit.v0"})
+
+
+def is_json_program_type(alias: Any) -> bool:
+    """Whether ``alias`` names a JSON program type, such as ``"pulse.schedule.v1"``.
+
+    A JSON program is a ``dict`` whose ``"type"`` key holds its type, and it is submitted to
+    the qBraid API as written, with that type as its program format.
+    """
+    if not isinstance(alias, str) or alias in _NOT_JSON_PROGRAM_TYPES:
+        return False
+    return alias in JSON_PROGRAM_TYPES or _JSON_PROGRAM_TYPE_PATTERN.fullmatch(alias) is not None
+
+
+class JsonProgramMeta(QbraidMetaType):
+    """Metaclass for JSON programs of one type: a ``dict`` whose ``"type"`` names that type."""
+
+    _program_type: str
+
+    @property
+    def __alias__(cls) -> str:
+        return cls._program_type
+
+    @property
+    def __bound__(cls) -> Type[dict]:
+        return dict
+
+    def __instancecheck__(cls, instance: Any) -> bool:
+        return isinstance(instance, dict) and instance.get("type") == cls._program_type
+
+
+@lru_cache(maxsize=None)
+def json_program_type(alias: str) -> JsonProgramMeta:
+    """Return the marker class for JSON programs of type ``alias``, the same class each time.
+
+    Raises:
+        ValueError: If ``alias`` is not a JSON program type.
+    """
+    if not is_json_program_type(alias):
+        raise ValueError(f"'{alias}' is not a JSON program type.")
+    return JsonProgramMeta(
+        "JsonProgram",
+        (),
+        {
+            "_program_type": alias,
+            "__module__": __name__,
+            "__doc__": f"Marker class for '{alias}' JSON programs.",
+        },
+    )
 
 
 class QasmStringType(str):
