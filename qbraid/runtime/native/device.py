@@ -94,8 +94,12 @@ def _serialize_json_program(program: dict[str, Any]) -> Program:
     try:
         json.dumps(program, allow_nan=False)
     except (TypeError, ValueError, RecursionError) as err:
+        detail = str(err)
+        if isinstance(err, ValueError) and "Out of range float" in detail:
+            # Python < 3.13 does not name the value; say it so the fix is obvious.
+            detail = "nan, inf and -inf floats are not allowed"
         raise ProgramValidationError(
-            f"'{program_type}' program is not valid JSON: {err}. Convert NumPy arrays and "
+            f"'{program_type}' program is not valid JSON: {detail}. Convert NumPy arrays and "
             "scalars with .tolist(), and complex numbers to [real, imag] pairs."
         ) from err
     try:
