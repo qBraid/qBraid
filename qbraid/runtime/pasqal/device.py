@@ -23,6 +23,7 @@ import json
 from typing import TYPE_CHECKING, Any, Union
 
 from qbraid._logging import logger
+from qbraid.programs import get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, ValidationLevel
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -151,6 +152,14 @@ class PasqalDevice(QuantumDevice):
                 logger.warning("Skipping the Pasqal device status check: %s", exc)
                 suppress_device_warning = True
         super().validate(run_input_batch, suppress_device_warning=suppress_device_warning)
+
+    def transform(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
+        """Move a Pulser sequence onto this QPU's Pulser device; other input is unchanged."""
+        if get_program_type_alias(run_input, safe=True) != "pulser":
+            return run_input
+        program = load_program(run_input)
+        program.transform(self)
+        return program.program
 
     def status(self) -> DeviceStatus:
         """Return the device's live status from Pasqal's device catalog.

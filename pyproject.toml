@@ -70,6 +70,7 @@ visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visual
 qubo = "qbraid.programs.annealing.qubo:QuboProgram"
 cpp_pyqubo = "qbraid.programs.annealing.cpp_pyqubo:PyQuboModel"
 braket_ahs = "qbraid.programs.analog.braket_ahs:BraketAHS"
+pulser = "qbraid.programs.analog.pulser:PulserSequence"
 braket = "qbraid.programs.gate_model.braket:BraketCircuit"
 cirq = "qbraid.programs.gate_model.cirq:CirqCircuit"
 ionq = "qbraid.programs.gate_model.ionq:IonQProgram"
