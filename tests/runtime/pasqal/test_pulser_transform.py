@@ -318,7 +318,7 @@ def test_a_stale_copy_of_the_qpu_device_is_still_checked(fresnel):
 def test_hamiltonian_is_not_defined(fresnel):
     """The inherited analog Hamiltonian accessor says it does not apply."""
     with pytest.raises(NotImplementedError):
-        load_program(_sequence(_calibrated_register(fresnel), fresnel)).hamiltonian
+        _ = load_program(_sequence(_calibrated_register(fresnel), fresnel)).hamiltonian
 
 
 def test_emulators_are_not_transformed():
