@@ -300,6 +300,27 @@ def test_the_sequence_is_moved_onto_the_qpu_device(fresnel):
     assert moved.device.name == fresnel.name
 
 
+def test_a_stale_copy_of_the_qpu_device_is_still_checked(fresnel):
+    """A device with the QPU's name but older or edited limits does not skip the check."""
+    specs = json.loads(SPECS["data"][0]["specs"])
+    specs["channels"][0]["max_amp"] *= 10
+    stale = deserialize_device(json.dumps(specs))
+    assert stale.name == fresnel.name
+    seq = _sequence(
+        _calibrated_register(fresnel),
+        stale,
+        amplitude=5 * fresnel.channels["rydberg_global"].max_amp,
+    )
+    with pytest.raises(TransformError, match="amplitude"):
+        _transform(seq)
+
+
+def test_hamiltonian_is_not_defined(fresnel):
+    """The inherited analog Hamiltonian accessor says it does not apply."""
+    with pytest.raises(NotImplementedError):
+        load_program(_sequence(_calibrated_register(fresnel), fresnel)).hamiltonian
+
+
 def test_emulators_are_not_transformed():
     """Emulators accept any valid sequence, so the sequence is left as it is."""
     seq = _free_register_sequence()

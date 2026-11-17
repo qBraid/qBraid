@@ -49,6 +49,11 @@ class PulserSequence(AnalogHamiltonianProgram):
         return json.loads(self.program.to_abstract_repr())
 
     @property
+    def hamiltonian(self) -> dict:
+        """Not defined: a Pulser sequence holds pulses, not a qBraid analog Hamiltonian."""
+        raise NotImplementedError("Pulser sequences have no Hamiltonian dict; use .program.")
+
+    @property
     def num_atoms(self) -> int:
         """Return the number of atoms in the register, mappable or not."""
         return len(self.program.get_register(include_mappable=True).qubit_ids)
@@ -107,7 +112,8 @@ class PulserSequence(AnalogHamiltonianProgram):
                     f"{guidance}"
                 ) from err
 
-        if sequence.device.name == target.name:
+        # The whole device, not its name: a copy of older or edited specs keeps the name.
+        if sequence.device == target:
             return
         # Non-strict, as Pasqal moves sequences: a strict switch also rejects sequences that
         # differ only in device properties Pasqal does not require to match, e.g. Rydberg level.
