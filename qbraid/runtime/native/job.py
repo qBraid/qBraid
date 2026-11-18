@@ -216,17 +216,20 @@ class QbraidJob(QuantumJob):
 
         def _build_result(core_result: CoreResult) -> Result[ResultDataType]:
             data = ResultData.from_object(core_result, job_data.experimentType)
-            return Result[ResultDataType](
-                device_id=job_data.deviceQrn,
-                job_id=job_data.jobQrn,
-                success=core_result.status == JobStatus.COMPLETED,
-                data=data,
-                time_stamps=core_result.timeStamps,
-                cost=core_result.cost,
-                status=core_result.status,
-                **data.extra,
+            fields = {
+                "device_id": job_data.deviceQrn,
+                "job_id": job_data.jobQrn,
+                "success": core_result.status == JobStatus.COMPLETED,
+                "data": data,
+                "time_stamps": core_result.timeStamps,
+                "cost": core_result.cost,
+                "status": core_result.status,
                 **failure_details,
-            )
+            }
+            # A device's own result keys, such as a calibration's "status", stay in data.extra;
+            # only those that do not shadow a Result field are also copied into details.
+            extra = {k: v for k, v in data.extra.items() if k not in fields}
+            return Result[ResultDataType](**fields, **extra)
 
         if isinstance(raw_result, CoreBatchResult):
             per_circuit = [_build_result(r) for r in raw_result.results]

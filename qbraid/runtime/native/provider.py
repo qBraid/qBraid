@@ -28,6 +28,15 @@ from qbraid_core.exceptions import AuthError, RequestsApiError
 from qbraid_core.services.runtime import QuantumRuntimeClient, QuantumRuntimeServiceRequestError
 from qbraid_core.services.runtime.schemas import Program, RuntimeDevice
 
+try:
+    from qbraid_core.services.runtime.schemas import is_json_program_type
+except ImportError:  # qbraid-core < 0.6.55, whose Program cannot hold a JSON program type
+
+    def is_json_program_type(_program_format: Any) -> bool:  # type: ignore[misc]
+        """No JSON program types before qbraid-core 0.6.55."""
+        return False
+
+
 from qbraid._caching import cached_method
 from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
@@ -44,6 +53,9 @@ from .device import QbraidDevice
 if TYPE_CHECKING:
     import pulser
     import pyqir
+
+#: Alias of qbraid-core's :class:`Program`, the program type of qBraid OS JSON programs.
+JSON_PROGRAM_ALIAS = "qbraid_program"
 
 
 def _serialize_program(program) -> Program:
@@ -218,13 +230,34 @@ class QbraidProvider(QuantumProvider):
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
     @staticmethod
+    def _get_json_program_spec(json_types: list[str], device_id: str) -> ProgramSpec:
+        """One spec for every JSON program type a device lists, such as ``pulse.schedule.v1``.
+
+        Its programs are qbraid-core :class:`Program` objects, sent as written.
+        """
+
+        def validate(program: Program) -> None:
+            if program.format not in json_types:
+                raise ValueError(
+                    f"Device '{device_id}' does not accept '{program.format}' programs. "
+                    f"Accepted JSON program types: {', '.join(json_types)}."
+                )
+
+        return ProgramSpec(Program, alias=JSON_PROGRAM_ALIAS, validate=validate)
+
+    @staticmethod
     def _get_program_specs(run_input_types: list[str], device_id: str) -> list[ProgramSpec]:
         """Return a list of program specs for the given run input types and device."""
-        return [
+        json_types = sorted(rp for rp in run_input_types if is_json_program_type(rp))
+        specs = [
             spec
             for rp in run_input_types
-            if (spec := QbraidProvider._get_program_spec(rp, device_id)) is not None
+            if rp not in json_types
+            and (spec := QbraidProvider._get_program_spec(rp, device_id)) is not None
         ]
+        if json_types:
+            specs.append(QbraidProvider._get_json_program_spec(json_types, device_id))
+        return specs
 
     @staticmethod
     def _get_basis_gates(device_qrn: str) -> list[str] | None:
