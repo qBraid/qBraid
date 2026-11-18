@@ -54,9 +54,6 @@ if TYPE_CHECKING:
     import pulser
     import pyqir
 
-#: Alias of qbraid-core's :class:`Program`, the program type of qBraid OS JSON programs.
-JSON_PROGRAM_ALIAS = "qbraid_program"
-
 
 def _serialize_program(program) -> Program:
     qbraid_program = load_program(program)
@@ -243,7 +240,7 @@ class QbraidProvider(QuantumProvider):
                     f"Accepted JSON program types: {', '.join(json_types)}."
                 )
 
-        return ProgramSpec(Program, alias=JSON_PROGRAM_ALIAS, validate=validate)
+        return ProgramSpec(Program, validate=validate)
 
     @staticmethod
     def _get_program_specs(run_input_types: list[str], device_id: str) -> list[ProgramSpec]:

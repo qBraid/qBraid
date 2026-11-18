@@ -25,7 +25,7 @@ from qbraid_core.services.runtime.schemas import Program, Result, RuntimeDevice,
 from qbraid.programs import get_program_type_alias
 from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.provider import JSON_PROGRAM_ALIAS, is_json_program_type
+from qbraid.runtime.native.provider import is_json_program_type
 
 from .._resources import DEVICE_DATA_QIR, JOB_DATA_QIR
 
@@ -65,9 +65,9 @@ def test_json_types_share_one_program_spec():
     specs = QbraidProvider._get_program_specs(
         ["qasm3", "pulse.schedule.v1", "calibration.v1"], DEVICE_ID
     )
-    assert [s.alias for s in specs] == ["qasm3", JSON_PROGRAM_ALIAS]
+    assert [s.alias for s in specs] == ["qasm3", "qbraid_core"]
     assert specs[1].program_type is Program
-    assert get_program_type_alias(Program(format="calibration.v1", data={})) == JSON_PROGRAM_ALIAS
+    assert get_program_type_alias(Program(format="calibration.v1", data={})) == "qbraid_core"
 
 
 @pytest.mark.parametrize("run_input_types", [["qasm3", "pulse.schedule.v1"], ["pulse.schedule.v1"]])

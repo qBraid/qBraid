@@ -126,6 +126,8 @@ def _get_class(module: str):
         return qat.core.wrappers.circuit.Circuit  # type: ignore # noqa: F821
     if module == "mimiqcircuits":
         return mimiqcircuits.Circuit  # type: ignore # noqa: F821
+    if module == "qbraid_core.services.runtime.schemas":
+        return qbraid_core.services.runtime.schemas.Program  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -159,6 +161,7 @@ dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
         "pyqpanda3",
         "autoqasm",
         "qat.core.wrappers.circuit",
+        "qbraid_core.services.runtime.schemas",
     ]
 )
 static_type_registry: dict[str, Type[Any]] = {
