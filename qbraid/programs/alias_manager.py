@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Optional, Type
 from .exceptions import ProgramTypeError
 from .exceptions import QasmError as QbraidQasmError
 from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
-from .typer import GstString, IonQDict, get_qasm_type_alias
+from .typer import GstString, IonQDict, JsonProgramMeta, get_qasm_type_alias, json_program_type_of
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -76,6 +76,11 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
                     "and no additional string type aliases are registered."
                 )
             ) from err
+
+    # A registered JSON program type wins over every dict type, IonQDict and the user's own.
+    json_type = json_program_type_of(program)
+    if json_type is not None and isinstance(QPROGRAM_REGISTRY.get(json_type), JsonProgramMeta):
+        return json_type
 
     if isinstance(program, IonQDict):
         return IonQDict.__alias__
