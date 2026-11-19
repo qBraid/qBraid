@@ -361,6 +361,27 @@ def test_transpile_cirq_reset_to_pyquil_direct_path():
     assert program.out() == "X 0\nRESET 0\nCNOT 0 1\n"
 
 
+def test_cirq_reset_round_trips_through_pyquil():
+    """``pyquil_to_cirq`` accepts the RESET that ``cirq_to_pyquil`` emits for ``cirq.reset``."""
+    q0, q1 = LineQubit.range(2)
+    circuit = Circuit(cirq_ops.X(q0), cirq_ops.reset(q0), cirq_ops.CNOT(q0, q1))
+    assert pyquil_to_cirq(cirq_to_pyquil(circuit)) == circuit
+
+
+def test_pyquil_reset_clears_the_qubit():
+    """X then RESET leaves qubit 0 in |0>."""
+    circuit = pyquil_to_cirq(Program("X 0\nRESET 0"))
+    circuit.append(cirq_ops.measure(LineQubit(0), key="m"))
+    result = Simulator().run(circuit, repetitions=20)
+    assert not result.measurements["m"].any()
+
+
+def test_pyquil_to_cirq_error_names_the_unsupported_instruction():
+    """The conversion error carries the reason from the Quil parser."""
+    with pytest.raises(ProgramConversionError, match="NOP"):
+        pyquil_to_cirq(Program("NOP"))
+
+
 def test_single_measurement_key_declares_ro():
     """A lone measurement key becomes ``ro``, Quil's conventional readout register.
 
