@@ -56,13 +56,20 @@ def _serialize_run_input(run_input: str | dict[str, Any]) -> str:
 
     Accepts the abstract-repr string :meth:`PasqalDevice.run` produces, and the
     ``{"sequence_builder": ...}`` payload the qBraid platform stores for
-    ``pulser.sequence`` programs (the same shape Azure Quantum expects).
+    ``pulser.sequence`` programs (the same shape Azure Quantum expects), as a dict
+    or as JSON text, which is how the CLI uploads a file.
 
     Raises:
         PasqalDeviceError: If the payload is neither form.
     """
     if isinstance(run_input, str):
-        return run_input
+        try:
+            parsed = json.loads(run_input)
+        except ValueError:
+            return run_input
+        if not (isinstance(parsed, dict) and "sequence_builder" in parsed):
+            return run_input
+        run_input = parsed
     if isinstance(run_input, dict) and isinstance(run_input.get("sequence_builder"), (str, dict)):
         builder = run_input["sequence_builder"]
         return builder if isinstance(builder, str) else json.dumps(builder)
