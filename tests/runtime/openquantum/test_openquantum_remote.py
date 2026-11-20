@@ -39,9 +39,13 @@ def test_openquantum_remote_job():
     if not client_id or not client_secret:
         pytest.skip("OPENQUANTUM_CLIENT_ID and OPENQUANTUM_CLIENT_SECRET are not set.")
 
+    backend = os.getenv("OPENQUANTUM_TEST_BACKEND", "qr:sim")
+    organization_id = os.getenv("OPENQUANTUM_ORGANIZATION_ID")
+    engine = os.getenv("OPENQUANTUM_TEST_ENGINE")
+
     try:
         provider = OpenQuantumProvider(client_id=client_id, client_secret=client_secret)
-        device = provider.get_device("oq-sim")
+        device = provider.get_device(backend)
     except Exception as e:  # pylint: disable=broad-exception-caught
         pytest.skip(f"Could not initialize provider or get device: {e}")
 
@@ -57,7 +61,13 @@ def test_openquantum_remote_job():
     c = measure q;
     """
 
-    job = device.run(qasm_ghz, name="qBraid SDK Remote Test", shots=100, subcategory="oth:oth")
+    run_kwargs = {"name": "qBraid SDK Remote Test", "shots": 100, "subcategory": "oth:oth"}
+    if organization_id:
+        run_kwargs["organization_id"] = organization_id
+    if backend == "qr:sim" or engine:
+        run_kwargs["configuration_data"] = {"engine": engine or "SCARLET_CPU"}
+
+    job = device.run(qasm_ghz, **run_kwargs)
 
     try:
         job.wait_for_final_state(timeout=300)
