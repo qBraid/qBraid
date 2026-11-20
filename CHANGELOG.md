@@ -45,6 +45,7 @@ Writing an entry:
 ### Removed
 
 ### Fixed
+- Fixed `qbraid.visualization.circuit_drawer` failing to import with pyqasm 1.4.0, which moved `draw` out of `pyqasm.printer` ([#1569](https://github.com/qBraid/qBraid/pull/1569))
 - `pyquil_to_cirq` now converts `RESET q` to `cirq.reset(q)`, and a bare `RESET` to a reset of every qubit the program uses, so circuits with resets round-trip through `cirq_to_pyquil`. A failed conversion now gives the real reason instead of "doesn't yet support pyQuil noise gates" ([#1567](https://github.com/qBraid/qBraid/pull/1567))
 - `QbraidProvider.get_device()` and `get_devices()` report `ResourceNotFoundError` only when the API returns 404. A rate limit, outage or connection error is raised as the `QuantumRuntimeServiceRequestError` it is, with its message, `status_code` and, on a 429, `retry_after`, instead of "Device not found". The same error is raised when the credentials check made on first use of `QbraidProvider.client` is rate-limited or can't reach the API, where it previously escaped as qbraid-core's `RequestsApiError` ([#1538](https://github.com/qBraid/qBraid/pull/1538))
 - `device.run()` on a batch checks device status once instead of once per program, so large batches no longer exhaust the device-lookup rate limit. Every program is still validated ([#1532](https://github.com/qBraid/qBraid/pull/1532))
@@ -71,6 +72,7 @@ Writing an entry:
 - `RigettiDevice.status()` now detects maintenance on processors whose QCS calendar is a link to an iCal feed, such as Cepheus-1-108Q. It previously failed to parse the link and reported the device `ONLINE` during maintenance ([#1470](https://github.com/qBraid/qBraid/pull/1470))
 
 ### Dependencies
+- Raised the `pyqasm` floor to 1.4.0 ([#1569](https://github.com/qBraid/qBraid/pull/1569))
 - Capped `openqasm3` below 1.0.2. That release rejects every `OPENQASM 2.0` program in `pyqasm.loads`, which broke OpenQASM 2 conversions on fresh installs ([#1554](https://github.com/qBraid/qBraid/pull/1554))
 - Raised the `qbraid-core` floor from `>=0.6.13` to `>=0.6.36`, which adds the calibration `standardError` and `calibrated` fields ([#1495](https://github.com/qBraid/qBraid/pull/1495)).
 - Raised the `amazon-braket-sdk` floor from `>=1.83.0` to `>=1.108.0`, the first release whose `AwsDevice.run` accepts `experimental_capabilities`. Earlier releases ignore it or reject it after creating the task ([#1494](https://github.com/qBraid/qBraid/pull/1494))
