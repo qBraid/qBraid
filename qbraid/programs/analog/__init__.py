@@ -34,6 +34,7 @@ Submodules
    :toctree: ../stubs/
 
    braket_ahs
+   pulser
 
 """
 import importlib
