@@ -32,120 +32,12 @@ from qbraid.runtime.openquantum import (
     OpenQuantumProvider,
     OpenQuantumSession,
 )
-
-# Mock Data
-DEVICE_DATA = {
-    "backend_classes": [
-        {
-            "id": "c1b9a7a3-4b8f-4b3e-8b3e-4b8f4b3e8b3e",
-            "name": "OpenQuantum Simulator",
-            "description": "A simulator.",
-            "type": "SIMULATOR",
-            "provider_id": "p1",
-            "short_code": "oq-sim",
-            "constraint_data": {"max_qubits": 32, "min_qubits": 1},
-        },
-        {
-            "id": "d2c... ",
-            "name": "OpenQuantum QPU",
-            "description": "A QPU.",
-            "type": "QPU",
-            "provider_id": "p1",
-            "short_code": "oq-qpu-1",
-            "constraint_data": {"max_qubits": 25, "min_qubits": 1},
-        },
-    ],
-    "pagination": {"next_cursor": None},
-}
-
-ORG_DATA = {"organizations": [{"id": "org_abc123", "name": "Test Org"}]}
-
-UPLOAD_RESPONSE = {"id": "upload_id_123", "url": "https://presigned.url/for/upload"}
-
-PREPARE_RESPONSE = {"id": "prep_id_456"}
-
-PREPARATION_RESULT_COMPLETED = {
-    "status": "Completed",
-    "quote": [
-        {
-            "price": 10,
-            "execution_plan_id": "072f7eb6-574b-4bae-aafa-d3399c4abe7a",
-            "name": "Standard Plan",
-            "queue_priorities": [
-                {
-                    "price_increase": 0,
-                    "queue_priority_id": "0f7b91a3-d1bf-46fb-af9c-55b77fa72bed",
-                    "name": "Standard Queue",
-                },
-                {
-                    "price_increase": 5,
-                    "queue_priority_id": "4ea2b9de-2d20-46d4-b1b5-0b71537a584f",
-                    "name": "Fast Queue",
-                },
-            ],
-        }
-    ],
-}
-
-CREATE_JOB_RESPONSE = {"id": "job_xyz789", "status": "CREATED"}
-
-GET_JOB_RESPONSE_COMPLETED = {
-    "id": "job_xyz789",
-    "status": "Completed",
-    "backend_class_id": "oq-sim",
-    "execution_plan_id": "072f7eb6-574b-4bae-aafa-d3399c4abe7a",
-    "queue_priority_id": "0f7b91a3-d1bf-46fb-af9c-55b77fa72bed",
-    "output_data_url": "https://presigned.url/for/output",
-    "message": "Job completed successfully",
-}
-
-GET_JOB_RESPONSE_FAILED = {
-    "id": "job_xyz789",
-    "status": "Failed",
-    "backend_class_id": "oq-sim",
-    "output_data_url": None,
-    "message": "Job failed due to an error",
-}
-
-JOB_OUTPUT_RESPONSE = {"00": 50, "11": 50}
-
-
-@pytest.fixture
-def mock_session():
-    """Fixture for a mocked OpenQuantumSession."""
-    with patch("qbraid.runtime.openquantum.provider.OpenQuantumSession") as MockSession:
-        session = MockSession.return_value
-        session.get_devices.return_value = DEVICE_DATA["backend_classes"]
-
-        # Mock get_backend_class_details to return constraint data
-        def mock_get_details(backend_id):
-            if backend_id == "c1b9a7a3-4b8f-4b3e-8b3e-4b8f4b3e8b3e":
-                return {"constraint_data": {"max_qubits": 32, "min_qubits": 1}}
-            if backend_id == "d2c... ":
-                return {"constraint_data": {"max_qubits": 25, "min_qubits": 1}}
-            return {}
-
-        session.get_backend_class_details.side_effect = mock_get_details
-        session.get_user_organizations.return_value = ORG_DATA["organizations"]
-        session.upload_input.return_value = UPLOAD_RESPONSE["id"]
-        session.prepare_job.return_value = PREPARE_RESPONSE
-        session.wait_for_preparation.return_value = PREPARATION_RESULT_COMPLETED["quote"]
-        session.create_job.return_value = CREATE_JOB_RESPONSE
-        session.get_job.return_value = GET_JOB_RESPONSE_COMPLETED
-        session.download_job_output.return_value = JOB_OUTPUT_RESPONSE
-        yield session
-
-
-@pytest.fixture
-def provider(mock_session):
-    """Fixture for an OpenQuantumProvider with a mocked session."""
-    with patch.object(
-        OpenQuantumProvider,
-        "__init__",
-        lambda s, client_id=None, client_secret=None: setattr(s, "session", mock_session),
-    ):
-        p = OpenQuantumProvider()
-        yield p
+from tests.runtime.openquantum.conftest import (
+    GET_JOB_RESPONSE_COMPLETED,
+    GET_JOB_RESPONSE_FAILED,
+    JOB_OUTPUT_RESPONSE,
+    PREPARATION_RESULT_COMPLETED,
+)
 
 
 def test_openquantum_provider_get_devices(provider):
@@ -188,6 +80,87 @@ def test_openquantum_device_status(provider):
     assert device.status() == DeviceStatus.ONLINE
 
 
+def test_device_status_uses_catalog_liveness(provider):
+    """Offline, maintenance, and closed queues are not reported as online."""
+    device = provider.get_device("oq-sim")
+
+    provider.session.get_devices.return_value = [
+        {"short_code": "oq-sim", "status": "Offline", "accepting_jobs": False}
+    ]
+    assert device.status() == DeviceStatus.OFFLINE
+
+    provider.session.get_devices.return_value = [
+        {"short_code": "oq-sim", "status": "Maintenance", "accepting_jobs": False}
+    ]
+    assert device.status() == DeviceStatus.UNAVAILABLE
+
+    provider.session.get_devices.return_value = [
+        {"short_code": "oq-sim", "status": "Online", "accepting_jobs": False}
+    ]
+    assert device.status() == DeviceStatus.UNAVAILABLE
+
+    provider.session.get_devices.return_value = [
+        {"short_code": "oq-sim", "status": "Online", "accepting_jobs": True}
+    ]
+    assert device.status() == DeviceStatus.ONLINE
+
+
+def test_device_status_falls_back_to_profile_snapshot(provider):
+    """A failed catalog lookup uses the status stored when the device was built."""
+    profile = provider._build_profile(
+        {
+            "short_code": "oq-sim",
+            "type": "QPU",
+            "status": "Reserved",
+            "accepting_jobs": False,
+        }
+    )
+    device = OpenQuantumDevice(profile, provider.session)
+    provider.session.get_devices.side_effect = RuntimeError("catalog down")
+    assert device.status() == DeviceStatus.UNAVAILABLE
+
+
+def test_num_qubits_prefers_device_document(provider):
+    """Width comes from n_qubits. The legacy max_qubits field still works."""
+    current = provider._build_profile(
+        {
+            "short_code": "ionq:forte-1",
+            "type": "QPU",
+            "constraint_data": {
+                "n_qubits": 36,
+                "max_qubits": 4,
+                "limits": {"max_qubits_per_job": 36},
+            },
+        }
+    )
+    assert current.num_qubits == 36
+
+    legacy = provider._build_profile(
+        {
+            "short_code": "oq-sim",
+            "type": "SIMULATOR",
+            "constraint_data": {"max_qubits": 32},
+        }
+    )
+    assert legacy.num_qubits == 32
+
+
+def test_get_devices_keeps_schema_without_details_liveness(provider):
+    """Scheduler details add the job schema and width, not catalog liveness."""
+    schema = {"type": "object", "required": ["shots", "engine"]}
+    provider.session.get_backend_class_details.side_effect = lambda _backend_id: {
+        "constraint_data": {"n_qubits": 36, "max_qubits": 4},
+        "configuration_schema": schema,
+        "status": "Offline",
+        "accepting_jobs": False,
+    }
+    device = provider.get_device("oq-sim")
+    assert device.num_qubits == 36
+    assert device.profile.configuration_schema == schema
+    assert device.profile.availability_status is None
+    assert device.status() == DeviceStatus.ONLINE
+
+
 @patch("requests.put")
 def test_device_run_and_submit(mock_requests_put, provider):
     """Test running a fake job through the full run/submit flow."""
@@ -204,6 +177,8 @@ def test_device_run_and_submit(mock_requests_put, provider):
     provider.session.prepare_job.assert_called_once()
     prepare_payload = provider.session.prepare_job.call_args.args[0]
     assert prepare_payload["submitted_with"] == "qbraid"
+    assert prepare_payload["shots"] == 100
+    assert prepare_payload["configuration_data"] == {"shots": 100}
     provider.session.wait_for_preparation.assert_called_once_with("prep_id_456")
     provider.session.create_job.assert_called_once()
 
@@ -247,6 +222,26 @@ def test_device_submit_batch(mock_requests_put, provider):
     assert len(jobs) == 2
     assert all(isinstance(j, OpenQuantumJob) for j in jobs)
     assert provider.session.create_job.call_count == 2
+
+
+def test_raise_for_api_error_email_verification():
+    """Unverified email becomes a clear QbraidRuntimeError."""
+    response = MagicMock()
+    response.ok = False
+    response.status_code = 403
+    response.json.return_value = {
+        "status_code": 403,
+        "message": [
+            "Please verify your email address at https://www.openquantum.com "
+            "before submitting jobs."
+        ],
+        "type": "EMAIL_VERIFICATION_REQUIRED",
+    }
+    response.text = ""
+    response.reason = "Forbidden"
+
+    with pytest.raises(QbraidRuntimeError, match=r"verify your email"):
+        OpenQuantumSession._raise_for_api_error(response)
 
 
 def test_raise_for_api_error_terms_of_use():
@@ -431,6 +426,27 @@ def test_job_failed_list_message(provider):
         job.result()
 
 
+def test_job_result_wrapped_counts(provider):
+    """Counts nested under counts or measurement_counts still histogram."""
+    provider.session.get_job.return_value = GET_JOB_RESPONSE_COMPLETED
+    provider.session.download_job_output.return_value = {"counts": {"00": 40, "11": 60}}
+    job = OpenQuantumJob("job_xyz789", session=provider.session)
+    result = job.result()
+    assert result.data.get_counts() == {"00": 40, "11": 60}
+
+    provider.session.download_job_output.return_value = {"measurement_counts": {"0": 3, "1": 7}}
+    assert job.result().data.get_counts() == {"0": 3, "1": 7}
+
+
+def test_job_status_cancel_requested(provider):
+    """A queued job with cancel_requested stays in progress as CANCELLING."""
+    job = OpenQuantumJob("job_id", session=provider.session)
+    provider.session.get_job.return_value = {"status": "Queued", "cancel_requested": True}
+    assert job.status() == JobStatus.CANCELLING
+    provider.session.get_job.return_value = {"status": "Queued", "cancel_requested": False}
+    assert job.status() == JobStatus.QUEUED
+
+
 def test_job_status_mapping(provider):
     """Test the mapping of OpenQuantum statuses to qBraid JobStatus."""
     job = OpenQuantumJob("job_id", session=provider.session)
@@ -472,6 +488,9 @@ def test_session_auth_from_env(monkeypatch):
         session = OpenQuantumSession()
         assert session.client_id == "test_id"
         assert session.client_secret == "test_secret"
+        assert session.auth_url == "https://id.openquantum.com"
+        assert session.scheduler_url == "https://scheduler.openquantum.com"
+        assert session.management_url == "https://management.openquantum.com"
 
 
 @patch("requests.put")
@@ -816,7 +835,12 @@ def test_session_api_methods(mock_put):
     with patch.object(session, "post") as mock_post:
         mock_post.return_value.json.return_value = {"id": "upload_123", "url": "http://upload"}
         assert session.upload_input(b"data") == "upload_123"
-        mock_put.assert_called_once_with("http://upload", data=b"data", timeout=60)
+        mock_put.assert_called_once_with(
+            "http://upload",
+            data=b"data",
+            headers={"Content-Type": "text/plain"},
+            timeout=60,
+        )
 
         mock_post.return_value.json.return_value = {"id": "prep_123"}
         assert session.prepare_job({}) == {"id": "prep_123"}
