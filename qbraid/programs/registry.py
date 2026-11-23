@@ -19,13 +19,13 @@ Module for registering custom program types and aliases
 
 import sys
 import threading
-from typing import Any, Optional, Type, TypeVar, Union
+from typing import Any, Optional, Type, TypeVar, Union, cast
 
 from qbraid._entrypoints import get_entrypoints
 
 from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
 from .experiment import ExperimentType
-from .typer import QbraidMetaType
+from .typer import JsonProgramMeta, QbraidMetaType, is_json_program_type
 
 QPROGRAM_NATIVE = Union[tuple(_QPROGRAM_TYPES)]
 QPROGRAM_REGISTRY = _QPROGRAM_REGISTRY
@@ -153,6 +153,34 @@ def register_program_type(
         QPROGRAM_REGISTRY[normalized_alias] = program_type
         QPROGRAM_ALIASES.add(normalized_alias)
         QPROGRAM_TYPES.add(program_type)
+
+
+def register_json_program_type(alias: str) -> JsonProgramMeta:
+    """Register JSON programs of type ``alias``, such as ``"pulse.schedule.v1"``.
+
+    Returns the marker class registered under ``alias``: the one already there, or a new one.
+    Safe to call from several threads at once; each gets the same class.
+
+    Raises:
+        ValueError: If ``alias`` is not a JSON program type, or is registered with another type.
+    """
+    if not is_json_program_type(alias):
+        raise ValueError(f"'{alias}' is not a JSON program type.")
+    with _REGISTRY_LOCK:
+        registered = QPROGRAM_REGISTRY.get(alias)
+        if isinstance(registered, JsonProgramMeta):
+            return cast(JsonProgramMeta, registered)
+        marker = JsonProgramMeta(
+            "JsonProgram",
+            (),
+            {
+                "_program_type": alias,
+                "__module__": "qbraid.programs.typer",
+                "__doc__": f"Marker class for '{alias}' JSON programs.",
+            },
+        )
+        register_program_type(marker, alias=alias)
+        return marker
 
 
 def unregister_program_type(alias: str, raise_error: bool = True) -> None:
