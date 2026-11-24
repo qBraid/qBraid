@@ -75,8 +75,8 @@ _CCX_DECOMPOSITION = (
     "h {c}; cx {b}, {c}; tdg {c}; cx {a}, {c}; t {c}; cx {b}, {c}; tdg {c}; cx {a}, {c}; "
     "t {b}; t {c}; h {c}; cx {a}, {b}; t {a}; tdg {b}; cx {a}, {b};"
 )
-_CCX_LINE = re.compile(r"^(\s*)ccx\s+([^,;]+),\s*([^,;]+),\s*([^,;]+);\s*$", re.MULTILINE)
-_ROTATION_LINE = re.compile(r"^(\s*)(rx|ry|rz|p)\(([^()]*)\)(\s+[^;]+;)\s*$", re.MULTILINE)
+_CCX_LINE = re.compile(r"^(\s*)ccx\s+([^,;]+),\s*([^,;]+),\s*([^,;]+);[ \t]*$", re.MULTILINE)
+_ROTATION_LINE = re.compile(r"^(\s*)(rx|ry|rz|p)\(([^()]*)\)(\s+[^;]+;)[ \t]*$", re.MULTILINE)
 
 
 class _UnsupportedFinder(QASMVisitor[None]):

@@ -30,7 +30,8 @@ import pytest
 from qbraid.programs.gate_model.ionq import GateSet
 from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
-from qbraid.runtime.ionq.qasm3 import find_unsupported, to_ionq_qasm3
+from qbraid.runtime.ionq import qasm3 as ionq_qasm3
+from qbraid.runtime.ionq.qasm3 import _normalize_angles, find_unsupported, to_ionq_qasm3
 from qbraid.transpiler import ProgramConversionError
 
 SIMULATOR_DATA = {
@@ -472,3 +473,60 @@ def test_circuit_job_makes_no_artifact_request():
     assert "register_counts" not in result.data.extra
     paths = [call.args[0] for call in session.get.call_args_list]
     assert paths == ["/jobs/job-qasm3/results/probabilities"]
+
+
+@pytest.mark.parametrize(
+    "statement, problem",
+    [
+        ("inv @ h q[0];", "'inv @' modifier"),
+        ("ctrl @ inv @ x q[0], q[1];", "more than one modifier on 'x'"),
+        ("ctrl @ h q[0], q[1];", "'ctrl @ h'"),
+        ("ctrl(n) @ x q[0], q[1];", "'ctrl(...) @ x'"),
+        ("measure q[0];", "measurement without a target bit"),
+    ],
+)
+def test_find_unsupported_names_each_construct(statement, problem):
+    """Each construct IonQ rejects is reported once, by name."""
+    program = f"OPENQASM 3.0;\nqubit[2] q;\nbit[2] c;\n{statement}\n{statement}\n"
+
+    assert find_unsupported(program) == [problem]
+
+
+def test_find_unsupported_passes_unparseable_program_through():
+    """A program that does not parse is left for IonQ to report."""
+    assert not find_unsupported("OPENQASM 3.0;\nqubit[2 q;\n")
+
+
+def test_normalize_angles_edge_cases():
+    """Symbolic angles are left alone, and an angle of exactly -0.0 or 2π becomes 0."""
+    program = "rz(pi) q[0];\nrx(-2e-17) q[0];\nry(6.283185307179586) q[0];\n"
+
+    assert _normalize_angles(program) == "rz(pi) q[0];\nrx(0.0) q[0];\nry(0.0) q[0];\n"
+
+
+def test_rewrite_rebases_gates_left_after_unroll(monkeypatch):
+    """A gate still unsupported after unrolling is rebased into rotations and cx."""
+    monkeypatch.setattr(ionq_qasm3, "_expand_ccx", lambda qasm: qasm)
+    program = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[3] q;\nccx q[0], q[1], q[2];\n'
+
+    rewritten = to_ionq_qasm3(program)
+
+    assert "ccx" not in rewritten
+    assert not find_unsupported(rewritten)
+
+
+def test_rewrite_raises_when_output_is_still_unsupported(monkeypatch):
+    """The rewritten program is checked again, and a leftover construct raises."""
+    monkeypatch.setattr(ionq_qasm3, "_normalize_angles", lambda qasm: qasm + "U(0, 0, 0) q[0];\n")
+    program = 'OPENQASM 3.0;\ninclude "stdgates.inc";\nqubit[1] q;\nh q[0];\n'
+
+    with pytest.raises(ProgramConversionError, match="Still unsupported: gate 'U'"):
+        to_ionq_qasm3(program)
+
+
+def test_result_ignores_artifact_with_uneven_registers():
+    """A register missing from some shots makes the artifact unreadable, not misaligned."""
+    shots = [{"registers": {"c": [1], "m": [0]}}, {"registers": {"c": [0]}}]
+    job, _ = _job_with_responses(QASM3_JOB, {"shots": shots})
+
+    assert "register_memory" not in job.result().data.extra
