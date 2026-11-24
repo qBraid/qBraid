@@ -29,13 +29,14 @@ from qbraid_core._import import LazyLoader
 
 from qbraid._logging import logger
 from qbraid.passes import CompilationError
-from qbraid.programs import QPROGRAM_REGISTRY, load_program
+from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias, load_program
 from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDict, IonQDictType, QasmStringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.transpiler import ProgramConversionError, transpile
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
     IONQ_ONE_QUBIT_GATE_MAP,
     IONQ_THREE_QUBIT_GATE_ALIASES,
@@ -43,6 +44,7 @@ from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
 )
 
 from .job import IonQJob
+from .qasm3 import find_unsupported, to_ionq_qasm3
 
 if TYPE_CHECKING:
     import qiskit as qiskit_typing
@@ -151,7 +153,7 @@ class IonQDevice(QuantumDevice):
     # pylint:disable-next=arguments-differ,too-many-arguments
     def submit(
         self,
-        run_input: Union[IonQDictType, list[IonQDictType]],
+        run_input: Union[IonQDictType, list[IonQDictType], str],
         shots: int,
         dry_run: bool = False,
         name: Optional[str] = None,
@@ -160,16 +162,32 @@ class IonQDevice(QuantumDevice):
         metadata: Optional[dict[str, Any]] = None,
         **kwargs,
     ) -> IonQJob:
-        """Submit a job to the IonQ device."""
-        ionq_input = (
-            self._squash_multicircuit_input(run_input) if isinstance(run_input, list) else run_input
-        )
+        """Submit a job to the IonQ device.
+
+        A string is sent as an OpenQASM 3 program (job type ``ionq.qasm3.v1``) exactly as
+        written. An IonQ JSON circuit, or a list of them, is sent as ``ionq.circuit.v1`` or
+        ``ionq.multi-circuit.v1``.
+        """
+        if isinstance(run_input, str):
+            job_type = "ionq.qasm3.v1"
+            ionq_input: dict[str, Any] = {"data": run_input}
+        elif isinstance(run_input, list):
+            if any(isinstance(item, str) for item in run_input):
+                raise ValueError(
+                    "submit() takes one OpenQASM 3 program per job. Use run() with a list "
+                    "to submit each program as its own job."
+                )
+            job_type = "ionq.multi-circuit.v1"
+            ionq_input = self._squash_multicircuit_input(run_input)
+        else:
+            job_type = "ionq.circuit.v1"
+            ionq_input = run_input
         job_data = {
             "backend": self.id,
             "shots": shots,
             "dry_run": dry_run,
             "input": ionq_input,
-            "type": "ionq.multi-circuit.v1" if isinstance(run_input, list) else "ionq.circuit.v1",
+            "type": job_type,
             **kwargs,
         }
         optional_fields = {
@@ -209,12 +227,73 @@ class IonQDevice(QuantumDevice):
 
         return run_input_compat
 
+    @staticmethod
+    def _warn_ignored_qiskit_ionq_options(
+        gateset: Optional[GateSet], ionq_compiler_synthesis: Optional[bool]
+    ) -> None:
+        """Warn that qiskit-ionq options are ignored on this submission path."""
+        if gateset is not None:
+            warnings.warn(
+                UserWarning(
+                    "GateSet argument is only applicable when qiskit-ionq "
+                    "is installed, and when all run_inputs are of type "
+                    "qiskit.QuantumCircuit. Ignoring..."
+                )
+            )
+        if ionq_compiler_synthesis is not None:
+            warnings.warn(
+                UserWarning(
+                    "IonQ compiler synthesis option is only applicable when "
+                    "qiskit-ionq is installed, and when all run_inputs are of "
+                    "type qiskit.QuantumCircuit. Ignoring..."
+                )
+            )
+
+    def _to_openqasm3(self, program: qbraid.programs.QPROGRAM) -> str:
+        """Return ``program`` as an OpenQASM 3 string to submit as ``ionq.qasm3.v1``.
+
+        An OpenQASM 3 string is returned unchanged when IonQ can run it as written. When it
+        uses a construct IonQ rejects or runs incorrectly (see :func:`find_unsupported`),
+        it is rewritten with :func:`to_ionq_qasm3` and a warning names what changed. Any
+        other program is converted to OpenQASM 3 and always rewritten, because converters
+        emit gates such as ``ccx`` and ``u3`` and whole-register measurements.
+        """
+        qasm: str
+        if get_program_type_alias(program, safe=True) == "qasm3":
+            problems = find_unsupported(program)
+            if not problems:
+                qasm = program
+            elif self._options.get("transpile") is not True:
+                raise ProgramConversionError(
+                    "IonQ does not run this OpenQASM 3 program as written "
+                    f"({', '.join(problems)}), and the device's transpile option is off, "
+                    "so it was not rewritten."
+                )
+            else:
+                warnings.warn(
+                    "Rewriting the OpenQASM 3 program into gates and statements IonQ runs as "
+                    f"written. Found: {', '.join(problems)}.",
+                    UserWarning,
+                    stacklevel=3,
+                )
+                qasm = to_ionq_qasm3(program)
+        elif self._options.get("transpile") is not True:
+            raise ProgramConversionError(
+                f"Cannot submit a '{type(program).__name__}' program as OpenQASM 3 while the "
+                "device's transpile option is off. Pass an OpenQASM 3 string instead."
+            )
+        else:
+            qasm = to_ionq_qasm3(str(transpile(program, "qasm3", **self.scheme.to_dict())))
+        self.validate([qasm])
+        return qasm
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
         *args,
         gateset: Optional[GateSet] = None,
         ionq_compiler_synthesis: Optional[bool] = None,
+        submit_as: Literal["circuit", "qasm3"] = "circuit",
         **kwargs,
     ) -> Union[qbraid.runtime.IonQJob, list[qbraid.runtime.IonQJob]]:
         """
@@ -228,12 +307,42 @@ class IonQDevice(QuantumDevice):
             ionq_compiler_synthesis (bool, optional): Whether to opt-in to IonQ compiler's
                 intelligent trotterization. Only applicable if qiskit-ionq is installed and all
                 run_inputs are of type qiskit.QuantumCircuit. Defaults to False.
+            submit_as (str, optional): The program format IonQ receives. ``"circuit"`` (the
+                default) converts each program to IonQ's JSON circuit format, which drops
+                measurements. ``"qasm3"`` sends each program as OpenQASM 3 (job type
+                ``ionq.qasm3.v1``) with its measurements, so a program that measures
+                mid-circuit runs as written on targets that support it. An OpenQASM 3 string
+                is sent exactly as written unless it uses a construct IonQ rejects or runs
+                incorrectly, such as ``ccx``, ``ctrl(2) @``, ``c = measure q;`` or a ``for``
+                loop. Then it is rewritten into gates IonQ supports, with a warning. Other
+                programs are converted to OpenQASM 3 and rewritten the same way. Each
+                program becomes its own job. ``job.result().data.get_counts()`` reports the
+                final readout of every qubit, and ``result.data.extra["register_counts"]``
+                and ``["register_memory"]`` hold each classical register.
 
         Returns:
             An IonQJob object or a list of IonQJob objects corresponding to the input.
+
+        Raises:
+            ValueError: If ``submit_as`` is not ``"circuit"`` or ``"qasm3"``.
+            ProgramConversionError: If ``submit_as="qasm3"`` and a program cannot be
+                rewritten into OpenQASM 3 that IonQ supports.
         """
+        if submit_as not in ("circuit", "qasm3"):
+            raise ValueError(
+                f"Invalid submit_as {submit_as!r}. Use 'circuit' for IonQ JSON circuits "
+                "or 'qasm3' for OpenQASM 3."
+            )
+
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
+
+        if submit_as == "qasm3":
+            self._warn_ignored_qiskit_ionq_options(gateset, ionq_compiler_synthesis)
+            with self._status_checked_once():
+                programs = [self._to_openqasm3(program) for program in run_input]
+            jobs = [self.submit(program, *args, **kwargs) for program in programs]
+            return jobs[0] if is_single_input else jobs
 
         if (
             "qiskit" in QPROGRAM_REGISTRY
@@ -246,22 +355,7 @@ class IonQDevice(QuantumDevice):
                 run_input, gateset=gateset.value, ionq_compiler_synthesis=ionq_compiler_synthesis
             )
         else:
-            if gateset is not None:
-                warnings.warn(
-                    UserWarning(
-                        "GateSet argument is only applicable when qiskit-ionq "
-                        "is installed, and when all run_inputs are of type "
-                        "qiskit.QuantumCircuit. Ignoring..."
-                    )
-                )
-            if ionq_compiler_synthesis is not None:
-                warnings.warn(
-                    UserWarning(
-                        "IonQ compiler synthesis option is only applicable when "
-                        "qiskit-ionq is installed, and when all run_inputs are of "
-                        "type qiskit.QuantumCircuit. Ignoring..."
-                    )
-                )
+            self._warn_ignored_qiskit_ionq_options(gateset, ionq_compiler_synthesis)
             with self._status_checked_once():
                 run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
 

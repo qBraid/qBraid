@@ -84,3 +84,51 @@ def test_ionq_multicircuit_job():
     counts = result_data.get_counts()
 
     assert counts == [{"000": 500, "111": 500}, {"000": 500, "011": 500}]
+
+
+@pytest.mark.remote
+def test_ionq_qasm3_mid_circuit_measurement_job():
+    """Test that IonQ accepts and runs an OpenQASM 3 program that measures mid-circuit."""
+    api_key = os.getenv("IONQ_API_KEY")
+
+    if not api_key:
+        pytest.skip("IONQ_API_KEY is not set")
+
+    provider = IonQProvider(api_key=api_key)
+    device = provider.get_device("simulator")
+
+    program = """OPENQASM 3.0;
+qubit[2] q;
+bit[1] m;
+bit[2] c;
+x q[0];
+m[0] = measure q[0];
+h q[1];
+c[0] = measure q[0];
+c[1] = measure q[1];
+"""
+
+    job = device.run(program, name="qBraid OpenQASM 3 Test", shots=100, submit_as="qasm3")
+
+    try:
+        job.wait_for_final_state(timeout=60)
+    except TimeoutError as err:
+        logger.error(err)
+
+        try:
+            job.cancel()
+        except (RequestsApiError, JobStateError) as err:
+            logger.error(err)
+
+        pytest.skip(reason="Job did not complete within the timeout")
+
+    assert job.metadata()["type"] == "ionq.qasm3.v1"
+
+    result = job.result()
+    counts = result.data.get_counts()
+    assert sum(counts.values()) == 100
+    assert all(len(key) == 2 for key in counts)
+
+    register_counts = result.data.extra["register_counts"]
+    assert register_counts["m"] == {"1": 100}
+    assert register_counts["output_all"] == counts

@@ -21,6 +21,7 @@ Module defining IonQ job class
 
 from __future__ import annotations
 
+from collections import Counter
 from typing import TYPE_CHECKING, Any, Optional, TypedDict, Union
 
 from qbraid_core._import import LazyLoader
@@ -40,6 +41,9 @@ qbraid_rt_ionq: qbraid.runtime.ionq = LazyLoader("qbraid_rt_ionq", globals(), "q
 
 # Sanity bound on the provider-reported register width, which sizes every formatted key.
 MAX_QUBITS = 10_000
+
+#: Result format holding each shot's classical registers, listed by OpenQASM 3 jobs.
+SHOTS_FORMAT = "ionq.result.shots.json.v2"
 
 
 class CostValue(TypedDict):
@@ -194,8 +198,63 @@ class IonQJob(QuantumJob):
 
         return normalize(probabilities)
 
+    @staticmethod
+    def _parse_shots(payload: Any) -> dict[str, list[str]]:
+        """Return each register's per-shot bitstrings from a shots.json.v2 artifact.
+
+        IonQ lists bit 0 of a register first. qBraid bitstrings put bit 0 last, as
+        ``get_counts()`` does for qubit 0, so each list is reversed.
+
+        Raises:
+            ValueError: If the payload does not have the shots.json.v2 shape.
+        """
+        shots = payload.get("shots") if isinstance(payload, dict) else None
+        if not isinstance(shots, list):
+            raise ValueError("Expected a 'shots' list in the shots artifact.")
+        memory: dict[str, list[str]] = {}
+        for shot in shots:
+            registers = shot.get("registers") if isinstance(shot, dict) else None
+            if not isinstance(registers, dict):
+                raise ValueError("Expected a 'registers' object in every shot.")
+            if "output_all" in shot and "output_all" not in registers:
+                registers = {**registers, "output_all": shot["output_all"]}
+            for name, bits in registers.items():
+                values = [int(bit) for bit in reversed(list(bits))]
+                if any(value not in (0, 1) for value in values):
+                    raise ValueError(f"Register '{name}' has a bit that is not 0 or 1.")
+                memory.setdefault(name, []).append("".join(map(str, values)))
+        lengths = {len(values) for values in memory.values()}
+        if len(lengths) > 1:
+            raise ValueError("Every shot must list the same registers.")
+        return memory
+
+    def _get_registers(self, results: Any) -> Optional[dict[str, list[str]]]:
+        """Fetch and parse the job's shots.json.v2 artifact, if the job lists one.
+
+        Returns ``None`` when the job has no such artifact, or when it cannot be fetched
+        or parsed. The second case logs a warning, so the counts are still returned.
+        """
+        descriptor = results.get(SHOTS_FORMAT) if isinstance(results, dict) else None
+        artifact_id = descriptor.get("id") if isinstance(descriptor, dict) else None
+        if not artifact_id:
+            return None
+        try:
+            payload = self.session.get(f"/jobs/{self.id}/artifacts/{artifact_id}").json()
+            return self._parse_shots(payload)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Could not read the classical registers of IonQ job %s: %s", self.id, err
+            )
+            return None
+
     def result(self) -> Result:
-        """Return the result of the IonQ job."""
+        """Return the result of the IonQ job.
+
+        For an OpenQASM 3 job, ``result.data.extra`` also holds each classical register:
+        ``"register_counts"`` maps a register name to its counts and ``"register_memory"``
+        to its bitstring per shot. Bit 0 of a register is the last character.
+        ``"output_all"`` is IonQ's final readout of every qubit.
+        """
         self.wait_for_final_state()
         job_data = self.session.get_job(self.id)
         success = job_data.get("status") == "completed"
@@ -204,6 +263,9 @@ class IonQJob(QuantumJob):
             code = failure.get("code")
             message = failure.get("error")
             raise IonQJobError(f"Job failed with code {code}: {message}")
+
+        # Read before job_data["results"] is replaced with the probabilities below.
+        registers = self._get_registers(job_data.get("results"))
 
         is_multi_circuit = job_data.get("type") == "ionq.multi-circuit.v1"
         probs_endpoint = (
@@ -222,9 +284,19 @@ class IonQJob(QuantumJob):
         measurement_probabilities = self._transform_measurement_probabilities(
             job_data["probabilities"], width
         )
+        register_data = {}
+        if registers is not None:
+            register_data = {
+                "register_counts": {
+                    name: dict(sorted(Counter(memory).items()))
+                    for name, memory in registers.items()
+                },
+                "register_memory": registers,
+            }
         data = GateModelResultData(
             measurement_counts=measurement_counts,
             measurement_probabilities=measurement_probabilities,
+            **register_data,
         )
         return Result(
             device_id=job_data["backend"], job_id=self.id, success=success, data=data, **job_data
