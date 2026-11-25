@@ -213,7 +213,6 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
         "qibo": ExperimentType.GATE_MODEL,
         "qat": ExperimentType.GATE_MODEL,
         "bloqade": ExperimentType.ANALOG,
-        "pulser": ExperimentType.ANALOG,
     }
 
     if native_alias in native_no_ep:

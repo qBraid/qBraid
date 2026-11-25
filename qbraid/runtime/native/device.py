@@ -31,7 +31,7 @@ from qbraid_core.services.runtime.schemas import JobRequest, Program
 
 from qbraid._caching import cached_method
 from qbraid._logging import logger
-from qbraid.programs import ExperimentType, get_program_type_alias
+from qbraid.programs import ExperimentType, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.group import get_active_group, get_active_group_session
 from qbraid.runtime.noise import NoiseModel
@@ -223,6 +223,17 @@ class QbraidDevice(QuantumDevice):
             raise ValueError(f"Noise model '{noise_model}' not supported by device.")
 
         return self.profile.noise_models.get(noise_model).name
+
+    def transform(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
+        """Move a Pulser sequence for a Pasqal QPU onto that QPU's Pulser device.
+
+        Other programs are returned unchanged.
+        """
+        if not str(self.id).startswith("pasqal:") or _program_type_alias(run_input) != "pulser":
+            return run_input
+        program = load_program(run_input)
+        program.transform(self)
+        return program.program
 
     def run(
         self,
