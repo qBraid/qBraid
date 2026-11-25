@@ -18,6 +18,8 @@ Module defining OpenQuantum device class
 """
 from __future__ import annotations
 
+import os
+import warnings
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.runtime.device import QuantumDevice
@@ -28,6 +30,64 @@ from .job import EXECUTION_PLAN_TYPES, QUEUE_PRIORITY_TYPES, OpenQuantumJob
 
 if TYPE_CHECKING:
     import qbraid.runtime.openquantum
+
+_DEFAULT_SHOTS = 100
+
+
+def _device_status(row: Optional[dict[str, Any]]) -> DeviceStatus:
+    """Map an Open Quantum catalog row to a qBraid device status.
+
+    A missing row, or a row from before liveness was published, stays
+    ``ONLINE`` so older payloads keep the previous behavior.
+    """
+    if not isinstance(row, dict):
+        return DeviceStatus.ONLINE
+    status = row.get("status")
+    accepting = row.get("accepting_jobs")
+    if status is None and accepting is None:
+        return DeviceStatus.ONLINE
+    normalized = status.lower() if isinstance(status, str) else ""
+    if normalized == "offline":
+        return DeviceStatus.OFFLINE
+    if normalized in {"maintenance", "reserved"} or accepting is False:
+        return DeviceStatus.UNAVAILABLE
+    return DeviceStatus.ONLINE
+
+
+def _resolve_shots(
+    shots: Optional[int], configuration_data: Any
+) -> tuple[Optional[int], dict[str, Any]]:
+    """Copy shots into configuration_data, matching the Open Quantum API.
+
+    Omitted shots default to 100 unless ``configuration_data["shots"]`` is
+    set. Both values, when set, must agree.
+    """
+    if configuration_data is None:
+        config: dict[str, Any] = {}
+    elif isinstance(configuration_data, dict):
+        config = dict(configuration_data)
+    else:
+        raise ValueError("configuration_data must be an object.")
+
+    config_shots = config.get("shots")
+    if config_shots is not None and (
+        isinstance(config_shots, bool) or not isinstance(config_shots, int)
+    ):
+        raise ValueError("configuration_data.shots must be an integer.")
+    if shots is not None and (isinstance(shots, bool) or not isinstance(shots, int)):
+        raise ValueError("shots must be an integer.")
+    if shots is not None and config_shots is not None and shots != config_shots:
+        raise ValueError(
+            f"shots mismatch: shots ({shots}) differs from "
+            f"configuration_data.shots ({config_shots})"
+        )
+    if shots is None and config_shots is None:
+        shots = _DEFAULT_SHOTS
+    elif shots is None:
+        shots = config_shots
+    if shots is not None:
+        config["shots"] = shots
+    return shots, config
 
 
 class OpenQuantumDevice(QuantumDevice):
@@ -47,16 +107,71 @@ class OpenQuantumDevice(QuantumDevice):
         return self._session
 
     def status(self) -> DeviceStatus:
-        """Return the current status of the OpenQuantum device."""
-        # OpenQuantum does not explicitly expose individual device status endpoints
-        # without listing all devices. Assuming ONLINE if instance exists.
-        return DeviceStatus.ONLINE
+        """Return the current status of the OpenQuantum device.
+
+        Liveness comes from the management catalog (``status`` and
+        ``accepting_jobs``). A failed lookup uses the snapshot stored on
+        the device profile.
+        """
+        try:
+            devices = self.session.get_devices()
+        except Exception:  # pylint: disable=broad-exception-caught
+            devices = None
+        if isinstance(devices, list):
+            for row in devices:
+                if not isinstance(row, dict):
+                    continue
+                if row.get("short_code") == self.id or row.get("id") == self.id:
+                    return _device_status(row)
+        return _device_status(
+            {
+                "status": getattr(self.profile, "availability_status", None),
+                "accepting_jobs": getattr(self.profile, "accepting_jobs", None),
+            }
+        )
+
+    def _resolve_organization_id(self, organization_id: Optional[str]) -> str:
+        """Pick the billing organization.
+
+        An explicit id wins, then ``OPENQUANTUM_ORGANIZATION_ID``. With one
+        organization, that organization is used. With several, the first
+        owned organization is used and a warning names the choice.
+        """
+        if organization_id:
+            return organization_id
+        env_org = os.getenv("OPENQUANTUM_ORGANIZATION_ID")
+        if env_org and env_org.strip():
+            return env_org.strip()
+
+        orgs = self.session.get_user_organizations()
+        if not orgs:
+            raise QbraidRuntimeError(
+                "No organization found. Please accept the Open Quantum terms of use to continue."
+            )
+        chosen = orgs[0]
+        if len(orgs) > 1:
+            shown = orgs[:8]
+            listing = ", ".join(f"{org.get('name', 'unnamed')} ({org.get('id')})" for org in shown)
+            extra = len(orgs) - len(shown)
+            if extra:
+                listing = f"{listing}, and {extra} more"
+            message = (
+                "Multiple organizations found. Using "
+                f"{chosen.get('name', 'unnamed')} ({chosen.get('id')}). "
+                "Pass organization_id or set OPENQUANTUM_ORGANIZATION_ID "
+                f"to choose one. Available: {listing}"
+            )
+            warnings.warn(message, UserWarning, stacklevel=2)
+        org_id = chosen.get("id")
+        if not org_id:
+            raise QbraidRuntimeError("Organization is missing an id.")
+        return org_id
 
     # pylint: disable-next=arguments-differ,too-many-arguments
     def submit(
         self,
         run_input: str | list[str],
-        shots: int = 100,
+        shots: Optional[int] = None,
         name: str = "qBraid Job",
         subcategory: Optional[str] = "oth:oth",
         dry_run: bool = False,
@@ -65,12 +180,19 @@ class OpenQuantumDevice(QuantumDevice):
         execution_plan_id: Optional[str] = None,
         queue_priority: Optional[str] = None,
         queue_priority_id: Optional[str] = None,
+        input_format: Optional[str] = None,
         **kwargs,
     ) -> Union[OpenQuantumJob, list[OpenQuantumJob], list[dict[str, Any]]]:
         """Submit a job to the OpenQuantum device.
 
-        Users can omit organization/plan/priority for sensible defaults
-        (first org + cheapest plan + lowest priority).
+        Omitted shots default to 100, unless ``configuration_data["shots"]``
+        is set. With one organization, that organization is billed. With
+        several, pass ``organization_id`` or set
+        ``OPENQUANTUM_ORGANIZATION_ID``. Plan and priority default to the
+        cheapest quote. ``input_format`` defaults to OpenQASM on the server.
+        Simulators that require fields such as ``engine`` take them in
+        ``configuration_data``. The device profile's ``configuration_schema``
+        lists those fields.
         """
         if isinstance(run_input, list):
             return [
@@ -85,20 +207,14 @@ class OpenQuantumDevice(QuantumDevice):
                     execution_plan_id=execution_plan_id,
                     queue_priority=queue_priority,
                     queue_priority_id=queue_priority_id,
+                    input_format=input_format,
                     **kwargs,
                 )
                 for i, item in enumerate(run_input)
             ]
 
-        # Auto-select the user's first organization when none is specified.
-        if organization_id is None:
-            orgs = self.session.get_user_organizations()
-            if not orgs:
-                raise QbraidRuntimeError(
-                    "No organization found. Please accept the Open Quantum "
-                    "terms of use to continue."
-                )
-            organization_id = orgs[0]["id"]
+        organization_id = self._resolve_organization_id(organization_id)
+        shots, configuration_data = _resolve_shots(shots, kwargs.get("configuration_data"))
 
         # Encode QASM
         if isinstance(run_input, str):
@@ -112,11 +228,13 @@ class OpenQuantumDevice(QuantumDevice):
             "name": name,
             "upload_endpoint_id": upload_id,
             "shots": shots,
-            "configuration_data": kwargs.get("configuration_data", {}),
+            "configuration_data": configuration_data,
             "submitted_with": "qbraid",
         }
         if subcategory is not None:
             prep_payload["job_subcategory_id"] = subcategory
+        if input_format is not None:
+            prep_payload["input_format"] = input_format
 
         prep_resp = self.session.prepare_job(prep_payload)
         prep_id = prep_resp["id"]

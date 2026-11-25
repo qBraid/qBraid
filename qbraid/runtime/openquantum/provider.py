@@ -34,9 +34,34 @@ from .device import OpenQuantumDevice
 TERMS_OF_USE_REQUIRED_MESSAGE = (
     "Please visit https://www.openquantum.com to accept the Terms of Use before submitting jobs."
 )
+EMAIL_VERIFICATION_REQUIRED_MESSAGE = (
+    "Please verify your email address at https://www.openquantum.com before submitting jobs."
+)
 
 # Stable error types from Open Quantum API (api-common ApiErrorType)
 API_ERROR_TYPE_TERMS_OF_USE_REQUIRED = "TERMS_OF_USE_REQUIRED"
+API_ERROR_TYPE_EMAIL_VERIFICATION_REQUIRED = "EMAIL_VERIFICATION_REQUIRED"
+
+
+def _optional_int(value: Any) -> Optional[int]:
+    """Return ``value`` when it is an int. Booleans are not ints here."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        return None
+    return value
+
+
+def _num_qubits(constraint_data: Any) -> Optional[int]:
+    """Device width from the current document, then the legacy ``max_qubits`` field."""
+    if not isinstance(constraint_data, dict):
+        return None
+    for key in ("n_qubits", "num_qubits", "max_qubits"):
+        found = _optional_int(constraint_data.get(key))
+        if found is not None:
+            return found
+    limits = constraint_data.get("limits")
+    if isinstance(limits, dict):
+        return _optional_int(limits.get("max_qubits_per_job"))
+    return None
 
 
 class OpenQuantumSession(Session):
@@ -102,6 +127,8 @@ class OpenQuantumSession(Session):
 
         if error_type == API_ERROR_TYPE_TERMS_OF_USE_REQUIRED:
             raise QbraidRuntimeError(TERMS_OF_USE_REQUIRED_MESSAGE)
+        if error_type == API_ERROR_TYPE_EMAIL_VERIFICATION_REQUIRED:
+            raise QbraidRuntimeError(EMAIL_VERIFICATION_REQUIRED_MESSAGE)
 
         detail = message or response.reason or f"HTTP {response.status_code}"
         type_part = f" [{error_type}]" if error_type else ""
@@ -162,11 +189,27 @@ class OpenQuantumSession(Session):
         return resp.json()
 
     def get_user_organizations(self) -> list[dict[str, Any]]:
-        """Get user organizations."""
+        """Get every organization the user belongs to.
+
+        The management API pages this list. Accounts in more than one
+        organization, including platform admins, are not limited to the
+        first page.
+        """
         url = f"{self.management_url}/v1/users/organizations"
-        resp = self.get(url, params={"limit": 10})
-        self._raise_for_api_error(resp)
-        return resp.json().get("organizations", [])
+        organizations: list[dict[str, Any]] = []
+        cursor = None
+        while True:
+            params: dict[str, Any] = {"limit": 100}
+            if cursor:
+                params["cursor"] = cursor
+            resp = self.get(url, params=params)
+            self._raise_for_api_error(resp)
+            body = resp.json()
+            organizations.extend(body.get("organizations", []))
+            cursor = body.get("pagination", {}).get("next_cursor")
+            if not cursor:
+                break
+        return organizations
 
     def upload_input(self, content: bytes) -> str:
         """Upload input file content."""
@@ -176,7 +219,12 @@ class OpenQuantumSession(Session):
         body = resp.json()
         upload_id = body["id"]
         upload_url = body["url"]
-        requests.put(upload_url, data=content, timeout=60).raise_for_status()
+        requests.put(
+            upload_url,
+            data=content,
+            headers={"Content-Type": "text/plain"},
+            timeout=60,
+        ).raise_for_status()
         return upload_id
 
     def prepare_job(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -247,16 +295,17 @@ class OpenQuantumProvider(QuantumProvider):
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         device_id = data.get("short_code") or data.get("id")
-        # Extract max_qubits from constraint_data if available
         constraint_data = data.get("constraint_data")
-        num_qubits = constraint_data.get("max_qubits") if constraint_data else None
 
         return TargetProfile(
             device_id=device_id,
             simulator=data.get("type") == "SIMULATOR",
             experiment_type=ExperimentType.GATE_MODEL,
-            num_qubits=num_qubits,
+            num_qubits=_num_qubits(constraint_data),
             constraint_data=constraint_data,
+            availability_status=data.get("status"),
+            accepting_jobs=data.get("accepting_jobs"),
+            configuration_schema=data.get("configuration_schema"),
             program_spec=[
                 ProgramSpec(str, alias="qasm3", experiment_type=ExperimentType.GATE_MODEL),
                 ProgramSpec(str, alias="qasm2", experiment_type=ExperimentType.GATE_MODEL),
@@ -275,9 +324,12 @@ class OpenQuantumProvider(QuantumProvider):
             if device_id:
                 try:
                     details = self.session.get_backend_class_details(device_id)
-                    # Merge constraint_data from details into device data
+                    # Scheduler details carry the device document and job schema.
+                    # Liveness (status, accepting_jobs) stays on the management list.
                     if "constraint_data" in details:
                         device["constraint_data"] = details["constraint_data"]
+                    if details.get("configuration_schema"):
+                        device["configuration_schema"] = details["configuration_schema"]
                 except Exception:  # pylint: disable=broad-exception-caught
                     # If details API fails, continue with basic device data
                     pass

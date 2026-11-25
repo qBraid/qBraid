@@ -18,7 +18,7 @@ Module defining OpenQuantum job class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid_core._import import LazyLoader
 
@@ -32,6 +32,49 @@ if TYPE_CHECKING:
     import qbraid.runtime.openquantum
 
 qbraid_rt_oq = LazyLoader("qbraid_rt_oq", globals(), "qbraid.runtime.openquantum")
+
+
+def _is_count_map(value: Any) -> bool:
+    """True when every entry is a bitstring mapped to a number."""
+    if not isinstance(value, dict) or not value:
+        return False
+    for key, count in value.items():
+        if not isinstance(key, str):
+            return False
+        if isinstance(count, bool) or not isinstance(count, (int, float)):
+            return False
+    return True
+
+
+def _measurement_counts(payload: Any) -> Any:
+    """Return the bitstring map from a job output document.
+
+    Open Quantum stores a bare ``{bitstring: count}`` map, or the same map
+    under ``counts`` / ``measurement_counts``. A document that is already a
+    count map is returned as-is.
+    """
+    if _is_count_map(payload) or payload == {}:
+        return payload
+    if not isinstance(payload, dict):
+        return payload
+    for key in ("counts", "measurement_counts"):
+        inner = payload.get(key)
+        if _is_count_map(inner) or inner == {}:
+            return inner
+    data = payload.get("data")
+    if isinstance(data, dict):
+        if _is_count_map(data) or data == {}:
+            return data
+        nested = data.get("counts")
+        if _is_count_map(nested) or nested == {}:
+            return nested
+    results = payload.get("results")
+    if isinstance(results, list) and results and isinstance(results[0], dict):
+        nested = results[0].get("counts")
+        if _is_count_map(nested) or nested == {}:
+            return nested
+    return payload
+
 
 # Execution plan and queue priority mappings
 EXECUTION_PLAN_TYPES = {
@@ -71,6 +114,8 @@ class OpenQuantumJob(QuantumJob):
 
         if status in ["Created", "Pending"]:
             return JobStatus.INITIALIZING
+        if status == "Queued" and job_data.get("cancel_requested") is True:
+            return JobStatus.CANCELLING
         if status == "Queued":
             return JobStatus.QUEUED
         if status == "Running":
@@ -100,7 +145,7 @@ class OpenQuantumJob(QuantumJob):
                 detail = raw_msg
             raise QbraidRuntimeError(f"Job failed: {detail}")
 
-        results = self.session.download_job_output(self.id)
+        results = _measurement_counts(self.session.download_job_output(self.id))
         data = GateModelResultData(measurement_counts=results)
         device_id = self._device.id if self._device else job_data.get("backend_class_id", "")
 
