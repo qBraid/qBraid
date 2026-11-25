@@ -16,7 +16,8 @@
 Module defining PennylaneTape Class
 
 """
-from typing import TYPE_CHECKING
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -27,6 +28,17 @@ from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import numpy as np
+
+
+def wire_order(wires: Iterable[Any]) -> list[Any]:
+    """Return wire labels sorted, so wire 0 is the most significant qubit.
+
+    Labels that can't be compared, such as 0 and "a", keep the order they were given in.
+    """
+    try:
+        return sorted(wires)
+    except TypeError:
+        return list(wires)
 
 
 class PennylaneTape(GateModelProgram):
@@ -64,13 +76,14 @@ class PennylaneTape(GateModelProgram):
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the Pennylane tape"""
-        return qml.matrix(self.program, wire_order=self.qubits)
+        # tape.wires is in first-use order, not label order.
+        return qml.matrix(self.program, wire_order=wire_order(self.qubits))
 
     def remove_idle_qubits(self) -> None:
         """Applies a given wire map to all operations in a tape."""
         tape = self.program.copy()
 
-        wires = sorted(tape.wires)
+        wires = wire_order(tape.wires)
         contig_wires = list(range(len(wires)))
 
         wire_map = dict(zip(wires, contig_wires))
@@ -83,7 +96,7 @@ class PennylaneTape(GateModelProgram):
         """Reverses the wire ordering of a Pennylane tape."""
         tape = self.program.copy()
 
-        wires_rev = sorted(tape.wires)
+        wires_rev = wire_order(tape.wires)
         wires = wires_rev.copy()
         wires_rev.reverse()
 
