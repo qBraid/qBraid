@@ -21,7 +21,7 @@ from __future__ import annotations
 import importlib.util
 from typing import TYPE_CHECKING, Any, Optional
 
-from pyqasm.printer import draw
+from pyqasm import draw
 
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 from qbraid.transpiler.converter import transpile

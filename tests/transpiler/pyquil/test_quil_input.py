@@ -34,6 +34,7 @@ from cirq.ops import (
     H,
     I,
     MeasurementGate,
+    ResetChannel,
     S,
     T,
     X,
@@ -192,9 +193,6 @@ def test_unsupported_quil_instruction():
         circuit_from_quil('PRAGMA ADD-KRAUS X 0 "(0.0 1.0 1.0 0.0)"')
 
     with pytest.raises(UnsupportedQuilInstruction):
-        circuit_from_quil("RESET")
-
-    with pytest.raises(UnsupportedQuilInstruction):
         circuit_from_quil(QUIL_PROGRAM_WITH_PARAMETERIZED_DEFGATE)
 
 
@@ -228,3 +226,18 @@ def test_ising_gates_match_pyquil_unitary(gate_name):
         circuit.unitary(qubit_order=LineQubit.range(2)),
         program_unitary(Program(quil), n_qubits=2),
     )
+
+
+def test_reset_qubit():
+    """RESET on one qubit becomes a Cirq reset on that qubit, in program order."""
+    q0, q1 = LineQubit.range(2)
+    expected = Circuit([X(q0), ResetChannel()(q0), CNOT(q0, q1)])
+    assert circuit_from_quil("X 0\nRESET 0\nCNOT 0 1") == expected
+
+
+def test_bare_reset_resets_every_qubit_used():
+    """A bare RESET resets every qubit in the program, including one first used after it."""
+    q0, q2 = LineQubit(0), LineQubit(2)
+    circuit = circuit_from_quil("X 0\nRESET\nH 2")
+    expected = Circuit([X(q0), ResetChannel()(q0), ResetChannel()(q2), H(q2)])
+    assert circuit == expected

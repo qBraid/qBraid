@@ -43,6 +43,7 @@ from cirq.ops import (
     ISwapPowGate,
     MatrixGate,
     MeasurementGate,
+    ResetChannel,
     S,
     T,
     TwoQubitDiagonalGate,
@@ -239,11 +240,6 @@ def rzz(param: float) -> ZZPowGate:
 PRAGMA_ERROR = """
 Please remove PRAGMAs from your Quil program.
 If you would like to add noise, do so after conversion.
-"""
-
-RESET_ERROR = """
-Please remove RESETs from your Quil program.
-RESET directives have special meaning on QCS, to enable active reset.
 """
 
 # Parameterized gates map to functions that produce Gate constructors.
@@ -467,7 +463,8 @@ def circuit_from_quil(quil: str) -> Circuit:
     """
     circuit = Circuit()
     defined_gates = SUPPORTED_GATES.copy()
-    instructions = Program(quil).instructions
+    program = Program(quil)
+    instructions = program.instructions
 
     defgates = parse_defgates(quil)
 
@@ -516,9 +513,14 @@ def circuit_from_quil(quil: str) -> Circuit:
         elif isinstance(inst, Pragma):
             raise UnsupportedQuilInstruction(PRAGMA_ERROR)
 
-        # Raise a targeted error when encountering a RESET.
-        elif isinstance(inst, (Reset, ResetQubit)):
-            raise UnsupportedQuilInstruction(RESET_ERROR)
+        # ResetQubit subclasses Reset, so it has to be matched first.
+        elif isinstance(inst, ResetQubit):
+            circuit += ResetChannel()(LineQubit(inst.qubit.index))
+
+        # A bare RESET resets every qubit, which in a Cirq circuit means every qubit the
+        # program uses, including those first used after the RESET.
+        elif isinstance(inst, Reset):
+            circuit += [ResetChannel()(LineQubit(q)) for q in sorted(program.get_qubit_indices())]
 
         # Raise a general error when encountering an unconsidered type.
         else:
