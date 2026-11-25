@@ -185,7 +185,7 @@ def test_run_qasm3_rewrites_program_ionq_cannot_run(device, session, statement, 
 
 
 def test_run_qasm3_rewrites_ctrl2_inside_gate_definition(device, session):
-    """ctrl(2) @ x inside a gate body does nothing on IonQ, so it is rewritten too."""
+    """ctrl(2) @ x inside a gate body is rewritten too."""
     program = (
         "OPENQASM 3.0;\nqubit[3] q;\nbit[1] c;\n"
         "gate tof a, b, t { ctrl(2) @ x a, b, t; }\ntof q[0], q[1], q[2];\nc[0] = measure q[2];\n"
